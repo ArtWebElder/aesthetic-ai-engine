@@ -63,7 +63,7 @@ const ProjectEditor = () => {
 
       {/* Actions bar (sticky bottom) */}
       <div className="border-t border-border/50 bg-card/40 px-4 py-3 flex flex-col sm:flex-row gap-2 shrink-0">
-        <Button className="flex-1 sm:flex-none">
+        <Button variant="gradient" className="flex-1 sm:flex-none">
           <Sparkles className="h-4 w-4 mr-2" />
           Generate Base Image
         </Button>
