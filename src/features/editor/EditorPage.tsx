@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import TemplateRenderer from "@/features/editor/TemplateRenderer";
+import { TEMPLATE_CATALOG as TEMPLATE_REGISTRY } from "@/features/editor/templates/registry";
+
 import type { Project, ProjectSpec, Generation } from "@/types/spec";
 import { getProject, upsertProject } from "@/features/projects/store";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
@@ -18,14 +21,6 @@ function deepClone<T>(v: T): T {
 
 const nowIso = () => new Date().toISOString();
 const newId = () => crypto.randomUUID();
-
-const TEMPLATE_CATALOG = [
-  { id: "photo_01", name: "Bold Typography", stylePreset: "bold_ads" },
-  { id: "photo_02", name: "Product Spotlight", stylePreset: "minimal_clean" },
-  { id: "photo_03", name: "Gradient Overlay", stylePreset: "glass" },
-  { id: "photo_04", name: "Minimal Card", stylePreset: "minimal_clean" },
-  { id: "photo_05", name: "Story Impact", stylePreset: "bold_ads" },
-] as const;
 
 export default function EditorPage() {
   const { id } = useParams();
@@ -153,7 +148,7 @@ export default function EditorPage() {
           </div>
 
           <div className="p-4 space-y-3 overflow-auto">
-            {TEMPLATE_CATALOG.map((t) => {
+            {TEMPLATE_REGISTRY.map((t) => {
   const selected = spec.templateId === t.id;
 
   return (
@@ -213,31 +208,14 @@ export default function EditorPage() {
               <Card className="relative overflow-hidden">
                 <div className="relative w-full aspect-[16/10] bg-muted/30 flex items-center justify-center">
                   {/* grid overlay */}
-                  {showGrid && (
-                    <div
-                      className="absolute inset-0 pointer-events-none opacity-40"
-                      style={{
-                        backgroundImage:
-                          "linear-gradient(to right, rgba(0,0,0,0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0,0,0,0.08) 1px, transparent 1px)",
-                        backgroundSize: "32px 32px",
-                      }}
-                    />
-                  )}
 
-                  {!active?.imageUrl ? (
-                    <div className="text-center space-y-2">
-                      <div className="text-lg font-medium">No image yet</div>
-                      <div className="text-sm text-muted-foreground">
-                        Click “Generate Base Image” to simulate output.
-                      </div>
-                    </div>
-                  ) : (
-                    <img
-                      src={active.imageUrl}
-                      alt="Generated"
-                      className="max-h-[520px] w-auto object-contain rounded-xl shadow-lg"
-                    />
-                  )}
+                  <div className="h-[520px] w-full">
+  <TemplateRenderer
+    spec={spec}
+    imageUrl={active?.imageUrl}
+    showGrid={showGrid}
+  />
+</div>
                 </div>
               </Card>
             </div>
