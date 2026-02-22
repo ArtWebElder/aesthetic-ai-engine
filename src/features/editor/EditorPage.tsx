@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import type { Project, ProjectSpec, Generation } from "@/types/spec";
-import { getProject, upsertProject } from "../features/projects/store.ts";
+import { getProject, upsertProject } from "../features/projects/store"
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 import { buildMockImageUrl } from "@/features/engine/mock-image";
 
