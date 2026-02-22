@@ -33,7 +33,10 @@ const App = () => (
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="projects" element={<Projects />} />
-                <Route path="projects/:id" element={<ProjectEditor />} />
+                <Route
+  path="projects/:id"
+  element={<div style={{ padding: 24 }}>ROTA EDITOR OK</div>}
+/>
                 <Route path="billing" element={<Billing />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="help" element={<Help />} />
