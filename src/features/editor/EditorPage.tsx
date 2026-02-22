@@ -206,18 +206,19 @@ export default function EditorPage() {
           <div className="flex-1 min-h-0 p-4 md:p-6 overflow-auto">
             <div className="mx-auto max-w-[920px]">
               <Card className="relative overflow-hidden">
-                <div className="relative w-full aspect-[16/10] bg-muted/30 flex items-center justify-center">
-                  {/* grid overlay */}
-
-                  <div className="h-[520px] w-full">
-  <TemplateRenderer
-    spec={spec}
-    imageUrl={active?.imageUrl}
-    showGrid={showGrid}
-  />
-</div>
-                </div>
-              </Card>
+  <div
+    className="relative w-full bg-muted/30 flex items-center justify-center"
+    style={{ aspectRatio: `${spec.generation.width} / ${spec.generation.height}` }}
+  >
+    <div className="w-full h-full">
+      <TemplateRenderer
+        spec={spec}
+        imageUrl={active?.imageUrl}
+        showGrid={showGrid}
+      />
+    </div>
+  </div>
+</Card>
             </div>
           </div>
         </div>
