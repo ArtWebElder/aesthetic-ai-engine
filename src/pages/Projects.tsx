@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import CreateProjectModal from "@/components/CreateProjectModal";
-import { listProjects } from "../features/projects/store";
+import { listProjects } from "../features/projects/store.ts";
 
 const Projects = () => {
   const [createOpen, setCreateOpen] = useState(false);

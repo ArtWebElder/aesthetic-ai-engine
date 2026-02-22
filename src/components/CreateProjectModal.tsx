@@ -1,4 +1,4 @@
-import { createProject, upsertProject } from "../features/projects/store";
+import { createProject, upsertProject } from "../features/projects/store.ts";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { createProject } from "../features/projects/store";
+import { createProject } from "../features/projects/store.ts";
 import type { ProjectFormat } from "@/types/spec";
 
 import {

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 
 import type { ProjectFormat } from "@/types/spec";
 import { useProjects } from "@/features/projects/useProjects";
-import { createProject, deleteProject, resetDemoData } from "../features/projects/store";
+import { createProject, deleteProject, resetDemoData } from "../features/projects/store.ts";
 
 const formats: { label: string; value: ProjectFormat }[] = [
   { label: "Feed 1080x1080", value: "feed_1080" },
