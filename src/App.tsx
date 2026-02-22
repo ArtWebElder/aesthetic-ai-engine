@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
-import ProjectEditor from "./pages/ProjectEditor";
+import EditorPage from "@/features/editor/EditorPage";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
@@ -35,7 +35,7 @@ const App = () => (
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="projects" element={<Projects />} />
-                <Route path="projects/:id" element={<ProjectEditor />} />
+                <Route path="projects/:id" element={<EditorPage />} />
                 <Route path="billing" element={<Billing />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="help" element={<Help />} />
