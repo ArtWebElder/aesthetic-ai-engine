@@ -123,6 +123,10 @@ export default function EditorPage() {
                 <span className="text-xs px-2 py-1 rounded border border-border">
                   {spec.stylePreset}
                 </span>
+                  <span className="text-xs px-2 py-1 rounded border border-border">
+    {spec.templateId}
+  </span>
+
               </div>
             </div>
           </div>
@@ -183,8 +187,10 @@ export default function EditorPage() {
         {spec.module} • {t.id}
       </div>
     </button>
-  );
-})}
+              );
+            })}
+          </div>
+        </div>
 
         {/* CENTER: CANVAS */}
         <div className="min-h-0 flex flex-col">
