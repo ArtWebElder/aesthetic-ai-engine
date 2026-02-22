@@ -1,107 +1,150 @@
-import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Sparkles, Copy, Download, PanelRight, LayoutTemplate } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import EditorPreview from '@/components/editor/EditorPreview';
-import EditorInspector from '@/components/editor/EditorInspector';
-import { mockProjects, mockTemplates } from '@/lib/mocks/data';
+console.log("[ProjectEditor] mounted", { id, pathname: window.location.pathname });
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-const ProjectEditor = () => {
+import type { Project, ProjectSpec } from "@/types/spec";
+import { getProject, upsertProject } from "@/features/projects/store";
+import { compilePrompt } from "@/features/engine/prompt-compiler";
+
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+
+function clone<T>(v: T): T {
+  return JSON.parse(JSON.stringify(v));
+}
+
+export default function ProjectEditor() {
   const { id } = useParams();
-  const navigate = useNavigate();
-  const project = mockProjects.find((p) => p.id === id) || mockProjects[0];
-  const [inspectorOpen, setInspectorOpen] = useState(false);
-  const [templatesOpen, setTemplatesOpen] = useState(false);
+  const nav = useNavigate();
+  const [project, setProject] = useState<Project | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    const p = getProject(id);
+    if (!p) {
+      nav("/app/projects");
+      return;
+    }
+    setProject(clone(p));
+  }, [id, nav]);
+
+  const compiled = useMemo(() => {
+    if (!project) return null;
+    return compilePrompt(project.spec);
+  }, [project]);
+
+  function setSpec(next: ProjectSpec) {
+    if (!project) return;
+    const nextProject: Project = { ...project, spec: next };
+    setProject(nextProject);
+    upsertProject(nextProject); // autosave localStorage
+  }
+
+  if (!project) {
+    return (
+      <div className="p-6 md:p-8">
+        <div className="text-sm text-muted-foreground">Loading…</div>
+      </div>
+    );
+  }
+
+  const spec = project.spec;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-3.5rem)] animate-fade-in">
-      {/* Editor toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border/50 bg-card/30 shrink-0">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate('/app/projects')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium truncate">{project?.name || 'New Project'}</p>
+    <div className="p-4 md:p-8 space-y-6">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-xs text-muted-foreground">Project</div>
+          <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="text-xs px-2 py-1 rounded border border-border">
+              {spec.module}
+            </span>
+            <span className="text-xs px-2 py-1 rounded border border-border">
+              {spec.format}
+            </span>
+            <span className="text-xs px-2 py-1 rounded border border-border">
+              {spec.stylePreset}
+            </span>
+          </div>
         </div>
 
-        {/* Mobile triggers */}
-        <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={() => setTemplatesOpen(true)}>
-          <LayoutTemplate className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={() => setInspectorOpen(true)}>
-          <PanelRight className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => nav("/app/projects")}>
+            Back
+          </Button>
+          <Button onClick={() => alert("Generate Base Image (placeholder)")}>
+            Generate Base Image
+          </Button>
+        </div>
       </div>
 
-      {/* Editor body */}
-      <div className="flex-1 flex min-h-0">
-        {/* Left Panel - Templates (desktop) */}
-        <aside className="hidden lg:flex w-56 border-r border-border/50 overflow-y-auto p-3 bg-card/20 shrink-0">
-          <div className="space-y-3 w-full">
-            <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Templates</h3>
-            {mockTemplates.map((t) => (
-              <button key={t.id} className="w-full glass-surface rounded-md p-2.5 text-left hover-lift">
-                <div className="aspect-[4/3] rounded bg-secondary/50 skeleton-shimmer mb-1.5" />
-                <p className="text-xs font-medium truncate">{t.name}</p>
-                <p className="text-[10px] text-muted-foreground capitalize">{t.category}</p>
-              </button>
-            ))}
+      <div className="grid xl:grid-cols-[1fr_420px] gap-4">
+        {/* Preview */}
+        <Card className="min-h-[520px] p-4 flex items-center justify-center relative overflow-hidden">
+          <div className="text-center space-y-2">
+            <div className="text-lg font-medium">Preview (placeholder)</div>
+            <div className="text-sm text-muted-foreground">
+              Next step: render template in HTML/CSS (true “builder” feel).
+            </div>
           </div>
-        </aside>
+        </Card>
 
-        {/* Canvas */}
-        <EditorPreview />
+        {/* Inspector */}
+        <Card className="p-4 space-y-4">
+          <div className="text-sm font-medium">Content</div>
 
-        {/* Right Panel - Inspector (desktop) */}
-        <aside className="hidden lg:flex w-72 xl:w-80 border-l border-border/50 overflow-hidden shrink-0">
-          <div className="w-full overflow-y-auto">
-            <EditorInspector />
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Headline</label>
+            <Input
+              value={spec.content.headline}
+              onChange={(e) =>
+                setSpec({
+                  ...spec,
+                  content: { ...spec.content, headline: e.target.value },
+                })
+              }
+            />
           </div>
-        </aside>
+
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">Subheadline</label>
+            <Input
+              value={spec.content.subheadline}
+              onChange={(e) =>
+                setSpec({
+                  ...spec,
+                  content: { ...spec.content, subheadline: e.target.value },
+                })
+              }
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs text-muted-foreground">CTA</label>
+            <Input
+              value={spec.content.ctaText}
+              onChange={(e) =>
+                setSpec({
+                  ...spec,
+                  content: { ...spec.content, ctaText: e.target.value },
+                })
+              }
+            />
+          </div>
+
+          <div className="pt-3 border-t border-border space-y-2">
+            <div className="text-sm font-medium">Compiled Prompt (debug)</div>
+            <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
+{compiled?.prompt}
+            </pre>
+            <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
+NEG: {compiled?.negativePrompt}
+            </pre>
+          </div>
+        </Card>
       </div>
-
-      {/* Actions bar (sticky bottom) */}
-      <div className="border-t border-border/50 bg-card/40 px-4 py-3 flex flex-col sm:flex-row gap-2 shrink-0">
-        <Button variant="gradient" className="flex-1 sm:flex-none">
-          <Sparkles className="h-4 w-4 mr-2" />
-          Generate Base Image
-        </Button>
-        <Button variant="outline" className="flex-1 sm:flex-none">
-          <Copy className="h-4 w-4 mr-2" />
-          Create 10 Variations
-          <span className="ml-1.5 text-xs text-muted-foreground">(free)</span>
-        </Button>
-        <Button variant="outline" className="flex-1 sm:flex-none">
-          <Download className="h-4 w-4 mr-2" />
-          Export 2K
-        </Button>
-      </div>
-
-      {/* Mobile: Inspector bottom sheet */}
-      <Sheet open={inspectorOpen} onOpenChange={setInspectorOpen}>
-        <SheetContent side="bottom" className="h-[75vh] p-0 rounded-t-2xl">
-          <EditorInspector />
-        </SheetContent>
-      </Sheet>
-
-      {/* Mobile: Templates drawer */}
-      <Sheet open={templatesOpen} onOpenChange={setTemplatesOpen}>
-        <SheetContent side="left" className="w-72 p-3">
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3">Templates</h3>
-          <div className="space-y-2 overflow-y-auto">
-            {mockTemplates.map((t) => (
-              <button key={t.id} className="w-full glass-surface rounded-md p-2.5 text-left hover-lift">
-                <div className="aspect-[4/3] rounded bg-secondary/50 skeleton-shimmer mb-1.5" />
-                <p className="text-xs font-medium truncate">{t.name}</p>
-                <p className="text-[10px] text-muted-foreground capitalize">{t.category}</p>
-              </button>
-            ))}
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
-};
-
-export default ProjectEditor;
+}
