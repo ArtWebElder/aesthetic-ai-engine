@@ -1,23 +1,56 @@
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-type AuthUser = { email: string } | null;
+type User = { email: string };
 
 type AuthCtx = {
-  user: AuthUser;
-  signIn: (email: string) => void;
-  signOut: () => void;
+  isAuthed: boolean;
+  user: User | null;
+  login: (email: string, password?: string) => void;
+  logout: () => void;
 };
+
+const KEY = "mi_auth_user_v1";
 
 const Ctx = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser>({ email: "demo@local" });
+  const [user, setUser] = useState<User | null>(null);
+
+  // ✅ rehidrata do localStorage quando o app abre
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) setUser(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const login = (email: string) => {
+    const next: User = { email: (email || "").trim() || "demo@local" };
+    setUser(next);
+    try {
+      localStorage.setItem(KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  };
+
+  const logout = () => {
+    setUser(null);
+    try {
+      localStorage.removeItem(KEY);
+    } catch {
+      // ignore
+    }
+  };
 
   const value = useMemo<AuthCtx>(
     () => ({
       user,
-      signIn: (email: string) => setUser({ email }),
-      signOut: () => setUser(null),
+      isAuthed: !!user,
+      login,
+      logout,
     }),
     [user]
   );
