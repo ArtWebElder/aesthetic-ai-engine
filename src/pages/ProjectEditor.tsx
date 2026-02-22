@@ -55,7 +55,7 @@ export default function ProjectEditor() {
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-xs text-muted-foreground">Project</div>
+          <div className="text-xs text-muted-foreground">EDITOR DO PROJETO (TESTE)</div>
           <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
           <div className="mt-2 flex flex-wrap gap-2">
             <span className="text-xs px-2 py-1 rounded border border-border">
