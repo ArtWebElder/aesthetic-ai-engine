@@ -1,3 +1,4 @@
+import { createProject, upsertProject } from "../features/projects/store";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -17,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { createProject } from "@/features/projects/store";
+import { createProject } from "../features/projects/store";
 import type { ProjectFormat } from "@/types/spec";
 
 import {
@@ -43,18 +44,32 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
   const formats = FORMAT_OPTIONS[type] || [];
 
   const handleCreate = () => {
-    const safeName = (name || "").trim() || "Untitled Project";
-    if (!format) return;
+  const safeName = (name || "").trim() || "Untitled Project";
+  if (!format) return;
 
-    const p = createProject(safeName, format as ProjectFormat);
+  const p = createProject(safeName, format as ProjectFormat);
 
-    onOpenChange(false);
-    setName("");
-    setFormat("");
-    setStyle("");
-
-    navigate(`/app/projects/${p.id}`);
+  // ✅ grava o type/style que você escolheu no modal
+  const next = {
+    ...p,
+    name: safeName,
+    spec: {
+      ...p.spec,
+      module: type,                 // <-- conecta o Type
+      format: format as any,         // já vem, mas mantém
+      stylePreset: style || p.spec.stylePreset, // <-- conecta o Style
+    },
   };
+
+  upsertProject(next);
+
+  onOpenChange(false);
+  setName("");
+  setFormat("");
+  setStyle("");
+
+  navigate(`/app/projects/${next.id}`);
+};
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
