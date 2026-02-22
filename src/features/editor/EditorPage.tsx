@@ -19,6 +19,14 @@ function deepClone<T>(v: T): T {
 const nowIso = () => new Date().toISOString();
 const newId = () => crypto.randomUUID();
 
+const TEMPLATE_CATALOG = [
+  { id: "photo_01", name: "Bold Typography", stylePreset: "bold_ads" },
+  { id: "photo_02", name: "Product Spotlight", stylePreset: "minimal_clean" },
+  { id: "photo_03", name: "Gradient Overlay", stylePreset: "glass" },
+  { id: "photo_04", name: "Minimal Card", stylePreset: "minimal_clean" },
+  { id: "photo_05", name: "Story Impact", stylePreset: "bold_ads" },
+] as const;
+
 export default function EditorPage() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -141,25 +149,42 @@ export default function EditorPage() {
           </div>
 
           <div className="p-4 space-y-3 overflow-auto">
-            {["Bold Typography", "Product Spotlight", "Gradient Overlay", "Minimal Card", "Story Impact"].map(
-              (t) => (
-                <button
-                  key={t}
-                  type="button"
-                  className="w-full text-left rounded-lg border border-border bg-background/60 hover:bg-background p-3 transition"
-                  onClick={() => {
-                    // placeholder: depois você liga templateId aqui
-                    // setSpec({ ...spec, templateId: "social_01" })
-                  }}
-                >
-                  <div className="h-24 rounded-md bg-muted mb-2" />
-                  <div className="text-sm font-medium">{t}</div>
-                  <div className="text-xs text-muted-foreground">{spec.module}</div>
-                </button>
-              )
-            )}
-          </div>
-        </div>
+            {TEMPLATE_CATALOG.map((t) => {
+  const selected = spec.templateId === t.id;
+
+  return (
+    <button
+      key={t.id}
+      type="button"
+      className={[
+        "w-full text-left rounded-lg border bg-background/60 p-3 transition",
+        selected
+          ? "border-primary ring-1 ring-primary/30 bg-background"
+          : "border-border hover:bg-background",
+      ].join(" ")}
+      onClick={() => {
+        setSpec({
+          ...spec,
+          templateId: t.id,
+          stylePreset: t.stylePreset as any,
+        });
+      }}
+    >
+      <div className="h-24 rounded-md bg-muted mb-2" />
+      <div className="text-sm font-medium flex items-center justify-between">
+        <span>{t.name}</span>
+        {selected ? (
+          <span className="text-[10px] px-2 py-1 rounded border border-primary/40 text-primary">
+            Selected
+          </span>
+        ) : null}
+      </div>
+      <div className="text-xs text-muted-foreground">
+        {spec.module} • {t.id}
+      </div>
+    </button>
+  );
+})}
 
         {/* CENTER: CANVAS */}
         <div className="min-h-0 flex flex-col">
