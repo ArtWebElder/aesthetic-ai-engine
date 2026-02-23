@@ -227,6 +227,7 @@ export default function EditorPage() {
     if (!project || !spec) return;
 
     const generationId = newId();
+
     const seed = `${project.id}-${generationId}`;
     const { w, h } = getSafeDims(spec);
 
