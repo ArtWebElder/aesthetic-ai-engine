@@ -58,7 +58,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? "leave safe space for text overlay, no unreadable tiny text in the image"
       : "no text";
 
-  const effectsHints = `text style: outline=${effects.textOutline}/10 shadow=${effects.shadow}/10 depth=${effects.depth3d}/10 tilt=${effects.tilt}deg`;
+  const safeEffects = effects ?? { textOutline: 0, shadow: 0, depth3d: 0, tilt: 0 };
+  const effectsHints = `text style: outline=${safeEffects.textOutline}/10 shadow=${safeEffects.shadow}/10 depth=${safeEffects.depth3d}/10 tilt=${safeEffects.tilt}deg`;
   const cleanedContext = contextText?.trim();
   const cleanedSubject = subjectText?.trim();
   const cleanedLighting = lightingText?.trim();
@@ -98,10 +99,10 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     `Neutral background: ${neutralBackground}`,
     `Surface color: ${surfaceColor}`,
     `Text color: ${textColor}`,
-    cleanedContext ? `context: ${cleanedContext}` : null,
     cleanedSubject ? `Main subject: ${cleanedSubject}` : null,
     cleanedLighting ? `Lighting / mood: ${cleanedLighting}` : null,
     cleanedAssets ? `Assets / elements: ${cleanedAssets}` : null,
+    cleanedContext ? `context: ${cleanedContext}` : null,
     cleanedReferenceImage ? `Reference image: ${cleanedReferenceImage}` : null,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",
