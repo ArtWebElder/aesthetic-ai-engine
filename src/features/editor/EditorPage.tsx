@@ -53,24 +53,27 @@ function buildPicsumUrl(seed: string, w: number, h: number): string {
 }
 
 function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
+  const brand = spec.brand ?? ({} as any);
+  const generation = spec.generation ?? ({} as any);
+
   return {
     ...spec,
     contextText: spec.contextText ?? "",
     referenceImageUrl: spec.referenceImageUrl ?? null,
     brand: {
-      ...spec.brand,
-      accent: spec.brand.accent ?? "#34d399",
-      secondary: spec.brand.secondary ?? "#888888",
-      primary: spec.brand.primary ?? "#ffffff",
-      paletteMode: spec.brand.paletteMode ?? "mono",
-      accent2: spec.brand.accent2 ?? "#888888",
-      neutralBg: spec.brand.neutralBg ?? "#0f172a",
-      neutralSurface: spec.brand.neutralSurface ?? "#1e293b",
-      neutralText: spec.brand.neutralText ?? "#ffffff",
+      ...brand,
+      accent: brand.accent ?? "#34d399",
+      secondary: brand.secondary ?? "#888888",
+      primary: brand.primary ?? "#ffffff",
+      paletteMode: brand.paletteMode ?? "mono",
+      accent2: brand.accent2 ?? "#888888",
+      neutralBg: brand.neutralBg ?? "#0f172a",
+      neutralSurface: brand.neutralSurface ?? "#1e293b",
+      neutralText: brand.neutralText ?? "#ffffff",
     },
     generation: {
-      ...spec.generation,
-      realism: clampSize(Number(spec.generation.realism ?? 70), 0, 100),
+      ...generation,
+      realism: clampSize(Number(generation.realism ?? 70), 0, 100),
     },
   };
 }
@@ -208,13 +211,18 @@ export default function EditorPage() {
     return g ?? project.generations[0];
   }, [project]);
 
-  // compiled prompt placeholder
-  const compiled = useMemo(() => {
+  const safeSpec = useMemo(() => {
     if (!spec) return null;
-    return compilePrompt(ensureSpecDefaults(spec));
+    return ensureSpecDefaults(spec);
   }, [spec]);
 
-  const paletteMode = spec.brand.paletteMode ?? "mono";
+  // compiled prompt placeholder
+  const compiled = useMemo(() => {
+    if (!safeSpec) return null;
+    return compilePrompt(safeSpec);
+  }, [safeSpec]);
+
+  const paletteMode = safeSpec?.brand.paletteMode ?? "mono";
   const showSecondary = paletteMode === "duo" || paletteMode === "tri" || paletteMode === "custom";
   const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
 
@@ -240,14 +248,14 @@ export default function EditorPage() {
   }
 
   function applyFormat(fmt: ProjectFormat) {
-    if (!spec) return;
+    if (!safeSpec) return;
 
     const size = formatToSize(fmt);
     persistSpec({
-      ...spec,
+      ...safeSpec,
       format: fmt,
       generation: {
-        ...spec.generation,
+        ...safeSpec.generation,
         width: size.width,
         height: size.height,
         aspectRatio: size.aspectRatio,
@@ -256,12 +264,12 @@ export default function EditorPage() {
   }
 
   function generateMock() {
-    if (!project || !spec) return;
+    if (!project || !safeSpec) return;
 
     const generationId = newId();
 
     const seed = `${project.id}-${generationId}`;
-    const { w, h } = getSafeDims(spec);
+    const { w, h } = getSafeDims(safeSpec);
 
     const g: Generation = {
       id: generationId,
@@ -289,7 +297,7 @@ export default function EditorPage() {
     );
   }
 
-  if (!project || !spec) {
+  if (!project || !safeSpec) {
     return (
       <div className="p-6 space-y-3">
         <div className="text-lg font-semibold">Project not found</div>
@@ -337,16 +345,16 @@ export default function EditorPage() {
 
               <div className="hidden md:flex gap-2">
                 <span className="text-xs px-2 py-1 rounded border border-border">
-                  {spec.module}
+                  {safeSpec.module}
                 </span>
                 <span className="text-xs px-2 py-1 rounded border border-border">
-                  {spec.format}
+                  {safeSpec.format}
                 </span>
                 <span className="text-xs px-2 py-1 rounded border border-border">
-                  {spec.stylePreset}
+                  {safeSpec.stylePreset}
                 </span>
                 <span className="text-xs px-2 py-1 rounded border border-border">
-                  {spec.templateId}
+                  {safeSpec.templateId}
                 </span>
               </div>
             </div>
@@ -372,8 +380,8 @@ export default function EditorPage() {
           </div>
 
           <div className="p-4 space-y-3 overflow-auto">
-            {TEMPLATE_REGISTRY.filter((t) => t.module === spec.module).map((t) => {
-              const selected = spec.templateId === t.id;
+            {TEMPLATE_REGISTRY.filter((t) => t.module === safeSpec.module).map((t) => {
+              const selected = safeSpec.templateId === t.id;
 
               return (
                 <button
@@ -387,9 +395,9 @@ export default function EditorPage() {
                   ].join(" ")}
                   onClick={() => {
                     persistSpec({
-                      ...spec,
+                      ...safeSpec,
                       templateId: t.id as any,
-                      stylePreset: (t.stylePreset ?? spec.stylePreset) as StylePreset,
+                      stylePreset: (t.stylePreset ?? safeSpec.stylePreset) as StylePreset,
                     });
                   }}
                 >
@@ -403,7 +411,7 @@ export default function EditorPage() {
                     ) : null}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {spec.module} • {String(t.id)}
+                    {safeSpec.module} • {String(t.id)}
                   </div>
                 </button>
               );
@@ -423,12 +431,12 @@ export default function EditorPage() {
                 <div
                   className="relative w-full bg-muted/30 flex items-center justify-center"
                   style={{
-                    aspectRatio: `${spec.generation.width} / ${spec.generation.height}`,
+                    aspectRatio: `${safeSpec.generation.width} / ${safeSpec.generation.height}`,
                   }}
                 >
                   <div className="w-full h-full">
                     <TemplateRenderer
-                      spec={spec}
+                      spec={safeSpec}
                       imageUrl={bgUrl}
                       showGrid={false}
                     />
@@ -459,14 +467,14 @@ export default function EditorPage() {
                   <input
                     type="color"
                     value={
-                      spec.brand.accent?.startsWith("#")
-                        ? spec.brand.accent
+                      safeSpec.brand.accent?.startsWith("#")
+                        ? safeSpec.brand.accent
                         : "#34d399"
                     }
                     onChange={(e) =>
                       persistSpec({
-                        ...spec,
-                        brand: { ...spec.brand, accent: e.target.value },
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, accent: e.target.value },
                       })
                     }
                     className="h-10 w-full rounded-md border border-border bg-transparent"
@@ -478,14 +486,14 @@ export default function EditorPage() {
                   <input
                     type="color"
                     value={
-                      spec.brand.neutralText?.startsWith("#")
-                        ? spec.brand.neutralText
+                      safeSpec.brand.neutralText?.startsWith("#")
+                        ? safeSpec.brand.neutralText
                         : "#ffffff"
                     }
                     onChange={(e) =>
                       persistSpec({
-                        ...spec,
-                        brand: { ...spec.brand, neutralText: e.target.value },
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, neutralText: e.target.value },
                       })
                     }
                     className="h-10 w-full rounded-md border border-border bg-transparent"
@@ -499,9 +507,9 @@ export default function EditorPage() {
                   value={paletteMode}
                   onValueChange={(v) =>
                     persistSpec({
-                      ...spec,
+                      ...safeSpec,
                       brand: {
-                        ...spec.brand,
+                        ...safeSpec.brand,
                         paletteMode: v as "mono" | "duo" | "tri" | "custom",
                       },
                     })
@@ -526,14 +534,14 @@ export default function EditorPage() {
                     <input
                       type="color"
                       value={
-                        spec.brand.secondary?.startsWith("#")
-                          ? spec.brand.secondary
+                        safeSpec.brand.secondary?.startsWith("#")
+                          ? safeSpec.brand.secondary
                           : "#888888"
                       }
                       onChange={(e) =>
                         persistSpec({
-                          ...spec,
-                          brand: { ...spec.brand, secondary: e.target.value },
+                          ...safeSpec,
+                          brand: { ...safeSpec.brand, secondary: e.target.value },
                         })
                       }
                       className="h-10 w-full rounded-md border border-border bg-transparent"
@@ -547,14 +555,14 @@ export default function EditorPage() {
                     <input
                       type="color"
                       value={
-                        spec.brand.accent2?.startsWith("#")
-                          ? spec.brand.accent2
+                        safeSpec.brand.accent2?.startsWith("#")
+                          ? safeSpec.brand.accent2
                           : "#888888"
                       }
                       onChange={(e) =>
                         persistSpec({
-                          ...spec,
-                          brand: { ...spec.brand, accent2: e.target.value },
+                          ...safeSpec,
+                          brand: { ...safeSpec.brand, accent2: e.target.value },
                         })
                       }
                       className="h-10 w-full rounded-md border border-border bg-transparent"
@@ -567,14 +575,14 @@ export default function EditorPage() {
                   <input
                     type="color"
                     value={
-                      spec.brand.neutralBg?.startsWith("#")
-                        ? spec.brand.neutralBg
+                      safeSpec.brand.neutralBg?.startsWith("#")
+                        ? safeSpec.brand.neutralBg
                         : "#0f172a"
                     }
                     onChange={(e) =>
                       persistSpec({
-                        ...spec,
-                        brand: { ...spec.brand, neutralBg: e.target.value },
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, neutralBg: e.target.value },
                       })
                     }
                     className="h-10 w-full rounded-md border border-border bg-transparent"
@@ -586,14 +594,14 @@ export default function EditorPage() {
                   <input
                     type="color"
                     value={
-                      spec.brand.neutralSurface?.startsWith("#")
-                        ? spec.brand.neutralSurface
+                      safeSpec.brand.neutralSurface?.startsWith("#")
+                        ? safeSpec.brand.neutralSurface
                         : "#1e293b"
                     }
                     onChange={(e) =>
                       persistSpec({
-                        ...spec,
-                        brand: { ...spec.brand, neutralSurface: e.target.value },
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, neutralSurface: e.target.value },
                       })
                     }
                     className="h-10 w-full rounded-md border border-border bg-transparent"
@@ -605,14 +613,14 @@ export default function EditorPage() {
                   <input
                     type="color"
                     value={
-                      spec.brand.neutralText?.startsWith("#")
-                        ? spec.brand.neutralText
+                      safeSpec.brand.neutralText?.startsWith("#")
+                        ? safeSpec.brand.neutralText
                         : "#ffffff"
                     }
                     onChange={(e) =>
                       persistSpec({
-                        ...spec,
-                        brand: { ...spec.brand, neutralText: e.target.value },
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, neutralText: e.target.value },
                       })
                     }
                     className="h-10 w-full rounded-md border border-border bg-transparent"
@@ -627,11 +635,11 @@ export default function EditorPage() {
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground">Font preset</label>
                 <Select
-                  value={spec.brand.fontPreset}
+                  value={safeSpec.brand.fontPreset}
                   onValueChange={(v) =>
                     persistSpec({
-                      ...spec,
-                      brand: { ...spec.brand, fontPreset: v as any },
+                      ...safeSpec,
+                      brand: { ...safeSpec.brand, fontPreset: v as any },
                     })
                   }
                 >
@@ -654,11 +662,11 @@ export default function EditorPage() {
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <input
                   type="checkbox"
-                  checked={Boolean(spec.brand.autoContrast)}
+                  checked={Boolean(safeSpec.brand.autoContrast)}
                   onChange={(e) =>
                     persistSpec({
-                      ...spec,
-                      brand: { ...spec.brand, autoContrast: e.target.checked },
+                      ...safeSpec,
+                      brand: { ...safeSpec.brand, autoContrast: e.target.checked },
                     })
                   }
                 />
@@ -671,10 +679,10 @@ export default function EditorPage() {
               <div className="text-sm font-medium">Style Preset</div>
 
               <Select
-                value={spec.stylePreset}
+                value={safeSpec.stylePreset}
                 onValueChange={(v) =>
                   persistSpec({
-                    ...spec,
+                    ...safeSpec,
                     stylePreset: v as StylePreset,
                   })
                 }
@@ -704,7 +712,7 @@ export default function EditorPage() {
                 <Button
                   type="button"
                   variant={
-                    spec.format === "ecom_ultrawide_1920x800" ? "default" : "outline"
+                    safeSpec.format === "ecom_ultrawide_1920x800" ? "default" : "outline"
                   }
                   onClick={() => applyFormat("ecom_ultrawide_1920x800")}
                 >
@@ -714,7 +722,7 @@ export default function EditorPage() {
                 <Button
                   type="button"
                   variant={
-                    spec.format === "ecom_notebook_1366x768" ? "default" : "outline"
+                    safeSpec.format === "ecom_notebook_1366x768" ? "default" : "outline"
                   }
                   onClick={() => applyFormat("ecom_notebook_1366x768")}
                 >
@@ -724,7 +732,7 @@ export default function EditorPage() {
                 <Button
                   type="button"
                   variant={
-                    spec.format === "ecom_mobile_1080x1350" ? "default" : "outline"
+                    safeSpec.format === "ecom_mobile_1080x1350" ? "default" : "outline"
                   }
                   onClick={() => applyFormat("ecom_mobile_1080x1350")}
                 >
@@ -733,27 +741,27 @@ export default function EditorPage() {
 
                 <Button
                   type="button"
-                  variant={spec.format === "ecom_custom" ? "default" : "outline"}
+                  variant={safeSpec.format === "ecom_custom" ? "default" : "outline"}
                   onClick={() => applyFormat("ecom_custom")}
                 >
                   Custom
                 </Button>
               </div>
 
-              {spec.format === "ecom_custom" ? (
+              {safeSpec.format === "ecom_custom" ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-xs text-muted-foreground">Width</label>
                     <Input
-                      value={String(spec.generation.width)}
+                      value={String(safeSpec.generation.width)}
                       onChange={(e) => {
                         const w = Number(e.target.value || 0);
                         persistSpec({
-                          ...spec,
+                          ...safeSpec,
                           generation: {
-                            ...spec.generation,
+                            ...safeSpec.generation,
                             width: w,
-                            aspectRatio: `${w}:${spec.generation.height}`,
+                            aspectRatio: `${w}:${safeSpec.generation.height}`,
                           },
                         });
                       }}
@@ -763,15 +771,15 @@ export default function EditorPage() {
                   <div className="space-y-1">
                     <label className="text-xs text-muted-foreground">Height</label>
                     <Input
-                      value={String(spec.generation.height)}
+                      value={String(safeSpec.generation.height)}
                       onChange={(e) => {
                         const h = Number(e.target.value || 0);
                         persistSpec({
-                          ...spec,
+                          ...safeSpec,
                           generation: {
-                            ...spec.generation,
+                            ...safeSpec.generation,
                             height: h,
-                            aspectRatio: `${spec.generation.width}:${h}`,
+                            aspectRatio: `${safeSpec.generation.width}:${h}`,
                           },
                         });
                       }}
@@ -785,11 +793,11 @@ export default function EditorPage() {
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">Headline</label>
               <Input
-                value={spec.content.headline}
+                value={safeSpec.content.headline}
                 onChange={(e) =>
                   persistSpec({
-                    ...spec,
-                    content: { ...spec.content, headline: e.target.value },
+                    ...safeSpec,
+                    content: { ...safeSpec.content, headline: e.target.value },
                   })
                 }
               />
@@ -798,11 +806,11 @@ export default function EditorPage() {
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">Subheadline</label>
               <Input
-                value={spec.content.subheadline}
+                value={safeSpec.content.subheadline}
                 onChange={(e) =>
                   persistSpec({
-                    ...spec,
-                    content: { ...spec.content, subheadline: e.target.value },
+                    ...safeSpec,
+                    content: { ...safeSpec.content, subheadline: e.target.value },
                   })
                 }
               />
@@ -811,11 +819,11 @@ export default function EditorPage() {
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">CTA</label>
               <Input
-                value={spec.content.ctaText}
+                value={safeSpec.content.ctaText}
                 onChange={(e) =>
                   persistSpec({
-                    ...spec,
-                    content: { ...spec.content, ctaText: e.target.value },
+                    ...safeSpec,
+                    content: { ...safeSpec.content, ctaText: e.target.value },
                   })
                 }
               />
@@ -824,10 +832,10 @@ export default function EditorPage() {
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">Context</label>
               <Input
-                value={spec.contextText ?? ""}
+                value={safeSpec.contextText ?? ""}
                 onChange={(e) =>
                   persistSpec({
-                    ...spec,
+                    ...safeSpec,
                     contextText: e.target.value,
                   })
                 }
@@ -837,10 +845,10 @@ export default function EditorPage() {
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">Reference Image URL</label>
               <Input
-                value={spec.referenceImageUrl ?? ""}
+                value={safeSpec.referenceImageUrl ?? ""}
                 onChange={(e) =>
                   persistSpec({
-                    ...spec,
+                    ...safeSpec,
                     referenceImageUrl: e.target.value.trim() ? e.target.value : null,
                   })
                 }
@@ -851,7 +859,7 @@ export default function EditorPage() {
               <div className="flex items-center justify-between">
                 <label className="text-xs text-muted-foreground">Realism</label>
                 <span className="text-xs text-muted-foreground">
-                  {clampSize(Number(spec.generation.realism ?? 70), 0, 100)}%
+                  {clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)}%
                 </span>
               </div>
               <input
@@ -859,12 +867,12 @@ export default function EditorPage() {
                 min={0}
                 max={100}
                 step={1}
-                value={clampSize(Number(spec.generation.realism ?? 70), 0, 100)}
+                value={clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)}
                 onChange={(e) =>
                   persistSpec({
-                    ...spec,
+                    ...safeSpec,
                     generation: {
-                      ...spec.generation,
+                      ...safeSpec.generation,
                       realism: clampSize(Number(e.target.value), 0, 100),
                     },
                   })
