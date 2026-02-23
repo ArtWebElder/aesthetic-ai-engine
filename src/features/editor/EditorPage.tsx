@@ -225,6 +225,7 @@ export default function EditorPage() {
   const paletteMode = safeSpec?.brand.paletteMode ?? "mono";
   const showSecondary = paletteMode === "duo" || paletteMode === "tri" || paletteMode === "custom";
   const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
+  const referenceImageUrl = (safeSpec?.referenceImageUrl ?? "").trim();
 
   const bgUrl = active?.imageUrl ?? null;
 
@@ -853,6 +854,48 @@ export default function EditorPage() {
                   })
                 }
               />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const result = typeof reader.result === "string" ? reader.result : null;
+                    persistSpec({
+                      ...safeSpec,
+                      referenceImageUrl: result,
+                    });
+                  };
+                  reader.readAsDataURL(file);
+                }}
+                className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:text-foreground"
+              />
+
+              {referenceImageUrl ? (
+                <div className="space-y-2">
+                  <img
+                    src={referenceImageUrl}
+                    alt="Reference preview"
+                    className="h-20 w-20 rounded-md border border-border object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      persistSpec({
+                        ...safeSpec,
+                        referenceImageUrl: null,
+                      })
+                    }
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : null}
             </div>
 
             <div className="space-y-2">
