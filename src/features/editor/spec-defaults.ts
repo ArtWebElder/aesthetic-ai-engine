@@ -26,7 +26,7 @@ export function formatToSize(format: ProjectFormat): {
     case "landscape_1200x628":
       return { aspectRatio: "1.91:1", width: 1200, height: 628 };
 
-    // Ecom (NOVO)
+    // Ecom (novo)
     case "ecom_ultrawide_1920x800":
       return { aspectRatio: "12:5", width: 1920, height: 800 };
     case "ecom_notebook_1366x768":
@@ -39,29 +39,6 @@ export function formatToSize(format: ProjectFormat): {
     // Photoshoot
     case "square_1024":
       return { aspectRatio: "1:1", width: 1024, height: 1024 };
-  }
-}
-
-export function formatToSize(format: ProjectFormat): {
-  aspectRatio: string;
-  width: number;
-  height: number;
-} {
-  switch (format) {
-    // Social ...
-
-    // Ecom
-    case "ecom_ultrawide_1920x800":
-      return { aspectRatio: "12:5", width: 1920, height: 800 };
-    case "ecom_notebook_1366x768":
-      return { aspectRatio: "1366:768", width: 1366, height: 768 };
-    case "ecom_mobile_1080x1350":
-      return { aspectRatio: "4:5", width: 1080, height: 1350 };
-    case "ecom_custom":
-      // default inicial pro personalizado (pode ser o último usado depois)
-      return { aspectRatio: "12:5", width: 1920, height: 800 };
-
-    // Photoshoot ...
   }
 }
 
