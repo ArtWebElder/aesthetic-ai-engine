@@ -34,6 +34,112 @@ type EditorProject = Project & {
 };
 
 /** Placeholder seguro para compilar mesmo sem TemplateRenderer pronto */
+function svgPreviewDataUrl(spec: ProjectSpec) {
+  const w = Math.max(320, Number(spec.generation.width) || 1080);
+  const h = Math.max(320, Number(spec.generation.height) || 1350);
+
+  const primary = spec.brand.primary || "#ffffff";
+  const secondary = spec.brand.secondary || "#0b0f14";
+  const accent = spec.brand.accent || "#34d399";
+
+  const headline = (spec.content.headline || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const sub = (spec.content.subheadline || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const cta = (spec.content.ctaText || "Learn more").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const badge = (spec.content.badgeText || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const price = (spec.content.price || "").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  // Layout simples, mas bem responsivo e “bonito o suficiente”
+  const pad = Math.round(Math.min(w, h) * 0.06);
+  const badgeW = Math.round(w * 0.16);
+  const badgeH = Math.round(h * 0.06);
+
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${accent}" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="${accent}" stop-opacity="0.35"/>
+    </linearGradient>
+
+    <filter id="blur" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="${Math.max(10, Math.round(Math.min(w, h) * 0.02))}" />
+    </filter>
+  </defs>
+
+  <!-- BG -->
+  <rect x="0" y="0" width="${w}" height="${h}" fill="${secondary}"/>
+
+  <!-- Glow -->
+  <circle cx="${Math.round(w * 0.75)}" cy="${Math.round(h * 0.25)}" r="${Math.round(Math.min(w, h) * 0.35)}"
+    fill="url(#g)" opacity="0.45" filter="url(#blur)"/>
+
+  <!-- Card area -->
+  <rect x="${pad}" y="${pad}" width="${w - pad * 2}" height="${h - pad * 2}"
+    rx="${Math.round(Math.min(w, h) * 0.04)}" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.10)"/>
+
+  <!-- Badge -->
+  ${badge ? `
+  <rect x="${pad + Math.round(pad*0.2)}" y="${pad + Math.round(pad*0.2)}" width="${badgeW}" height="${badgeH}"
+    rx="${Math.round(badgeH/2)}" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.18)"/>
+  <text x="${pad + Math.round(pad*0.2) + Math.round(badgeW/2)}" y="${pad + Math.round(pad*0.2) + Math.round(badgeH*0.68)}"
+    text-anchor="middle" font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+    font-size="${Math.round(Math.min(w, h)*0.022)}" fill="${primary}" opacity="0.9">${badge}</text>
+  ` : ""}
+
+  <!-- Headline -->
+  <text x="${pad + Math.round(pad*0.2)}" y="${Math.round(h * 0.36)}"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+    font-size="${Math.round(Math.min(w, h) * 0.075)}"
+    font-weight="700"
+    fill="${primary}">
+    ${headline || "Your Next Big Win"}
+  </text>
+
+  <!-- Sub -->
+  <text x="${pad + Math.round(pad*0.2)}" y="${Math.round(h * 0.44)}"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+    font-size="${Math.round(Math.min(w, h) * 0.03)}"
+    fill="${primary}" opacity="0.75">
+    ${sub || "High-performing creatives in minutes."}
+  </text>
+
+  <!-- Price (ecom) -->
+  ${price ? `
+  <text x="${pad + Math.round(pad*0.2)}" y="${Math.round(h * 0.54)}"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+    font-size="${Math.round(Math.min(w, h) * 0.05)}"
+    font-weight="700"
+    fill="${primary}" opacity="0.95">
+    ${price}
+  </text>
+  ` : ""}
+
+  <!-- CTA -->
+  <rect x="${pad + Math.round(pad*0.2)}" y="${Math.round(h * 0.70)}"
+    width="${Math.round(w * 0.34)}" height="${Math.round(h * 0.075)}"
+    rx="${Math.round(h * 0.04)}" fill="url(#g)" opacity="0.95"/>
+  <text x="${pad + Math.round(pad*0.2) + Math.round(w*0.17)}" y="${Math.round(h * 0.70) + Math.round(h * 0.052)}"
+    text-anchor="middle"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+    font-size="${Math.round(Math.min(w, h) * 0.032)}"
+    font-weight="700"
+    fill="#06110b">
+    ${cta}
+  </text>
+
+  <!-- Bottom hint -->
+  <text x="${pad + Math.round(pad*0.2)}" y="${Math.round(h * 0.90)}"
+    font-family="system-ui, -apple-system, Segoe UI, Roboto, Arial"
+    font-size="${Math.round(Math.min(w, h) * 0.022)}"
+    fill="${primary}" opacity="0.35">
+    Template: ${String(spec.templateId)} • Style: ${String(spec.stylePreset)}
+  </text>
+</svg>`.trim();
+
+  // data URL utf8
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 function TemplateRendererPlaceholder({
   spec,
   imageUrl,
@@ -43,26 +149,16 @@ function TemplateRendererPlaceholder({
   imageUrl?: string;
   showGrid: boolean;
 }) {
+  const url = imageUrl || svgPreviewDataUrl(spec);
+
   return (
-    <div className="w-full h-full relative flex items-center justify-center">
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt=""
-          className="w-full h-full object-cover"
-          draggable={false}
-        />
-      ) : (
-        <div className="text-center px-6">
-          <div className="text-sm font-medium">Canvas placeholder</div>
-          <div className="text-xs text-muted-foreground mt-1">
-            {spec.module} • {spec.format} • {spec.templateId}
-          </div>
-          <div className="text-xs text-muted-foreground mt-3">
-            Conecte aqui seu TemplateRenderer real.
-          </div>
-        </div>
-      )}
+    <div className="w-full h-full relative">
+      <img
+        src={url}
+        alt=""
+        className="w-full h-full object-contain"
+        draggable={false}
+      />
 
       {showGrid ? (
         <div

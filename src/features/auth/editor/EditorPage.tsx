@@ -60,33 +60,23 @@ export default function EditorPage() {
 
   const spec = project.spec;
 
-  function generateMock() {
-    if (!compiled) return;
+function generateMock() {
+  if (!project || !spec) return;
 
-    const genId = newId();
-    const seed = `${project.id}-${spec.templateId}-${Date.now()}`;
-    const imageUrl = buildMockImageUrl(compiled.meta, seed);
+  const g: EditorGeneration = {
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    imageUrl: svgPreviewDataUrl(spec), // ✅ agora gera “imagem”
+  };
 
-    const gen: Generation = {
-      id: genId,
-      projectId: project.id,
-      status: "done",
-      imageUrl,
-      prompt: compiled.prompt,
-      negativePrompt: compiled.negativePrompt,
-      createdAt: nowIso(),
-    };
+  const nextProject: EditorProject = {
+    ...project,
+    generations: [g, ...(project.generations ?? [])],
+    activeGenerationId: g.id,
+  };
 
-    const nextProject: Project = {
-      ...project,
-      status: "generated",
-      generations: [gen, ...(project.generations ?? [])],
-      activeGenerationId: genId,
-    };
-
-    setProject(nextProject);
-    upsertProject(nextProject);
-  }
+  persist(nextProject);
+}
 
   return (
     <div className="p-4 md:p-8 space-y-6">
