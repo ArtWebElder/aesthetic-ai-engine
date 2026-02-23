@@ -30,6 +30,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     effects,
     generation,
     contextText,
+    subjectText,
+    lightingText,
+    assetsText,
     referenceImageUrl,
   } = spec;
 
@@ -57,6 +60,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
 
   const effectsHints = `text style: outline=${effects.textOutline}/10 shadow=${effects.shadow}/10 depth=${effects.depth3d}/10 tilt=${effects.tilt}deg`;
   const cleanedContext = contextText?.trim();
+  const cleanedSubject = subjectText?.trim();
+  const cleanedLighting = lightingText?.trim();
+  const cleanedAssets = assetsText?.trim();
   const cleanedReferenceImage = referenceImageUrl?.trim();
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
@@ -93,6 +99,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     `Surface color: ${surfaceColor}`,
     `Text color: ${textColor}`,
     cleanedContext ? `context: ${cleanedContext}` : null,
+    cleanedSubject ? `Main subject: ${cleanedSubject}` : null,
+    cleanedLighting ? `Lighting / mood: ${cleanedLighting}` : null,
+    cleanedAssets ? `Assets / elements: ${cleanedAssets}` : null,
     cleanedReferenceImage ? `Reference image: ${cleanedReferenceImage}` : null,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",

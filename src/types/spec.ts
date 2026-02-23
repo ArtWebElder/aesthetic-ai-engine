@@ -107,6 +107,9 @@ export interface ProjectSpec {
   stylePreset: StylePreset;
   templateId: TemplateId;
   contextText?: string;
+  subjectText?: string;
+  lightingText?: string;
+  assetsText?: string;
   referenceImageUrl?: string | null;
 
   content: ContentSpec;

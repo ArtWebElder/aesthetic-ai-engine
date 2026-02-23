@@ -103,6 +103,9 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     stylePreset: defaultStyleFor(module),
     templateId: defaultTemplateFor(module),
     contextText: "",
+    subjectText: "",
+    lightingText: "",
+    assetsText: "",
     referenceImageUrl: null,
 
     content: {

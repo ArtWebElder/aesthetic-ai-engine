@@ -59,6 +59,9 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   return {
     ...spec,
     contextText: spec.contextText ?? "",
+    subjectText: spec.subjectText ?? "",
+    lightingText: spec.lightingText ?? "",
+    assetsText: spec.assetsText ?? "",
     referenceImageUrl: spec.referenceImageUrl ?? null,
     brand: {
       ...brand,
@@ -841,6 +844,49 @@ export default function EditorPage() {
                   })
                 }
               />
+            </div>
+
+            <div className="pt-2 border-t border-border space-y-2">
+              <div className="text-sm font-medium">Subject / Lighting / Assets</div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Subject</label>
+                <Input
+                  value={safeSpec.subjectText ?? ""}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      subjectText: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Lighting</label>
+                <Input
+                  value={safeSpec.lightingText ?? ""}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      lightingText: e.target.value,
+                    })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Assets</label>
+                <Input
+                  value={safeSpec.assetsText ?? ""}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      assetsText: e.target.value,
+                    })
+                  }
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
