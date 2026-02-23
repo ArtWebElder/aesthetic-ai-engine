@@ -30,6 +30,12 @@ export type TemplateId =
   | "photo_01"
   | "photo_02";
 
+export type EcomFormat =
+  | "ecom_ultrawide_1920x800"
+  | "ecom_notebook_1366x768"
+  | "ecom_mobile_1080x1350"
+  | "ecom_custom";
+
 export type FontPreset = "inter" | "space_grotesk" | "dm_sans" | "plus_jakarta";
 
 export type AccentMode = "solid" | "gradient";

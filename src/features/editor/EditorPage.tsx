@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
+import { formatToSize } from "@/features/editor/spec-defaults";
+
 import TemplateRenderer from "@/features/editor/TemplateRenderer";
 import { TEMPLATE_CATALOG as TEMPLATE_REGISTRY } from "@/features/editor/templates/registry";
 
@@ -105,6 +107,20 @@ export default function EditorPage() {
     (g) => g.id === project.activeGenerationId
   );
 
+  function applyFormat(nextFormat: ProjectSpec["format"]) {
+  const size = formatToSize(nextFormat);
+  setSpec({
+    ...spec,
+    format: nextFormat,
+    generation: {
+      ...spec.generation,
+      aspectRatio: size.aspectRatio,
+      width: size.width,
+      height: size.height,
+    },
+  });
+}
+
   return (
     <div className="h-[calc(100vh-56px)] flex flex-col">
       {/* TOP HEADER */}
@@ -156,7 +172,7 @@ export default function EditorPage() {
           </div>
 
           <div className="p-4 space-y-3 overflow-auto">
-            {TEMPLATE_REGISTRY.map((t) => {
+            {TEMPLATE_REGISTRY.filter(t => t.module === spec.module).map((t) => {
   const selected = spec.templateId === t.id;
 
   return (
@@ -300,6 +316,113 @@ export default function EditorPage() {
     </Select>
   </div>
 </div>
+
+{/* STYLE (human) */}
+<div className="pt-2 border-t border-border space-y-3">
+  <div className="text-sm font-medium">Style</div>
+
+  <Select
+    value={spec.effects.preset}
+    onValueChange={(v) =>
+      setSpec({
+        ...spec,
+        effects: { ...spec.effects, preset: v as any },
+      })
+    }
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Choose a style" />
+    </SelectTrigger>
+    <SelectContent>
+      <SelectItem value="clean">Minimal</SelectItem>
+      <SelectItem value="glass">Premium</SelectItem>
+      <SelectItem value="bold">Promo</SelectItem>
+      <SelectItem value="neon">Neon</SelectItem>
+    </SelectContent>
+  </Select>
+
+  <div className="text-xs text-muted-foreground">
+    Human style → o sistema ajusta tokens (overlay, CTA, contraste, etc).
+  </div>
+</div>
+
+{/* FORMAT */}
+<div className="pt-2 border-t border-border space-y-3">
+  <div className="text-sm font-medium">Format</div>
+
+  <div className="grid grid-cols-2 gap-2">
+    <Button
+      type="button"
+      variant={spec.format === "ecom_ultrawide_1920x800" ? "default" : "outline"}
+      onClick={() => applyFormat("ecom_ultrawide_1920x800")}
+    >
+      Ultra wide
+    </Button>
+
+    <Button
+      type="button"
+      variant={spec.format === "ecom_notebook_1366x768" ? "default" : "outline"}
+      onClick={() => applyFormat("ecom_notebook_1366x768")}
+    >
+      Notebook
+    </Button>
+
+    <Button
+      type="button"
+      variant={spec.format === "ecom_mobile_1080x1350" ? "default" : "outline"}
+      onClick={() => applyFormat("ecom_mobile_1080x1350")}
+    >
+      Mobile
+    </Button>
+
+    <Button
+      type="button"
+      variant={spec.format === "ecom_custom" ? "default" : "outline"}
+      onClick={() => applyFormat("ecom_custom")}
+    >
+      Custom
+    </Button>
+  </div>
+
+  {spec.format === "ecom_custom" ? (
+    <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">Width</label>
+        <Input
+          value={String(spec.generation.width)}
+          onChange={(e) =>
+            setSpec({
+              ...spec,
+              generation: {
+                ...spec.generation,
+                width: Number(e.target.value || 0),
+                aspectRatio: `${Number(e.target.value || 0)}:${spec.generation.height}`,
+              },
+            })
+          }
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-xs text-muted-foreground">Height</label>
+        <Input
+          value={String(spec.generation.height)}
+          onChange={(e) =>
+            setSpec({
+              ...spec,
+              generation: {
+                ...spec.generation,
+                height: Number(e.target.value || 0),
+                aspectRatio: `${spec.generation.width}:${Number(e.target.value || 0)}`,
+              },
+            })
+          }
+        />
+      </div>
+    </div>
+  ) : null}
+</div>
+
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">Headline</label>
               <Input
