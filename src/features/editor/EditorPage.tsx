@@ -193,6 +193,7 @@ export default function EditorPage() {
 
   const [project, setProject] = useState<EditorProject | null>(null);
   const [spec, setSpec] = useState<ProjectSpec | null>(null);
+  const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
 
   // carrega projeto por ID
   useEffect(() => {
@@ -207,6 +208,14 @@ export default function EditorPage() {
     setProject({ ...p, spec: normalizedSpec });
     setSpec(normalizedSpec);
   }, [id]);
+
+  useEffect(() => {
+    return () => {
+      if (referencePreviewUrl) {
+        URL.revokeObjectURL(referencePreviewUrl);
+      }
+    };
+  }, [referencePreviewUrl]);
 
   // geração ativa (placeholder)
   const active = useMemo(() => {
@@ -233,6 +242,7 @@ export default function EditorPage() {
   const showSecondary = paletteMode === "duo" || paletteMode === "tri" || paletteMode === "custom";
   const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
   const referenceImageUrl = (safeSpec?.referenceImageUrl ?? "").trim();
+  const previewUrl = referencePreviewUrl || referenceImageUrl;
 
   const bgUrl = active?.imageUrl ?? null;
 
@@ -953,24 +963,16 @@ export default function EditorPage() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const result = typeof reader.result === "string" ? reader.result : null;
-                    persistSpec({
-                      ...safeSpec,
-                      referenceImageUrl: result,
-                    });
-                  };
-                  reader.readAsDataURL(file);
+                  const objectUrl = URL.createObjectURL(file);
+                  setReferencePreviewUrl(objectUrl);
                 }}
                 className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:text-foreground"
               />
 
-              {referenceImageUrl ? (
+              {previewUrl ? (
                 <div className="space-y-2">
                   <img
-                    src={referenceImageUrl}
+                    src={previewUrl}
                     alt="Reference preview"
                     className="h-20 w-20 rounded-md border border-border object-cover"
                   />
@@ -978,12 +980,15 @@ export default function EditorPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() =>
-                      persistSpec({
-                        ...safeSpec,
-                        referenceImageUrl: null,
-                      })
-                    }
+                    onClick={() => {
+                      setReferencePreviewUrl(null);
+                      if (referenceImageUrl) {
+                        persistSpec({
+                          ...safeSpec,
+                          referenceImageUrl: null,
+                        });
+                      }
+                    }}
                   >
                     Remove
                   </Button>
