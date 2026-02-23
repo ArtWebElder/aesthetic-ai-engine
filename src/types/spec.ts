@@ -120,6 +120,9 @@ export interface BuilderSpec {
   mood?: string;
   macroStyle?: string;
   visualStyle?: string[];
+  assetsHighlights?: string[];
+  contextProps?: string[];
+  materialFeel?: string;
   layoutBase?: string;
   safeSpace?: string;
   extraDetails?: string;

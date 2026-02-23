@@ -84,6 +84,11 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     mood: builder?.mood?.trim() ?? "",
     macroStyle: builder?.macroStyle?.trim() ?? "",
     visualStyle: (builder?.visualStyle ?? []).filter((v): v is string => Boolean(v?.trim())),
+    assetsHighlights: (builder?.assetsHighlights ?? []).filter(
+      (v): v is string => Boolean(v?.trim())
+    ),
+    contextProps: (builder?.contextProps ?? []).filter((v): v is string => Boolean(v?.trim())),
+    materialFeel: builder?.materialFeel?.trim() ?? "",
     layoutBase: builder?.layoutBase?.trim() ?? "",
     safeSpace: builder?.safeSpace?.trim() ?? "",
     extraDetails: builder?.extraDetails?.trim() ?? "",
@@ -143,6 +148,15 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const builderExtraDetailsLine = cleanedBuilder.extraDetails
     ? `Builder Extra details: ${cleanedBuilder.extraDetails}`
     : null;
+  const builderAssetsSegments = [
+    cleanedBuilder.assetsHighlights.length > 0
+      ? `highlights=${cleanedBuilder.assetsHighlights.join(", ")}`
+      : null,
+    cleanedBuilder.contextProps.length > 0 ? `props=${cleanedBuilder.contextProps.join(", ")}` : null,
+    cleanedBuilder.materialFeel ? `material=${cleanedBuilder.materialFeel}` : null,
+  ].filter(Boolean);
+  const builderAssetsLine =
+    builderAssetsSegments.length > 0 ? `Builder Assets: ${builderAssetsSegments.join(", ")}` : null;
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -190,6 +204,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     builderLightingLine,
     builderStyleLine,
     builderCompositionLine,
+    builderAssetsLine,
     builderExtraDetailsLine,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",

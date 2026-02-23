@@ -71,6 +71,37 @@ export const VISUAL_STYLE_OPTIONS: EditorPresetOption[] = [
   { value: "muted_palette", label: "Muted palette" },
 ];
 
+export const ASSET_HIGHLIGHTS_OPTIONS: EditorPresetOption[] = [
+  { value: "logo", label: "Logo" },
+  { value: "product_texture", label: "Product texture" },
+  { value: "hero_object", label: "Hero object" },
+  { value: "badge", label: "Badge" },
+  { value: "packaging", label: "Packaging" },
+  { value: "glass_reflection", label: "Glass reflection" },
+  { value: "specular_highlights", label: "Specular highlights" },
+  { value: "fabric_detail", label: "Fabric detail" },
+];
+
+export const CONTEXT_PROPS_OPTIONS: EditorPresetOption[] = [
+  { value: "desk_setup", label: "Desk setup" },
+  { value: "plants", label: "Plants" },
+  { value: "minimal_furniture", label: "Minimal furniture" },
+  { value: "paper_props", label: "Paper props" },
+  { value: "tech_props", label: "Tech props" },
+  { value: "kitchen_props", label: "Kitchen props" },
+  { value: "studio_backdrop", label: "Studio backdrop" },
+  { value: "lifestyle_scene", label: "Lifestyle scene" },
+];
+
+export const MATERIAL_FEEL_OPTIONS: EditorPresetOption[] = [
+  { value: "matte", label: "Matte" },
+  { value: "glossy", label: "Glossy" },
+  { value: "metallic", label: "Metallic" },
+  { value: "glass", label: "Glass" },
+  { value: "fabric", label: "Fabric" },
+  { value: "natural", label: "Natural" },
+];
+
 export const LAYOUT_BASE_OPTIONS: EditorPresetOption[] = [
   { value: "centered", label: "Centered" },
   { value: "rule_of_thirds", label: "Rule of thirds" },

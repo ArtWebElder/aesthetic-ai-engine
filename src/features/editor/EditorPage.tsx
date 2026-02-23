@@ -16,10 +16,13 @@ import { createDefaultSpec, formatToSize } from "@/features/editor/spec-defaults
 import TemplateRenderer from "@/features/editor/TemplateRenderer";
 import {
   ACTION_OPTIONS,
+  ASSET_HIGHLIGHTS_OPTIONS,
+  CONTEXT_PROPS_OPTIONS,
   EXPRESSION_OPTIONS,
   FRAMING_OPTIONS,
   LAYOUT_BASE_OPTIONS,
   LIGHTING_SETUP_OPTIONS,
+  MATERIAL_FEEL_OPTIONS,
   MACRO_STYLE_OPTIONS,
   MOOD_OPTIONS,
   SAFE_SPACE_OPTIONS,
@@ -112,6 +115,15 @@ function normalizeReferenceImages(
   return normalized;
 }
 
+function sanitizeBuilderMulti(values: unknown): string[] {
+  if (!Array.isArray(values)) return [];
+  return Array.from(
+    new Set(values.filter((v): v is string => typeof v === "string").map((v) => v.trim()))
+  )
+    .filter(Boolean)
+    .slice(0, 8);
+}
+
 function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const brand = spec.brand ?? ({} as any);
   const generation = spec.generation ?? ({} as any);
@@ -140,9 +152,10 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       temperature: builder.temperature ?? "",
       mood: builder.mood ?? "",
       macroStyle: builder.macroStyle ?? "",
-      visualStyle: Array.isArray(builder.visualStyle)
-        ? builder.visualStyle.filter((v): v is string => typeof v === "string")
-        : [],
+      visualStyle: sanitizeBuilderMulti(builder.visualStyle),
+      assetsHighlights: sanitizeBuilderMulti(builder.assetsHighlights),
+      contextProps: sanitizeBuilderMulti(builder.contextProps),
+      materialFeel: (builder.materialFeel ?? "").trim(),
       layoutBase: builder.layoutBase ?? "",
       safeSpace: builder.safeSpace ?? "",
       extraDetails: (builder.extraDetails ?? "").slice(0, 140),
@@ -327,6 +340,8 @@ export default function EditorPage() {
   const subjectPreview = subjectPreviewUrl || subjectImageUrl;
   const builder = safeSpec?.builder;
   const visualStyle = builder?.visualStyle ?? [];
+  const assetsHighlights = builder?.assetsHighlights ?? [];
+  const contextProps = builder?.contextProps ?? [];
   const referenceImages = safeSpec?.referenceImages ?? [];
 
   const bgUrl = active?.imageUrl ?? null;
@@ -1106,6 +1121,104 @@ export default function EditorPage() {
                       </button>
                     );
                   })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Assets / Elements</label>
+
+                <div className="space-y-1">
+                  <div className="text-[11px] text-muted-foreground">Highlights</div>
+                  <div className="flex flex-wrap gap-2">
+                    {ASSET_HIGHLIGHTS_OPTIONS.map((option) => {
+                      const active = assetsHighlights.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={[
+                            "px-2 py-1 rounded-md border text-xs transition",
+                            active
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:bg-background",
+                          ].join(" ")}
+                          onClick={() => {
+                            const next = active
+                              ? assetsHighlights.filter((v) => v !== option.value)
+                              : [...assetsHighlights, option.value];
+                            persistSpec({
+                              ...safeSpec,
+                              builder: {
+                                ...builder,
+                                assetsHighlights: Array.from(new Set(next)).slice(0, 8),
+                              },
+                            });
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[11px] text-muted-foreground">Context Props</div>
+                  <div className="flex flex-wrap gap-2">
+                    {CONTEXT_PROPS_OPTIONS.map((option) => {
+                      const active = contextProps.includes(option.value);
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={[
+                            "px-2 py-1 rounded-md border text-xs transition",
+                            active
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border hover:bg-background",
+                          ].join(" ")}
+                          onClick={() => {
+                            const next = active
+                              ? contextProps.filter((v) => v !== option.value)
+                              : [...contextProps, option.value];
+                            persistSpec({
+                              ...safeSpec,
+                              builder: {
+                                ...builder,
+                                contextProps: Array.from(new Set(next)).slice(0, 8),
+                              },
+                            });
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Material Feel</label>
+                  <Select
+                    value={builder?.materialFeel || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, materialFeel: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MATERIAL_FEEL_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
