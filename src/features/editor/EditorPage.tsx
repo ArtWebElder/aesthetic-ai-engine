@@ -38,7 +38,6 @@ import { compilePrompt } from "@/features/engine/prompt-compiler";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -147,6 +146,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     subjectImageUrl: spec.subjectImageUrl ?? null,
     lightingText: spec.lightingText ?? "",
     assetsText: spec.assetsText ?? "",
+    promptDebug: Boolean(spec.promptDebug),
     builder: {
       intensity: clampSize(Number(builder.intensity ?? 70), 0, 100),
       subjectType: (builder.subjectType ?? "").trim(),
@@ -854,7 +854,22 @@ export default function EditorPage() {
             </div>
 
             <div className="pt-2 border-t border-border space-y-3">
-              <div className="text-sm font-medium">Builder</div>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">Builder</div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(safeSpec.promptDebug)}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        promptDebug: e.target.checked,
+                      })
+                    }
+                  />
+                  Debug prompt
+                </label>
+              </div>
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
@@ -1771,92 +1786,6 @@ export default function EditorPage() {
                   })
                 }
               />
-            </div>
-
-            <div className="pt-2 border-t border-border space-y-2">
-              <div className="text-sm font-medium">Subject / Lighting / Assets</div>
-
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Subject</label>
-                <Textarea
-                  value={safeSpec.subjectText ?? ""}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      subjectText: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Lighting</label>
-                <Textarea
-                  value={safeSpec.lightingText ?? ""}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      lightingText: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Assets</label>
-                <Textarea
-                  value={safeSpec.assetsText ?? ""}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      assetsText: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-border space-y-2">
-              <div className="text-sm font-medium">Style / Camera / Composition</div>
-
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Style</label>
-                <Textarea
-                  value={safeSpec.styleText ?? ""}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      styleText: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Camera</label>
-                <Textarea
-                  value={safeSpec.cameraText ?? ""}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      cameraText: e.target.value,
-                    })
-                  }
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Composition</label>
-                <Textarea
-                  value={safeSpec.compositionText ?? ""}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      compositionText: e.target.value,
-                    })
-                  }
-                />
-              </div>
             </div>
 
             <div className="space-y-2">

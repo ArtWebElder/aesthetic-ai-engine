@@ -54,8 +54,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     cameraText,
     compositionText,
     subjectImageUrl,
-    lightingText,
-    assetsText,
+    promptDebug,
     builder,
     referenceImages,
     referenceImageUrl,
@@ -91,8 +90,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const cleanedCamera = cameraText?.trim();
   const cleanedComposition = compositionText?.trim();
   const cleanedSubjectImage = subjectImageUrl?.trim();
-  const cleanedLighting = lightingText?.trim();
-  const cleanedAssets = assetsText?.trim();
+  const debugEnabled = Boolean(promptDebug);
   const cleanedBuilder = {
     intensity:
       typeof builder?.intensity === "number"
@@ -250,8 +248,6 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   ].filter(Boolean);
   const builderAssetsLine =
     builderAssetsSegments.length > 0 ? `Builder Assets: ${builderAssetsSegments.join(", ")}` : null;
-  const builderIntensityLine =
-    cleanedBuilder.intensity !== 70 ? `Builder Intensity: ${cleanedBuilder.intensity}%` : null;
   const builderCameraSegments = [
     builderLabels.lens ? `lens=${builderLabels.lens}` : null,
     builderLabels.depth ? `depth=${builderLabels.depth}` : null,
@@ -364,20 +360,17 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     cleanedStyle ? `Style direction: ${cleanedStyle}` : null,
     cleanedCamera ? `Camera / lens: ${cleanedCamera}` : null,
     cleanedComposition ? `Composition / layout: ${cleanedComposition}` : null,
-    cleanedLighting ? `Lighting / mood: ${cleanedLighting}` : null,
-    cleanedAssets ? `Assets / elements: ${cleanedAssets}` : null,
     subjectReferenceLine,
     cleanedContext ? `context: ${cleanedContext}` : null,
     ...referenceImageLines,
     sceneDirectiveLine,
-    builderIntensityLine,
-    builderSubjectLineText,
-    builderLightingLine,
-    builderStyleLine,
-    builderCompositionLine,
-    builderAssetsLine,
-    builderCameraLine,
-    builderExtraDetailsLine,
+    debugEnabled ? builderSubjectLineText : null,
+    debugEnabled ? builderLightingLine : null,
+    debugEnabled ? builderStyleLine : null,
+    debugEnabled ? builderCompositionLine : null,
+    debugEnabled ? builderAssetsLine : null,
+    debugEnabled ? builderCameraLine : null,
+    debugEnabled ? builderExtraDetailsLine : null,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",
   ]

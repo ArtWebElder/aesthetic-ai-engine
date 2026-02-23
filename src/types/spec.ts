@@ -145,8 +145,10 @@ export interface ProjectSpec {
   cameraText?: string;
   compositionText?: string;
   subjectImageUrl?: string | null;
+  /** @deprecated Legacy free-text builder fields (ignored in V1.7) */
   lightingText?: string;
   assetsText?: string;
+  promptDebug?: boolean;
   builder?: BuilderSpec;
   referenceImages?: ReferenceImage[];
   /** @deprecated Use referenceImages instead. */

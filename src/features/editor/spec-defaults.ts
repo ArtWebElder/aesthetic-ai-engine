@@ -110,6 +110,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     subjectImageUrl: null,
     lightingText: "",
     assetsText: "",
+    promptDebug: false,
     builder: {
       intensity: 70,
       subjectType: "",
