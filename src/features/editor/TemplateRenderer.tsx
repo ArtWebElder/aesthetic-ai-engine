@@ -2,6 +2,7 @@
 import React from "react";
 import type { ProjectSpec } from "@/types/spec";
 import { TEMPLATE_CATALOG } from "@/features/editor/templates/registry";
+import { resolveStyleVars } from "@/features/editor/style-resolver";
 
 // ✅ E-com template(s)
 import TEcom01 from "@/features/editor/templates/ecom/ecom_01";
@@ -47,10 +48,10 @@ function FallbackTemplate({
   imageUrl?: string | null;
   showGrid?: boolean;
 }) {
-  const tpl = TEMPLATE_CATALOG.find((t) => t.id === spec.templateId);
+  const vars = resolveStyleVars(spec);
 
-  return (
-    <div className="relative h-full w-full overflow-hidden rounded-lg">
+return (
+  <div className="relative h-full w-full overflow-hidden rounded-lg" style={vars}>
       {/* base image */}
       <div className="absolute inset-0">
         {imageUrl ? (
