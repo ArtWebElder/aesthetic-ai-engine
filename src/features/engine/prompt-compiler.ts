@@ -195,7 +195,17 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     const source = entry.url.startsWith("data:") ? "uploaded (embedded)" : entry.url;
     const notesSuffix = entry.notes ? ` - ${entry.notes}` : "";
     const lockRealismFlag = entry.lockRealism ? "Y" : "N";
-    return `Reference image (${entry.role}, weight=${entry.weight}, lockRealism=${lockRealismFlag}): ${source}${notesSuffix}`;
+    const roleGuidance =
+      entry.role === "style"
+        ? "use for visual style (lighting, grading, textures)"
+        : entry.role === "composition"
+        ? "use for layout/composition (framing, spacing, safe areas)"
+        : entry.role === "product"
+        ? "use for product fidelity (shape, details, materials)"
+        : entry.role === "brand"
+        ? "use for brand identity (palette, tone, consistency)"
+        : "general reference";
+    return `Reference image (${entry.role}, weight=${entry.weight}, lockRealism=${lockRealismFlag}): ${source}; ${roleGuidance}${notesSuffix}`;
   });
   const builderSubjectLine =
     [
@@ -250,6 +260,72 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   ].filter(Boolean);
   const builderCameraLine =
     builderCameraSegments.length > 0 ? `Builder Camera: ${builderCameraSegments.join(", ")}` : null;
+  const sceneSubjectParts = [
+    builderLabels.subjectType || null,
+    builderLabels.framing || null,
+    builderLabels.expression || null,
+    builderLabels.action ? `action=${builderLabels.action}` : null,
+  ].filter(Boolean);
+  const sceneLightingCore = [
+    builderLabels.lightingSetup || null,
+    [builderLabels.temperature || null, builderLabels.mood || null]
+      .filter(Boolean)
+      .join(", "),
+  ].filter(Boolean);
+  const sceneLightingLine =
+    sceneLightingCore.length > 0
+      ? `lighting=${sceneLightingCore[0]}${sceneLightingCore[1] ? ` (${sceneLightingCore[1]})` : ""}`
+      : null;
+  const sceneStyleCore = [
+    builderLabels.macroStyle || null,
+    builderLabels.visualStyle.length > 0 ? builderLabels.visualStyle.join(", ") : null,
+  ].filter(Boolean);
+  const sceneStyleLine =
+    sceneStyleCore.length > 0
+      ? `style=${sceneStyleCore[0]}${sceneStyleCore[1] ? ` (${sceneStyleCore[1]})` : ""}`
+      : null;
+  const sceneCompositionParts = [
+    builderLabels.layoutBase || null,
+    builderLabels.safeSpace ? `safe space=${builderLabels.safeSpace}` : null,
+  ].filter(Boolean);
+  const sceneCompositionLine =
+    sceneCompositionParts.length > 0 ? `composition=${sceneCompositionParts.join(", ")}` : null;
+  const sceneAssetsParts = [
+    builderLabels.assetsHighlights.length > 0
+      ? `highlights(${builderLabels.assetsHighlights.join(", ")})`
+      : null,
+    builderLabels.contextProps.length > 0 ? `props(${builderLabels.contextProps.join(", ")})` : null,
+    builderLabels.materialFeel ? `material=${builderLabels.materialFeel}` : null,
+  ].filter(Boolean);
+  const sceneAssetsLine =
+    sceneAssetsParts.length > 0 ? `assets=${sceneAssetsParts.join(", ")}` : null;
+  const sceneCameraParts = [
+    builderLabels.lens || null,
+    builderLabels.depth || null,
+    builderLabels.angle || null,
+    builderLabels.motion || null,
+  ].filter(Boolean);
+  const sceneCameraLine =
+    sceneCameraParts.length > 0 ? `camera=${sceneCameraParts.join(", ")}` : null;
+  const sceneExtraLine = cleanedBuilder.extraDetails
+    ? `extra="${cleanedBuilder.extraDetails}"`
+    : null;
+  const sceneIntensityLine =
+    cleanedBuilder.intensity !== 70 ? `intensity=${cleanedBuilder.intensity}%` : null;
+  const sceneDirectiveSegments = [
+    sceneSubjectParts.length > 0 ? sceneSubjectParts.join(", ") : null,
+    sceneLightingLine,
+    sceneStyleLine,
+    sceneCompositionLine,
+    sceneAssetsLine,
+    sceneCameraLine,
+    sceneExtraLine,
+    sceneIntensityLine,
+  ].filter(Boolean);
+  const sceneDirectiveLine =
+    sceneDirectiveSegments.length > 0
+      ? `Scene directive: ${sceneDirectiveSegments.join("; ")}.`
+      : null;
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -293,6 +369,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     subjectReferenceLine,
     cleanedContext ? `context: ${cleanedContext}` : null,
     ...referenceImageLines,
+    sceneDirectiveLine,
     builderIntensityLine,
     builderSubjectLineText,
     builderLightingLine,
