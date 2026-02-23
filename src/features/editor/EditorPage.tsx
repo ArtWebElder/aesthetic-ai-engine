@@ -187,6 +187,8 @@ export default function EditorPage() {
     };
   }, [spec]);
 
+  const bgUrl = active?.imageUrl ?? null;
+
   function persist(nextProject: EditorProject) {
     setProject(nextProject);
     // upsertProject espera Project (sem generations no tipo), então fazemos cast seguro:
@@ -394,7 +396,7 @@ export default function EditorPage() {
                   <div className="w-full h-full">
                     <TemplateRenderer
                       spec={spec}
-                      imageUrl={active?.imageUrl ?? null}
+                      imageUrl={bgUrl}
                       showGrid={false}
                     />
                   </div>
@@ -714,6 +716,4 @@ export default function EditorPage() {
     </div>
   );
 } 
-
-
 
