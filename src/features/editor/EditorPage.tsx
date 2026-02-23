@@ -64,6 +64,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     styleText: spec.styleText ?? "",
     cameraText: spec.cameraText ?? "",
     compositionText: spec.compositionText ?? "",
+    subjectImageUrl: spec.subjectImageUrl ?? null,
     lightingText: spec.lightingText ?? "",
     assetsText: spec.assetsText ?? "",
     referenceImageUrl: spec.referenceImageUrl ?? null,
@@ -193,6 +194,7 @@ export default function EditorPage() {
 
   const [project, setProject] = useState<EditorProject | null>(null);
   const [spec, setSpec] = useState<ProjectSpec | null>(null);
+  const [subjectPreviewUrl, setSubjectPreviewUrl] = useState<string | null>(null);
   const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
 
   // carrega projeto por ID
@@ -211,11 +213,14 @@ export default function EditorPage() {
 
   useEffect(() => {
     return () => {
+      if (subjectPreviewUrl) {
+        URL.revokeObjectURL(subjectPreviewUrl);
+      }
       if (referencePreviewUrl) {
         URL.revokeObjectURL(referencePreviewUrl);
       }
     };
-  }, [referencePreviewUrl]);
+  }, [subjectPreviewUrl, referencePreviewUrl]);
 
   // geração ativa (placeholder)
   const active = useMemo(() => {
@@ -241,6 +246,8 @@ export default function EditorPage() {
   const paletteMode = safeSpec?.brand.paletteMode ?? "mono";
   const showSecondary = paletteMode === "duo" || paletteMode === "tri" || paletteMode === "custom";
   const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
+  const subjectImageUrl = (safeSpec?.subjectImageUrl ?? "").trim();
+  const subjectPreview = subjectPreviewUrl || subjectImageUrl;
   const referenceImageUrl = (safeSpec?.referenceImageUrl ?? "").trim();
   const previewUrl = referencePreviewUrl || referenceImageUrl;
 
@@ -475,6 +482,62 @@ export default function EditorPage() {
           </div>
 
           <div className="p-4 space-y-4 overflow-auto h-full">
+            <div className="pt-2 border-t border-border space-y-2">
+              <div className="text-sm font-medium">Avatar / Subject Photo</div>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+
+                  const objectUrl = URL.createObjectURL(file);
+                  setSubjectPreviewUrl((prev) => {
+                    if (prev) URL.revokeObjectURL(prev);
+                    return objectUrl;
+                  });
+
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const result = typeof reader.result === "string" ? reader.result : null;
+                    persistSpec({
+                      ...safeSpec,
+                      subjectImageUrl: result,
+                    });
+                  };
+                  reader.readAsDataURL(file);
+                }}
+                className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:text-foreground"
+              />
+
+              {subjectPreview ? (
+                <div className="space-y-2">
+                  <img
+                    src={subjectPreview}
+                    alt="Subject preview"
+                    className="h-[72px] w-[72px] rounded-full border border-border object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSubjectPreviewUrl((prev) => {
+                        if (prev) URL.revokeObjectURL(prev);
+                        return null;
+                      });
+                      persistSpec({
+                        ...safeSpec,
+                        subjectImageUrl: null,
+                      });
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+
             {/* PALETTE */}
             <div className="space-y-3">
               <div className="text-sm font-medium">Palette</div>

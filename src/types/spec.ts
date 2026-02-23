@@ -111,6 +111,7 @@ export interface ProjectSpec {
   styleText?: string;
   cameraText?: string;
   compositionText?: string;
+  subjectImageUrl?: string | null;
   lightingText?: string;
   assetsText?: string;
   referenceImageUrl?: string | null;

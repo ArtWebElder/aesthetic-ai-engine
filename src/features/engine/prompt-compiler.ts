@@ -34,6 +34,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     styleText,
     cameraText,
     compositionText,
+    subjectImageUrl,
     lightingText,
     assetsText,
     referenceImageUrl,
@@ -68,9 +69,20 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const cleanedStyle = styleText?.trim();
   const cleanedCamera = cameraText?.trim();
   const cleanedComposition = compositionText?.trim();
+  const cleanedSubjectImage = subjectImageUrl?.trim();
   const cleanedLighting = lightingText?.trim();
   const cleanedAssets = assetsText?.trim();
   const cleanedReferenceImage = referenceImageUrl?.trim();
+  const subjectReferenceLine = cleanedSubjectImage
+    ? cleanedSubjectImage.startsWith("data:")
+      ? "Subject reference image: uploaded (embedded)"
+      : `Subject reference image: ${cleanedSubjectImage}`
+    : null;
+  const referenceImageLine = cleanedReferenceImage
+    ? cleanedReferenceImage.startsWith("data:")
+      ? "Reference image: uploaded (embedded)"
+      : `Reference image: ${cleanedReferenceImage}`
+    : null;
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -111,8 +123,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     cleanedComposition ? `Composition / layout: ${cleanedComposition}` : null,
     cleanedLighting ? `Lighting / mood: ${cleanedLighting}` : null,
     cleanedAssets ? `Assets / elements: ${cleanedAssets}` : null,
+    subjectReferenceLine,
     cleanedContext ? `context: ${cleanedContext}` : null,
-    cleanedReferenceImage ? `Reference image: ${cleanedReferenceImage}` : null,
+    referenceImageLine,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",
   ]

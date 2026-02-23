@@ -107,6 +107,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     styleText: "",
     cameraText: "",
     compositionText: "",
+    subjectImageUrl: null,
     lightingText: "",
     assetsText: "",
     referenceImageUrl: null,
