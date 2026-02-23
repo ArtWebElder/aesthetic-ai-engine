@@ -1,6 +1,8 @@
-import { createProject, upsertProject } from "../features/projects/store"
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+
+import { createProject, upsertProject } from "@/features/projects/store";
+
 import {
   Dialog,
   DialogContent,
@@ -18,9 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-import { createProject } from "../features/projects/store"
 import type { ProjectFormat } from "@/types/spec";
-
 import {
   ProjectType,
   FORMAT_OPTIONS,
@@ -38,41 +38,67 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
 
   const [name, setName] = useState("");
   const [type, setType] = useState<ProjectType>("social_post");
-  const [format, setFormat] = useState("");
-  const [style, setStyle] = useState("");
+  const [format, setFormat] = useState<string>("");
+  const [style, setStyle] = useState<string>("");
 
-  const formats = FORMAT_OPTIONS[type] || [];
+  const formats = useMemo(() => FORMAT_OPTIONS[type] || [], [type]);
+
+  // ✅ sempre que abrir modal ou trocar type, garante um format válido
+  useEffect(() => {
+    if (!open) return;
+
+    const first = formats[0]?.value ?? "";
+    // se o format atual não existe mais nessa lista, reseta pro primeiro
+    const stillValid = !!formats.find((f) => f.value === format);
+
+    if (!format || !stillValid) setFormat(first);
+
+    // style default (se vazio)
+    if (!style) setStyle(STYLE_PRESETS[0]?.value ?? "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, type, formats]);
 
   const handleCreate = () => {
-  const safeName = (name || "").trim() || "Untitled Project";
-  if (!format) return;
+    const safeName = (name || "").trim() || "Untitled Project";
+    if (!format) return;
 
-  const p = createProject(safeName, format as ProjectFormat);
+    // ✅ createProject já cria o spec completo baseado no format
+    const p = createProject(safeName, format as ProjectFormat);
 
-  // ✅ grava o type/style que você escolheu no modal
-  const next = {
-    ...p,
-    name: safeName,
-    spec: {
-      ...p.spec,
-      module: type,                 // <-- conecta o Type
-      format: format as any,         // já vem, mas mantém
-      stylePreset: style || p.spec.stylePreset, // <-- conecta o Style
-    },
+    // ✅ só aplica stylePreset se você escolheu algo
+    const next = {
+      ...p,
+      name: safeName,
+      spec: {
+        ...p.spec,
+        stylePreset: (style || p.spec.stylePreset) as any,
+      },
+    };
+
+    upsertProject(next);
+
+    // reset UI
+    onOpenChange(false);
+    setName("");
+    setStyle("");
+    // não precisa setFormat("") porque ele vai ser re-selecionado pelo useEffect ao abrir
+
+    // ✅ vai direto pro editor/canvas
+    navigate(`/app/editor/${next.id}`);
   };
 
-  upsertProject(next);
-
-  onOpenChange(false);
-  setName("");
-  setFormat("");
-  setStyle("");
-
-  navigate(`/app/projects/${next.id}`);
-};
-
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        onOpenChange(v);
+        if (!v) {
+          // quando fecha, limpa só o que faz sentido
+          setName("");
+          setStyle("");
+        }
+      }}
+    >
       <DialogContent className="glass-surface-strong sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-heading">New Project</DialogTitle>
@@ -94,7 +120,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
               value={type}
               onValueChange={(v) => {
                 setType(v as ProjectType);
-                setFormat("");
+                // NÃO zera format aqui; o useEffect vai setar o primeiro válido
               }}
             >
               <SelectTrigger>
@@ -143,6 +169,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
           </div>
 
           <Button
+            type="button"
             onClick={handleCreate}
             className="w-full mt-2"
             disabled={!format}
