@@ -57,6 +57,14 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     ...spec,
     contextText: spec.contextText ?? "",
     referenceImageUrl: spec.referenceImageUrl ?? null,
+    brand: {
+      ...spec.brand,
+      paletteMode: spec.brand.paletteMode ?? "mono",
+      accent2: spec.brand.accent2 ?? "#888888",
+      neutralBg: spec.brand.neutralBg ?? "#0f172a",
+      neutralSurface: spec.brand.neutralSurface ?? "#1e293b",
+      neutralText: spec.brand.neutralText ?? "#ffffff",
+    },
     generation: {
       ...spec.generation,
       realism: clampSize(Number(spec.generation.realism ?? 70), 0, 100),
@@ -499,6 +507,110 @@ export default function EditorPage() {
                     <SelectItem value="satoshi">Satoshi</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">Palette mode</label>
+                <Select
+                  value={spec.brand.paletteMode ?? "mono"}
+                  onValueChange={(v) =>
+                    persistSpec({
+                      ...spec,
+                      brand: {
+                        ...spec.brand,
+                        paletteMode: v as "mono" | "duo" | "tri" | "custom",
+                      },
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a palette mode" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mono">Mono</SelectItem>
+                    <SelectItem value="duo">Duo</SelectItem>
+                    <SelectItem value="tri">Tri</SelectItem>
+                    <SelectItem value="custom">Custom</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Accent 2</label>
+                  <input
+                    type="color"
+                    value={
+                      spec.brand.accent2?.startsWith("#")
+                        ? spec.brand.accent2
+                        : "#888888"
+                    }
+                    onChange={(e) =>
+                      persistSpec({
+                        ...spec,
+                        brand: { ...spec.brand, accent2: e.target.value },
+                      })
+                    }
+                    className="h-10 w-full rounded-md border border-border bg-transparent"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Neutral BG</label>
+                  <input
+                    type="color"
+                    value={
+                      spec.brand.neutralBg?.startsWith("#")
+                        ? spec.brand.neutralBg
+                        : "#0f172a"
+                    }
+                    onChange={(e) =>
+                      persistSpec({
+                        ...spec,
+                        brand: { ...spec.brand, neutralBg: e.target.value },
+                      })
+                    }
+                    className="h-10 w-full rounded-md border border-border bg-transparent"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Neutral Surface</label>
+                  <input
+                    type="color"
+                    value={
+                      spec.brand.neutralSurface?.startsWith("#")
+                        ? spec.brand.neutralSurface
+                        : "#1e293b"
+                    }
+                    onChange={(e) =>
+                      persistSpec({
+                        ...spec,
+                        brand: { ...spec.brand, neutralSurface: e.target.value },
+                      })
+                    }
+                    className="h-10 w-full rounded-md border border-border bg-transparent"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Neutral Text</label>
+                  <input
+                    type="color"
+                    value={
+                      spec.brand.neutralText?.startsWith("#")
+                        ? spec.brand.neutralText
+                        : "#ffffff"
+                    }
+                    onChange={(e) =>
+                      persistSpec({
+                        ...spec,
+                        brand: { ...spec.brand, neutralText: e.target.value },
+                      })
+                    }
+                    className="h-10 w-full rounded-md border border-border bg-transparent"
+                  />
+                </div>
               </div>
             </div>
 

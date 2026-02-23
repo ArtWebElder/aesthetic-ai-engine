@@ -58,6 +58,12 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const effectsHints = `text style: outline=${effects.textOutline}/10 shadow=${effects.shadow}/10 depth=${effects.depth3d}/10 tilt=${effects.tilt}deg`;
   const cleanedContext = contextText?.trim();
   const cleanedReferenceImage = referenceImageUrl?.trim();
+  const paletteMode = brand.paletteMode ?? "mono";
+  const primaryColor = brand.accent || brand.primary;
+  const secondaryColor = brand.accent2 ?? brand.secondary;
+  const neutralBackground = brand.neutralBg ?? "#0f172a";
+  const surfaceColor = brand.neutralSurface ?? "#1e293b";
+  const textColor = brand.neutralText ?? brand.primary ?? "#ffffff";
   const realismValue =
     typeof generation.realism === "number"
       ? Math.max(0, Math.min(100, Math.round(generation.realism)))
@@ -71,6 +77,12 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     `template: ${templateId}`,
     textHints,
     effectsHints,
+    `Color palette mode: ${paletteMode}`,
+    `Primary color: ${primaryColor}`,
+    `Secondary color: ${secondaryColor}`,
+    `Neutral background: ${neutralBackground}`,
+    `Surface color: ${surfaceColor}`,
+    `Text color: ${textColor}`,
     cleanedContext ? `context: ${cleanedContext}` : null,
     cleanedReferenceImage ? `Reference image: ${cleanedReferenceImage}` : null,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,

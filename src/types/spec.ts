@@ -67,6 +67,11 @@ export interface BrandSpec {
   primary: string;
   secondary: string;
   accent: string;
+  paletteMode?: "mono" | "duo" | "tri" | "custom";
+  accent2?: string;
+  neutralBg?: string;
+  neutralSurface?: string;
+  neutralText?: string;
   accentMode: AccentMode;
   fontPreset: FontPreset;
   autoContrast: boolean;
