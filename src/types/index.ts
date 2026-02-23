@@ -1,4 +1,4 @@
-// src/types/index.ts
+import type { ProjectFormat as FormatPreset, StylePreset } from "@/types/spec";
 
 export type ProjectType = "social_post" | "ecom_banner" | "photoshoot";
 
