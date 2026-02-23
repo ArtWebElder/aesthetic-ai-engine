@@ -3,30 +3,15 @@ import { useNavigate } from "react-router-dom";
 
 import { createProject, upsertProject } from "@/features/projects/store";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-import type { ProjectFormat } from "@/types/spec";
-import {
-  ProjectType,
-  FORMAT_OPTIONS,
-  STYLE_PRESETS,
-  PROJECT_TYPE_LABELS,
-} from "@/types";
+import type { ProjectFormat, StylePreset } from "@/types/spec";
+import type { ProjectType } from "@/types";
+import { FORMAT_OPTIONS, STYLE_PRESETS, PROJECT_TYPE_LABELS } from "@/types";
 
 interface CreateProjectModalProps {
   open: boolean;
@@ -38,23 +23,20 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
 
   const [name, setName] = useState("");
   const [type, setType] = useState<ProjectType>("social_post");
-  const [format, setFormat] = useState<string>("");
-  const [style, setStyle] = useState<string>("");
+  const [format, setFormat] = useState<ProjectFormat | "">("");
+  const [style, setStyle] = useState<StylePreset | "">("");
 
   const formats = useMemo(() => FORMAT_OPTIONS[type] || [], [type]);
 
-  // ✅ sempre que abrir modal ou trocar type, garante um format válido
   useEffect(() => {
     if (!open) return;
 
-    const first = formats[0]?.value ?? "";
-    // se o format atual não existe mais nessa lista, reseta pro primeiro
+    const first = (formats[0]?.value ?? "") as ProjectFormat | "";
     const stillValid = !!formats.find((f) => f.value === format);
 
     if (!format || !stillValid) setFormat(first);
 
-    // style default (se vazio)
-    if (!style) setStyle(STYLE_PRESETS[0]?.value ?? "");
+    if (!style) setStyle((STYLE_PRESETS[0]?.value ?? "") as StylePreset | "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, type, formats]);
 
@@ -62,28 +44,23 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
     const safeName = (name || "").trim() || "Untitled Project";
     if (!format) return;
 
-    // ✅ createProject já cria o spec completo baseado no format
-    const p = createProject(safeName, format as ProjectFormat);
+    const p = createProject(safeName, format);
 
-    // ✅ só aplica stylePreset se você escolheu algo
     const next = {
       ...p,
       name: safeName,
       spec: {
         ...p.spec,
-        stylePreset: (style || p.spec.stylePreset) as any,
+        stylePreset: (style || p.spec.stylePreset) as StylePreset,
       },
     };
 
     upsertProject(next);
 
-    // reset UI
     onOpenChange(false);
     setName("");
     setStyle("");
-    // não precisa setFormat("") porque ele vai ser re-selecionado pelo useEffect ao abrir
 
-    // ✅ vai direto pro editor/canvas
     navigate(`/app/editor/${next.id}`);
   };
 
@@ -93,7 +70,6 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
       onOpenChange={(v) => {
         onOpenChange(v);
         if (!v) {
-          // quando fecha, limpa só o que faz sentido
           setName("");
           setStyle("");
         }
@@ -118,10 +94,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
             <Label>Type</Label>
             <Select
               value={type}
-              onValueChange={(v) => {
-                setType(v as ProjectType);
-                // NÃO zera format aqui; o useEffect vai setar o primeiro válido
-              }}
+              onValueChange={(v) => setType(v as ProjectType)}
             >
               <SelectTrigger>
                 <SelectValue />
@@ -138,7 +111,10 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
 
           <div className="space-y-2">
             <Label>Format</Label>
-            <Select value={format} onValueChange={setFormat}>
+            <Select
+              value={format}
+              onValueChange={(v) => setFormat(v as ProjectFormat)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select format" />
               </SelectTrigger>
@@ -154,7 +130,10 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
 
           <div className="space-y-2">
             <Label>Style Preset</Label>
-            <Select value={style} onValueChange={setStyle}>
+            <Select
+              value={style}
+              onValueChange={(v) => setStyle(v as StylePreset)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Select style" />
               </SelectTrigger>
