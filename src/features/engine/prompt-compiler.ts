@@ -1,6 +1,25 @@
 // src/features/engine/prompt-compiler.ts
 
 import type { ProjectSpec } from "@/types/spec";
+import {
+  ACTION_OPTIONS,
+  ANGLE_OPTIONS,
+  ASSET_HIGHLIGHTS_OPTIONS,
+  CONTEXT_PROPS_OPTIONS,
+  DEPTH_OPTIONS,
+  EXPRESSION_OPTIONS,
+  FRAMING_OPTIONS,
+  LAYOUT_BASE_OPTIONS,
+  LENS_OPTIONS,
+  LIGHTING_SETUP_OPTIONS,
+  MACRO_STYLE_OPTIONS,
+  MATERIAL_FEEL_OPTIONS,
+  MOOD_OPTIONS,
+  SAFE_SPACE_OPTIONS,
+  SUBJECT_TYPE_OPTIONS,
+  TEMPERATURE_OPTIONS,
+  VISUAL_STYLE_OPTIONS,
+} from "@/features/editor/editor-presets";
 
 export interface CompiledPrompt {
   prompt: string;
@@ -102,6 +121,50 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     extraDetails: builder?.extraDetails?.trim() ?? "",
   };
   const cleanedReferenceImage = referenceImageUrl?.trim();
+  const toLabel = (
+    value: string,
+    options: Array<{ value: string; label: string }>
+  ): string => options.find((opt) => opt.value === value)?.label ?? value;
+  const toLabelList = (
+    values: string[],
+    options: Array<{ value: string; label: string }>
+  ): string[] => values.map((value) => toLabel(value, options));
+  const builderLabels = {
+    subjectType: cleanedBuilder.subjectType
+      ? toLabel(cleanedBuilder.subjectType, SUBJECT_TYPE_OPTIONS)
+      : "",
+    framing: cleanedBuilder.framing ? toLabel(cleanedBuilder.framing, FRAMING_OPTIONS) : "",
+    expression: cleanedBuilder.expression
+      ? toLabel(cleanedBuilder.expression, EXPRESSION_OPTIONS)
+      : "",
+    action: cleanedBuilder.action ? toLabel(cleanedBuilder.action, ACTION_OPTIONS) : "",
+    lightingSetup: cleanedBuilder.lightingSetup
+      ? toLabel(cleanedBuilder.lightingSetup, LIGHTING_SETUP_OPTIONS)
+      : "",
+    temperature: cleanedBuilder.temperature
+      ? toLabel(cleanedBuilder.temperature, TEMPERATURE_OPTIONS)
+      : "",
+    mood: cleanedBuilder.mood ? toLabel(cleanedBuilder.mood, MOOD_OPTIONS) : "",
+    macroStyle: cleanedBuilder.macroStyle
+      ? toLabel(cleanedBuilder.macroStyle, MACRO_STYLE_OPTIONS)
+      : "",
+    visualStyle: toLabelList(cleanedBuilder.visualStyle, VISUAL_STYLE_OPTIONS),
+    assetsHighlights: toLabelList(cleanedBuilder.assetsHighlights, ASSET_HIGHLIGHTS_OPTIONS),
+    contextProps: toLabelList(cleanedBuilder.contextProps, CONTEXT_PROPS_OPTIONS),
+    materialFeel: cleanedBuilder.materialFeel
+      ? toLabel(cleanedBuilder.materialFeel, MATERIAL_FEEL_OPTIONS)
+      : "",
+    lens: cleanedBuilder.lens ? toLabel(cleanedBuilder.lens, LENS_OPTIONS) : "",
+    depth: cleanedBuilder.depth ? toLabel(cleanedBuilder.depth, DEPTH_OPTIONS) : "",
+    angle: cleanedBuilder.angle ? toLabel(cleanedBuilder.angle, ANGLE_OPTIONS) : "",
+    motion: cleanedBuilder.motion ? toLabel(cleanedBuilder.motion, MOTION_OPTIONS) : "",
+    layoutBase: cleanedBuilder.layoutBase
+      ? toLabel(cleanedBuilder.layoutBase, LAYOUT_BASE_OPTIONS)
+      : "",
+    safeSpace: cleanedBuilder.safeSpace
+      ? toLabel(cleanedBuilder.safeSpace, SAFE_SPACE_OPTIONS)
+      : "",
+  };
   const subjectReferenceLine = cleanedSubjectImage
     ? cleanedSubjectImage.startsWith("data:")
       ? "Subject reference image: uploaded (embedded)"
@@ -135,42 +198,55 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     return `Reference image (${entry.role}, weight=${entry.weight}, lockRealism=${lockRealismFlag}): ${source}${notesSuffix}`;
   });
   const builderSubjectLine =
-    cleanedBuilder.subjectType ||
-    cleanedBuilder.framing ||
-    cleanedBuilder.expression ||
-    cleanedBuilder.action
-      ? `Builder Subject: ${cleanedBuilder.subjectType || "n/a"}, framing=${cleanedBuilder.framing || "n/a"}, expression=${cleanedBuilder.expression || "n/a"}, action=${cleanedBuilder.action || "n/a"}`
-      : null;
+    [
+      builderLabels.subjectType ? `type=${builderLabels.subjectType}` : null,
+      builderLabels.framing ? `framing=${builderLabels.framing}` : null,
+      builderLabels.expression ? `expression=${builderLabels.expression}` : null,
+      builderLabels.action ? `action=${builderLabels.action}` : null,
+    ].filter(Boolean);
+  const builderSubjectLineParts = builderSubjectLine.join(", ");
+  const builderSubjectLineText =
+    builderSubjectLineParts.length > 0 ? `Builder Subject: ${builderSubjectLineParts}` : null;
+  const builderLightingParts = [
+    builderLabels.lightingSetup ? `setup=${builderLabels.lightingSetup}` : null,
+    builderLabels.temperature ? `temp=${builderLabels.temperature}` : null,
+    builderLabels.mood ? `mood=${builderLabels.mood}` : null,
+  ].filter(Boolean);
   const builderLightingLine =
-    cleanedBuilder.lightingSetup || cleanedBuilder.temperature || cleanedBuilder.mood
-      ? `Builder Lighting: setup=${cleanedBuilder.lightingSetup || "n/a"}, temp=${cleanedBuilder.temperature || "n/a"}, mood=${cleanedBuilder.mood || "n/a"}`
-      : null;
+    builderLightingParts.length > 0 ? `Builder Lighting: ${builderLightingParts.join(", ")}` : null;
+  const builderStyleParts = [
+    builderLabels.macroStyle ? `macro=${builderLabels.macroStyle}` : null,
+    builderLabels.visualStyle.length > 0 ? `visual=${builderLabels.visualStyle.join(", ")}` : null,
+  ].filter(Boolean);
   const builderStyleLine =
-    cleanedBuilder.macroStyle || cleanedBuilder.visualStyle.length > 0
-      ? `Builder Style: macro=${cleanedBuilder.macroStyle || "n/a"}, visual=${cleanedBuilder.visualStyle.join(", ") || "n/a"}`
-      : null;
+    builderStyleParts.length > 0 ? `Builder Style: ${builderStyleParts.join(", ")}` : null;
+  const builderCompositionParts = [
+    builderLabels.layoutBase ? `layout=${builderLabels.layoutBase}` : null,
+    builderLabels.safeSpace ? `safeSpace=${builderLabels.safeSpace}` : null,
+  ].filter(Boolean);
   const builderCompositionLine =
-    cleanedBuilder.layoutBase || cleanedBuilder.safeSpace
-      ? `Builder Composition: layout=${cleanedBuilder.layoutBase || "n/a"}, safeSpace=${cleanedBuilder.safeSpace || "n/a"}`
+    builderCompositionParts.length > 0
+      ? `Builder Composition: ${builderCompositionParts.join(", ")}`
       : null;
   const builderExtraDetailsLine = cleanedBuilder.extraDetails
     ? `Builder Extra details: ${cleanedBuilder.extraDetails}`
     : null;
   const builderAssetsSegments = [
-    cleanedBuilder.assetsHighlights.length > 0
-      ? `highlights=${cleanedBuilder.assetsHighlights.join(", ")}`
+    builderLabels.assetsHighlights.length > 0
+      ? `highlights=${builderLabels.assetsHighlights.join(", ")}`
       : null,
-    cleanedBuilder.contextProps.length > 0 ? `props=${cleanedBuilder.contextProps.join(", ")}` : null,
-    cleanedBuilder.materialFeel ? `material=${cleanedBuilder.materialFeel}` : null,
+    builderLabels.contextProps.length > 0 ? `props=${builderLabels.contextProps.join(", ")}` : null,
+    builderLabels.materialFeel ? `material=${builderLabels.materialFeel}` : null,
   ].filter(Boolean);
   const builderAssetsLine =
     builderAssetsSegments.length > 0 ? `Builder Assets: ${builderAssetsSegments.join(", ")}` : null;
-  const builderIntensityLine = `Builder Intensity: ${cleanedBuilder.intensity}%`;
+  const builderIntensityLine =
+    cleanedBuilder.intensity !== 70 ? `Builder Intensity: ${cleanedBuilder.intensity}%` : null;
   const builderCameraSegments = [
-    cleanedBuilder.lens ? `lens=${cleanedBuilder.lens}` : null,
-    cleanedBuilder.depth ? `depth=${cleanedBuilder.depth}` : null,
-    cleanedBuilder.angle ? `angle=${cleanedBuilder.angle}` : null,
-    cleanedBuilder.motion ? `motion=${cleanedBuilder.motion}` : null,
+    builderLabels.lens ? `lens=${builderLabels.lens}` : null,
+    builderLabels.depth ? `depth=${builderLabels.depth}` : null,
+    builderLabels.angle ? `angle=${builderLabels.angle}` : null,
+    builderLabels.motion ? `motion=${builderLabels.motion}` : null,
   ].filter(Boolean);
   const builderCameraLine =
     builderCameraSegments.length > 0 ? `Builder Camera: ${builderCameraSegments.join(", ")}` : null;
@@ -218,7 +294,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     cleanedContext ? `context: ${cleanedContext}` : null,
     ...referenceImageLines,
     builderIntensityLine,
-    builderSubjectLine,
+    builderSubjectLineText,
     builderLightingLine,
     builderStyleLine,
     builderCompositionLine,
