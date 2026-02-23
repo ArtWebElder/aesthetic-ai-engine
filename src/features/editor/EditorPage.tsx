@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import type {
+  BuilderSpec,
   Generation,
   Project,
   ProjectSpec,
@@ -13,6 +14,19 @@ import type {
 import { getProject, upsertProject } from "@/features/projects/store";
 import { createDefaultSpec, formatToSize } from "@/features/editor/spec-defaults";
 import TemplateRenderer from "@/features/editor/TemplateRenderer";
+import {
+  ACTION_OPTIONS,
+  EXPRESSION_OPTIONS,
+  FRAMING_OPTIONS,
+  LAYOUT_BASE_OPTIONS,
+  LIGHTING_SETUP_OPTIONS,
+  MACRO_STYLE_OPTIONS,
+  MOOD_OPTIONS,
+  SAFE_SPACE_OPTIONS,
+  SUBJECT_TYPE_OPTIONS,
+  TEMPERATURE_OPTIONS,
+  VISUAL_STYLE_OPTIONS,
+} from "@/features/editor/editor-presets";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 
 import { Button } from "@/components/ui/button";
@@ -101,6 +115,7 @@ function normalizeReferenceImages(
 function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const brand = spec.brand ?? ({} as any);
   const generation = spec.generation ?? ({} as any);
+  const builder = spec.builder ?? ({} as BuilderSpec);
   const normalizedReferenceImages = normalizeReferenceImages(
     spec.referenceImages,
     spec.referenceImageUrl
@@ -116,6 +131,22 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     subjectImageUrl: spec.subjectImageUrl ?? null,
     lightingText: spec.lightingText ?? "",
     assetsText: spec.assetsText ?? "",
+    builder: {
+      subjectType: builder.subjectType ?? "",
+      framing: builder.framing ?? "",
+      expression: builder.expression ?? "",
+      action: builder.action ?? "",
+      lightingSetup: builder.lightingSetup ?? "",
+      temperature: builder.temperature ?? "",
+      mood: builder.mood ?? "",
+      macroStyle: builder.macroStyle ?? "",
+      visualStyle: Array.isArray(builder.visualStyle)
+        ? builder.visualStyle.filter((v): v is string => typeof v === "string")
+        : [],
+      layoutBase: builder.layoutBase ?? "",
+      safeSpace: builder.safeSpace ?? "",
+      extraDetails: (builder.extraDetails ?? "").slice(0, 140),
+    },
     referenceImages: normalizedReferenceImages,
     referenceImageUrl: null,
     brand: {
@@ -294,6 +325,8 @@ export default function EditorPage() {
   const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
   const subjectImageUrl = (safeSpec?.subjectImageUrl ?? "").trim();
   const subjectPreview = subjectPreviewUrl || subjectImageUrl;
+  const builder = safeSpec?.builder;
+  const visualStyle = builder?.visualStyle ?? [];
   const referenceImages = safeSpec?.referenceImages ?? [];
 
   const bgUrl = active?.imageUrl ?? null;
@@ -793,6 +826,302 @@ export default function EditorPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="pt-2 border-t border-border space-y-3">
+              <div className="text-sm font-medium">Builder</div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Subject Type</label>
+                  <Select
+                    value={builder?.subjectType || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, subjectType: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUBJECT_TYPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Framing</label>
+                  <Select
+                    value={builder?.framing || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, framing: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FRAMING_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Expression</label>
+                  <Select
+                    value={builder?.expression || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, expression: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EXPRESSION_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Action</label>
+                  <Select
+                    value={builder?.action || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, action: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ACTION_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Lighting Setup</label>
+                  <Select
+                    value={builder?.lightingSetup || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, lightingSetup: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LIGHTING_SETUP_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Temperature</label>
+                  <Select
+                    value={builder?.temperature || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, temperature: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEMPERATURE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Mood</label>
+                  <Select
+                    value={builder?.mood || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, mood: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MOOD_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Macro Style</label>
+                  <Select
+                    value={builder?.macroStyle || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, macroStyle: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MACRO_STYLE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Layout Base</label>
+                  <Select
+                    value={builder?.layoutBase || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, layoutBase: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LAYOUT_BASE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Safe Space</label>
+                  <Select
+                    value={builder?.safeSpace || ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...builder, safeSpace: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SAFE_SPACE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Visual Style</label>
+                <div className="flex flex-wrap gap-2">
+                  {VISUAL_STYLE_OPTIONS.map((option) => {
+                    const active = visualStyle.includes(option.value);
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={[
+                          "px-2 py-1 rounded-md border text-xs transition",
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border hover:bg-background",
+                        ].join(" ")}
+                        onClick={() => {
+                          const next = active
+                            ? visualStyle.filter((v) => v !== option.value)
+                            : [...visualStyle, option.value];
+                          persistSpec({
+                            ...safeSpec,
+                            builder: { ...builder, visualStyle: next },
+                          });
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Extra Details</label>
+                <Input
+                  maxLength={140}
+                  value={builder?.extraDetails ?? ""}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      builder: { ...builder, extraDetails: e.target.value.slice(0, 140) },
+                    })
+                  }
+                />
+              </div>
             </div>
 
             {/* PALETTE */}

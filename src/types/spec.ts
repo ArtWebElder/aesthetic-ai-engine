@@ -110,6 +110,21 @@ export interface ReferenceImage {
   notes?: string;
 }
 
+export interface BuilderSpec {
+  subjectType?: string;
+  framing?: string;
+  expression?: string;
+  action?: string;
+  lightingSetup?: string;
+  temperature?: string;
+  mood?: string;
+  macroStyle?: string;
+  visualStyle?: string[];
+  layoutBase?: string;
+  safeSpace?: string;
+  extraDetails?: string;
+}
+
 export interface ProjectSpec {
   module: ModuleType;
   format: ProjectFormat;
@@ -123,6 +138,7 @@ export interface ProjectSpec {
   subjectImageUrl?: string | null;
   lightingText?: string;
   assetsText?: string;
+  builder?: BuilderSpec;
   referenceImages?: ReferenceImage[];
   /** @deprecated Use referenceImages instead. */
   referenceImageUrl?: string | null;

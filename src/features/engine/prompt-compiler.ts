@@ -37,6 +37,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     subjectImageUrl,
     lightingText,
     assetsText,
+    builder,
     referenceImages,
     referenceImageUrl,
   } = spec;
@@ -73,6 +74,20 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const cleanedSubjectImage = subjectImageUrl?.trim();
   const cleanedLighting = lightingText?.trim();
   const cleanedAssets = assetsText?.trim();
+  const cleanedBuilder = {
+    subjectType: builder?.subjectType?.trim() ?? "",
+    framing: builder?.framing?.trim() ?? "",
+    expression: builder?.expression?.trim() ?? "",
+    action: builder?.action?.trim() ?? "",
+    lightingSetup: builder?.lightingSetup?.trim() ?? "",
+    temperature: builder?.temperature?.trim() ?? "",
+    mood: builder?.mood?.trim() ?? "",
+    macroStyle: builder?.macroStyle?.trim() ?? "",
+    visualStyle: (builder?.visualStyle ?? []).filter((v): v is string => Boolean(v?.trim())),
+    layoutBase: builder?.layoutBase?.trim() ?? "",
+    safeSpace: builder?.safeSpace?.trim() ?? "",
+    extraDetails: builder?.extraDetails?.trim() ?? "",
+  };
   const cleanedReferenceImage = referenceImageUrl?.trim();
   const subjectReferenceLine = cleanedSubjectImage
     ? cleanedSubjectImage.startsWith("data:")
@@ -106,6 +121,28 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     const lockRealismFlag = entry.lockRealism ? "Y" : "N";
     return `Reference image (${entry.role}, weight=${entry.weight}, lockRealism=${lockRealismFlag}): ${source}${notesSuffix}`;
   });
+  const builderSubjectLine =
+    cleanedBuilder.subjectType ||
+    cleanedBuilder.framing ||
+    cleanedBuilder.expression ||
+    cleanedBuilder.action
+      ? `Builder Subject: ${cleanedBuilder.subjectType || "n/a"}, framing=${cleanedBuilder.framing || "n/a"}, expression=${cleanedBuilder.expression || "n/a"}, action=${cleanedBuilder.action || "n/a"}`
+      : null;
+  const builderLightingLine =
+    cleanedBuilder.lightingSetup || cleanedBuilder.temperature || cleanedBuilder.mood
+      ? `Builder Lighting: setup=${cleanedBuilder.lightingSetup || "n/a"}, temp=${cleanedBuilder.temperature || "n/a"}, mood=${cleanedBuilder.mood || "n/a"}`
+      : null;
+  const builderStyleLine =
+    cleanedBuilder.macroStyle || cleanedBuilder.visualStyle.length > 0
+      ? `Builder Style: macro=${cleanedBuilder.macroStyle || "n/a"}, visual=${cleanedBuilder.visualStyle.join(", ") || "n/a"}`
+      : null;
+  const builderCompositionLine =
+    cleanedBuilder.layoutBase || cleanedBuilder.safeSpace
+      ? `Builder Composition: layout=${cleanedBuilder.layoutBase || "n/a"}, safeSpace=${cleanedBuilder.safeSpace || "n/a"}`
+      : null;
+  const builderExtraDetailsLine = cleanedBuilder.extraDetails
+    ? `Builder Extra details: ${cleanedBuilder.extraDetails}`
+    : null;
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -149,6 +186,11 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     subjectReferenceLine,
     cleanedContext ? `context: ${cleanedContext}` : null,
     ...referenceImageLines,
+    builderSubjectLine,
+    builderLightingLine,
+    builderStyleLine,
+    builderCompositionLine,
+    builderExtraDetailsLine,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",
   ]

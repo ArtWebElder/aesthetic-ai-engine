@@ -1,0 +1,87 @@
+export type EditorPresetOption = {
+  value: string;
+  label: string;
+};
+
+export const SUBJECT_TYPE_OPTIONS: EditorPresetOption[] = [
+  { value: "person", label: "Person" },
+  { value: "couple", label: "Couple" },
+  { value: "family", label: "Family" },
+  { value: "product", label: "Product" },
+  { value: "object", label: "Object" },
+  { value: "pet", label: "Pet" },
+];
+
+export const FRAMING_OPTIONS: EditorPresetOption[] = [
+  { value: "close_up", label: "Close-up" },
+  { value: "medium_shot", label: "Medium shot" },
+  { value: "full_body", label: "Full body" },
+  { value: "wide", label: "Wide" },
+];
+
+export const EXPRESSION_OPTIONS: EditorPresetOption[] = [
+  { value: "neutral", label: "Neutral" },
+  { value: "smiling", label: "Smiling" },
+  { value: "serious", label: "Serious" },
+  { value: "confident", label: "Confident" },
+];
+
+export const ACTION_OPTIONS: EditorPresetOption[] = [
+  { value: "standing", label: "Standing" },
+  { value: "walking", label: "Walking" },
+  { value: "pointing", label: "Pointing" },
+  { value: "holding_product", label: "Holding product" },
+  { value: "looking_camera", label: "Looking at camera" },
+];
+
+export const LIGHTING_SETUP_OPTIONS: EditorPresetOption[] = [
+  { value: "studio_softbox", label: "Studio softbox" },
+  { value: "natural_window", label: "Natural window" },
+  { value: "golden_hour", label: "Golden hour" },
+  { value: "dramatic_rim", label: "Dramatic rim light" },
+];
+
+export const TEMPERATURE_OPTIONS: EditorPresetOption[] = [
+  { value: "warm", label: "Warm" },
+  { value: "neutral", label: "Neutral" },
+  { value: "cool", label: "Cool" },
+];
+
+export const MOOD_OPTIONS: EditorPresetOption[] = [
+  { value: "clean", label: "Clean" },
+  { value: "premium", label: "Premium" },
+  { value: "energetic", label: "Energetic" },
+  { value: "calm", label: "Calm" },
+  { value: "moody", label: "Moody" },
+];
+
+export const MACRO_STYLE_OPTIONS: EditorPresetOption[] = [
+  { value: "minimal", label: "Minimal" },
+  { value: "editorial", label: "Editorial" },
+  { value: "commercial_ads", label: "Commercial ads" },
+  { value: "cinematic", label: "Cinematic" },
+];
+
+export const VISUAL_STYLE_OPTIONS: EditorPresetOption[] = [
+  { value: "high_contrast", label: "High contrast" },
+  { value: "film_grain", label: "Film grain" },
+  { value: "soft_glow", label: "Soft glow" },
+  { value: "natural_skin", label: "Natural skin" },
+  { value: "vibrant_colors", label: "Vibrant colors" },
+  { value: "muted_palette", label: "Muted palette" },
+];
+
+export const LAYOUT_BASE_OPTIONS: EditorPresetOption[] = [
+  { value: "centered", label: "Centered" },
+  { value: "rule_of_thirds", label: "Rule of thirds" },
+  { value: "left_weighted", label: "Left weighted" },
+  { value: "right_weighted", label: "Right weighted" },
+];
+
+export const SAFE_SPACE_OPTIONS: EditorPresetOption[] = [
+  { value: "top", label: "Top" },
+  { value: "bottom", label: "Bottom" },
+  { value: "left", label: "Left" },
+  { value: "right", label: "Right" },
+  { value: "center", label: "Center" },
+];
