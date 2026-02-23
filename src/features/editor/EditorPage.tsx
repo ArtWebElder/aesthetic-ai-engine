@@ -2,7 +2,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import type { Generation, Project, ProjectSpec, StylePreset, ProjectFormat } from "@/types/spec";
+import type {
+  Generation,
+  Project,
+  ProjectSpec,
+  ReferenceImage,
+  StylePreset,
+  ProjectFormat,
+} from "@/types/spec";
 import { getProject, upsertProject } from "@/features/projects/store";
 import { createDefaultSpec, formatToSize } from "@/features/editor/spec-defaults";
 import TemplateRenderer from "@/features/editor/TemplateRenderer";
@@ -53,9 +60,51 @@ function buildPicsumUrl(seed: string, w: number, h: number): string {
   return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
 }
 
+function normalizeReferenceImages(
+  referenceImages: ReferenceImage[] | undefined,
+  legacyReferenceImageUrl: string | null | undefined
+): ReferenceImage[] {
+  const validRoles: ReferenceImage["role"][] = [
+    "style",
+    "composition",
+    "product",
+    "brand",
+    "other",
+  ];
+
+  const normalized = (referenceImages ?? [])
+    .map((entry) => ({
+      id: entry?.id || newId(),
+      url: entry?.url?.trim() || null,
+      role: validRoles.includes(entry?.role) ? entry.role : "style",
+      weight: clampSize(Number(entry?.weight ?? 70), 0, 100),
+      lockRealism: Boolean(entry?.lockRealism),
+      notes: (entry?.notes ?? "").slice(0, 120),
+    }))
+    .slice(0, 5);
+
+  const legacyUrl = legacyReferenceImageUrl?.trim();
+  if (normalized.length === 0 && legacyUrl) {
+    normalized.push({
+      id: newId(),
+      url: legacyUrl,
+      role: "style",
+      weight: 70,
+      lockRealism: false,
+      notes: "",
+    });
+  }
+
+  return normalized;
+}
+
 function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const brand = spec.brand ?? ({} as any);
   const generation = spec.generation ?? ({} as any);
+  const normalizedReferenceImages = normalizeReferenceImages(
+    spec.referenceImages,
+    spec.referenceImageUrl
+  );
 
   return {
     ...spec,
@@ -67,7 +116,8 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     subjectImageUrl: spec.subjectImageUrl ?? null,
     lightingText: spec.lightingText ?? "",
     assetsText: spec.assetsText ?? "",
-    referenceImageUrl: spec.referenceImageUrl ?? null,
+    referenceImages: normalizedReferenceImages,
+    referenceImageUrl: null,
     brand: {
       ...brand,
       accent: brand.accent ?? "#34d399",
@@ -195,7 +245,6 @@ export default function EditorPage() {
   const [project, setProject] = useState<EditorProject | null>(null);
   const [spec, setSpec] = useState<ProjectSpec | null>(null);
   const [subjectPreviewUrl, setSubjectPreviewUrl] = useState<string | null>(null);
-  const [referencePreviewUrl, setReferencePreviewUrl] = useState<string | null>(null);
 
   // carrega projeto por ID
   useEffect(() => {
@@ -216,11 +265,8 @@ export default function EditorPage() {
       if (subjectPreviewUrl) {
         URL.revokeObjectURL(subjectPreviewUrl);
       }
-      if (referencePreviewUrl) {
-        URL.revokeObjectURL(referencePreviewUrl);
-      }
     };
-  }, [subjectPreviewUrl, referencePreviewUrl]);
+  }, [subjectPreviewUrl]);
 
   // geração ativa (placeholder)
   const active = useMemo(() => {
@@ -248,8 +294,7 @@ export default function EditorPage() {
   const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
   const subjectImageUrl = (safeSpec?.subjectImageUrl ?? "").trim();
   const subjectPreview = subjectPreviewUrl || subjectImageUrl;
-  const referenceImageUrl = (safeSpec?.referenceImageUrl ?? "").trim();
-  const previewUrl = referencePreviewUrl || referenceImageUrl;
+  const referenceImages = safeSpec?.referenceImages ?? [];
 
   const bgUrl = active?.imageUrl ?? null;
 
@@ -536,6 +581,218 @@ export default function EditorPage() {
                   </Button>
                 </div>
               ) : null}
+            </div>
+
+            <div className="pt-2 border-t border-border space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">Reference Images</div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={referenceImages.length >= 5}
+                  onClick={() =>
+                    persistSpec({
+                      ...safeSpec,
+                      referenceImages: [
+                        ...referenceImages,
+                        {
+                          id: newId(),
+                          url: null,
+                          role: "style",
+                          weight: 70,
+                          lockRealism: false,
+                          notes: "",
+                        },
+                      ],
+                    })
+                  }
+                >
+                  Add
+                </Button>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                {referenceImages.length}/5 images
+              </div>
+
+              {referenceImages.length === 0 ? (
+                <div className="text-xs text-muted-foreground">
+                  No reference images yet.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {referenceImages.map((ref) => (
+                    <div key={ref.id} className="rounded-md border border-border p-3 space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="h-[72px] w-[72px] rounded-md border border-border overflow-hidden bg-muted shrink-0">
+                          {ref.url ? (
+                            <img
+                              src={ref.url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-full w-full bg-muted" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 space-y-2 min-w-0">
+                          <Input
+                            value={ref.url ?? ""}
+                            placeholder="https://... or upload a file"
+                            onChange={(e) =>
+                              persistSpec({
+                                ...safeSpec,
+                                referenceImages: referenceImages.map((item) =>
+                                  item.id === ref.id
+                                    ? { ...item, url: e.target.value.trim() || null }
+                                    : item
+                                ),
+                              })
+                            }
+                          />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                const result =
+                                  typeof reader.result === "string" ? reader.result : null;
+                                persistSpec({
+                                  ...safeSpec,
+                                  referenceImages: referenceImages.map((item) =>
+                                    item.id === ref.id ? { ...item, url: result } : item
+                                  ),
+                                });
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                            className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:text-foreground"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground">Role</label>
+                          <Select
+                            value={ref.role}
+                            onValueChange={(value) =>
+                              persistSpec({
+                                ...safeSpec,
+                                referenceImages: referenceImages.map((item) =>
+                                  item.id === ref.id
+                                    ? {
+                                        ...item,
+                                        role: value as ReferenceImage["role"],
+                                      }
+                                    : item
+                                ),
+                              })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Role" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="style">Style</SelectItem>
+                              <SelectItem value="composition">Composition</SelectItem>
+                              <SelectItem value="product">Product</SelectItem>
+                              <SelectItem value="brand">Brand</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs text-muted-foreground">Weight</label>
+                            <span className="text-xs text-muted-foreground">
+                              {clampSize(Number(ref.weight ?? 70), 0, 100)}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={clampSize(Number(ref.weight ?? 70), 0, 100)}
+                            onChange={(e) =>
+                              persistSpec({
+                                ...safeSpec,
+                                referenceImages: referenceImages.map((item) =>
+                                  item.id === ref.id
+                                    ? {
+                                        ...item,
+                                        weight: clampSize(Number(e.target.value), 0, 100),
+                                      }
+                                    : item
+                                ),
+                              })
+                            }
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(ref.lockRealism)}
+                            onChange={(e) =>
+                              persistSpec({
+                                ...safeSpec,
+                                referenceImages: referenceImages.map((item) =>
+                                  item.id === ref.id
+                                    ? { ...item, lockRealism: e.target.checked }
+                                    : item
+                                ),
+                              })
+                            }
+                          />
+                          Lock realism
+                        </label>
+
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            persistSpec({
+                              ...safeSpec,
+                              referenceImages: referenceImages.filter((item) => item.id !== ref.id),
+                            })
+                          }
+                        >
+                          Remove
+                        </Button>
+                      </div>
+
+                      <Input
+                        type="text"
+                        maxLength={120}
+                        placeholder="Notes (optional)"
+                        value={ref.notes ?? ""}
+                        onChange={(e) =>
+                          persistSpec({
+                            ...safeSpec,
+                            referenceImages: referenceImages.map((item) =>
+                              item.id === ref.id
+                                ? { ...item, notes: e.target.value.slice(0, 120) }
+                                : item
+                            ),
+                          })
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* PALETTE */}
@@ -1007,56 +1264,6 @@ export default function EditorPage() {
                   }
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Reference Image URL</label>
-              <Input
-                value={safeSpec.referenceImageUrl ?? ""}
-                onChange={(e) =>
-                  persistSpec({
-                    ...safeSpec,
-                    referenceImageUrl: e.target.value.trim() ? e.target.value : null,
-                  })
-                }
-              />
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const objectUrl = URL.createObjectURL(file);
-                  setReferencePreviewUrl(objectUrl);
-                }}
-                className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:text-foreground"
-              />
-
-              {previewUrl ? (
-                <div className="space-y-2">
-                  <img
-                    src={previewUrl}
-                    alt="Reference preview"
-                    className="h-20 w-20 rounded-md border border-border object-cover"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setReferencePreviewUrl(null);
-                      if (referenceImageUrl) {
-                        persistSpec({
-                          ...safeSpec,
-                          referenceImageUrl: null,
-                        });
-                      }
-                    }}
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : null}
             </div>
 
             <div className="space-y-2">

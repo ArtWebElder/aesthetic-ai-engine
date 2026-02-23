@@ -37,6 +37,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     subjectImageUrl,
     lightingText,
     assetsText,
+    referenceImages,
     referenceImageUrl,
   } = spec;
 
@@ -78,11 +79,33 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? "Subject reference image: uploaded (embedded)"
       : `Subject reference image: ${cleanedSubjectImage}`
     : null;
-  const referenceImageLine = cleanedReferenceImage
-    ? cleanedReferenceImage.startsWith("data:")
-      ? "Reference image: uploaded (embedded)"
-      : `Reference image: ${cleanedReferenceImage}`
-    : null;
+  const normalizedReferences = (referenceImages ?? [])
+    .filter((entry) => Boolean(entry?.url))
+    .map((entry) => ({
+      role: entry.role ?? "style",
+      weight:
+        typeof entry.weight === "number"
+          ? Math.max(0, Math.min(100, Math.round(entry.weight)))
+          : 70,
+      lockRealism: Boolean(entry.lockRealism),
+      notes: entry.notes?.trim() ?? "",
+      url: entry.url?.trim() ?? "",
+    }));
+  if (normalizedReferences.length === 0 && cleanedReferenceImage) {
+    normalizedReferences.push({
+      role: "style",
+      weight: 70,
+      lockRealism: false,
+      notes: "",
+      url: cleanedReferenceImage,
+    });
+  }
+  const referenceImageLines = normalizedReferences.map((entry) => {
+    const source = entry.url.startsWith("data:") ? "uploaded (embedded)" : entry.url;
+    const notesSuffix = entry.notes ? ` - ${entry.notes}` : "";
+    const lockRealismFlag = entry.lockRealism ? "Y" : "N";
+    return `Reference image (${entry.role}, weight=${entry.weight}, lockRealism=${lockRealismFlag}): ${source}${notesSuffix}`;
+  });
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -125,7 +148,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     cleanedAssets ? `Assets / elements: ${cleanedAssets}` : null,
     subjectReferenceLine,
     cleanedContext ? `context: ${cleanedContext}` : null,
-    referenceImageLine,
+    ...referenceImageLines,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",
   ]

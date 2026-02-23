@@ -110,6 +110,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     subjectImageUrl: null,
     lightingText: "",
     assetsText: "",
+    referenceImages: [],
     referenceImageUrl: null,
 
     content: {

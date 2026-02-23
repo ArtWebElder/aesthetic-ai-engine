@@ -101,6 +101,15 @@ export interface GenerationParams {
   realism?: number;
 }
 
+export interface ReferenceImage {
+  id: string;
+  url: string | null;
+  role: "style" | "composition" | "product" | "brand" | "other";
+  weight: number;
+  lockRealism: boolean;
+  notes?: string;
+}
+
 export interface ProjectSpec {
   module: ModuleType;
   format: ProjectFormat;
@@ -114,6 +123,8 @@ export interface ProjectSpec {
   subjectImageUrl?: string | null;
   lightingText?: string;
   assetsText?: string;
+  referenceImages?: ReferenceImage[];
+  /** @deprecated Use referenceImages instead. */
   referenceImageUrl?: string | null;
 
   content: ContentSpec;
