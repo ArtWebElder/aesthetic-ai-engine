@@ -6,6 +6,7 @@ import type { Generation, Project, ProjectSpec, StylePreset, ProjectFormat } fro
 import { getProject, upsertProject } from "@/features/projects/store";
 import { createDefaultSpec, formatToSize } from "@/features/editor/spec-defaults";
 import TemplateRenderer from "@/features/editor/TemplateRenderer";
+import { compilePrompt } from "@/features/engine/prompt-compiler";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,18 @@ function getSafeDims(spec: ProjectSpec): { w: number; h: number } {
 
 function buildPicsumUrl(seed: string, w: number, h: number): string {
   return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
+}
+
+function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
+  return {
+    ...spec,
+    contextText: spec.contextText ?? "",
+    referenceImageUrl: spec.referenceImageUrl ?? null,
+    generation: {
+      ...spec.generation,
+      realism: clampSize(Number(spec.generation.realism ?? 70), 0, 100),
+    },
+  };
 }
 
 function hashSeed(seed: string): number {
@@ -164,8 +177,14 @@ export default function EditorPage() {
   useEffect(() => {
     if (!id) return;
     const p = getProject(id) as EditorProject | undefined;
-    setProject(p ?? null);
-    setSpec(p?.spec ?? null);
+    if (!p) {
+      setProject(null);
+      setSpec(null);
+      return;
+    }
+    const normalizedSpec = ensureSpecDefaults(p.spec);
+    setProject({ ...p, spec: normalizedSpec });
+    setSpec(normalizedSpec);
   }, [id]);
 
   // geração ativa (placeholder)
@@ -181,10 +200,7 @@ export default function EditorPage() {
   // compiled prompt placeholder
   const compiled = useMemo(() => {
     if (!spec) return null;
-    return {
-      prompt: `MODULE=${spec.module}\nFORMAT=${spec.format}\nTEMPLATE=${spec.templateId}\nHEADLINE=${spec.content.headline}\nSUB=${spec.content.subheadline}\nCTA=${spec.content.ctaText}`,
-      negativePrompt: `low quality, blurry, watermark`,
-    };
+    return compilePrompt(ensureSpecDefaults(spec));
   }, [spec]);
 
   const bgUrl = active?.imageUrl ?? null;
@@ -197,11 +213,12 @@ export default function EditorPage() {
 
   function persistSpec(nextSpec: ProjectSpec) {
     if (!project) return;
-    setSpec(nextSpec);
+    const normalizedSpec = ensureSpecDefaults(nextSpec);
+    setSpec(normalizedSpec);
 
     const nextProject: EditorProject = {
       ...project,
-      spec: nextSpec,
+      spec: normalizedSpec,
     };
 
     persist(nextProject);
@@ -637,6 +654,58 @@ export default function EditorPage() {
                     content: { ...spec.content, ctaText: e.target.value },
                   })
                 }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">Context</label>
+              <Input
+                value={spec.contextText ?? ""}
+                onChange={(e) =>
+                  persistSpec({
+                    ...spec,
+                    contextText: e.target.value,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs text-muted-foreground">Reference Image URL</label>
+              <Input
+                value={spec.referenceImageUrl ?? ""}
+                onChange={(e) =>
+                  persistSpec({
+                    ...spec,
+                    referenceImageUrl: e.target.value.trim() ? e.target.value : null,
+                  })
+                }
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-muted-foreground">Realism</label>
+                <span className="text-xs text-muted-foreground">
+                  {clampSize(Number(spec.generation.realism ?? 70), 0, 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={1}
+                value={clampSize(Number(spec.generation.realism ?? 70), 0, 100)}
+                onChange={(e) =>
+                  persistSpec({
+                    ...spec,
+                    generation: {
+                      ...spec.generation,
+                      realism: clampSize(Number(e.target.value), 0, 100),
+                    },
+                  })
+                }
+                className="w-full"
               />
             </div>
 

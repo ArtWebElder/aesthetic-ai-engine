@@ -43,7 +43,10 @@ export type TemplateId =
   | "ecom_03"
   | "ecom_04"
   | "photo_01"
-  | "photo_02";
+  | "photo_02"
+  | "photo_03"
+  | "photo_04"
+  | "photo_05";
 
 /* =========================
    BRAND / TOKENS
@@ -90,6 +93,7 @@ export interface GenerationParams {
   width: number;
   height: number;
   quality: "standard" | "high";
+  realism?: number;
 }
 
 export interface ProjectSpec {
@@ -97,6 +101,8 @@ export interface ProjectSpec {
   format: ProjectFormat;
   stylePreset: StylePreset;
   templateId: TemplateId;
+  contextText?: string;
+  referenceImageUrl?: string | null;
 
   content: ContentSpec;
   brand: BrandSpec;

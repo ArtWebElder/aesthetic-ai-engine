@@ -102,6 +102,8 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     format,
     stylePreset: defaultStyleFor(module),
     templateId: defaultTemplateFor(module),
+    contextText: "",
+    referenceImageUrl: null,
 
     content: {
       headline: module === "ecom" ? "New Collection" : "Your Next Big Win",
@@ -144,6 +146,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       width: size.width,
       height: size.height,
       quality: "high",
+      realism: 70,
     },
   };
 }

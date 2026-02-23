@@ -21,8 +21,17 @@ export interface CompiledPrompt {
  * - prompt blocks (tipo JSON -> texto final)
  */
 export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
-  const { module, stylePreset, templateId, content, brand, effects, generation } =
-    spec;
+  const {
+    module,
+    stylePreset,
+    templateId,
+    content,
+    brand,
+    effects,
+    generation,
+    contextText,
+    referenceImageUrl,
+  } = spec;
 
   // Prompts-base por módulo (bem simples agora)
   const moduleBase =
@@ -47,6 +56,12 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : "no text";
 
   const effectsHints = `text style: outline=${effects.textOutline}/10 shadow=${effects.shadow}/10 depth=${effects.depth3d}/10 tilt=${effects.tilt}deg`;
+  const cleanedContext = contextText?.trim();
+  const cleanedReferenceImage = referenceImageUrl?.trim();
+  const realismValue =
+    typeof generation.realism === "number"
+      ? Math.max(0, Math.min(100, Math.round(generation.realism)))
+      : null;
 
   // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
@@ -56,8 +71,13 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     `template: ${templateId}`,
     textHints,
     effectsHints,
+    cleanedContext ? `context: ${cleanedContext}` : null,
+    cleanedReferenceImage ? `Reference image: ${cleanedReferenceImage}` : null,
+    realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",
-  ].join(", ");
+  ]
+    .filter(Boolean)
+    .join(", ");
 
   const negativePrompt = [
     "low quality",
