@@ -1,124 +1,146 @@
 // src/features/editor/EditorPage.tsx
-
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import { formatToSize } from "@/features/editor/spec-defaults";
-
-import TemplateRenderer from "@/features/editor/TemplateRenderer";
-import { TEMPLATE_CATALOG as TEMPLATE_REGISTRY } from "@/features/editor/templates/registry";
-
-import type { Project, ProjectSpec, Generation } from "@/types/spec";
+import type { Project, ProjectSpec, StylePreset } from "@/types/spec";
 import { getProject, upsertProject } from "@/features/projects/store";
-import { compilePrompt } from "@/features/engine/prompt-compiler";
-import { buildMockImageUrl } from "@/features/engine/mock-image";
+import { createDefaultSpec } from "@/features/editor/spec-defaults";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-function deepClone<T>(v: T): T {
-  return JSON.parse(JSON.stringify(v));
-}
-
-const nowIso = () => new Date().toISOString();
-const newId = () => crypto.randomUUID();
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { STYLE_PRESETS } from "@/types";
 
 export default function EditorPage() {
-  const { id } = useParams();
-  const nav = useNavigate();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
 
   const [project, setProject] = useState<Project | null>(null);
-  const [showGrid, setShowGrid] = useState(true);
 
-  // LOAD PROJECT
+  // carrega do storage quando entra / muda id
   useEffect(() => {
     if (!id) return;
     const p = getProject(id);
-    if (!p) {
-      nav("/app/projects");
-      return;
-    }
-    setProject(deepClone(p));
-  }, [id, nav]);
+    setProject(p ?? null);
+  }, [id]);
 
-  // COMPILE PROMPT
-  const compiled = useMemo(() => {
-    if (!project) return null;
-    return compilePrompt(project.spec);
-  }, [project]);
+  const styleValue = project?.spec?.stylePreset ?? "";
 
-  // AUTOSAVE
-  function setSpec(next: ProjectSpec) {
+  function save(nextSpec: ProjectSpec) {
     if (!project) return;
-    const nextProject: Project = { ...project, spec: next };
-    setProject(nextProject);
-    upsertProject(nextProject);
-  }
-
-  // GENERATE MOCK IMAGE
-  function generateMock() {
-    if (!project || !compiled) return;
-
-    const genId = newId();
-    const seed = `${project.id}-${project.spec.templateId}-${Date.now()}`;
-    const imageUrl = buildMockImageUrl(compiled.meta, seed);
-
-    const gen: Generation = {
-      id: genId,
-      projectId: project.id,
-      status: "done",
-      imageUrl,
-      prompt: compiled.prompt,
-      negativePrompt: compiled.negativePrompt,
-      createdAt: nowIso(),
-    };
-
-    const nextProject: Project = {
+    const next: Project = {
       ...project,
-      status: "generated",
-      generations: [gen, ...(project.generations ?? [])],
-      activeGenerationId: genId,
+      spec: nextSpec,
     };
-
-    setProject(nextProject);
-    upsertProject(nextProject);
+    setProject(next);
+    upsertProject(next);
   }
 
-  if (!project) {
+  if (!id) {
     return (
-      <div className="p-8">
-        <div className="text-sm text-muted-foreground">Loading…</div>
+      <div className="p-6">
+        <div className="text-sm text-muted-foreground">Missing project id.</div>
       </div>
     );
   }
 
-  const spec = project.spec;
+  if (!project) {
+    return (
+      <div className="p-6 space-y-3">
+        <div className="text-lg font-semibold">Project not found</div>
+        <div className="text-sm text-muted-foreground">
+          This project id does not exist in local storage.
+        </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => navigate("/app/projects")}>
+            Back to Projects
+          </Button>
+          <Button
+            onClick={() => {
+              // fallback: cria um spec default e salva um projeto novo “por cima”
+              const fallbackSpec = createDefaultSpec("feed_1080x1350");
+              const fake: Project = {
+                id,
+                name: "Recovered Project",
+                status: "draft",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                spec: fallbackSpec,
+              };
+              upsertProject(fake);
+              setProject(fake);
+            }}
+          >
+            Recover
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
-  const active = (project.generations ?? []).find(
-    (g) => g.id === project.activeGenerationId
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <div className="space-y-1">
+          <div className="text-sm text-muted-foreground">Editing</div>
+          <div className="text-xl font-semibold">{project.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {project.spec.module} • {project.spec.format} • {project.id}
+          </div>
+        </div>
+
+        <Button variant="secondary" onClick={() => navigate("/app/projects")}>
+          Back
+        </Button>
+      </div>
+
+      {/* ✅ Controles mínimos pra provar que está salvando e mudando */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <div className="text-sm font-medium">Headline</div>
+          <Input
+            value={project.spec.content.headline}
+            onChange={(e) =>
+              save({
+                ...project.spec,
+                content: { ...project.spec.content, headline: e.target.value },
+              })
+            }
+          />
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-sm font-medium">Style Preset</div>
+          <Select
+            value={styleValue}
+            onValueChange={(v) =>
+              save({
+                ...project.spec,
+                stylePreset: v as StylePreset,
+              })
+            }
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select style" />
+            </SelectTrigger>
+            <SelectContent>
+              {STYLE_PRESETS.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Aqui você renderiza seu canvas/editor real */}
+      <div className="rounded-xl border border-border/60 p-6 text-sm text-muted-foreground">
+        (Seu editor/canvas entra aqui) <br />
+        Agora você já provou que o estado muda e persiste no localStorage.
+      </div>
+    </div>
   );
-
-  function applyFormat(nextFormat: ProjectSpec["format"]) {
-  const size = formatToSize(nextFormat);
-  setSpec({
-    ...spec,
-    format: nextFormat,
-    generation: {
-      ...spec.generation,
-      aspectRatio: size.aspectRatio,
-      width: size.width,
-      height: size.height,
-    },
-  });
 }
 
   return (
