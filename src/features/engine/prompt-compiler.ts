@@ -59,6 +59,14 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const cleanedContext = contextText?.trim();
   const cleanedReferenceImage = referenceImageUrl?.trim();
   const paletteMode = brand.paletteMode ?? "mono";
+  const paletteGuidance =
+    paletteMode === "mono"
+      ? "single-accent palette with clean neutrals"
+      : paletteMode === "duo"
+      ? "two-color harmony between primary and secondary"
+      : paletteMode === "tri"
+      ? "three-color balanced palette with controlled contrast"
+      : "custom palette with explicit brand color roles";
   const primaryColor = brand.accent || brand.primary;
   const secondaryColor = brand.accent2 ?? brand.secondary;
   const neutralBackground = brand.neutralBg ?? "#0f172a";
@@ -78,6 +86,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     textHints,
     effectsHints,
     `Color palette mode: ${paletteMode}`,
+    `Palette guidance: ${paletteGuidance}`,
     `Primary color: ${primaryColor}`,
     `Secondary color: ${secondaryColor}`,
     `Neutral background: ${neutralBackground}`,

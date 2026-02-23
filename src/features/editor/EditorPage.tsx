@@ -59,6 +59,9 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     referenceImageUrl: spec.referenceImageUrl ?? null,
     brand: {
       ...spec.brand,
+      accent: spec.brand.accent ?? "#34d399",
+      secondary: spec.brand.secondary ?? "#888888",
+      primary: spec.brand.primary ?? "#ffffff",
       paletteMode: spec.brand.paletteMode ?? "mono",
       accent2: spec.brand.accent2 ?? "#888888",
       neutralBg: spec.brand.neutralBg ?? "#0f172a",
@@ -210,6 +213,10 @@ export default function EditorPage() {
     if (!spec) return null;
     return compilePrompt(ensureSpecDefaults(spec));
   }, [spec]);
+
+  const paletteMode = spec.brand.paletteMode ?? "mono";
+  const showSecondary = paletteMode === "duo" || paletteMode === "tri" || paletteMode === "custom";
+  const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
 
   const bgUrl = active?.imageUrl ?? null;
 
@@ -448,7 +455,7 @@ export default function EditorPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Accent</label>
+                  <label className="text-xs text-muted-foreground">Accent (Primary)</label>
                   <input
                     type="color"
                     value={
@@ -489,7 +496,7 @@ export default function EditorPage() {
               <div className="space-y-2">
                 <label className="text-xs text-muted-foreground">Palette mode</label>
                 <Select
-                  value={spec.brand.paletteMode ?? "mono"}
+                  value={paletteMode}
                   onValueChange={(v) =>
                     persistSpec({
                       ...spec,
@@ -513,24 +520,47 @@ export default function EditorPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Accent 2</label>
-                  <input
-                    type="color"
-                    value={
-                      spec.brand.accent2?.startsWith("#")
-                        ? spec.brand.accent2
-                        : "#888888"
-                    }
-                    onChange={(e) =>
-                      persistSpec({
-                        ...spec,
-                        brand: { ...spec.brand, accent2: e.target.value },
-                      })
-                    }
-                    className="h-10 w-full rounded-md border border-border bg-transparent"
-                  />
-                </div>
+                {showSecondary ? (
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Secondary</label>
+                    <input
+                      type="color"
+                      value={
+                        spec.brand.secondary?.startsWith("#")
+                          ? spec.brand.secondary
+                          : "#888888"
+                      }
+                      onChange={(e) =>
+                        persistSpec({
+                          ...spec,
+                          brand: { ...spec.brand, secondary: e.target.value },
+                        })
+                      }
+                      className="h-10 w-full rounded-md border border-border bg-transparent"
+                    />
+                  </div>
+                ) : null}
+
+                {showAccent2 ? (
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Accent 2</label>
+                    <input
+                      type="color"
+                      value={
+                        spec.brand.accent2?.startsWith("#")
+                          ? spec.brand.accent2
+                          : "#888888"
+                      }
+                      onChange={(e) =>
+                        persistSpec({
+                          ...spec,
+                          brand: { ...spec.brand, accent2: e.target.value },
+                        })
+                      }
+                      className="h-10 w-full rounded-md border border-border bg-transparent"
+                    />
+                  </div>
+                ) : null}
 
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">Neutral BG</label>
