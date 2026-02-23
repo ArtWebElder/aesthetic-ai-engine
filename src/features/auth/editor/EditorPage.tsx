@@ -75,24 +75,28 @@ export default function EditorPage() {
   const spec = project.spec;
 
   function generateMock() {
-    if (!project || !spec) return;
+  if (!project || !spec) return;
 
-    const g: Generation = {
-      id: newId(),
-      projectId: project.id,
-      status: "done",
-      createdAt: new Date().toISOString(),
-      imageUrl: svgPreviewDataUrl(spec),
-    };
+  const generationId = newId();
+  const seed = `${project.id}-${generationId}`;
+  const { w, h } = getSafeDims(spec);
 
-    const nextProject: EditorProject = {
-      ...project,
-      generations: [g, ...(project.generations ?? [])],
-      activeGenerationId: g.id,
-    };
+  const g: Generation = {
+    id: generationId,
+    projectId: project.id,
+    status: "done",
+    createdAt: new Date().toISOString(),
+    imageUrl: buildPicsumUrl(seed, w, h),
+  };
 
-    persist(nextProject);
-  }
+  const nextProject: EditorProject = {
+    ...project,
+    generations: [g, ...(project.generations ?? [])],
+    activeGenerationId: g.id,
+  };
+
+  persist(nextProject);
+}
 
   return (
     <div className="p-4 md:p-8 space-y-6">
