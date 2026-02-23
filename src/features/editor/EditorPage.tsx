@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type { Generation, Project, ProjectSpec, StylePreset, ProjectFormat } from "@/types/spec";
 import { getProject, upsertProject } from "@/features/projects/store";
 import { createDefaultSpec, formatToSize } from "@/features/editor/spec-defaults";
+import TemplateRenderer from "@/features/editor/TemplateRenderer";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,8 +191,6 @@ export default function EditorPage() {
   const [project, setProject] = useState<EditorProject | null>(null);
   const [spec, setSpec] = useState<ProjectSpec | null>(null);
 
-  const [showGrid, setShowGrid] = useState(false);
-
   // carrega projeto por ID
   useEffect(() => {
     if (!id) return;
@@ -254,14 +253,14 @@ export default function EditorPage() {
   }
 
   function generateMock() {
-    if (!project) return;
+    if (!project || !spec) return;
 
     const g: Generation = {
       id: crypto.randomUUID(),
       projectId: project.id,
       status: "done",
       createdAt: new Date().toISOString(),
-      imageUrl: undefined, // depois você pluga a geração real
+      imageUrl: svgPreviewDataUrl(spec),
     };
 
     const nextProject: EditorProject = {
@@ -408,16 +407,6 @@ export default function EditorPage() {
         <div className="min-h-0 flex flex-col">
           <div className="px-4 md:px-6 py-3 border-b border-border flex items-center justify-between">
             <div className="text-sm font-medium">Canvas</div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setShowGrid((v) => !v)}
-              >
-                {showGrid ? "Hide grid" : "Show grid"}
-              </Button>
-            </div>
           </div>
 
           <div className="flex-1 min-h-0 p-4 md:p-6 overflow-auto">
@@ -430,10 +419,10 @@ export default function EditorPage() {
                   }}
                 >
                   <div className="w-full h-full">
-                    <TemplateRendererPlaceholder
+                    <TemplateRenderer
                       spec={spec}
-                      imageUrl={active?.imageUrl}
-                      showGrid={showGrid}
+                      imageUrl={active?.imageUrl ?? null}
+                      showGrid={false}
                     />
                   </div>
                 </div>
