@@ -15,6 +15,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
 function deepClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v));
 }
@@ -233,6 +241,65 @@ export default function EditorPage() {
           </div>
 
           <div className="p-4 space-y-4 overflow-auto h-full">
+            {/* BRAND */}
+<div className="space-y-3">
+  <div className="text-sm font-medium">Brand</div>
+
+  <div className="grid grid-cols-2 gap-3">
+    <div className="space-y-2">
+      <label className="text-xs text-muted-foreground">Accent</label>
+      <input
+        type="color"
+        value={spec.brand.accent?.startsWith("#") ? spec.brand.accent : "#34d399"}
+        onChange={(e) =>
+          setSpec({
+            ...spec,
+            brand: { ...spec.brand, accent: e.target.value },
+          })
+        }
+        className="h-10 w-full rounded-md border border-border bg-transparent"
+      />
+    </div>
+
+    <div className="space-y-2">
+      <label className="text-xs text-muted-foreground">Text</label>
+      <input
+        type="color"
+        value={spec.brand.primary?.startsWith("#") ? spec.brand.primary : "#ffffff"}
+        onChange={(e) =>
+          setSpec({
+            ...spec,
+            brand: { ...spec.brand, primary: e.target.value },
+          })
+        }
+        className="h-10 w-full rounded-md border border-border bg-transparent"
+      />
+    </div>
+  </div>
+
+  <div className="space-y-2">
+    <label className="text-xs text-muted-foreground">Font preset</label>
+    <Select
+      value={spec.brand.fontPreset}
+      onValueChange={(v) =>
+        setSpec({
+          ...spec,
+          brand: { ...spec.brand, fontPreset: v as any },
+        })
+      }
+    >
+      <SelectTrigger>
+        <SelectValue placeholder="Choose a font" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="space_grotesk">Space Grotesk (Display)</SelectItem>
+        <SelectItem value="plus_jakarta">Plus Jakarta Sans</SelectItem>
+        <SelectItem value="dm_sans">DM Sans</SelectItem>
+        <SelectItem value="inter">Inter</SelectItem>
+      </SelectContent>
+    </Select>
+  </div>
+</div>
             <div className="space-y-2">
               <label className="text-xs text-muted-foreground">Headline</label>
               <Input

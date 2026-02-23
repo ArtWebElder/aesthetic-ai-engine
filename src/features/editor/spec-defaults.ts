@@ -97,9 +97,9 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     },
 
     brand: {
-      primary: "token:accent", // later map token -> actual color
-      secondary: "token:surface",
-      accent: "token:accent-2",
+      primary: "#ffffff",
+secondary: "#0b0f14",
+accent: "#34d399",
       accentMode: "gradient",
       fontPreset: "space_grotesk",
       autoContrast: true,

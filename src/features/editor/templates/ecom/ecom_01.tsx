@@ -4,39 +4,48 @@ import type { TemplateRenderProps } from "@/features/editor/templates/types";
 
 function isHex(s?: string) {
   if (!s) return false;
-  return /^#([0-9a-fA-F]{3}){1,2}$/.test(s.trim());
+  return /^#([0-9a-fA-F]{3}){1,2}$/.test(String(s).trim());
 }
 
-// fallback simples: se brand.accent não for hex, usa emerald
-function resolveAccent(spec: TemplateRenderProps["spec"]) {
-  const a = spec.brand?.accent;
-  if (isHex(a)) return a!;
-  return "#34d399"; // emerald-400
-}
-
-// resolve text color: se brand.primary for hex usa, senão branco
-function resolveText(spec: TemplateRenderProps["spec"]) {
-  const p = spec.brand?.primary;
-  if (isHex(p)) return p!;
-  return "#ffffff";
+function fontFromPreset(p?: string) {
+  switch (p) {
+    case "space_grotesk":
+      return `"Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+    case "plus_jakarta":
+      return `"Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+    case "dm_sans":
+      return `"DM Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+    case "inter":
+    default:
+      return `"Inter", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+  }
 }
 
 export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProps) {
   const { headline, subheadline, ctaText, price, badgeText } = spec.content;
 
-  const accent = resolveAccent(spec);
-  const textColor = resolveText(spec);
+  const accent = isHex(spec.brand?.accent) ? spec.brand!.accent : "var(--mi-accent)";
+  const textColor = isHex(spec.brand?.primary) ? spec.brand!.primary : "var(--mi-text)";
+
+  const displayFont = fontFromPreset(spec.brand?.fontPreset);
+  const bodyFont = fontFromPreset("plus_jakarta");
 
   const productPng = spec.assets?.productImageUrl;
   const tilt = spec.effects?.tilt ?? 0;
-  const shadowLevel = spec.effects?.shadow ?? 6;
-  const outlineLevel = spec.effects?.textOutline ?? 2;
-
-  const shadowPx = Math.round((shadowLevel / 10) * 18);
-  const outlinePx = Math.round((outlineLevel / 10) * 4);
 
   return (
-    <div className="relative w-full h-full overflow-hidden rounded-2xl bg-muted/20">
+    <div
+      className="relative w-full h-full overflow-hidden"
+      style={{
+        borderRadius: "var(--mi-radius)",
+        boxShadow: "var(--mi-shadow)",
+        // tokens + overrides por spec
+        ["--mi-accent" as any]: accent,
+        ["--mi-text" as any]: textColor,
+        ["--mi-font-display" as any]: displayFont,
+        ["--mi-font-body" as any]: bodyFont,
+      }}
+    >
       {/* BG */}
       {imageUrl ? (
         <img
@@ -49,9 +58,15 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
       )}
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(90deg, var(--mi-overlay-from), var(--mi-overlay-via), var(--mi-overlay-to))",
+        }}
+      />
 
-      {/* Lighting (spotlight) */}
+      {/* Lighting */}
       <div
         className="absolute inset-0"
         style={{
@@ -62,7 +77,7 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
         }}
       />
 
-      {/* Optional grid */}
+      {/* Grid */}
       {showGrid ? (
         <div
           className="absolute inset-0 pointer-events-none opacity-25"
@@ -74,23 +89,18 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
         />
       ) : null}
 
-      {/* Product PNG overlay */}
+      {/* Product PNG */}
       {productPng ? (
         <div
           className="absolute right-10 bottom-0 top-0 flex items-end justify-end pointer-events-none"
-          style={{
-            transform: `rotate(${tilt}deg)`,
-          }}
+          style={{ transform: `rotate(${tilt}deg)` }}
         >
           <img
             src={productPng}
             alt=""
-            className="max-h-[92%] max-w-[46%] object-contain drop-shadow-2xl"
+            className="max-h-[92%] max-w-[46%] object-contain"
             style={{
-              filter: `drop-shadow(0px ${Math.max(8, shadowPx)}px ${Math.max(
-                18,
-                shadowPx * 2
-              )}px rgba(0,0,0,0.55))`,
+              filter: "drop-shadow(0px 18px 40px rgba(0,0,0,0.55))",
             }}
           />
         </div>
@@ -106,28 +116,26 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
           ) : null}
 
           <div
-            className="leading-[1.02] font-extrabold"
             style={{
-              color: textColor,
-              fontSize: "52px",
-              textShadow:
-                outlinePx > 0
-                  ? `0 0 0 rgba(0,0,0,0), 0 0 0 rgba(0,0,0,0), 0 0 0 rgba(0,0,0,0), 0 0 0 rgba(0,0,0,0), 0px ${Math.max(
-                      10,
-                      shadowPx
-                    )}px ${Math.max(18, shadowPx * 2)}px rgba(0,0,0,0.55)`
-                  : `0px ${Math.max(10, shadowPx)}px ${Math.max(
-                      18,
-                      shadowPx * 2
-                    )}px rgba(0,0,0,0.55)`,
-              WebkitTextStroke:
-                outlinePx > 0 ? `${outlinePx}px rgba(0,0,0,0.35)` : undefined,
+              fontFamily: "var(--mi-font-display)",
+              color: "var(--mi-text)",
+              fontSize: "var(--mi-h1-size)",
+              fontWeight: 800,
+              lineHeight: 1.02,
+              textShadow: "0px 18px 40px rgba(0,0,0,0.55)",
             }}
           >
             {headline || "New Collection"}
           </div>
 
-          <div className="text-white/85 text-lg max-w-[560px]">
+          <div
+            style={{
+              fontFamily: "var(--mi-font-body)",
+              color: "var(--mi-muted)",
+              fontSize: "var(--mi-sub-size)",
+              maxWidth: 560,
+            }}
+          >
             {subheadline || "Premium pieces, limited stock."}
           </div>
 
@@ -135,18 +143,34 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
             <span
               className="inline-flex items-center justify-center rounded-full px-5 h-11 text-black font-semibold text-sm shadow-sm"
               style={{
-                background: accent,
+                background: "var(--mi-accent)",
               }}
             >
               {ctaText || "Shop now"}
             </span>
 
             {price ? (
-              <span className="text-white/90 text-lg font-semibold">{price}</span>
+              <span
+                style={{
+                  fontFamily: "var(--mi-font-display)",
+                  color: "rgba(255,255,255,.90)",
+                  fontSize: 18,
+                  fontWeight: 700,
+                }}
+              >
+                {price}
+              </span>
             ) : null}
           </div>
 
-          <div className="text-white/50 text-xs pt-3">
+          <div
+            style={{
+              fontFamily: "var(--mi-font-body)",
+              color: "rgba(255,255,255,.45)",
+              fontSize: 12,
+              paddingTop: 12,
+            }}
+          >
             © Your Brand — All rights reserved
           </div>
         </div>
