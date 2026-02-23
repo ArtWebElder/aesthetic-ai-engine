@@ -1,5 +1,7 @@
 // src/features/editor/templates/types.ts
-import type { ProjectSpec, TemplateId, ModuleType, StylePreset } from "@/types/spec";
+import type { ProjectSpec, ModuleType, StylePreset } from "@/types/spec";
+
+export type TemplateId = import("@/types/spec").TemplateId;
 
 export type TemplateMeta = {
   id: TemplateId;
