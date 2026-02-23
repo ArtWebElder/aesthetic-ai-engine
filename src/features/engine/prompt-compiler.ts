@@ -31,6 +31,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     generation,
     contextText,
     subjectText,
+    styleText,
+    cameraText,
+    compositionText,
     lightingText,
     assetsText,
     referenceImageUrl,
@@ -62,6 +65,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const effectsHints = `text style: outline=${safeEffects.textOutline}/10 shadow=${safeEffects.shadow}/10 depth=${safeEffects.depth3d}/10 tilt=${safeEffects.tilt}deg`;
   const cleanedContext = contextText?.trim();
   const cleanedSubject = subjectText?.trim();
+  const cleanedStyle = styleText?.trim();
+  const cleanedCamera = cameraText?.trim();
+  const cleanedComposition = compositionText?.trim();
   const cleanedLighting = lightingText?.trim();
   const cleanedAssets = assetsText?.trim();
   const cleanedReferenceImage = referenceImageUrl?.trim();
@@ -100,6 +106,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     `Surface color: ${surfaceColor}`,
     `Text color: ${textColor}`,
     cleanedSubject ? `Main subject: ${cleanedSubject}` : null,
+    cleanedStyle ? `Style direction: ${cleanedStyle}` : null,
+    cleanedCamera ? `Camera / lens: ${cleanedCamera}` : null,
+    cleanedComposition ? `Composition / layout: ${cleanedComposition}` : null,
     cleanedLighting ? `Lighting / mood: ${cleanedLighting}` : null,
     cleanedAssets ? `Assets / elements: ${cleanedAssets}` : null,
     cleanedContext ? `context: ${cleanedContext}` : null,

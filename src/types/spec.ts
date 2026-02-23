@@ -108,6 +108,9 @@ export interface ProjectSpec {
   templateId: TemplateId;
   contextText?: string;
   subjectText?: string;
+  styleText?: string;
+  cameraText?: string;
+  compositionText?: string;
   lightingText?: string;
   assetsText?: string;
   referenceImageUrl?: string | null;
