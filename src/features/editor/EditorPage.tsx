@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-import type { Project, ProjectSpec, StylePreset, ProjectFormat } from "@/types/spec";
+import type { Generation, Project, ProjectSpec, StylePreset, ProjectFormat } from "@/types/spec";
 import { getProject, upsertProject } from "@/features/projects/store";
 import { createDefaultSpec, formatToSize } from "@/features/editor/spec-defaults";
 
@@ -22,14 +22,8 @@ import { STYLE_PRESETS } from "@/types";
  * Mas seu editor usa isso. Então tipamos localmente como opcional,
  * sem quebrar o resto do app.
  */
-type EditorGeneration = {
-  id: string;
-  createdAt: string;
-  imageUrl?: string;
-};
-
 type EditorProject = Project & {
-  generations?: EditorGeneration[];
+  generations?: Generation[];
   activeGenerationId?: string;
 };
 
@@ -262,8 +256,10 @@ export default function EditorPage() {
   function generateMock() {
     if (!project) return;
 
-    const g: EditorGeneration = {
+    const g: Generation = {
       id: crypto.randomUUID(),
+      projectId: project.id,
+      status: "done",
       createdAt: new Date().toISOString(),
       imageUrl: undefined, // depois você pluga a geração real
     };
@@ -562,9 +558,9 @@ export default function EditorPage() {
                 <Button
                   type="button"
                   variant={
-                    spec.format === "ecom_desktop_1920x800" ? "default" : "outline"
+                    spec.format === "ecom_ultrawide_1920x800" ? "default" : "outline"
                   }
-                  onClick={() => applyFormat("ecom_desktop_1920x800")}
+                  onClick={() => applyFormat("ecom_ultrawide_1920x800")}
                 >
                   Desktop
                 </Button>
@@ -755,4 +751,4 @@ export default function EditorPage() {
       </div>
     </div>
   );
-}
+} 
