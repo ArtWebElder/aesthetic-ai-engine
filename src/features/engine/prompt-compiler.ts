@@ -75,6 +75,10 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const cleanedLighting = lightingText?.trim();
   const cleanedAssets = assetsText?.trim();
   const cleanedBuilder = {
+    intensity:
+      typeof builder?.intensity === "number"
+        ? Math.max(0, Math.min(100, Math.round(builder.intensity)))
+        : 70,
     subjectType: builder?.subjectType?.trim() ?? "",
     framing: builder?.framing?.trim() ?? "",
     expression: builder?.expression?.trim() ?? "",
@@ -89,6 +93,10 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     ),
     contextProps: (builder?.contextProps ?? []).filter((v): v is string => Boolean(v?.trim())),
     materialFeel: builder?.materialFeel?.trim() ?? "",
+    lens: builder?.lens?.trim() ?? "",
+    depth: builder?.depth?.trim() ?? "",
+    angle: builder?.angle?.trim() ?? "",
+    motion: builder?.motion?.trim() ?? "",
     layoutBase: builder?.layoutBase?.trim() ?? "",
     safeSpace: builder?.safeSpace?.trim() ?? "",
     extraDetails: builder?.extraDetails?.trim() ?? "",
@@ -157,6 +165,15 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   ].filter(Boolean);
   const builderAssetsLine =
     builderAssetsSegments.length > 0 ? `Builder Assets: ${builderAssetsSegments.join(", ")}` : null;
+  const builderIntensityLine = `Builder Intensity: ${cleanedBuilder.intensity}%`;
+  const builderCameraSegments = [
+    cleanedBuilder.lens ? `lens=${cleanedBuilder.lens}` : null,
+    cleanedBuilder.depth ? `depth=${cleanedBuilder.depth}` : null,
+    cleanedBuilder.angle ? `angle=${cleanedBuilder.angle}` : null,
+    cleanedBuilder.motion ? `motion=${cleanedBuilder.motion}` : null,
+  ].filter(Boolean);
+  const builderCameraLine =
+    builderCameraSegments.length > 0 ? `Builder Camera: ${builderCameraSegments.join(", ")}` : null;
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -200,11 +217,13 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     subjectReferenceLine,
     cleanedContext ? `context: ${cleanedContext}` : null,
     ...referenceImageLines,
+    builderIntensityLine,
     builderSubjectLine,
     builderLightingLine,
     builderStyleLine,
     builderCompositionLine,
     builderAssetsLine,
+    builderCameraLine,
     builderExtraDetailsLine,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",

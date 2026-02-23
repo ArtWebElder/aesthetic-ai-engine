@@ -102,6 +102,35 @@ export const MATERIAL_FEEL_OPTIONS: EditorPresetOption[] = [
   { value: "natural", label: "Natural" },
 ];
 
+export const LENS_OPTIONS: EditorPresetOption[] = [
+  { value: "24mm", label: "24mm" },
+  { value: "35mm", label: "35mm" },
+  { value: "50mm", label: "50mm" },
+  { value: "85mm", label: "85mm" },
+  { value: "macro", label: "Macro" },
+];
+
+export const DEPTH_OPTIONS: EditorPresetOption[] = [
+  { value: "strong_bokeh", label: "Strong bokeh" },
+  { value: "medium_bokeh", label: "Medium bokeh" },
+  { value: "all_in_focus", label: "All in focus" },
+];
+
+export const ANGLE_OPTIONS: EditorPresetOption[] = [
+  { value: "eye_level", label: "Eye level" },
+  { value: "low_angle", label: "Low angle" },
+  { value: "high_angle", label: "High angle" },
+  { value: "top_down", label: "Top down" },
+  { value: "flat_lay", label: "Flat lay" },
+  { value: "angle_45", label: "45 angle" },
+];
+
+export const MOTION_OPTIONS: EditorPresetOption[] = [
+  { value: "static", label: "Static" },
+  { value: "slight_motion_blur", label: "Slight motion blur" },
+  { value: "dynamic_ads", label: "Dynamic ads" },
+];
+
 export const LAYOUT_BASE_OPTIONS: EditorPresetOption[] = [
   { value: "centered", label: "Centered" },
   { value: "rule_of_thirds", label: "Rule of thirds" },

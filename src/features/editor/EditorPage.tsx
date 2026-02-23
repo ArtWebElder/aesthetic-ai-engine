@@ -16,14 +16,18 @@ import { createDefaultSpec, formatToSize } from "@/features/editor/spec-defaults
 import TemplateRenderer from "@/features/editor/TemplateRenderer";
 import {
   ACTION_OPTIONS,
+  ANGLE_OPTIONS,
   ASSET_HIGHLIGHTS_OPTIONS,
   CONTEXT_PROPS_OPTIONS,
+  DEPTH_OPTIONS,
   EXPRESSION_OPTIONS,
   FRAMING_OPTIONS,
   LAYOUT_BASE_OPTIONS,
+  LENS_OPTIONS,
   LIGHTING_SETUP_OPTIONS,
   MATERIAL_FEEL_OPTIONS,
   MACRO_STYLE_OPTIONS,
+  MOTION_OPTIONS,
   MOOD_OPTIONS,
   SAFE_SPACE_OPTIONS,
   SUBJECT_TYPE_OPTIONS,
@@ -144,20 +148,26 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     lightingText: spec.lightingText ?? "",
     assetsText: spec.assetsText ?? "",
     builder: {
-      subjectType: builder.subjectType ?? "",
-      framing: builder.framing ?? "",
-      expression: builder.expression ?? "",
-      action: builder.action ?? "",
-      lightingSetup: builder.lightingSetup ?? "",
-      temperature: builder.temperature ?? "",
-      mood: builder.mood ?? "",
-      macroStyle: builder.macroStyle ?? "",
+      intensity: clampSize(Number(builder.intensity ?? 70), 0, 100),
+      subjectType: (builder.subjectType ?? "").trim(),
+      framing: (builder.framing ?? "").trim(),
+      expression: (builder.expression ?? "").trim(),
+      action: (builder.action ?? "").trim(),
+      lightingSetup: (builder.lightingSetup ?? "").trim(),
+      temperature: (builder.temperature ?? "").trim(),
+      mood: (builder.mood ?? "").trim(),
+      macroStyle: (builder.macroStyle ?? "").trim(),
       visualStyle: sanitizeBuilderMulti(builder.visualStyle),
       assetsHighlights: sanitizeBuilderMulti(builder.assetsHighlights),
       contextProps: sanitizeBuilderMulti(builder.contextProps),
       materialFeel: (builder.materialFeel ?? "").trim(),
-      layoutBase: builder.layoutBase ?? "",
-      safeSpace: builder.safeSpace ?? "",
+      lens: (builder.lens ?? "").trim(),
+      depth: (builder.depth ?? "").trim(),
+      angle: (builder.angle ?? "").trim(),
+      motion: (builder.motion ?? "").trim(),
+      advancedOpen: Boolean(builder.advancedOpen),
+      layoutBase: (builder.layoutBase ?? "").trim(),
+      safeSpace: (builder.safeSpace ?? "").trim(),
       extraDetails: (builder.extraDetails ?? "").slice(0, 140),
     },
     referenceImages: normalizedReferenceImages,
@@ -845,6 +855,147 @@ export default function EditorPage() {
 
             <div className="pt-2 border-t border-border space-y-3">
               <div className="text-sm font-medium">Builder</div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs text-muted-foreground">Intensity</label>
+                  <span className="text-xs text-muted-foreground">
+                    {clampSize(Number(builder?.intensity ?? 70), 0, 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={clampSize(Number(builder?.intensity ?? 70), 0, 100)}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      builder: {
+                        ...builder,
+                        intensity: clampSize(Number(e.target.value), 0, 100),
+                      },
+                    })
+                  }
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  className="w-full rounded-md border border-border px-3 py-2 text-left text-xs hover:bg-background"
+                  onClick={() =>
+                    persistSpec({
+                      ...safeSpec,
+                      builder: { ...builder, advancedOpen: !builder?.advancedOpen },
+                    })
+                  }
+                >
+                  Advanced {builder?.advancedOpen ? "▼" : "▶"}
+                </button>
+
+                {builder?.advancedOpen ? (
+                  <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Lens</label>
+                      <Select
+                        value={builder?.lens || ""}
+                        onValueChange={(value) =>
+                          persistSpec({
+                            ...safeSpec,
+                            builder: { ...builder, lens: value },
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LENS_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Depth</label>
+                      <Select
+                        value={builder?.depth || ""}
+                        onValueChange={(value) =>
+                          persistSpec({
+                            ...safeSpec,
+                            builder: { ...builder, depth: value },
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DEPTH_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Angle</label>
+                      <Select
+                        value={builder?.angle || ""}
+                        onValueChange={(value) =>
+                          persistSpec({
+                            ...safeSpec,
+                            builder: { ...builder, angle: value },
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ANGLE_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Motion</label>
+                      <Select
+                        value={builder?.motion || ""}
+                        onValueChange={(value) =>
+                          persistSpec({
+                            ...safeSpec,
+                            builder: { ...builder, motion: value },
+                          })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {MOTION_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              {option.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">

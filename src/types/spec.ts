@@ -111,6 +111,7 @@ export interface ReferenceImage {
 }
 
 export interface BuilderSpec {
+  intensity?: number;
   subjectType?: string;
   framing?: string;
   expression?: string;
@@ -123,6 +124,11 @@ export interface BuilderSpec {
   assetsHighlights?: string[];
   contextProps?: string[];
   materialFeel?: string;
+  lens?: string;
+  depth?: string;
+  angle?: string;
+  motion?: string;
+  advancedOpen?: boolean;
   layoutBase?: string;
   safeSpace?: string;
   extraDetails?: string;
