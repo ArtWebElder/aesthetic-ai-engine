@@ -35,7 +35,6 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
     const stillValid = !!formats.find((f) => f.value === format);
 
     if (!format || !stillValid) setFormat(first);
-
     if (!style) setStyle((STYLE_PRESETS[0]?.value ?? "") as StylePreset | "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, type, formats]);
@@ -61,7 +60,8 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
     setName("");
     setStyle("");
 
-    navigate(`/app/editor/${next.id}`);
+    // ✅ rota EXISTE no App.tsx
+    navigate(`/app/projects/${next.id}`);
   };
 
   return (
@@ -92,10 +92,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
 
           <div className="space-y-2">
             <Label>Type</Label>
-            <Select
-              value={type}
-              onValueChange={(v) => setType(v as ProjectType)}
-            >
+            <Select value={type} onValueChange={(v) => setType(v as ProjectType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -111,10 +108,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
 
           <div className="space-y-2">
             <Label>Format</Label>
-            <Select
-              value={format}
-              onValueChange={(v) => setFormat(v as ProjectFormat)}
-            >
+            <Select value={format} onValueChange={(v) => setFormat(v as ProjectFormat)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select format" />
               </SelectTrigger>
@@ -130,10 +124,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
 
           <div className="space-y-2">
             <Label>Style Preset</Label>
-            <Select
-              value={style}
-              onValueChange={(v) => setStyle(v as StylePreset)}
-            >
+            <Select value={style} onValueChange={(v) => setStyle(v as StylePreset)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select style" />
               </SelectTrigger>
@@ -147,12 +138,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
             </Select>
           </div>
 
-          <Button
-            type="button"
-            onClick={handleCreate}
-            className="w-full mt-2"
-            disabled={!format}
-          >
+          <Button type="button" onClick={handleCreate} className="w-full mt-2" disabled={!format}>
             Create Project
           </Button>
         </div>
