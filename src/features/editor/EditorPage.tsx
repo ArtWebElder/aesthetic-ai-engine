@@ -555,4 +555,3 @@ NEG: {compiled?.negativePrompt}
       </div>
     </div>
   );
-}
