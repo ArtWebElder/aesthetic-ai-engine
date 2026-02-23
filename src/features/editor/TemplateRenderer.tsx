@@ -1,6 +1,6 @@
 // src/features/editor/TemplateRenderer.tsx
 import React from "react";
-import type { ProjectSpec } from "@/types/spec";
+import type { ProjectSpec, TemplateId } from "@/types/spec";
 import { TEMPLATE_CATALOG } from "@/features/editor/templates/registry";
 import { resolveStyleVars } from "@/features/editor/style-resolver";
 import TEcom01 from "@/features/editor/templates/ecom/ecom_01";
@@ -60,7 +60,7 @@ function FallbackTemplate({ spec, imageUrl, showGrid }: Props) {
   );
 }
 
-const TEMPLATE_COMPONENTS: Record<string, Comp> = {
+const TEMPLATE_COMPONENTS: Partial<Record<TemplateId, Comp>> = {
   photo_01: FallbackTemplate,
   photo_02: FallbackTemplate,
   photo_03: FallbackTemplate,
@@ -71,7 +71,7 @@ const TEMPLATE_COMPONENTS: Record<string, Comp> = {
 
 export default function TemplateRenderer(props: Props) {
   const id = props.spec.templateId ?? "photo_01";
-  const Comp = TEMPLATE_COMPONENTS[id] ?? TEMPLATE_COMPONENTS["photo_01"];
+  const Comp = TEMPLATE_COMPONENTS[id] ?? TEMPLATE_COMPONENTS["photo_01"] ?? FallbackTemplate;
 
   return (
     <div className="h-full w-full">

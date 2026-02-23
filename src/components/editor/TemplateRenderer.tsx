@@ -195,7 +195,9 @@ function TPhoto05({ spec, imageUrl, showGrid }: TemplateRenderProps) {
   );
 }
 
-const TEMPLATE_COMPONENTS: Record<TemplateId, (p: TemplateRenderProps) => JSX.Element> = {
+type Comp = (p: TemplateRenderProps) => JSX.Element;
+
+const TEMPLATE_COMPONENTS: Partial<Record<TemplateId, Comp>> = {
   photo_01: TPhoto01,
   photo_02: TPhoto02,
   photo_03: TPhoto03,
@@ -204,7 +206,7 @@ const TEMPLATE_COMPONENTS: Record<TemplateId, (p: TemplateRenderProps) => JSX.El
 };
 
 export default function TemplateRenderer(props: TemplateRenderProps) {
-  const id = (props.spec.templateId as TemplateId) || "photo_01";
-  const Comp = TEMPLATE_COMPONENTS[id] ?? TEMPLATE_COMPONENTS.photo_01;
+  const id = props.spec.templateId || "photo_01";
+  const Comp = TEMPLATE_COMPONENTS[id] ?? TEMPLATE_COMPONENTS["photo_01"] ?? TPhoto01;
   return <Comp {...props} />;
 }

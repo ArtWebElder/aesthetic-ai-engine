@@ -19,6 +19,24 @@ function newId() {
   return crypto.randomUUID();
 }
 
+function clampSize(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+function getSafeDims(spec: ProjectSpec): { w: number; h: number } {
+  const rawW = Number(spec.generation?.width) || 1080;
+  const rawH = Number(spec.generation?.height) || 1350;
+
+  return {
+    w: clampSize(rawW, 640, 1920),
+    h: clampSize(rawH, 640, 1920),
+  };
+}
+
+function buildPicsumUrl(seed: string, w: number, h: number): string {
+  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
+}
+
 type EditorProject = Project & {
   generations?: Generation[];
   activeGenerationId?: string;

@@ -39,8 +39,8 @@ function clampSize(n: number, min: number, max: number): number {
 }
 
 function getSafeDims(spec: ProjectSpec): { w: number; h: number } {
-  const rawW = Number(spec.generation.width) || 1080;
-  const rawH = Number(spec.generation.height) || 1350;
+  const rawW = Number(spec.generation?.width) || 1080;
+  const rawH = Number(spec.generation?.height) || 1350;
 
   return {
     w: clampSize(rawW, 640, 1920),
