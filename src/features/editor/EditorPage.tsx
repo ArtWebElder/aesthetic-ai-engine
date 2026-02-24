@@ -37,6 +37,7 @@ import {
 } from "@/features/editor/editor-presets";
 import {
   PHOTOSHOOT_PRESET_OPTIONS,
+  PHOTOSHOOT_PRESETS,
   applyPhotoshootPreset,
 } from "@/features/editor/photoshoot-presets";
 import type { PhotoshootPresetId } from "@/features/editor/photoshoot-presets";
@@ -376,9 +377,37 @@ export default function EditorPage() {
   }, [subjectPreviewUrl]);
 
   useEffect(() => {
-    if (spec?.module === "photoshoot") {
+    if (spec?.module !== "photoshoot") return;
+    const builder = spec.builder;
+    if (!builder) {
       setPhotoshootPreset("studio_product");
+      return;
     }
+
+    const keys: Array<
+      "lens" | "depth" | "angle" | "lightingSetup" | "mood" | "temperature" | "finish"
+    > = ["lens", "depth", "angle", "lightingSetup", "mood", "temperature", "finish"];
+
+    let matchedPresetId: PhotoshootPresetId | null = null;
+    let bestScore = 0;
+
+    (Object.keys(PHOTOSHOOT_PRESETS) as PhotoshootPresetId[]).forEach((presetId) => {
+      const preset = PHOTOSHOOT_PRESETS[presetId];
+      let score = 0;
+      keys.forEach((key) => {
+        const presetValue = typeof preset?.[key] === "string" ? preset[key] : "";
+        const builderValue = typeof builder?.[key] === "string" ? builder[key] : "";
+        if (presetValue && builderValue && presetValue === builderValue) {
+          score += 1;
+        }
+      });
+      if (score >= 5 && score > bestScore) {
+        bestScore = score;
+        matchedPresetId = presetId;
+      }
+    });
+
+    setPhotoshootPreset(matchedPresetId ?? "studio_product");
   }, [spec?.module, project?.id]);
 
   // geraÃ§Ã£o ativa (placeholder)

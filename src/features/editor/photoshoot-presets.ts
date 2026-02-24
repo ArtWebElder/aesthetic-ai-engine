@@ -77,15 +77,22 @@ export function applyPhotoshootPreset(
   const baseBuilder = spec.builder ?? {};
   const preset = PHOTOSHOOT_PRESETS[presetId];
   const mergedBuilder = { ...baseBuilder, ...preset };
+  const nextBuilder = {
+    ...mergedBuilder,
+    subjectType: baseBuilder.subjectType,
+    extraDetails: baseBuilder.extraDetails,
+    assetsHighlights: baseBuilder.assetsHighlights,
+    contextProps: baseBuilder.contextProps,
+    visualStyle: [],
+    macroStyle: "",
+    layoutBase: "",
+    safeSpace: "",
+    motion: "static",
+    finish: (mergedBuilder.finish ?? "").trim() || "true_to_life",
+  };
 
   return {
     ...spec,
-    builder: {
-      ...mergedBuilder,
-      subjectType: baseBuilder.subjectType,
-      extraDetails: baseBuilder.extraDetails,
-      motion: "static",
-      finish: (mergedBuilder.finish ?? "").trim() || "true_to_life",
-    },
+    builder: nextBuilder,
   };
 }
