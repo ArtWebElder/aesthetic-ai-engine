@@ -81,25 +81,25 @@ function buildPicsumUrl(seed: string, w: number, h: number): string {
 }
 
 function aspectToSize(aspect: "1:1" | "4:5" | "3:2" | "4:3" | "16:9" | "9:16"): {
-  w: number;
-  h: number;
+  width: number;
+  height: number;
   aspectRatio: string;
 } {
   switch (aspect) {
     case "1:1":
-      return { w: 1280, h: 1280, aspectRatio: "1:1" };
+      return { width: 1280, height: 1280, aspectRatio: "1:1" };
     case "4:5":
-      return { w: 1152, h: 1440, aspectRatio: "4:5" };
+      return { width: 1152, height: 1440, aspectRatio: "4:5" };
     case "3:2":
-      return { w: 1536, h: 1024, aspectRatio: "3:2" };
+      return { width: 1536, height: 1024, aspectRatio: "3:2" };
     case "4:3":
-      return { w: 1536, h: 1152, aspectRatio: "4:3" };
+      return { width: 1536, height: 1152, aspectRatio: "4:3" };
     case "16:9":
-      return { w: 1600, h: 900, aspectRatio: "16:9" };
+      return { width: 1600, height: 900, aspectRatio: "16:9" };
     case "9:16":
-      return { w: 900, h: 1600, aspectRatio: "9:16" };
+      return { width: 900, height: 1600, aspectRatio: "9:16" };
     default:
-      return { w: 1536, h: 1024, aspectRatio: "3:2" };
+      return { width: 1536, height: 1024, aspectRatio: "3:2" };
   }
 }
 
@@ -221,8 +221,8 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       realism: clampSize(Number(generation.realism ?? 70), 0, 100),
       ...(photoshootSize
         ? {
-            width: photoshootSize.w,
-            height: photoshootSize.h,
+            width: photoshootSize.width,
+            height: photoshootSize.height,
             aspectRatio: photoshootSize.aspectRatio,
           }
         : {}),
@@ -1752,8 +1752,8 @@ export default function EditorPage() {
                         photoAspect: nextAspect,
                         generation: {
                           ...safeSpec.generation,
-                          width: nextSize.w,
-                          height: nextSize.h,
+                          width: nextSize.width,
+                          height: nextSize.height,
                           aspectRatio: nextSize.aspectRatio,
                         },
                       });
