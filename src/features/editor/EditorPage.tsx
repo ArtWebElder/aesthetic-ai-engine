@@ -35,6 +35,11 @@ import {
   TEMPERATURE_OPTIONS,
   VISUAL_STYLE_OPTIONS,
 } from "@/features/editor/editor-presets";
+import {
+  PHOTOSHOOT_PRESET_OPTIONS,
+  applyPhotoshootPreset,
+} from "@/features/editor/photoshoot-presets";
+import type { PhotoshootPresetId } from "@/features/editor/photoshoot-presets";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 
 import { Button } from "@/components/ui/button";
@@ -346,6 +351,7 @@ export default function EditorPage() {
   const [project, setProject] = useState<EditorProject | null>(null);
   const [spec, setSpec] = useState<ProjectSpec | null>(null);
   const [subjectPreviewUrl, setSubjectPreviewUrl] = useState<string | null>(null);
+  const [photoshootPreset, setPhotoshootPreset] = useState<PhotoshootPresetId>("studio_product");
 
   // carrega projeto por ID
   useEffect(() => {
@@ -903,6 +909,32 @@ export default function EditorPage() {
                 </div>
               )}
             </div>
+
+            {isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-2">
+                <label className="text-xs text-muted-foreground">Shoot type</label>
+                <Select
+                  value={photoshootPreset}
+                  onValueChange={(value) => {
+                    const newId = value as PhotoshootPresetId;
+                    setPhotoshootPreset(newId);
+                    const next = applyPhotoshootPreset(safeSpec, newId);
+                    persistSpec(next);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a shoot type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PHOTOSHOOT_PRESET_OPTIONS.map((option) => (
+                      <SelectItem key={option.id} value={option.id}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
 
             <div className="pt-2 border-t border-border space-y-3">
               <button
