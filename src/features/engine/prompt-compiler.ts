@@ -332,6 +332,15 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
           : ""
       }`
     : null;
+  const intensityDirectiveLine = sceneDirectiveLine
+    ? isLow
+      ? "Intensity directive: subtle, minimal manipulation, keep natural realism"
+      : isHigh
+      ? isExtreme
+        ? "Intensity directive: visually dominant, bold composition and lighting emphasis"
+        : "Intensity directive: strong visual impact, bolder styling, keep coherent"
+      : "Intensity directive: balanced enhancement, realistic, avoid over-stylization"
+    : null;
   const amplificationLines: string[] = [];
   if (isExtreme) {
     if (builderLabels.macroStyle) {
@@ -379,8 +388,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
   const prompt = [
     ...(isExtreme
-      ? [weightedDirectiveLine, ...amplificationLines, ...baseBlock]
-      : [...baseBlock, weightedDirectiveLine]),
+      ? [weightedDirectiveLine, intensityDirectiveLine, ...amplificationLines, ...baseBlock]
+      : [...baseBlock, weightedDirectiveLine, intensityDirectiveLine]),
     debugEnabled ? builderSubjectLineText : null,
     debugEnabled ? builderLightingLine : null,
     debugEnabled ? builderStyleLine : null,
