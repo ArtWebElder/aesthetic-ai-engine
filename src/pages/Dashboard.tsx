@@ -6,38 +6,40 @@ import StatCard from '@/components/StatCard';
 import AuroraDivider from '@/components/AuroraDivider';
 import CreateProjectModal from '@/components/CreateProjectModal';
 import { mockCredits, mockProjects, mockGenerations } from '@/lib/mocks/data';
+import { useI18n } from '@/i18n';
 
 const quickCreate = [
-  { label: 'Social Ad', icon: ImagePlus, type: 'social_post' as const },
-  { label: 'E-com Banner', icon: ShoppingBag, type: 'ecom_banner' as const },
-  { label: 'Photoshoot', icon: Camera, type: 'photoshoot' as const },
+  { labelKey: 'dashboard.quick_create_social', icon: ImagePlus, type: 'social_post' as const },
+  { labelKey: 'dashboard.quick_create_ecom', icon: ShoppingBag, type: 'ecom_banner' as const },
+  { labelKey: 'dashboard.quick_create_photoshoot', icon: Camera, type: 'photoshoot' as const },
 ];
 
 const Dashboard = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-8 animate-fade-in">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Overview of your creative studio.</p>
+        <h1 className="text-2xl font-heading font-bold">{t("dashboard.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("dashboard.subtitle")}</p>
       </div>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard title="Credits" value={mockCredits.current} icon={Coins} subtitle="Monthly balance" />
-        <StatCard title="Projects" value={mockProjects.length} icon={FolderOpen} subtitle="Total created" />
-        <StatCard title="Generations" value={mockGenerations.filter(g => g.status === 'completed').length} icon={Zap} subtitle="Completed" />
-        <StatCard title="Exports" value={12} icon={Download} subtitle="This month" />
+        <StatCard title={t("dashboard.stat_credits")} value={mockCredits.current} icon={Coins} subtitle={t("dashboard.stat_monthly_balance")} />
+        <StatCard title={t("dashboard.stat_projects")} value={mockProjects.length} icon={FolderOpen} subtitle={t("dashboard.stat_total_created")} />
+        <StatCard title={t("dashboard.stat_generations")} value={mockGenerations.filter(g => g.status === 'completed').length} icon={Zap} subtitle={t("dashboard.stat_completed")} />
+        <StatCard title={t("dashboard.stat_exports")} value={12} icon={Download} subtitle={t("dashboard.stat_this_month")} />
       </div>
 
       <AuroraDivider />
 
       {/* Quick create */}
       <div>
-        <h2 className="text-lg font-heading font-semibold mb-4">Quick Create</h2>
+        <h2 className="text-lg font-heading font-semibold mb-4">{t("dashboard.quick_create")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {quickCreate.map((item) => (
             <button
@@ -51,8 +53,8 @@ const Dashboard = () => {
                 </div>
                 <Plus className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
               </div>
-              <h3 className="font-medium text-sm">{item.label}</h3>
-              <p className="text-xs text-muted-foreground mt-1">Create a new {item.label.toLowerCase()}</p>
+              <h3 className="font-medium text-sm">{t(item.labelKey)}</h3>
+              <p className="text-xs text-muted-foreground mt-1">{t("dashboard.quick_create_new", { label: t(item.labelKey).toLowerCase() })}</p>
             </button>
           ))}
         </div>
@@ -61,9 +63,9 @@ const Dashboard = () => {
       {/* Recent projects */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading font-semibold">Recent Projects</h2>
+          <h2 className="text-lg font-heading font-semibold">{t("dashboard.recent_projects")}</h2>
           <Button variant="ghost" size="sm" onClick={() => navigate('/app/projects')}>
-            View all
+            {t("common.view_all")}
           </Button>
         </div>
         <div className="space-y-2">

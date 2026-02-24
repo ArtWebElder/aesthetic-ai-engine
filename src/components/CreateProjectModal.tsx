@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { ProjectFormat, StylePreset } from "@/types/spec";
 import type { ProjectType } from "@/types";
 import { FORMAT_OPTIONS, STYLE_PRESETS, PROJECT_TYPE_LABELS } from "@/types";
+import { useI18n } from "@/i18n";
 
 interface CreateProjectModalProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface CreateProjectModalProps {
 
 const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const [name, setName] = useState("");
   const [type, setType] = useState<ProjectType>("social_post");
@@ -77,29 +79,29 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
     >
       <DialogContent className="glass-surface-strong sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-heading">New Project</DialogTitle>
+          <DialogTitle className="font-heading">{t("projects.new_project")}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label>{t("create_project.name")}</Label>
             <Input
-              placeholder="e.g. Summer Campaign"
+              placeholder={t("create_project.name_placeholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
 
           <div className="space-y-2">
-            <Label>Type</Label>
+            <Label>{t("create_project.type")}</Label>
             <Select value={type} onValueChange={(v) => setType(v as ProjectType)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(PROJECT_TYPE_LABELS) as ProjectType[]).map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {PROJECT_TYPE_LABELS[t]}
+                {(Object.keys(PROJECT_TYPE_LABELS) as ProjectType[]).map((projectType) => (
+                  <SelectItem key={projectType} value={projectType}>
+                    {t(`project_type.${projectType}`)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -107,10 +109,10 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
           </div>
 
           <div className="space-y-2">
-            <Label>Format</Label>
+            <Label>{t("create_project.format")}</Label>
             <Select value={format} onValueChange={(v) => setFormat(v as ProjectFormat)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select format" />
+                <SelectValue placeholder={t("create_project.select_format")} />
               </SelectTrigger>
               <SelectContent>
                 {formats.map((f) => (
@@ -123,10 +125,10 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
           </div>
 
           <div className="space-y-2">
-            <Label>Style Preset</Label>
+            <Label>{t("create_project.style_preset")}</Label>
             <Select value={style} onValueChange={(v) => setStyle(v as StylePreset)}>
               <SelectTrigger>
-                <SelectValue placeholder="Select style" />
+                <SelectValue placeholder={t("create_project.select_style")} />
               </SelectTrigger>
               <SelectContent>
                 {STYLE_PRESETS.map((s) => (
@@ -139,7 +141,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
           </div>
 
           <Button type="button" onClick={handleCreate} className="w-full mt-2" disabled={!format}>
-            Create Project
+            {t("create_project.create_button")}
           </Button>
         </div>
       </DialogContent>

@@ -19,12 +19,7 @@ import {
 import AuroraDivider from '@/components/AuroraDivider';
 import StatCard from '@/components/StatCard';
 import { mockCredits } from '@/lib/mocks/data';
-
-const plans = [
-  { name: 'Starter', price: 19, credits: 100, features: ['100 credits/mo', 'All templates', 'HD export'] },
-  { name: 'Pro', price: 49, credits: 500, features: ['500 credits/mo', 'Priority generation', '2K export', 'BYOK'] },
-  { name: 'Business', price: 99, credits: 1500, features: ['1500 credits/mo', 'API access', '4K export', 'Team seats'] },
-];
+import { useI18n } from '@/i18n';
 
 const creditPacks = [
   { amount: 50, price: 5 },
@@ -34,27 +29,33 @@ const creditPacks = [
 
 const Billing = () => {
   const [buyOpen, setBuyOpen] = useState(false);
+  const { t } = useI18n();
+  const plans = [
+    { name: t('billing.plan.starter'), price: 19, credits: 100, features: [t('billing.feature.100_credits'), t('billing.feature.all_templates'), t('billing.feature.hd_export')] },
+    { name: t('billing.plan.pro'), price: 49, credits: 500, features: [t('billing.feature.500_credits'), t('billing.feature.priority_generation'), t('billing.feature.2k_export'), t('billing.feature.byok')] },
+    { name: t('billing.plan.business'), price: 99, credits: 1500, features: [t('billing.feature.1500_credits'), t('billing.feature.api_access'), t('billing.feature.4k_export'), t('billing.feature.team_seats')] },
+  ];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-heading font-bold">Billing</h1>
-        <p className="text-sm text-muted-foreground mt-1">Manage your plan and credits.</p>
+        <h1 className="text-2xl font-heading font-bold">{t('billing.title')}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t('billing.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <StatCard title="Current Plan" value="Starter" icon={CreditCard} subtitle="$19/month" />
-        <StatCard title="Credits" value={mockCredits.current} icon={Coins} subtitle="Remaining" />
+        <StatCard title={t('billing.current_plan')} value={t('billing.plan.starter')} icon={CreditCard} subtitle={t('billing.per_month', { price: 19 })} />
+        <StatCard title={t('billing.credits')} value={mockCredits.current} icon={Coins} subtitle={t('billing.remaining')} />
       </div>
 
       {/* Plans */}
       <div>
-        <h2 className="text-lg font-heading font-semibold mb-4">Plans</h2>
+        <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.plans')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {plans.map((plan, i) => (
             <div key={plan.name} className={`glass-surface rounded-lg p-5 hover-lift ${i === 1 ? 'ring-1 ring-primary/30' : ''}`}>
               <h3 className="font-heading font-semibold">{plan.name}</h3>
-              <p className="text-2xl font-heading font-bold mt-1">${plan.price}<span className="text-sm text-muted-foreground font-normal">/mo</span></p>
+              <p className="text-2xl font-heading font-bold mt-1">${plan.price}<span className="text-sm text-muted-foreground font-normal">{t('billing.mo_suffix')}</span></p>
               <ul className="mt-4 space-y-2">
                 {plan.features.map((f) => (
                   <li key={f} className="text-xs text-muted-foreground flex items-center gap-2">
@@ -64,7 +65,7 @@ const Billing = () => {
                 ))}
               </ul>
               <Button variant={i === 1 ? 'default' : 'outline'} size="sm" className="w-full mt-4" disabled>
-                {i === 0 ? 'Current' : 'Upgrade'}
+                {i === 0 ? t('billing.current') : t('billing.upgrade')}
               </Button>
             </div>
           ))}
@@ -74,14 +75,14 @@ const Billing = () => {
       {/* Buy credits */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading font-semibold">Buy Credits</h2>
-          <Button variant="outline" size="sm" onClick={() => setBuyOpen(true)}>Buy</Button>
+          <h2 className="text-lg font-heading font-semibold">{t('billing.buy_credits')}</h2>
+          <Button variant="outline" size="sm" onClick={() => setBuyOpen(true)}>{t('billing.buy')}</Button>
         </div>
         <div className="grid grid-cols-3 gap-3">
           {creditPacks.map((pack) => (
             <button key={pack.amount} className="glass-surface rounded-lg p-4 text-center hover-lift" onClick={() => setBuyOpen(true)}>
               <p className="text-xl font-heading font-bold">{pack.amount}</p>
-              <p className="text-xs text-muted-foreground">credits</p>
+              <p className="text-xs text-muted-foreground">{t('billing.credits_unit')}</p>
               <p className="text-sm font-medium mt-2">${pack.price}</p>
             </button>
           ))}
@@ -92,14 +93,14 @@ const Billing = () => {
 
       {/* BYOK */}
       <div>
-        <h2 className="text-lg font-heading font-semibold mb-4">Use Your Own Key (BYOK)</h2>
+        <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.byok_title')}</h2>
         <div className="glass-surface rounded-lg p-5 space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Key className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">Connect your own AI provider</p>
+            <p className="text-sm text-muted-foreground">{t('billing.byok_subtitle')}</p>
           </div>
           <div className="space-y-2">
-            <Label className="text-xs">Provider</Label>
+            <Label className="text-xs">{t('billing.provider')}</Label>
             <Select defaultValue="openai">
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -110,26 +111,26 @@ const Billing = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-xs">API Key</Label>
+            <Label className="text-xs">{t('billing.api_key')}</Label>
             <Input type="password" placeholder="sk-..." />
           </div>
-          <Button variant="outline" size="sm" disabled>Save Key</Button>
+          <Button variant="outline" size="sm" disabled>{t('billing.save_key')}</Button>
         </div>
       </div>
 
       <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
         <DialogContent className="glass-surface-strong sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-heading">Buy Credits</DialogTitle>
+            <DialogTitle className="font-heading">{t('billing.buy_credits')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 pt-2">
             {creditPacks.map((pack) => (
               <button key={pack.amount} className="w-full glass-surface rounded-lg p-4 flex items-center justify-between hover-lift">
-                <span className="font-medium">{pack.amount} credits</span>
+                <span className="font-medium">{t('billing.credit_pack', { amount: pack.amount })}</span>
                 <span className="text-sm">${pack.price}</span>
               </button>
             ))}
-            <Button className="w-full mt-2" disabled>Pay with Stripe</Button>
+            <Button className="w-full mt-2" disabled>{t('billing.pay_with_stripe')}</Button>
           </div>
         </DialogContent>
       </Dialog>

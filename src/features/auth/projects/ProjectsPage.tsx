@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import type { ProjectFormat } from "@/types/spec";
 import { useProjects } from "@/features/projects/useProjects";
 import { createProject, deleteProject, resetDemoData } from "../../projects/store";
+import { useI18n } from "@/i18n";
 
 const formats: { label: string; value: ProjectFormat }[] = [
   { label: "Feed 1080x1080", value: "feed_1080" },
@@ -22,6 +23,7 @@ const formats: { label: string; value: ProjectFormat }[] = [
 export default function Projects() {
   const nav = useNavigate();
   const { items, refresh } = useProjects();
+  const { t } = useI18n();
 
   const [name, setName] = useState("New Project");
   const [format, setFormat] = useState<ProjectFormat>("story_1080x1920");
@@ -30,9 +32,9 @@ export default function Projects() {
     <div className="p-4 md:p-8 space-y-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Projects</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("projects.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            Demo persistence via localStorage (later: Supabase).
+            {t("projects.demo_subtitle")}
           </p>
         </div>
 
@@ -43,19 +45,19 @@ export default function Projects() {
             refresh();
           }}
         >
-          Reset demo
+          {t("projects.reset_demo")}
         </Button>
       </div>
 
       <Card className="p-4 md:p-5 space-y-3">
         <div className="grid md:grid-cols-3 gap-3">
           <div className="md:col-span-2 space-y-2">
-            <label className="text-xs text-muted-foreground">Project name</label>
+            <label className="text-xs text-muted-foreground">{t("create_project.name")}</label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs text-muted-foreground">Format</label>
+            <label className="text-xs text-muted-foreground">{t("create_project.format")}</label>
             <select
               className="w-full h-10 rounded-md bg-transparent border border-border px-3 text-sm"
               value={format}
@@ -78,15 +80,15 @@ export default function Projects() {
             nav(`/app/projects/${p.id}`);
           }}
         >
-          New Project
+          {t("projects.new_project")}
         </Button>
       </Card>
 
       {items.length === 0 ? (
         <Card className="p-10 text-center">
-          <div className="text-lg font-medium">No projects yet</div>
+          <div className="text-lg font-medium">{t("projects.empty_title")}</div>
           <div className="text-sm text-muted-foreground mt-1">
-            Create your first project above.
+            {t("projects.empty_subtitle")}
           </div>
         </Card>
       ) : (
@@ -108,7 +110,7 @@ export default function Projects() {
                     refresh();
                   }}
                 >
-                  Delete
+                  {t("common.delete")}
                 </Button>
               </div>
 
@@ -117,7 +119,7 @@ export default function Projects() {
                 variant="secondary"
                 onClick={() => nav(`/app/projects/${p.id}`)}
               >
-                Open
+                {t("common.open")}
               </Button>
             </Card>
           ))}

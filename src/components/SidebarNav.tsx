@@ -11,13 +11,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/fake-auth';
 import AuroraDivider from './AuroraDivider';
+import { useI18n } from '@/i18n';
 
 const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
-  { label: 'Projects', icon: FolderOpen, path: '/app/projects' },
-  { label: 'Billing', icon: CreditCard, path: '/app/billing' },
-  { label: 'Settings', icon: Settings, path: '/app/settings' },
-  { label: 'Help', icon: HelpCircle, path: '/app/help' },
+  { labelKey: 'nav.dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
+  { labelKey: 'nav.projects', icon: FolderOpen, path: '/app/projects' },
+  { labelKey: 'nav.billing', icon: CreditCard, path: '/app/billing' },
+  { labelKey: 'nav.settings', icon: Settings, path: '/app/settings' },
+  { labelKey: 'nav.help', icon: HelpCircle, path: '/app/help' },
 ];
 
 interface SidebarNavProps {
@@ -28,6 +29,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { t } = useI18n();
 
   const handleNav = (path: string) => {
     navigate(path);
@@ -61,7 +63,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
               }`}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              {t(item.labelKey)}
             </button>
           );
         })}
@@ -79,7 +81,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
           }}
         >
           <LogOut className="h-4 w-4 mr-2" />
-          Sign out
+          {t("nav.sign_out")}
         </Button>
       </div>
     </div>

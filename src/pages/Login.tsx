@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/fake-auth";
 import AuroraDivider from "@/components/AuroraDivider";
+import { useI18n } from "@/i18n";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { login, isAuthed } = useAuth();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
-  // ✅ redirect só quando o estado mudar (evita loop)
   useEffect(() => {
     if (isAuthed) navigate("/app/dashboard", { replace: true });
   }, [isAuthed, navigate]);
@@ -26,18 +27,16 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center noise-overlay p-4">
       <div className="relative z-10 w-full max-w-sm">
-        {/* Brand */}
         <div className="text-center mb-8 animate-fade-in">
           <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mb-4">
             <Sparkles className="h-7 w-7 text-primary" />
           </div>
           <h1 className="text-2xl font-heading font-bold mb-2">Magic Idea</h1>
           <p className="text-sm text-muted-foreground">
-            Create high-performing creatives in minutes.
+            {t('auth.subtitle')}
           </p>
         </div>
 
-        {/* Login card */}
         <div className="glass-surface rounded-lg p-6 animate-slide-up">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -45,7 +44,7 @@ const Login = () => {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="email"
-                  placeholder="Email"
+                  placeholder={t('auth.email_placeholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="pl-10"
@@ -58,7 +57,7 @@ const Login = () => {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="password"
-                  placeholder="Password"
+                  placeholder={t('auth.password_placeholder')}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-10"
@@ -67,39 +66,38 @@ const Login = () => {
             </div>
 
             <Button type="submit" className="w-full group">
-              Sign in
+              {t('auth.sign_in')}
               <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           </form>
 
           <AuroraDivider className="my-5" />
 
-          {/* Social login placeholder */}
           <div className="space-y-2">
             <Button
               variant="outline"
               className="w-full text-muted-foreground"
               disabled
             >
-              Continue with Google
+              {t('auth.continue_google')}
             </Button>
             <Button
               variant="outline"
               className="w-full text-muted-foreground"
               disabled
             >
-              Continue with GitHub
+              {t('auth.continue_github')}
             </Button>
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-4">
-            Don't have an account?{" "}
+            {t('auth.no_account')} {" "}
             <button
               type="button"
               className="text-primary hover:underline"
               onClick={() => alert("Signup (placeholder)")}
             >
-              Sign up free
+              {t('auth.sign_up_free')}
             </button>
           </p>
         </div>

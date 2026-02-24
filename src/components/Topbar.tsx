@@ -31,7 +31,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
         }}
       >
         <Search className="h-3.5 w-3.5" />
-        <span>Search...</span>
+        <span>{t("topbar.search")}</span>
         <kbd className="ml-4 text-xs bg-background/50 px-1.5 py-0.5 rounded font-mono flex items-center gap-0.5">
           <Command className="h-2.5 w-2.5" />K
         </kbd>
