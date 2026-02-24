@@ -59,6 +59,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     referenceImages,
     referenceImageUrl,
   } = spec;
+  const { headline, subheadline, ctaText: cta } = content;
 
   // Prompts-base por módulo (bem simples agora)
   const moduleBase =
@@ -88,6 +89,10 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const cleanedSubject = subjectText?.trim();
   const cleanedSubjectImage = subjectImageUrl?.trim();
   const debugEnabled = Boolean(promptDebug);
+  const debugCopyLine =
+    debugEnabled && (headline?.trim() || subheadline?.trim() || cta?.trim())
+      ? `Copy (HTML overlay only): headline="${headline ?? ""}", subheadline="${subheadline ?? ""}", cta="${cta ?? ""}"`
+      : null;
   const cleanedBuilder = {
     intensity:
       typeof builder?.intensity === "number"
@@ -405,7 +410,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : null;
 
   const baseBlock = [
-    cleanedContext ? `Context: ${cleanedContext}` : null,
+    cleanedContext ? `Campaign context: ${cleanedContext}` : null,
     subjectReferenceLine,
     ...referenceImageLines,
     ...rolePriorityLines,
@@ -425,6 +430,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     debugEnabled ? builderCameraLine : null,
     debugEnabled ? builderExtraDetailsLine : null,
     textHints,
+    debugCopyLine,
     cleanedSubject ? `Main subject: ${cleanedSubject}` : null,
     moduleBase,
     styleHints,
