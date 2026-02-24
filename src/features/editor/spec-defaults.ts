@@ -116,6 +116,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     promptDebug: false,
     builder: {
       intensity: isPhotoshoot ? 55 : 70,
+      finish: isPhotoshoot ? "true_to_life" : "",
       subjectType: isPhotoshoot ? "person" : "",
       framing: isPhotoshoot ? "medium_shot" : "",
       expression: "",
@@ -131,7 +132,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       lens: isPhotoshoot ? "85mm" : "",
       depth: isPhotoshoot ? "strong_bokeh" : "",
       angle: "",
-      motion: "",
+      motion: isPhotoshoot ? "static" : "",
       advancedOpen: false,
       layoutBase: "",
       safeSpace: "",

@@ -114,6 +114,7 @@ export interface ReferenceImage {
 
 export interface BuilderSpec {
   intensity?: number;
+  finish?: string;
   subjectType?: string;
   framing?: string;
   expression?: string;

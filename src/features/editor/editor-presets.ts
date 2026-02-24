@@ -131,6 +131,13 @@ export const MOTION_OPTIONS: EditorPresetOption[] = [
   { value: "dynamic_ads", label: "Dynamic ads" },
 ];
 
+export const FINISH_OPTIONS: EditorPresetOption[] = [
+  { value: "true_to_life", label: "True to life" },
+  { value: "editorial_soft", label: "Editorial soft" },
+  { value: "high_key_clean", label: "High key clean" },
+  { value: "low_key_moody", label: "Low key moody" },
+];
+
 export const LAYOUT_BASE_OPTIONS: EditorPresetOption[] = [
   { value: "centered", label: "Centered" },
   { value: "rule_of_thirds", label: "Rule of thirds" },

@@ -8,6 +8,7 @@ import {
   CONTEXT_PROPS_OPTIONS,
   DEPTH_OPTIONS,
   EXPRESSION_OPTIONS,
+  FINISH_OPTIONS,
   FRAMING_OPTIONS,
   LAYOUT_BASE_OPTIONS,
   LENS_OPTIONS,
@@ -113,6 +114,10 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     lightingSetup: builder?.lightingSetup?.trim() ?? "",
     temperature: builder?.temperature?.trim() ?? "",
     mood: builder?.mood?.trim() ?? "",
+    finish:
+      module === "photoshoot"
+        ? builder?.finish?.trim() || "true_to_life"
+        : builder?.finish?.trim() ?? "",
     macroStyle: builder?.macroStyle?.trim() ?? "",
     visualStyle: (builder?.visualStyle ?? []).filter((v): v is string => Boolean(v?.trim())),
     assetsHighlights: (builder?.assetsHighlights ?? []).filter(
@@ -123,7 +128,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     lens: builder?.lens?.trim() ?? "",
     depth: builder?.depth?.trim() ?? "",
     angle: builder?.angle?.trim() ?? "",
-    motion: builder?.motion?.trim() ?? "",
+    motion: module === "photoshoot" ? "static" : builder?.motion?.trim() ?? "",
     layoutBase: builder?.layoutBase?.trim() ?? "",
     safeSpace: builder?.safeSpace?.trim() ?? "",
     extraDetails: builder?.extraDetails?.trim() ?? "",
@@ -157,6 +162,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? toLabel(cleanedBuilder.temperature, TEMPERATURE_OPTIONS)
       : "",
     mood: cleanedBuilder.mood ? toLabel(cleanedBuilder.mood, MOOD_OPTIONS) : "",
+    finish: cleanedBuilder.finish ? toLabel(cleanedBuilder.finish, FINISH_OPTIONS) : "",
     macroStyle: cleanedBuilder.macroStyle
       ? toLabel(cleanedBuilder.macroStyle, MACRO_STYLE_OPTIONS)
       : "",
@@ -433,6 +439,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : "ultra sharp, premium, realistic details, no waxy skin, natural colors";
   const photoshootCleanLine =
     module === "photoshoot" ? "no text, no logos, no watermarks" : null;
+  const photoshootFinishLine =
+    module === "photoshoot" && builderLabels.finish ? `finish=${builderLabels.finish}` : null;
 
   // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
@@ -462,6 +470,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     module === "photoshoot" ? null : `Surface color: ${surfaceColor}`,
     module === "photoshoot" ? null : `Text color: ${textColor}`,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
+    photoshootFinishLine,
     photoshootCleanLine,
     textureGuardLine,
   ]

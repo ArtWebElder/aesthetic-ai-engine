@@ -21,6 +21,7 @@ import {
   CONTEXT_PROPS_OPTIONS,
   DEPTH_OPTIONS,
   EXPRESSION_OPTIONS,
+  FINISH_OPTIONS,
   FRAMING_OPTIONS,
   LAYOUT_BASE_OPTIONS,
   LENS_OPTIONS,
@@ -48,8 +49,8 @@ import {
 import { STYLE_PRESETS } from "@/types";
 
 /**
- * Seu Project do /types/spec não tem "generations" no tipo.
- * Mas seu editor usa isso. Então tipamos localmente como opcional,
+ * Seu Project do /types/spec nÃ£o tem "generations" no tipo.
+ * Mas seu editor usa isso. EntÃ£o tipamos localmente como opcional,
  * sem quebrar o resto do app.
  */
 type EditorProject = Project & {
@@ -183,6 +184,10 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     promptDebug: Boolean(spec.promptDebug),
     builder: {
       intensity: clampSize(Number(builder.intensity ?? 70), 0, 100),
+      finish:
+        spec.module === "photoshoot"
+          ? (builder.finish ?? "").trim() || "true_to_life"
+          : (builder.finish ?? "").trim(),
       subjectType: (builder.subjectType ?? "").trim(),
       framing: (builder.framing ?? "").trim(),
       expression: (builder.expression ?? "").trim(),
@@ -198,7 +203,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       lens: (builder.lens ?? "").trim(),
       depth: (builder.depth ?? "").trim(),
       angle: (builder.angle ?? "").trim(),
-      motion: (builder.motion ?? "").trim(),
+      motion: spec.module === "photoshoot" ? "static" : (builder.motion ?? "").trim(),
       advancedOpen: Boolean(builder.advancedOpen),
       layoutBase: (builder.layoutBase ?? "").trim(),
       safeSpace: (builder.safeSpace ?? "").trim(),
@@ -320,7 +325,7 @@ function TemplateRendererPlaceholder({
 
 /**
  * Registry placeholder (pra compilar).
- * Quando você plugar o sistema real, só substitui por seu TEMPLATE_REGISTRY real.
+ * Quando vocÃª plugar o sistema real, sÃ³ substitui por seu TEMPLATE_REGISTRY real.
  */
 const TEMPLATE_REGISTRY: Array<{
   id: ProjectSpec["templateId"] | string;
@@ -363,7 +368,7 @@ export default function EditorPage() {
     };
   }, [subjectPreviewUrl]);
 
-  // geração ativa (placeholder)
+  // geraÃ§Ã£o ativa (placeholder)
   const active = useMemo(() => {
     if (!project?.generations?.length) return undefined;
     const g =
@@ -400,7 +405,7 @@ export default function EditorPage() {
 
   function persist(nextProject: EditorProject) {
     setProject(nextProject);
-    // upsertProject espera Project (sem generations no tipo), então fazemos cast seguro:
+    // upsertProject espera Project (sem generations no tipo), entÃ£o fazemos cast seguro:
     upsertProject(nextProject as unknown as Project);
   }
 
@@ -461,7 +466,7 @@ export default function EditorPage() {
     persist(nextProject);
   }
 
-  // estados básicos
+  // estados bÃ¡sicos
   if (!id) {
     return (
       <div className="p-6">
@@ -584,7 +589,7 @@ export default function EditorPage() {
                     ) : null}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {safeSpec.module} • {String(t.id)}
+                    {safeSpec.module} â€¢ {String(t.id)}
                   </div>
                 </button>
               );
@@ -910,7 +915,7 @@ export default function EditorPage() {
                 }
               >
                 {isPhotoshoot ? "Shoot notes (optional)" : "Campaign context (optional)"}{" "}
-                {safeSpec.contextOpen ? "▼" : "▶"}
+                {safeSpec.contextOpen ? "â–¼" : "â–¶"}
               </button>
 
               {!safeSpec.contextOpen ? (
@@ -990,7 +995,7 @@ export default function EditorPage() {
                     })
                   }
                 >
-                  Advanced {builder?.advancedOpen ? "▼" : "▶"}
+                  Advanced {builder?.advancedOpen ? "â–¼" : "â–¶"}
                 </button>
 
                 {builder?.advancedOpen ? (
@@ -1067,29 +1072,57 @@ export default function EditorPage() {
                       </Select>
                     </div>
 
-                    <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Motion</label>
-                      <Select
-                        value={builder?.motion || ""}
-                        onValueChange={(value) =>
-                          persistSpec({
-                            ...safeSpec,
-                            builder: { ...builder, motion: value },
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {MOTION_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {isPhotoshoot ? (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Finish</label>
+                        <Select
+                          value={builder?.finish || "true_to_life"}
+                          onValueChange={(value) =>
+                            persistSpec({
+                              ...safeSpec,
+                              builder: { ...builder, finish: value },
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {FINISH_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : null}
+
+                    {!isPhotoshoot ? (
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">Motion</label>
+                        <Select
+                          value={builder?.motion || ""}
+                          onValueChange={(value) =>
+                            persistSpec({
+                              ...safeSpec,
+                              builder: { ...builder, motion: value },
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {MOTION_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>
@@ -1735,7 +1768,7 @@ export default function EditorPage() {
                 </Select>
 
                 <div className="text-xs text-muted-foreground">
-                  (Voc� pode depois mapear stylePreset ? tokens/effects automaticamente.)
+                  (Você pode depois mapear stylePreset ? tokens/effects automaticamente.)
                 </div>
               </div>
             ) : null}
