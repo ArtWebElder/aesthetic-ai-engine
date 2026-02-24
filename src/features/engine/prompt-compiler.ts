@@ -311,9 +311,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     cleanedBuilder.intensity !== 70 ? `intensity=${cleanedBuilder.intensity}%` : null;
   const sceneDirectiveSegments = [
     sceneSubjectParts.length > 0 ? sceneSubjectParts.join(", ") : null,
+    sceneCompositionLine,
     sceneLightingLine,
     sceneStyleLine,
-    sceneCompositionLine,
     sceneAssetsLine,
     sceneCameraLine,
     sceneExtraLine,
