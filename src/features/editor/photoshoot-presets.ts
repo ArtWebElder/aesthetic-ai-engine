@@ -77,12 +77,41 @@ export function applyPhotoshootPreset(
   const baseBuilder = spec.builder ?? {};
   const preset = PHOTOSHOOT_PRESETS[presetId];
   const mergedBuilder = { ...baseBuilder, ...preset };
+  const normalizeText = (value: unknown): string =>
+    typeof value === "string" ? value.trim() : "";
+
+  const presetIntensity =
+    typeof preset.intensity === "number" && Number.isFinite(preset.intensity)
+      ? preset.intensity
+      : 70;
+  const rawIntensity =
+    typeof mergedBuilder.intensity === "number" && Number.isFinite(mergedBuilder.intensity)
+      ? mergedBuilder.intensity
+      : presetIntensity;
+  const normalizedIntensity = Math.max(0, Math.min(100, Math.round(rawIntensity)));
+
+  const resolvedLens = normalizeText(mergedBuilder.lens) || normalizeText(preset.lens);
+  const resolvedDepth = normalizeText(mergedBuilder.depth) || normalizeText(preset.depth);
+  const resolvedAngle = normalizeText(mergedBuilder.angle) || normalizeText(preset.angle);
+  const resolvedLightingSetup =
+    normalizeText(mergedBuilder.lightingSetup) || normalizeText(preset.lightingSetup);
+  const resolvedMood = normalizeText(mergedBuilder.mood) || normalizeText(preset.mood);
+  const resolvedTemperature =
+    normalizeText(mergedBuilder.temperature) || normalizeText(preset.temperature);
+
   const nextBuilder = {
     ...mergedBuilder,
     subjectType: baseBuilder.subjectType,
     extraDetails: baseBuilder.extraDetails,
     assetsHighlights: baseBuilder.assetsHighlights,
     contextProps: baseBuilder.contextProps,
+    lens: resolvedLens,
+    depth: resolvedDepth,
+    angle: resolvedAngle,
+    lightingSetup: resolvedLightingSetup,
+    mood: resolvedMood,
+    temperature: resolvedTemperature,
+    intensity: normalizedIntensity,
     visualStyle: [],
     macroStyle: "",
     layoutBase: "",

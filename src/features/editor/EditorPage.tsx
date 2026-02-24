@@ -973,7 +973,11 @@ export default function EditorPage() {
                     const newId = value as PhotoshootPresetId;
                     setPhotoshootPreset(newId);
                     const next = applyPhotoshootPreset(safeSpec, newId);
-                    persistSpec(next);
+                    const nextClosed: ProjectSpec = {
+                      ...next,
+                      builder: { ...(next.builder ?? {}), advancedOpen: false },
+                    };
+                    persistSpec(nextClosed);
                   }}
                 >
                   <SelectTrigger>
