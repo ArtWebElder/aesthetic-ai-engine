@@ -431,6 +431,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     module === "photoshoot"
       ? "no waxy skin, no plastic skin, natural texture, no overprocessing"
       : "ultra sharp, premium, realistic details, no waxy skin, natural colors";
+  const photoshootCleanLine =
+    module === "photoshoot" ? "no text, no logos, no watermarks" : null;
 
   // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
@@ -460,6 +462,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     module === "photoshoot" ? null : `Surface color: ${surfaceColor}`,
     module === "photoshoot" ? null : `Text color: ${textColor}`,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
+    photoshootCleanLine,
     textureGuardLine,
   ]
     .filter(Boolean)

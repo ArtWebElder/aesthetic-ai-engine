@@ -60,7 +60,23 @@ function FallbackTemplate({ spec, imageUrl, showGrid }: Props) {
   );
 }
 
+function PhotoshootCleanTemplate({ imageUrl, showGrid }: Props) {
+  return (
+    <div className="relative h-full w-full overflow-hidden rounded-lg">
+      <div className="absolute inset-0">
+        {imageUrl ? (
+          <img src={imageUrl} className="h-full w-full object-cover" alt="" />
+        ) : (
+          <div className="h-full w-full bg-muted/30" />
+        )}
+      </div>
+      {showGrid ? <GridOverlay /> : null}
+    </div>
+  );
+}
+
 const TEMPLATE_COMPONENTS: Partial<Record<TemplateId, Comp>> = {
+  photoshoot_clean: PhotoshootCleanTemplate,
   photo_01: FallbackTemplate,
   photo_02: FallbackTemplate,
   photo_03: FallbackTemplate,
@@ -70,8 +86,15 @@ const TEMPLATE_COMPONENTS: Partial<Record<TemplateId, Comp>> = {
 };
 
 export default function TemplateRenderer(props: Props) {
-  const id = props.spec.templateId ?? "photo_01";
-  const Comp = TEMPLATE_COMPONENTS[id] ?? TEMPLATE_COMPONENTS["photo_01"] ?? FallbackTemplate;
+  const id: TemplateId =
+    props.spec.module === "photoshoot"
+      ? "photoshoot_clean"
+      : props.spec.templateId ?? "photo_01";
+  const Comp =
+    TEMPLATE_COMPONENTS[id] ??
+    TEMPLATE_COMPONENTS["photoshoot_clean"] ??
+    TEMPLATE_COMPONENTS["photo_01"] ??
+    FallbackTemplate;
 
   return (
     <div className="h-full w-full">

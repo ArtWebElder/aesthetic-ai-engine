@@ -78,7 +78,7 @@ export function defaultTemplateFor(module: ModuleType): TemplateId {
     case "ecom":
       return "ecom_01";
     case "photoshoot":
-      return "photo_01";
+      return "photoshoot_clean";
   }
 }
 

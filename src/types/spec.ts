@@ -33,6 +33,7 @@ export type ProjectFormat = SocialFormat | EcomFormat | PhotoshootFormat;
 export type StylePreset = "minimal_clean" | "bold_ads" | "glass" | "editorial";
 
 export type TemplateId =
+  | "photoshoot_clean"
   | "social_01"
   | "social_02"
   | "social_03"

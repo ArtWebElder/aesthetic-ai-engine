@@ -164,6 +164,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
 
   return {
     ...spec,
+    templateId: spec.module === "photoshoot" ? "photoshoot_clean" : spec.templateId,
     photoAspect:
       spec.photoAspect && ["1:1", "4:5", "3:2", "4:3", "16:9", "9:16"].includes(spec.photoAspect)
         ? spec.photoAspect
@@ -329,7 +330,7 @@ const TEMPLATE_REGISTRY: Array<{
 }> = [
   { id: "social_01", name: "Social 01", module: "social", stylePreset: "bold_ads" },
   { id: "ecom_01", name: "Ecom 01", module: "ecom", stylePreset: "minimal_clean" },
-  { id: "photo_01", name: "Photo 01", module: "photoshoot", stylePreset: "editorial" },
+  { id: "photoshoot_clean", name: "Photoshoot Clean", module: "photoshoot", stylePreset: "editorial" },
 ];
 
 export default function EditorPage() {
@@ -1708,34 +1709,37 @@ export default function EditorPage() {
             ) : null}
 
             {/* STYLE PRESET */}
-            <div className="pt-2 border-t border-border space-y-3">
-              <div className="text-sm font-medium">Style Preset</div>
+            {!isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Style Preset</div>
 
-              <Select
-                value={safeSpec.stylePreset}
-                onValueChange={(v) =>
-                  persistSpec({
-                    ...safeSpec,
-                    stylePreset: v as StylePreset,
-                  })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a style" />
-                </SelectTrigger>
-                <SelectContent>
-                  {STYLE_PRESETS.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select
+                  value={safeSpec.stylePreset}
+                  onValueChange={(v) =>
+                    persistSpec({
+                      ...safeSpec,
+                      stylePreset: v as StylePreset,
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STYLE_PRESETS.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <div className="text-xs text-muted-foreground">
-                (Você pode depois mapear stylePreset → tokens/effects automaticamente.)
+                <div className="text-xs text-muted-foreground">
+                  (Voc� pode depois mapear stylePreset ? tokens/effects automaticamente.)
+                </div>
               </div>
-            </div>
+            ) : null}
+
 
             {/* PHOTOSHOOT ASPECT */}
             {isPhotoshoot ? (
