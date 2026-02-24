@@ -96,6 +96,7 @@ export function defaultStyleFor(module: ModuleType): StylePreset {
 export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
   const module = moduleFromFormat(format);
   const size = formatToSize(format);
+  const isPhotoshoot = module === "photoshoot";
 
   return {
     module,
@@ -113,21 +114,21 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     assetsText: "",
     promptDebug: false,
     builder: {
-      intensity: 70,
-      subjectType: "",
-      framing: "",
+      intensity: isPhotoshoot ? 55 : 70,
+      subjectType: isPhotoshoot ? "person" : "",
+      framing: isPhotoshoot ? "medium_shot" : "",
       expression: "",
       action: "",
       lightingSetup: "",
       temperature: "",
       mood: "",
-      macroStyle: "",
+      macroStyle: isPhotoshoot ? "editorial" : "",
       visualStyle: [],
       assetsHighlights: [],
       contextProps: [],
       materialFeel: "",
-      lens: "",
-      depth: "",
+      lens: isPhotoshoot ? "85mm" : "",
+      depth: isPhotoshoot ? "strong_bokeh" : "",
       angle: "",
       motion: "",
       advancedOpen: false,

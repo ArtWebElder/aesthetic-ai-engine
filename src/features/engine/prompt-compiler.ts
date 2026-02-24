@@ -67,7 +67,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? "high-performing social ad creative, bold typography area reserved, modern commercial look"
       : module === "ecom"
       ? "e-commerce promotional banner, premium minimal layout, product-focused composition"
-      : "professional photoshoot, realistic studio lighting, clean editorial look";
+      : "photorealistic high-resolution photoshoot, natural skin texture, true-to-life lighting and tones, clean editorial framing";
 
   const styleHints =
     stylePreset === "glass"
@@ -79,7 +79,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : "editorial, premium, soft contrast";
 
   const textHints =
-    content.headline || content.subheadline
+    module === "photoshoot"
+      ? null
+      : content.headline || content.subheadline
       ? "leave safe space for text overlay, no unreadable tiny text in the image"
       : "no text";
 

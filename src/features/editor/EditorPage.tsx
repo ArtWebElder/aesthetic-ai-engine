@@ -354,6 +354,7 @@ export default function EditorPage() {
   const assetsHighlights = builder?.assetsHighlights ?? [];
   const contextProps = builder?.contextProps ?? [];
   const referenceImages = safeSpec?.referenceImages ?? [];
+  const isPhotoshoot = safeSpec?.module === "photoshoot";
 
   const bgUrl = active?.imageUrl ?? null;
 
@@ -865,7 +866,8 @@ export default function EditorPage() {
                   })
                 }
               >
-                Campaign context (optional) {safeSpec.contextOpen ? "▼" : "▶"}
+                {isPhotoshoot ? "Shoot notes (optional)" : "Campaign context (optional)"}{" "}
+                {safeSpec.contextOpen ? "▼" : "▶"}
               </button>
 
               {!safeSpec.contextOpen ? (
@@ -874,7 +876,11 @@ export default function EditorPage() {
                 </div>
               ) : (
                 <Input
-                  placeholder="e.g. Valentine's promo, premium vibe, summer sale"
+                  placeholder={
+                    isPhotoshoot
+                      ? "e.g. lifestyle gym, editorial portrait, clean studio"
+                      : "e.g. Valentine's promo, premium vibe, summer sale"
+                  }
                   value={safeSpec.contextText ?? ""}
                   onChange={(e) =>
                     persistSpec({
@@ -1769,44 +1775,48 @@ export default function EditorPage() {
             </div>
 
             {/* CONTENT */}
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Headline</label>
-              <Input
-                value={safeSpec.content.headline}
-                onChange={(e) =>
-                  persistSpec({
-                    ...safeSpec,
-                    content: { ...safeSpec.content, headline: e.target.value },
-                  })
-                }
-              />
-            </div>
+            {!isPhotoshoot ? (
+              <>
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Headline</label>
+                  <Input
+                    value={safeSpec.content.headline}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        content: { ...safeSpec.content, headline: e.target.value },
+                      })
+                    }
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Subheadline</label>
-              <Input
-                value={safeSpec.content.subheadline}
-                onChange={(e) =>
-                  persistSpec({
-                    ...safeSpec,
-                    content: { ...safeSpec.content, subheadline: e.target.value },
-                  })
-                }
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Subheadline</label>
+                  <Input
+                    value={safeSpec.content.subheadline}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        content: { ...safeSpec.content, subheadline: e.target.value },
+                      })
+                    }
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">CTA</label>
-              <Input
-                value={safeSpec.content.ctaText}
-                onChange={(e) =>
-                  persistSpec({
-                    ...safeSpec,
-                    content: { ...safeSpec.content, ctaText: e.target.value },
-                  })
-                }
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">CTA</label>
+                  <Input
+                    value={safeSpec.content.ctaText}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        content: { ...safeSpec.content, ctaText: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+              </>
+            ) : null}
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
