@@ -86,9 +86,6 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const effectsHints = `text style: outline=${safeEffects.textOutline}/10 shadow=${safeEffects.shadow}/10 depth=${safeEffects.depth3d}/10 tilt=${safeEffects.tilt}deg`;
   const cleanedContext = contextText?.trim();
   const cleanedSubject = subjectText?.trim();
-  const cleanedStyle = styleText?.trim();
-  const cleanedCamera = cameraText?.trim();
-  const cleanedComposition = compositionText?.trim();
   const cleanedSubjectImage = subjectImageUrl?.trim();
   const debugEnabled = Boolean(promptDebug);
   const cleanedBuilder = {
@@ -344,24 +341,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
   const prompt = [
-    moduleBase,
-    styleHints,
-    `template: ${templateId}`,
-    textHints,
-    effectsHints,
-    `Color palette mode: ${paletteMode}`,
-    `Palette guidance: ${paletteGuidance}`,
-    `Primary color: ${primaryColor}`,
-    `Secondary color: ${secondaryColor}`,
-    `Neutral background: ${neutralBackground}`,
-    `Surface color: ${surfaceColor}`,
-    `Text color: ${textColor}`,
-    cleanedSubject ? `Main subject: ${cleanedSubject}` : null,
-    cleanedStyle ? `Style direction: ${cleanedStyle}` : null,
-    cleanedCamera ? `Camera / lens: ${cleanedCamera}` : null,
-    cleanedComposition ? `Composition / layout: ${cleanedComposition}` : null,
+    cleanedContext ? `Context: ${cleanedContext}` : null,
     subjectReferenceLine,
-    cleanedContext ? `context: ${cleanedContext}` : null,
     ...referenceImageLines,
     sceneDirectiveLine,
     debugEnabled ? builderSubjectLineText : null,
@@ -371,6 +352,19 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     debugEnabled ? builderAssetsLine : null,
     debugEnabled ? builderCameraLine : null,
     debugEnabled ? builderExtraDetailsLine : null,
+    textHints,
+    cleanedSubject ? `Main subject: ${cleanedSubject}` : null,
+    moduleBase,
+    styleHints,
+    `template: ${templateId}`,
+    effectsHints,
+    `Color palette mode: ${paletteMode}`,
+    `Palette guidance: ${paletteGuidance}`,
+    `Primary color: ${primaryColor}`,
+    `Secondary color: ${secondaryColor}`,
+    `Neutral background: ${neutralBackground}`,
+    `Surface color: ${surfaceColor}`,
+    `Text color: ${textColor}`,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     "ultra sharp, premium, realistic details, no waxy skin, natural colors",
   ]
