@@ -1,0 +1,27 @@
+{
+  "platform_preset": "Preset da plataforma",
+  "goal_use_case": "Objetivo / Uso",
+  "content": "Conteúdo",
+  "headline": "Título",
+  "subheadline": "Subtítulo",
+  "cta": "CTA",
+  "brand_name": "Nome da marca",
+  "logo_upload": "Upload de logo",
+  "product_upload": "Upload da imagem do produto",
+  "background_upload_optional": "Upload opcional de fundo / referência",
+  "layout_preset": "Preset de layout",
+  "visual_style": "Estilo visual",
+  "accent_color": "Cor de destaque",
+  "premium_effects": "Efeitos Premium",
+  "enable_3d_overlay": "Ativar overlay de texto 3D premium",
+  "generate_overlay_assets": "Gerar assets de overlay",
+  "designer_mode": "Modo Designer",
+  "images_to_generate": "Imagens para gerar",
+  "consistency_hint": "Todas as imagens mantêm a mesma configuração para consistência.",
+  "choose": "Escolher",
+  "choose_platform": "Escolha a plataforma",
+  "choose_goal": "Escolha o objetivo",
+  "choose_layout": "Escolha o layout",
+  "choose_style": "Escolha o estilo",`n  "language": "Idioma"
+}
+

@@ -54,6 +54,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { STYLE_PRESETS } from "@/types";
+import { useI18n } from "@/i18n";
 
 /**
  * Seu Project do /types/spec nÃ£o tem "generations" no tipo.
@@ -418,6 +419,7 @@ const TEMPLATE_REGISTRY: Array<{
 export default function EditorPage() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
+  const { t } = useI18n();
 
   const [project, setProject] = useState<EditorProject | null>(null);
   const [spec, setSpec] = useState<ProjectSpec | null>(null);
@@ -1169,7 +1171,7 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Platform Preset</div>
+                <div className="text-sm font-medium">{t("platform_preset")}</div>
                 <Select
                   value={safeSpec.builder.platformPreset ?? "instagram_feed"}
                   onValueChange={(value) => {
@@ -1187,7 +1189,7 @@ export default function EditorPage() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose platform" />
+                    <SelectValue placeholder={t("choose_platform")} />
                   </SelectTrigger>
                   <SelectContent>
                     {socialPlatformOptions.map((opt) => (
@@ -1202,13 +1204,13 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Goal / Use case</div>
+                <div className="text-sm font-medium">{t("goal_use_case")}</div>
                 <Select
                   value={safeSpec.builder.goalPreset ?? "Offer"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ goalPreset: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose goal" />
+                    <SelectValue placeholder={t("choose_goal")} />
                   </SelectTrigger>
                   <SelectContent>
                     {socialGoalOptions.map((opt) => (
@@ -1223,9 +1225,9 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Content</div>
+                <div className="text-sm font-medium">{t("content")}</div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Headline</label>
+                  <label className="text-xs text-muted-foreground">{t("headline")}</label>
                   <Input
                     value={safeSpec.builder.headline ?? ""}
                     onChange={(e) =>
@@ -1234,7 +1236,7 @@ export default function EditorPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Subheadline</label>
+                  <label className="text-xs text-muted-foreground">{t("subheadline")}</label>
                   <Input
                     value={safeSpec.builder.subheadline ?? ""}
                     onChange={(e) =>
@@ -1243,14 +1245,14 @@ export default function EditorPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">CTA</label>
+                  <label className="text-xs text-muted-foreground">{t("cta")}</label>
                   <Input
                     value={safeSpec.builder.cta ?? ""}
                     onChange={(e) => persistSocialPostBuilderPatch({ cta: e.target.value })}
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Brand name</label>
+                  <label className="text-xs text-muted-foreground">{t("brand_name")}</label>
                   <Input
                     value={safeSpec.builder.brandName ?? ""}
                     onChange={(e) =>
@@ -1259,7 +1261,7 @@ export default function EditorPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Logo upload</label>
+                  <label className="text-xs text-muted-foreground">{t("logo_upload")}</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -1277,7 +1279,7 @@ export default function EditorPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Product image upload</label>
+                  <label className="text-xs text-muted-foreground">{t("product_upload")}</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -1295,7 +1297,9 @@ export default function EditorPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Optional background / ref upload</label>
+                  <label className="text-xs text-muted-foreground">
+                    {t("background_upload_optional")}
+                  </label>
                   <input
                     type="file"
                     accept="image/*"
@@ -1317,13 +1321,13 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Layout Preset</div>
+                <div className="text-sm font-medium">{t("layout_preset")}</div>
                 <Select
                   value={safeSpec.builder.layoutPreset ?? "Hero"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ layoutPreset: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose layout" />
+                    <SelectValue placeholder={t("choose_layout")} />
                   </SelectTrigger>
                   <SelectContent>
                     {socialLayoutOptions.map((opt) => (
@@ -1338,13 +1342,13 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Visual Style</div>
+                <div className="text-sm font-medium">{t("visual_style")}</div>
                 <Select
                   value={safeSpec.builder.macroStyle ?? "clean_modern"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ macroStyle: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose style" />
+                    <SelectValue placeholder={t("choose_style")} />
                   </SelectTrigger>
                   <SelectContent>
                     {socialVisualStyleOptions.map((opt) => (
@@ -1355,7 +1359,7 @@ export default function EditorPage() {
                   </SelectContent>
                 </Select>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Accent color</label>
+                  <label className="text-xs text-muted-foreground">{t("accent_color")}</label>
                   <input
                     type="color"
                     value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
@@ -1373,7 +1377,7 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Premium Effects</div>
+                <div className="text-sm font-medium">{t("premium_effects")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
@@ -1382,7 +1386,7 @@ export default function EditorPage() {
                       persistSocialPostBuilderPatch({ premiumOverlayEnabled: e.target.checked })
                     }
                   />
-                  Enable 3D premium text overlay
+                  {t("enable_3d_overlay")}
                 </label>
                 {safeSpec.builder.premiumOverlayEnabled ? (
                   <Button
@@ -1400,8 +1404,8 @@ export default function EditorPage() {
                       );
                       persistSocialPostBuilderPatch({ premiumOverlayUrls: [overlay] });
                     }}
-                  >
-                    Generate Overlay Assets
+                >
+                    {t("generate_overlay_assets")}
                   </Button>
                 ) : null}
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1412,14 +1416,14 @@ export default function EditorPage() {
                       persistSocialPostBuilderPatch({ designerMode: e.target.checked })
                     }
                   />
-                  Designer Mode
+                  {t("designer_mode")}
                 </label>
               </div>
             ) : null}
 
             {isPhotoshoot ? (
               <div className="pt-2 border-t border-border space-y-2">
-                <label className="text-xs text-muted-foreground">Images to generate</label>
+                <label className="text-xs text-muted-foreground">{t("images_to_generate")}</label>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
@@ -1458,7 +1462,7 @@ export default function EditorPage() {
                   </Button>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  All images keep the same setup for consistency.
+                  {t("consistency_hint")}
                 </div>
               </div>
             ) : null}
@@ -1473,7 +1477,7 @@ export default function EditorPage() {
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ subjectType: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {photoshootSubjectTypeOptions.map((option) => (
@@ -1507,7 +1511,7 @@ export default function EditorPage() {
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ lens: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {LENS_OPTIONS.map((option) => (
@@ -1526,7 +1530,7 @@ export default function EditorPage() {
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ depth: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {DEPTH_OPTIONS.map((option) => (
@@ -1545,7 +1549,7 @@ export default function EditorPage() {
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ angle: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {ANGLE_OPTIONS.map((option) => (
@@ -1572,7 +1576,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {LIGHTING_SETUP_OPTIONS.map((option) => (
@@ -1591,7 +1595,7 @@ export default function EditorPage() {
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ mood: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {MOOD_OPTIONS.map((option) => (
@@ -1610,7 +1614,7 @@ export default function EditorPage() {
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ temperature: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {TEMPERATURE_OPTIONS.map((option) => (
@@ -1670,7 +1674,7 @@ export default function EditorPage() {
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ finish: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {FINISH_OPTIONS.map((option) => (

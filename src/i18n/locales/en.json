@@ -1,0 +1,27 @@
+{
+  "platform_preset": "Platform Preset",
+  "goal_use_case": "Goal / Use case",
+  "content": "Content",
+  "headline": "Headline",
+  "subheadline": "Subheadline",
+  "cta": "CTA",
+  "brand_name": "Brand name",
+  "logo_upload": "Logo upload",
+  "product_upload": "Product image upload",
+  "background_upload_optional": "Optional background / ref upload",
+  "layout_preset": "Layout Preset",
+  "visual_style": "Visual Style",
+  "accent_color": "Accent color",
+  "premium_effects": "Premium Effects",
+  "enable_3d_overlay": "Enable 3D premium text overlay",
+  "generate_overlay_assets": "Generate Overlay Assets",
+  "designer_mode": "Designer Mode",
+  "images_to_generate": "Images to generate",
+  "consistency_hint": "All images keep the same setup for consistency.",
+  "choose": "Choose",
+  "choose_platform": "Choose platform",
+  "choose_goal": "Choose goal",
+  "choose_layout": "Choose layout",
+  "choose_style": "Choose style",`n  "language": "Language"
+}
+

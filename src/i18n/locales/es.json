@@ -1,0 +1,27 @@
+{
+  "platform_preset": "Preajuste de plataforma",
+  "goal_use_case": "Objetivo / caso de uso",
+  "content": "Contenido",
+  "headline": "Titular",
+  "subheadline": "Subtítulo",
+  "cta": "CTA",
+  "brand_name": "Nombre de marca",
+  "logo_upload": "Subir logo",
+  "product_upload": "Subir imagen del producto",
+  "background_upload_optional": "Subida opcional de fondo / referencia",
+  "layout_preset": "Preajuste de diseño",
+  "visual_style": "Estilo visual",
+  "accent_color": "Color de acento",
+  "premium_effects": "Efectos Premium",
+  "enable_3d_overlay": "Habilitar overlay de texto 3D premium",
+  "generate_overlay_assets": "Generar assets de overlay",
+  "designer_mode": "Modo Diseñador",
+  "images_to_generate": "Imágenes a generar",
+  "consistency_hint": "Todas las imágenes mantienen la misma configuración para consistencia.",
+  "choose": "Elegir",
+  "choose_platform": "Elegir plataforma",
+  "choose_goal": "Elegir objetivo",
+  "choose_layout": "Elegir diseño",
+  "choose_style": "Elegir estilo",`n  "language": "Idioma"
+}
+
