@@ -144,6 +144,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     cameraText: spec.cameraText ?? "",
     compositionText: spec.compositionText ?? "",
     subjectImageUrl: spec.subjectImageUrl ?? null,
+    contextOpen: Boolean(spec.contextOpen),
     lightingText: spec.lightingText ?? "",
     assetsText: spec.assetsText ?? "",
     promptDebug: Boolean(spec.promptDebug),
@@ -850,6 +851,38 @@ export default function EditorPage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-border space-y-3">
+              <button
+                type="button"
+                className="w-full rounded-md border border-border px-3 py-2 text-left text-xs hover:bg-background"
+                onClick={() =>
+                  persistSpec({
+                    ...safeSpec,
+                    contextOpen: !Boolean(safeSpec.contextOpen),
+                  })
+                }
+              >
+                Campaign context (optional) {safeSpec.contextOpen ? "▼" : "▶"}
+              </button>
+
+              {!safeSpec.contextOpen ? (
+                <div className="text-xs text-muted-foreground truncate">
+                  {safeSpec.contextText?.trim() || "None"}
+                </div>
+              ) : (
+                <Input
+                  placeholder="e.g. Valentine's promo, premium vibe, summer sale"
+                  value={safeSpec.contextText ?? ""}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      contextText: e.target.value,
+                    })
+                  }
+                />
               )}
             </div>
 
@@ -1770,19 +1803,6 @@ export default function EditorPage() {
                   persistSpec({
                     ...safeSpec,
                     content: { ...safeSpec.content, ctaText: e.target.value },
-                  })
-                }
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs text-muted-foreground">Context</label>
-              <Input
-                value={safeSpec.contextText ?? ""}
-                onChange={(e) =>
-                  persistSpec({
-                    ...safeSpec,
-                    contextText: e.target.value,
                   })
                 }
               />
