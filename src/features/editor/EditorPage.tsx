@@ -80,6 +80,29 @@ function buildPicsumUrl(seed: string, w: number, h: number): string {
   return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
 }
 
+function aspectToSize(aspect: "1:1" | "4:5" | "3:2" | "4:3" | "16:9" | "9:16"): {
+  w: number;
+  h: number;
+  aspectRatio: string;
+} {
+  switch (aspect) {
+    case "1:1":
+      return { w: 1280, h: 1280, aspectRatio: "1:1" };
+    case "4:5":
+      return { w: 1152, h: 1440, aspectRatio: "4:5" };
+    case "3:2":
+      return { w: 1536, h: 1024, aspectRatio: "3:2" };
+    case "4:3":
+      return { w: 1536, h: 1152, aspectRatio: "4:3" };
+    case "16:9":
+      return { w: 1600, h: 900, aspectRatio: "16:9" };
+    case "9:16":
+      return { w: 900, h: 1600, aspectRatio: "9:16" };
+    default:
+      return { w: 1536, h: 1024, aspectRatio: "3:2" };
+  }
+}
+
 function normalizeReferenceImages(
   referenceImages: ReferenceImage[] | undefined,
   legacyReferenceImageUrl: string | null | undefined
@@ -131,6 +154,9 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const brand = spec.brand ?? ({} as any);
   const generation = spec.generation ?? ({} as any);
   const builder = spec.builder ?? ({} as BuilderSpec);
+  const normalizedPhotoAspect = (spec.photoAspect ?? "3:2") as NonNullable<ProjectSpec["photoAspect"]>;
+  const photoshootSize =
+    spec.module === "photoshoot" ? aspectToSize(normalizedPhotoAspect) : null;
   const normalizedReferenceImages = normalizeReferenceImages(
     spec.referenceImages,
     spec.referenceImageUrl
@@ -193,6 +219,13 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     generation: {
       ...generation,
       realism: clampSize(Number(generation.realism ?? 70), 0, 100),
+      ...(photoshootSize
+        ? {
+            width: photoshootSize.w,
+            height: photoshootSize.h,
+            aspectRatio: photoshootSize.aspectRatio,
+          }
+        : {}),
     },
   };
 }
@@ -386,7 +419,10 @@ export default function EditorPage() {
   function applyFormat(fmt: ProjectFormat) {
     if (!safeSpec) return;
 
-    const size = formatToSize(fmt);
+    const size =
+      safeSpec.module === "photoshoot"
+        ? aspectToSize((safeSpec.photoAspect ?? "3:2") as NonNullable<ProjectSpec["photoAspect"]>)
+        : formatToSize(fmt);
     persistSpec({
       ...safeSpec,
       format: fmt,
@@ -1708,10 +1744,20 @@ export default function EditorPage() {
                 <Select
                   value={safeSpec.photoAspect ?? "3:2"}
                   onValueChange={(v) =>
-                    persistSpec({
-                      ...safeSpec,
-                      photoAspect: v as "1:1" | "4:5" | "3:2" | "4:3" | "16:9" | "9:16",
-                    })
+                    {
+                      const nextAspect = v as "1:1" | "4:5" | "3:2" | "4:3" | "16:9" | "9:16";
+                      const nextSize = aspectToSize(nextAspect);
+                      persistSpec({
+                        ...safeSpec,
+                        photoAspect: nextAspect,
+                        generation: {
+                          ...safeSpec.generation,
+                          width: nextSize.w,
+                          height: nextSize.h,
+                          aspectRatio: nextSize.aspectRatio,
+                        },
+                      });
+                    }
                   }
                 >
                   <SelectTrigger>
