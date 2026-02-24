@@ -76,6 +76,7 @@ function PhotoshootCleanTemplate({ imageUrl, showGrid }: Props) {
 }
 
 const TEMPLATE_COMPONENTS: Partial<Record<TemplateId, Comp>> = {
+  social_post_clean: FallbackTemplate,
   photoshoot_clean: PhotoshootCleanTemplate,
   photo_01: FallbackTemplate,
   photo_02: FallbackTemplate,

@@ -18,7 +18,7 @@ export function moduleFromFormat(format: ProjectFormat): ModuleType {
     format === "story_1080x1920" ||
     format === "landscape_1200x628"
   ) {
-    return "social";
+    return "social_post";
   }
 
   if (
@@ -75,6 +75,8 @@ export function defaultTemplateFor(module: ModuleType): TemplateId {
   switch (module) {
     case "social":
       return "social_01";
+    case "social_post":
+      return "social_post_clean";
     case "ecom":
       return "ecom_01";
     case "photoshoot":
@@ -86,6 +88,8 @@ export function defaultStyleFor(module: ModuleType): StylePreset {
   switch (module) {
     case "social":
       return "bold_ads";
+    case "social_post":
+      return "clean_modern";
     case "ecom":
       return "minimal_clean";
     case "photoshoot":
@@ -97,6 +101,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
   const module = moduleFromFormat(format);
   const size = formatToSize(format);
   const isPhotoshoot = module === "photoshoot";
+  const isSocialPost = module === "social_post";
 
   return {
     module,
@@ -115,6 +120,22 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     assetsText: "",
     promptDebug: false,
     builder: {
+      platformPreset: isSocialPost ? "instagram_feed" : "",
+      goalPreset: isSocialPost ? "Offer" : "",
+      layoutPreset: isSocialPost ? "Hero" : "",
+      compositionFlags: isSocialPost ? [] : [],
+      headline: "",
+      subheadline: "",
+      cta: "",
+      badge: "",
+      brandName: "",
+      logoUploads: [],
+      productUploads: [],
+      backgroundUploads: [],
+      premiumOverlayEnabled: false,
+      premiumOverlayUrls: [],
+      designerMode: false,
+      batchCount: isPhotoshoot ? 4 : 1,
       intensity: isPhotoshoot ? 55 : 70,
       finish: isPhotoshoot ? "true_to_life" : "",
       subjectType: isPhotoshoot ? "person" : "",
@@ -124,7 +145,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       lightingSetup: "",
       temperature: "",
       mood: "",
-      macroStyle: isPhotoshoot ? "editorial" : "",
+      macroStyle: isPhotoshoot ? "editorial" : isSocialPost ? "clean_modern" : "",
       visualStyle: [],
       assetsHighlights: [],
       contextProps: [],

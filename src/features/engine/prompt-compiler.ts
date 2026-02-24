@@ -65,7 +65,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
 
   // Prompts-base por módulo (bem simples agora)
   const moduleBase =
-    module === "social"
+    module === "social" || module === "social_post"
       ? "high-performing social ad creative, bold typography area reserved, modern commercial look"
       : module === "ecom"
       ? "e-commerce promotional banner, premium minimal layout, product-focused composition"

@@ -1,6 +1,6 @@
 // src/types/spec.ts
 
-export type ModuleType = "social" | "ecom" | "photoshoot";
+export type ModuleType = "social" | "social_post" | "ecom" | "photoshoot";
 
 /* =========================
    FORMATS
@@ -30,9 +30,15 @@ export type ProjectFormat = SocialFormat | EcomFormat | PhotoshootFormat;
    STYLE + TEMPLATES
 ========================= */
 
-export type StylePreset = "minimal_clean" | "bold_ads" | "glass" | "editorial";
+export type StylePreset =
+  | "minimal_clean"
+  | "bold_ads"
+  | "glass"
+  | "editorial"
+  | "clean_modern";
 
 export type TemplateId =
+  | "social_post_clean"
   | "photoshoot_clean"
   | "social_01"
   | "social_02"
@@ -113,6 +119,21 @@ export interface ReferenceImage {
 }
 
 export interface BuilderSpec {
+  headline?: string;
+  subheadline?: string;
+  cta?: string;
+  badge?: string;
+  brandName?: string;
+  platformPreset?: string;
+  goalPreset?: string;
+  layoutPreset?: string;
+  compositionFlags?: string[];
+  logoUploads?: string[];
+  productUploads?: string[];
+  backgroundUploads?: string[];
+  premiumOverlayEnabled?: boolean;
+  premiumOverlayUrls?: string[];
+  designerMode?: boolean;
   batchCount?: number;
   intensity?: number;
   finish?: string;

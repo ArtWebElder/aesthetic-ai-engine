@@ -115,6 +115,36 @@ function aspectToSize(aspect: "1:1" | "4:5" | "3:2" | "4:3" | "16:9" | "9:16"): 
   }
 }
 
+function socialPlatformToSize(platformPreset: string): {
+  aspectRatio: string;
+  width: number;
+  height: number;
+} {
+  switch (platformPreset) {
+    case "instagram_story":
+      return { aspectRatio: "9:16", width: 1080, height: 1920 };
+    case "facebook_landscape":
+      return { aspectRatio: "1.91:1", width: 1200, height: 628 };
+    case "tiktok_vertical":
+      return { aspectRatio: "9:16", width: 1080, height: 1920 };
+    case "instagram_feed_4_5":
+      return { aspectRatio: "4:5", width: 1080, height: 1350 };
+    case "instagram_feed":
+    default:
+      return { aspectRatio: "1:1", width: 1080, height: 1080 };
+  }
+}
+
+function buildSocialOverlayDataUrl(lines: string[], color: string): string {
+  const safeLines = lines.filter(Boolean).slice(0, 3);
+  const escaped = safeLines.map((line) => line.replace(/[<>&"]/g, ""));
+  const t1 = escaped[0] ?? "";
+  const t2 = escaped[1] ?? "";
+  const t3 = escaped[2] ?? "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080"><rect width="1080" height="1080" fill="transparent"/><text x="70" y="250" fill="${color}" font-family="Arial,sans-serif" font-weight="800" font-size="110">${t1}</text><text x="70" y="390" fill="${color}" font-family="Arial,sans-serif" font-weight="700" font-size="68">${t2}</text><text x="70" y="500" fill="${color}" font-family="Arial,sans-serif" font-weight="700" font-size="58">${t3}</text></svg>`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+}
+
 function normalizeReferenceImages(
   referenceImages: ReferenceImage[] | undefined,
   legacyReferenceImageUrl: string | null | undefined
@@ -167,6 +197,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const generation = spec.generation ?? ({} as any);
   const builder = spec.builder ?? ({} as BuilderSpec);
   const normalizedPhotoAspect = (spec.photoAspect ?? "3:2") as NonNullable<ProjectSpec["photoAspect"]>;
+  const isSocialPost = spec.module === "social_post";
   const photoshootSize =
     spec.module === "photoshoot" ? aspectToSize(normalizedPhotoAspect) : null;
   const normalizedReferenceImages = normalizeReferenceImages(
@@ -176,7 +207,12 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
 
   return {
     ...spec,
-    templateId: spec.module === "photoshoot" ? "photoshoot_clean" : spec.templateId,
+    templateId:
+      spec.module === "photoshoot"
+        ? "photoshoot_clean"
+        : spec.module === "social_post"
+        ? "social_post_clean"
+        : spec.templateId,
     photoAspect:
       spec.photoAspect && ["1:1", "4:5", "3:2", "4:3", "16:9", "9:16"].includes(spec.photoAspect)
         ? spec.photoAspect
@@ -194,6 +230,26 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     assetsText: spec.assetsText ?? "",
     promptDebug: Boolean(spec.promptDebug),
     builder: {
+      platformPreset: (builder.platformPreset ?? (isSocialPost ? "instagram_feed" : "")).trim(),
+      goalPreset: (builder.goalPreset ?? (isSocialPost ? "Offer" : "")).trim(),
+      layoutPreset: (builder.layoutPreset ?? (isSocialPost ? "Hero" : "")).trim(),
+      headline: (builder.headline ?? "").trim(),
+      subheadline: (builder.subheadline ?? "").trim(),
+      cta: (builder.cta ?? "").trim(),
+      badge: (builder.badge ?? "").trim(),
+      brandName: (builder.brandName ?? "").trim(),
+      logoUploads: Array.isArray(builder.logoUploads) ? builder.logoUploads.filter(Boolean) : [],
+      productUploads: Array.isArray(builder.productUploads)
+        ? builder.productUploads.filter(Boolean)
+        : [],
+      backgroundUploads: Array.isArray(builder.backgroundUploads)
+        ? builder.backgroundUploads.filter(Boolean)
+        : [],
+      premiumOverlayEnabled: Boolean(builder.premiumOverlayEnabled),
+      premiumOverlayUrls: Array.isArray(builder.premiumOverlayUrls)
+        ? builder.premiumOverlayUrls.filter(Boolean)
+        : [],
+      designerMode: Boolean(builder.designerMode),
       batchCount: clampInt(
         Number(builder.batchCount ?? (spec.module === "photoshoot" ? 4 : 1)),
         1,
@@ -242,6 +298,9 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     generation: {
       ...generation,
       realism: clampSize(Number(generation.realism ?? 70), 0, 100),
+      ...(isSocialPost
+        ? socialPlatformToSize((builder.platformPreset ?? "instagram_feed").trim())
+        : {}),
       ...(photoshootSize
         ? {
             width: photoshootSize.width,
@@ -350,6 +409,7 @@ const TEMPLATE_REGISTRY: Array<{
   module: ProjectSpec["module"];
   stylePreset?: StylePreset;
 }> = [
+  { id: "social_post_clean", name: "Social Post Clean", module: "social_post", stylePreset: "clean_modern" },
   { id: "social_01", name: "Social 01", module: "social", stylePreset: "bold_ads" },
   { id: "ecom_01", name: "Ecom 01", module: "ecom", stylePreset: "minimal_clean" },
   { id: "photoshoot_clean", name: "Photoshoot Clean", module: "photoshoot", stylePreset: "editorial" },
@@ -452,11 +512,43 @@ export default function EditorPage() {
   const contextProps = builder?.contextProps ?? [];
   const referenceImages = safeSpec?.referenceImages ?? [];
   const isPhotoshoot = safeSpec?.module === "photoshoot";
+  const isSocialPost = safeSpec?.module === "social_post";
   const photoshootSubjectTypeOptions = [
     { value: "person", label: "Person" },
     { value: "product", label: "Product" },
     { value: "food", label: "Food" },
     { value: "pet", label: "Pet" },
+  ];
+  const socialPlatformOptions = [
+    { value: "instagram_feed", label: "Instagram Feed (1:1)" },
+    { value: "instagram_feed_4_5", label: "Instagram Feed (4:5)" },
+    { value: "instagram_story", label: "Instagram Story (9:16)" },
+    { value: "facebook_landscape", label: "Facebook Landscape" },
+    { value: "tiktok_vertical", label: "TikTok Vertical" },
+  ];
+  const socialGoalOptions = [
+    "Offer",
+    "Announcement",
+    "Testimonial",
+    "Product highlight",
+    "Brand story",
+    "Educational tip",
+  ];
+  const socialLayoutOptions = [
+    "Hero",
+    "Split",
+    "Overlay text bottom",
+    "Minimal grid",
+    "Brutalist",
+    "Glass",
+  ];
+  const socialVisualStyleOptions = [
+    "Clean modern",
+    "Brutalist bold",
+    "Glass pro",
+    "Neon",
+    "Editorial",
+    "Tech dark",
   ];
 
   const bgUrl = active?.imageUrl ?? null;
@@ -469,6 +561,17 @@ export default function EditorPage() {
         ...(safeSpec.builder ?? {}),
         ...patch,
         motion: "static",
+      },
+    });
+  }
+
+  function persistSocialPostBuilderPatch(patch: Partial<ProjectSpec["builder"]>) {
+    if (!safeSpec || !isSocialPost) return;
+    persistSpec({
+      ...safeSpec,
+      builder: {
+        ...(safeSpec.builder ?? {}),
+        ...patch,
       },
     });
   }
@@ -697,11 +800,58 @@ export default function EditorPage() {
                   }}
                 >
                   <div className="w-full h-full">
-                    <TemplateRenderer
-                      spec={safeSpec}
-                      imageUrl={bgUrl}
-                      showGrid={false}
-                    />
+                    {isSocialPost ? (
+                      <div className="relative h-full w-full overflow-hidden rounded-xl">
+                        {(safeSpec.builder.backgroundUploads?.[0] || bgUrl) ? (
+                          <img
+                            src={safeSpec.builder.backgroundUploads?.[0] || bgUrl || ""}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 to-neutral-700" />
+                        )}
+                        <div className="absolute inset-0 bg-black/20" />
+                        {safeSpec.builder.logoUploads?.[0] ? (
+                          <img
+                            src={safeSpec.builder.logoUploads[0]}
+                            alt=""
+                            className="absolute top-6 left-6 h-16 w-auto object-contain"
+                          />
+                        ) : null}
+                        {safeSpec.builder.productUploads?.[0] ? (
+                          <img
+                            src={safeSpec.builder.productUploads[0]}
+                            alt=""
+                            className="absolute right-6 bottom-6 h-[45%] w-auto object-contain"
+                          />
+                        ) : null}
+                        <div className="absolute left-6 right-6 bottom-8">
+                          <div className="text-white text-4xl font-bold leading-tight">
+                            {safeSpec.builder.headline || safeSpec.content.headline}
+                          </div>
+                          <div className="text-white/90 text-lg mt-2">
+                            {safeSpec.builder.subheadline || safeSpec.content.subheadline}
+                          </div>
+                          <div className="mt-4 inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
+                            {safeSpec.builder.cta || safeSpec.content.ctaText}
+                          </div>
+                        </div>
+                        {safeSpec.builder.premiumOverlayUrls?.[0] ? (
+                          <img
+                            src={safeSpec.builder.premiumOverlayUrls[0]}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+                          />
+                        ) : null}
+                      </div>
+                    ) : (
+                      <TemplateRenderer
+                        spec={safeSpec}
+                        imageUrl={bgUrl}
+                        showGrid={false}
+                      />
+                    )}
                   </div>
                 </div>
               </div>
@@ -1014,6 +1164,256 @@ export default function EditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            ) : null}
+
+            {isSocialPost ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Platform Preset</div>
+                <Select
+                  value={safeSpec.builder.platformPreset ?? "instagram_feed"}
+                  onValueChange={(value) => {
+                    const size = socialPlatformToSize(value);
+                    persistSpec({
+                      ...safeSpec,
+                      builder: { ...(safeSpec.builder ?? {}), platformPreset: value },
+                      generation: {
+                        ...safeSpec.generation,
+                        width: size.width,
+                        height: size.height,
+                        aspectRatio: size.aspectRatio,
+                      },
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose platform" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {socialPlatformOptions.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {isSocialPost ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Goal / Use case</div>
+                <Select
+                  value={safeSpec.builder.goalPreset ?? "Offer"}
+                  onValueChange={(value) => persistSocialPostBuilderPatch({ goalPreset: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose goal" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {socialGoalOptions.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {isSocialPost ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Content</div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Headline</label>
+                  <Input
+                    value={safeSpec.builder.headline ?? ""}
+                    onChange={(e) =>
+                      persistSocialPostBuilderPatch({ headline: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Subheadline</label>
+                  <Input
+                    value={safeSpec.builder.subheadline ?? ""}
+                    onChange={(e) =>
+                      persistSocialPostBuilderPatch({ subheadline: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">CTA</label>
+                  <Input
+                    value={safeSpec.builder.cta ?? ""}
+                    onChange={(e) => persistSocialPostBuilderPatch({ cta: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Brand name</label>
+                  <Input
+                    value={safeSpec.builder.brandName ?? ""}
+                    onChange={(e) =>
+                      persistSocialPostBuilderPatch({ brandName: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Logo upload</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const url = typeof reader.result === "string" ? reader.result : "";
+                        if (!url) return;
+                        persistSocialPostBuilderPatch({ logoUploads: [url] });
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Product image upload</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const url = typeof reader.result === "string" ? reader.result : "";
+                        if (!url) return;
+                        persistSocialPostBuilderPatch({ productUploads: [url] });
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Optional background / ref upload</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const url = typeof reader.result === "string" ? reader.result : "";
+                        if (!url) return;
+                        persistSocialPostBuilderPatch({ backgroundUploads: [url] });
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {isSocialPost ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Layout Preset</div>
+                <Select
+                  value={safeSpec.builder.layoutPreset ?? "Hero"}
+                  onValueChange={(value) => persistSocialPostBuilderPatch({ layoutPreset: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose layout" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {socialLayoutOptions.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {isSocialPost ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Visual Style</div>
+                <Select
+                  value={safeSpec.builder.macroStyle ?? "clean_modern"}
+                  onValueChange={(value) => persistSocialPostBuilderPatch({ macroStyle: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose style" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {socialVisualStyleOptions.map((opt) => (
+                      <SelectItem key={opt} value={opt}>
+                        {opt}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Accent color</label>
+                  <input
+                    type="color"
+                    value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, accent: e.target.value },
+                      })
+                    }
+                    className="h-10 w-full rounded-md border border-border bg-transparent"
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {isSocialPost ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Premium Effects</div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(safeSpec.builder.premiumOverlayEnabled)}
+                    onChange={(e) =>
+                      persistSocialPostBuilderPatch({ premiumOverlayEnabled: e.target.checked })
+                    }
+                  />
+                  Enable 3D premium text overlay
+                </label>
+                {safeSpec.builder.premiumOverlayEnabled ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const lines = [
+                        safeSpec.builder.headline || safeSpec.content.headline,
+                        safeSpec.builder.subheadline || safeSpec.content.subheadline,
+                        safeSpec.builder.cta || safeSpec.content.ctaText,
+                      ];
+                      const overlay = buildSocialOverlayDataUrl(
+                        lines,
+                        safeSpec.brand.accent || "#ffffff"
+                      );
+                      persistSocialPostBuilderPatch({ premiumOverlayUrls: [overlay] });
+                    }}
+                  >
+                    Generate Overlay Assets
+                  </Button>
+                ) : null}
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(safeSpec.builder.designerMode)}
+                    onChange={(e) =>
+                      persistSocialPostBuilderPatch({ designerMode: e.target.checked })
+                    }
+                  />
+                  Designer Mode
+                </label>
               </div>
             ) : null}
 
@@ -1453,7 +1853,7 @@ export default function EditorPage() {
                       </Select>
                     </div>
 
-                    {!isPhotoshoot ? (
+                    {!isPhotoshoot && !isSocialPost ? (
                       <div className="space-y-1">
                         <label className="text-xs text-muted-foreground">Motion</label>
                         <Select
@@ -1874,7 +2274,7 @@ export default function EditorPage() {
             </div>
 
             {/* PALETTE */}
-            {!isPhotoshoot ? (
+            {!isPhotoshoot && !isSocialPost ? (
               <div className="space-y-3">
                 <div className="text-sm font-medium">Palette</div>
 
@@ -2048,7 +2448,7 @@ export default function EditorPage() {
             ) : null}
 
             {/* TYPOGRAPHY */}
-            {!isPhotoshoot ? (
+            {!isPhotoshoot && !isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
                 <div className="text-sm font-medium">Typography</div>
                 <div className="space-y-2">
@@ -2077,7 +2477,7 @@ export default function EditorPage() {
             ) : null}
 
             {/* CONTRAST */}
-            {!isPhotoshoot ? (
+            {!isPhotoshoot && !isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
                 <div className="text-sm font-medium">Contrast</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -2097,7 +2497,7 @@ export default function EditorPage() {
             ) : null}
 
             {/* STYLE PRESET */}
-            {!isPhotoshoot ? (
+            {!isPhotoshoot && !isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
                 <div className="text-sm font-medium">Style Preset</div>
 
@@ -2168,7 +2568,7 @@ export default function EditorPage() {
             ) : null}
 
             {/* FORMAT */}
-            {!isPhotoshoot ? (
+            {!isPhotoshoot && !isSocialPost ? (
             <div className="pt-2 border-t border-border space-y-3">
               <div className="text-sm font-medium">Format</div>
 
@@ -2255,7 +2655,7 @@ export default function EditorPage() {
             ) : null}
 
             {/* CONTENT */}
-            {!isPhotoshoot ? (
+            {!isPhotoshoot && !isSocialPost ? (
               <>
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">Headline</label>
