@@ -203,6 +203,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       lens: (builder.lens ?? "").trim(),
       depth: (builder.depth ?? "").trim(),
       angle: (builder.angle ?? "").trim(),
+      // Harden legacy specs: lock motion to static in photoshoot mode.
       motion: spec.module === "photoshoot" ? "static" : (builder.motion ?? "").trim(),
       advancedOpen: Boolean(builder.advancedOpen),
       layoutBase: (builder.layoutBase ?? "").trim(),
