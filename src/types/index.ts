@@ -1,19 +1,10 @@
-import type { ProjectFormat as FormatPreset, StylePreset } from "@/types/spec";
+import type { ProjectFormat, StylePreset } from "./spec";
+
+export type { StylePreset } from "./spec";
 
 export type ProjectType = "social_post" | "ecom_banner" | "photoshoot";
 
-export type FormatPreset =
-  | "feed_1080x1350"
-  | "feed_1080"
-  | "story_1080x1920"
-  | "landscape_1200x628"
-  | "ecom_desktop_1920x800"
-  | "ecom_notebook_1366x768"
-  | "ecom_mobile_1080x1350"
-  | "ecom_custom"
-  | "square_1024";
-
-export type StylePreset = "minimal_clean" | "bold_ads" | "glass" | "editorial";
+export type FormatPreset = ProjectFormat;
 
 export type GenerationStatus = "pending" | "processing" | "completed" | "failed";
 

@@ -15,6 +15,7 @@ export type SocialFormat =
 
 // Ecom (NOVOS)
 export type EcomFormat =
+  | "ecom_desktop_1920x800"
   | "ecom_ultrawide_1920x800"
   | "ecom_notebook_1366x768"
   | "ecom_mobile_1080x1350"
