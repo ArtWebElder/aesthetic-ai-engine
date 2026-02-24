@@ -332,6 +332,24 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
           : ""
       }`
     : null;
+  const amplificationLines: string[] = [];
+  if (isExtreme) {
+    if (builderLabels.macroStyle) {
+      amplificationLines.push(
+        `macro style emphasis: ${builderLabels.macroStyle} must be visually dominant`
+      );
+    }
+    if (builderLabels.lightingSetup) {
+      amplificationLines.push(
+        "lighting priority: lighting must strongly define scene atmosphere"
+      );
+    }
+    if (builderLabels.mood) {
+      amplificationLines.push(
+        "emotional amplification: mood must be clearly expressed"
+      );
+    }
+  }
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -360,7 +378,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
   const prompt = [
-    ...(isExtreme ? [weightedDirectiveLine, ...baseBlock] : [...baseBlock, weightedDirectiveLine]),
+    ...(isExtreme
+      ? [weightedDirectiveLine, ...amplificationLines, ...baseBlock]
+      : [...baseBlock, weightedDirectiveLine]),
     debugEnabled ? builderSubjectLineText : null,
     debugEnabled ? builderLightingLine : null,
     debugEnabled ? builderStyleLine : null,
