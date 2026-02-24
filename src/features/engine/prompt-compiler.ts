@@ -206,6 +206,17 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
         : "general reference";
     return `Reference image (${entry.role}, weight=${entry.weight}, lockRealism=${lockRealismFlag}): ${source}; ${roleGuidance}${notesSuffix}`;
   });
+  const rolePriorityLines: string[] = [];
+  if (normalizedReferences.some((entry) => entry.role === "product" && entry.weight >= 80)) {
+    rolePriorityLines.push(
+      "Priority: preserve product fidelity (shape, details, materials) above all."
+    );
+  }
+  if (normalizedReferences.some((entry) => entry.role === "brand" && entry.weight >= 80)) {
+    rolePriorityLines.push(
+      "Priority: maintain strict brand consistency (palette, tone, identity)."
+    );
+  }
   const builderSubjectLine =
     [
       builderLabels.subjectType ? `type=${builderLabels.subjectType}` : null,
@@ -382,6 +393,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     cleanedContext ? `Context: ${cleanedContext}` : null,
     subjectReferenceLine,
     ...referenceImageLines,
+    ...rolePriorityLines,
   ];
 
   // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
