@@ -115,6 +115,10 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     safeSpace: builder?.safeSpace?.trim() ?? "",
     extraDetails: builder?.extraDetails?.trim() ?? "",
   };
+  const intensity = cleanedBuilder.intensity;
+  const isLow = intensity <= 40;
+  const isHigh = intensity >= 76;
+  const isExtreme = intensity >= 85;
   const cleanedReferenceImage = referenceImageUrl?.trim();
   const toLabel = (
     value: string,
@@ -319,6 +323,15 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     sceneDirectiveSegments.length > 0
       ? `Scene directive: ${sceneDirectiveSegments.join("; ")}.`
       : null;
+  const weightedDirectiveLine = sceneDirectiveLine
+    ? `${sceneDirectiveLine}${
+        isHigh ? "; strong emphasis on visual impact" : ""
+      }${
+        isExtreme
+          ? "; visually dominant, bold composition, strong lighting presence"
+          : ""
+      }`
+    : null;
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -338,13 +351,16 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? Math.max(0, Math.min(100, Math.round(generation.realism)))
       : null;
 
-  // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
-  // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
-  const prompt = [
+  const baseBlock = [
     cleanedContext ? `Context: ${cleanedContext}` : null,
     subjectReferenceLine,
     ...referenceImageLines,
-    sceneDirectiveLine,
+  ];
+
+  // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
+  // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
+  const prompt = [
+    ...(isExtreme ? [weightedDirectiveLine, ...baseBlock] : [...baseBlock, weightedDirectiveLine]),
     debugEnabled ? builderSubjectLineText : null,
     debugEnabled ? builderLightingLine : null,
     debugEnabled ? builderStyleLine : null,
