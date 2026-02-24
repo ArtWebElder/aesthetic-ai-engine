@@ -17,19 +17,21 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
+import { useI18n } from '@/i18n';
 
 const actions = [
-  { label: 'New Social Ad', icon: ImagePlus, route: '/app/projects', shortcut: 'S' },
-  { label: 'New E-com Banner', icon: ShoppingBag, route: '/app/projects', shortcut: 'E' },
-  { label: 'New Photoshoot', icon: Camera, route: '/app/projects', shortcut: 'P' },
-  { label: 'Projects', icon: FolderOpen, route: '/app/projects', shortcut: 'J' },
-  { label: 'Billing', icon: CreditCard, route: '/app/billing', shortcut: 'B' },
-  { label: 'Settings', icon: Settings, route: '/app/settings', shortcut: ',' },
+  { labelKey: 'command.new_social_ad', icon: ImagePlus, route: '/app/projects', shortcut: 'S' },
+  { labelKey: 'command.new_ecom_banner', icon: ShoppingBag, route: '/app/projects', shortcut: 'E' },
+  { labelKey: 'command.new_photoshoot', icon: Camera, route: '/app/projects', shortcut: 'P' },
+  { labelKey: 'nav.projects', icon: FolderOpen, route: '/app/projects', shortcut: 'J' },
+  { labelKey: 'nav.billing', icon: CreditCard, route: '/app/billing', shortcut: 'B' },
+  { labelKey: 'nav.settings', icon: Settings, route: '/app/settings', shortcut: ',' },
 ];
 
 const CommandBar = () => {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -49,18 +51,18 @@ const CommandBar = () => {
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Search actions..." />
+      <CommandInput placeholder={t("command.search_actions")} />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Quick Actions">
+        <CommandEmpty>{t("command.no_results")}</CommandEmpty>
+        <CommandGroup heading={t("command.quick_actions")}>
           {actions.map((action) => (
             <CommandItem
-              key={action.label}
+              key={action.labelKey}
               onSelect={() => handleSelect(action.route)}
               className="cursor-pointer"
             >
               <action.icon className="mr-3 h-4 w-4 text-muted-foreground" />
-              <span className="flex-1">{action.label}</span>
+              <span className="flex-1">{t(action.labelKey)}</span>
               <kbd className="ml-auto text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-sm font-mono">
                 {action.shortcut}
               </kbd>

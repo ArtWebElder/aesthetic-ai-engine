@@ -25,7 +25,7 @@ export default function Projects() {
   const { items, refresh } = useProjects();
   const { t } = useI18n();
 
-  const [name, setName] = useState("New Project");
+  const [name, setName] = useState("");
   const [format, setFormat] = useState<ProjectFormat>("story_1080x1920");
 
   return (
@@ -75,7 +75,7 @@ export default function Projects() {
         <Button
           className="w-full md:w-auto"
           onClick={() => {
-            const p = createProject(name.trim() || "Untitled", format);
+            const p = createProject(name.trim() || t("common.untitled"), format);
             refresh();
             nav(`/app/projects/${p.id}`);
           }}

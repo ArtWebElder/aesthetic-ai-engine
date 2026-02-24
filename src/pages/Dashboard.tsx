@@ -9,9 +9,24 @@ import { mockCredits, mockProjects, mockGenerations } from '@/lib/mocks/data';
 import { useI18n } from '@/i18n';
 
 const quickCreate = [
-  { labelKey: 'dashboard.quick_create_social', icon: ImagePlus, type: 'social_post' as const },
-  { labelKey: 'dashboard.quick_create_ecom', icon: ShoppingBag, type: 'ecom_banner' as const },
-  { labelKey: 'dashboard.quick_create_photoshoot', icon: Camera, type: 'photoshoot' as const },
+  {
+    labelKey: 'dashboard.quick_create_social',
+    hintKey: 'dashboard.quick_create_social_hint',
+    icon: ImagePlus,
+    type: 'social_post' as const,
+  },
+  {
+    labelKey: 'dashboard.quick_create_ecom',
+    hintKey: 'dashboard.quick_create_ecom_hint',
+    icon: ShoppingBag,
+    type: 'ecom_banner' as const,
+  },
+  {
+    labelKey: 'dashboard.quick_create_photoshoot',
+    hintKey: 'dashboard.quick_create_photoshoot_hint',
+    icon: Camera,
+    type: 'photoshoot' as const,
+  },
 ];
 
 const Dashboard = () => {
@@ -54,7 +69,7 @@ const Dashboard = () => {
                 <Plus className="h-3.5 w-3.5 text-muted-foreground ml-auto" />
               </div>
               <h3 className="font-medium text-sm">{t(item.labelKey)}</h3>
-              <p className="text-xs text-muted-foreground mt-1">{t("dashboard.quick_create_new", { label: t(item.labelKey).toLowerCase() })}</p>
+              <p className="text-xs text-muted-foreground mt-1">{t(item.hintKey)}</p>
             </button>
           ))}
         </div>

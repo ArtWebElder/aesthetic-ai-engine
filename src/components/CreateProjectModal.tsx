@@ -42,7 +42,7 @@ const CreateProjectModal = ({ open, onOpenChange }: CreateProjectModalProps) => 
   }, [open, type, formats]);
 
   const handleCreate = () => {
-    const safeName = (name || "").trim() || "Untitled Project";
+    const safeName = (name || "").trim() || t("common.untitled_project");
     if (!format) return;
 
     const p = createProject(safeName, format);
