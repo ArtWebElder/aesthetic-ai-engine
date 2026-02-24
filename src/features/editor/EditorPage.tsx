@@ -45,6 +45,7 @@ import { compilePrompt } from "@/features/engine/prompt-compiler";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -450,6 +451,18 @@ export default function EditorPage() {
   ];
 
   const bgUrl = active?.imageUrl ?? null;
+
+  function persistPhotoshootBuilderPatch(patch: Partial<ProjectSpec["builder"]>) {
+    if (!safeSpec || !isPhotoshoot) return;
+    persistSpec({
+      ...safeSpec,
+      builder: {
+        ...(safeSpec.builder ?? {}),
+        ...patch,
+        motion: "static",
+      },
+    });
+  }
 
   function persist(nextProject: EditorProject) {
     setProject(nextProject);
@@ -952,7 +965,7 @@ export default function EditorPage() {
             </div>
 
             {isPhotoshoot ? (
-              <div className="pt-2 border-t border-border space-y-2">
+              <div className="pt-1 space-y-2">
                 <label className="text-xs text-muted-foreground">Shoot type</label>
                 <Select
                   value={photoshootPreset}
@@ -984,16 +997,7 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">Type</label>
                   <Select
                     value={safeSpec.builder.subjectType ?? ""}
-                    onValueChange={(value) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          subjectType: value,
-                          motion: "static",
-                        },
-                      })
-                    }
+                    onValueChange={(value) => persistPhotoshootBuilderPatch({ subjectType: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose" />
@@ -1010,18 +1014,10 @@ export default function EditorPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">Details</label>
-                  <Input
+                  <Textarea
+                    rows={2}
                     value={safeSpec.builder.extraDetails ?? ""}
-                    onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          extraDetails: e.target.value,
-                          motion: "static",
-                        },
-                      })
-                    }
+                    onChange={(e) => persistPhotoshootBuilderPatch({ extraDetails: e.target.value })}
                   />
                 </div>
               </div>
@@ -1035,16 +1031,7 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">Lens</label>
                   <Select
                     value={safeSpec.builder.lens ?? ""}
-                    onValueChange={(value) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          lens: value,
-                          motion: "static",
-                        },
-                      })
-                    }
+                    onValueChange={(value) => persistPhotoshootBuilderPatch({ lens: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose" />
@@ -1063,16 +1050,7 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">Depth</label>
                   <Select
                     value={safeSpec.builder.depth ?? ""}
-                    onValueChange={(value) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          depth: value,
-                          motion: "static",
-                        },
-                      })
-                    }
+                    onValueChange={(value) => persistPhotoshootBuilderPatch({ depth: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose" />
@@ -1091,16 +1069,7 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">Angle</label>
                   <Select
                     value={safeSpec.builder.angle ?? ""}
-                    onValueChange={(value) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          angle: value,
-                          motion: "static",
-                        },
-                      })
-                    }
+                    onValueChange={(value) => persistPhotoshootBuilderPatch({ angle: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose" />
@@ -1126,14 +1095,7 @@ export default function EditorPage() {
                   <Select
                     value={safeSpec.builder.lightingSetup ?? ""}
                     onValueChange={(value) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          lightingSetup: value,
-                          motion: "static",
-                        },
-                      })
+                      persistPhotoshootBuilderPatch({ lightingSetup: value })
                     }
                   >
                     <SelectTrigger>
@@ -1153,16 +1115,7 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">Mood</label>
                   <Select
                     value={safeSpec.builder.mood ?? ""}
-                    onValueChange={(value) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          mood: value,
-                          motion: "static",
-                        },
-                      })
-                    }
+                    onValueChange={(value) => persistPhotoshootBuilderPatch({ mood: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose" />
@@ -1181,16 +1134,7 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">Temperature</label>
                   <Select
                     value={safeSpec.builder.temperature ?? ""}
-                    onValueChange={(value) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          temperature: value,
-                          motion: "static",
-                        },
-                      })
-                    }
+                    onValueChange={(value) => persistPhotoshootBuilderPatch({ temperature: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose" />
@@ -1216,16 +1160,11 @@ export default function EditorPage() {
                   <Input
                     value={(safeSpec.builder.assetsHighlights ?? []).join(", ")}
                     onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          assetsHighlights: e.target.value
-                            .split(",")
-                            .map((item) => item.trim())
-                            .filter(Boolean),
-                          motion: "static",
-                        },
+                      persistPhotoshootBuilderPatch({
+                        assetsHighlights: e.target.value
+                          .split(",")
+                          .map((item) => item.trim())
+                          .filter(Boolean),
                       })
                     }
                   />
@@ -1236,16 +1175,11 @@ export default function EditorPage() {
                   <Input
                     value={(safeSpec.builder.contextProps ?? []).join(", ")}
                     onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          contextProps: e.target.value
-                            .split(",")
-                            .map((item) => item.trim())
-                            .filter(Boolean),
-                          motion: "static",
-                        },
+                      persistPhotoshootBuilderPatch({
+                        contextProps: e.target.value
+                          .split(",")
+                          .map((item) => item.trim())
+                          .filter(Boolean),
                       })
                     }
                   />
@@ -1260,16 +1194,7 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">Finish</label>
                   <Select
                     value={safeSpec.builder.finish ?? "true_to_life"}
-                    onValueChange={(value) =>
-                      persistSpec({
-                        ...safeSpec,
-                        builder: {
-                          ...(safeSpec.builder ?? {}),
-                          finish: value,
-                          motion: "static",
-                        },
-                      })
-                    }
+                    onValueChange={(value) => persistPhotoshootBuilderPatch({ finish: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Choose" />
