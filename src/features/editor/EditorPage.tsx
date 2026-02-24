@@ -138,6 +138,12 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
 
   return {
     ...spec,
+    photoAspect:
+      spec.photoAspect && ["1:1", "4:5", "3:2", "4:3", "16:9", "9:16"].includes(spec.photoAspect)
+        ? spec.photoAspect
+        : spec.module === "photoshoot"
+        ? "3:2"
+        : undefined,
     contextText: spec.contextText ?? "",
     subjectText: spec.subjectText ?? "",
     styleText: spec.styleText ?? "",
@@ -1443,8 +1449,9 @@ export default function EditorPage() {
             </div>
 
             {/* PALETTE */}
-            <div className="space-y-3">
-              <div className="text-sm font-medium">Palette</div>
+            {!isPhotoshoot ? (
+              <div className="space-y-3">
+                <div className="text-sm font-medium">Palette</div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -1612,52 +1619,57 @@ export default function EditorPage() {
                   />
                 </div>
               </div>
-            </div>
+              </div>
+            ) : null}
 
             {/* TYPOGRAPHY */}
-            <div className="pt-2 border-t border-border space-y-3">
-              <div className="text-sm font-medium">Typography</div>
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Font preset</label>
-                <Select
-                  value={safeSpec.brand.fontPreset}
-                  onValueChange={(v) =>
-                    persistSpec({
-                      ...safeSpec,
-                      brand: { ...safeSpec.brand, fontPreset: v as any },
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a font" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="space_grotesk">Space Grotesk</SelectItem>
-                    <SelectItem value="plus_jakarta">Plus Jakarta</SelectItem>
-                    <SelectItem value="inter">Inter</SelectItem>
-                    <SelectItem value="satoshi">Satoshi</SelectItem>
-                  </SelectContent>
-                </Select>
+            {!isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Typography</div>
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">Font preset</label>
+                  <Select
+                    value={safeSpec.brand.fontPreset}
+                    onValueChange={(v) =>
+                      persistSpec({
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, fontPreset: v as any },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose a font" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="space_grotesk">Space Grotesk</SelectItem>
+                      <SelectItem value="plus_jakarta">Plus Jakarta</SelectItem>
+                      <SelectItem value="inter">Inter</SelectItem>
+                      <SelectItem value="satoshi">Satoshi</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
+            ) : null}
 
             {/* CONTRAST */}
-            <div className="pt-2 border-t border-border space-y-3">
-              <div className="text-sm font-medium">Contrast</div>
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={Boolean(safeSpec.brand.autoContrast)}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      brand: { ...safeSpec.brand, autoContrast: e.target.checked },
-                    })
-                  }
-                />
-                Auto contrast
-              </label>
-            </div>
+            {!isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Contrast</div>
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(safeSpec.brand.autoContrast)}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, autoContrast: e.target.checked },
+                      })
+                    }
+                  />
+                  Auto contrast
+                </label>
+              </div>
+            ) : null}
 
             {/* STYLE PRESET */}
             <div className="pt-2 border-t border-border space-y-3">
@@ -1689,7 +1701,36 @@ export default function EditorPage() {
               </div>
             </div>
 
+            {/* PHOTOSHOOT ASPECT */}
+            {isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Aspect ratio</div>
+                <Select
+                  value={safeSpec.photoAspect ?? "3:2"}
+                  onValueChange={(v) =>
+                    persistSpec({
+                      ...safeSpec,
+                      photoAspect: v as "1:1" | "4:5" | "3:2" | "4:3" | "16:9" | "9:16",
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose an aspect ratio" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1:1">1:1</SelectItem>
+                    <SelectItem value="4:5">4:5</SelectItem>
+                    <SelectItem value="3:2">3:2</SelectItem>
+                    <SelectItem value="4:3">4:3</SelectItem>
+                    <SelectItem value="16:9">16:9</SelectItem>
+                    <SelectItem value="9:16">9:16</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
             {/* FORMAT */}
+            {!isPhotoshoot ? (
             <div className="pt-2 border-t border-border space-y-3">
               <div className="text-sm font-medium">Format</div>
 
@@ -1773,6 +1814,7 @@ export default function EditorPage() {
                 </div>
               ) : null}
             </div>
+            ) : null}
 
             {/* CONTENT */}
             {!isPhotoshoot ? (

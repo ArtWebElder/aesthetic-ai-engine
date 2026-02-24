@@ -137,6 +137,7 @@ export interface BuilderSpec {
 export interface ProjectSpec {
   module: ModuleType;
   format: ProjectFormat;
+  photoAspect?: "1:1" | "4:5" | "3:2" | "4:3" | "16:9" | "9:16";
   stylePreset: StylePreset;
   templateId: TemplateId;
   contextText?: string;

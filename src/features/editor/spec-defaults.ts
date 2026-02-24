@@ -101,6 +101,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
   return {
     module,
     format,
+    photoAspect: isPhotoshoot ? "3:2" : undefined,
     stylePreset: defaultStyleFor(module),
     templateId: defaultTemplateFor(module),
     contextText: "",

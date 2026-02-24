@@ -70,7 +70,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : "photorealistic high-resolution photoshoot, natural skin texture, true-to-life lighting and tones, clean editorial framing";
 
   const styleHints =
-    stylePreset === "glass"
+    module === "photoshoot"
+      ? null
+      : stylePreset === "glass"
       ? "subtle glassmorphism, soft blur surfaces, thin borders"
       : stylePreset === "minimal_clean"
       ? "minimal, lots of negative space, clean composition"
@@ -86,7 +88,10 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : "no text";
 
   const safeEffects = effects ?? { textOutline: 0, shadow: 0, depth3d: 0, tilt: 0 };
-  const effectsHints = `text style: outline=${safeEffects.textOutline}/10 shadow=${safeEffects.shadow}/10 depth=${safeEffects.depth3d}/10 tilt=${safeEffects.tilt}deg`;
+  const effectsHints =
+    module === "photoshoot"
+      ? null
+      : `text style: outline=${safeEffects.textOutline}/10 shadow=${safeEffects.shadow}/10 depth=${safeEffects.depth3d}/10 tilt=${safeEffects.tilt}deg`;
   const cleanedContext = contextText?.trim();
   const cleanedSubject = subjectText?.trim();
   const cleanedSubjectImage = subjectImageUrl?.trim();
@@ -412,11 +417,19 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : null;
 
   const baseBlock = [
-    cleanedContext ? `Campaign context: ${cleanedContext}` : null,
+    cleanedContext
+      ? module === "photoshoot"
+        ? `Shoot notes: ${cleanedContext}`
+        : `Campaign context: ${cleanedContext}`
+      : null,
     subjectReferenceLine,
     ...referenceImageLines,
     ...rolePriorityLines,
   ];
+  const textureGuardLine =
+    module === "photoshoot"
+      ? "no waxy skin, no plastic skin, natural texture, no overprocessing"
+      : "ultra sharp, premium, realistic details, no waxy skin, natural colors";
 
   // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
@@ -438,15 +451,15 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     styleHints,
     `template: ${templateId}`,
     effectsHints,
-    `Color palette mode: ${paletteMode}`,
-    `Palette guidance: ${paletteGuidance}`,
-    `Primary color: ${primaryColor}`,
-    `Secondary color: ${secondaryColor}`,
-    `Neutral background: ${neutralBackground}`,
-    `Surface color: ${surfaceColor}`,
-    `Text color: ${textColor}`,
+    module === "photoshoot" ? null : `Color palette mode: ${paletteMode}`,
+    module === "photoshoot" ? null : `Palette guidance: ${paletteGuidance}`,
+    module === "photoshoot" ? null : `Primary color: ${primaryColor}`,
+    module === "photoshoot" ? null : `Secondary color: ${secondaryColor}`,
+    module === "photoshoot" ? null : `Neutral background: ${neutralBackground}`,
+    module === "photoshoot" ? null : `Surface color: ${surfaceColor}`,
+    module === "photoshoot" ? null : `Text color: ${textColor}`,
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
-    "ultra sharp, premium, realistic details, no waxy skin, natural colors",
+    textureGuardLine,
   ]
     .filter(Boolean)
     .join(", ");
