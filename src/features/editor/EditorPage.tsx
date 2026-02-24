@@ -74,6 +74,10 @@ function clampSize(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(n)));
 }
 
+function clampInt(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
 function getSafeDims(spec: ProjectSpec): { w: number; h: number } {
   const rawW = Number(spec.generation?.width) || 1080;
   const rawH = Number(spec.generation?.height) || 1350;
@@ -190,6 +194,11 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     assetsText: spec.assetsText ?? "",
     promptDebug: Boolean(spec.promptDebug),
     builder: {
+      batchCount: clampInt(
+        Number(builder.batchCount ?? (spec.module === "photoshoot" ? 4 : 1)),
+        1,
+        8
+      ),
       intensity: clampSize(Number(builder.intensity ?? 70), 0, 100),
       finish:
         spec.module === "photoshoot"
@@ -505,23 +514,37 @@ export default function EditorPage() {
   function generateMock() {
     if (!project || !safeSpec) return;
 
-    const generationId = newId();
-
-    const seed = `${project.id}-${generationId}`;
     const { w, h } = getSafeDims(safeSpec);
-
-    const g: Generation = {
-      id: generationId,
-      projectId: project.id,
-      status: "done",
-      createdAt: new Date().toISOString(),
-      imageUrl: buildPicsumUrl(seed, w, h),
-    };
+    const compiledNow = compilePrompt(safeSpec);
+    const count = clampInt(
+      Number(
+        safeSpec.module === "photoshoot"
+          ? safeSpec.builder?.batchCount ?? 4
+          : 1
+      ),
+      1,
+      8
+    );
+    const baseSeed = Math.floor(Math.random() * 1_000_000_000);
+    const generated: Generation[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const generationId = newId();
+      const seed = `${project.id}-${baseSeed + i}`;
+      generated.push({
+        id: generationId,
+        projectId: project.id,
+        status: "done",
+        createdAt: new Date().toISOString(),
+        imageUrl: buildPicsumUrl(seed, w, h),
+        prompt: compiledNow.prompt,
+        negativePrompt: compiledNow.negativePrompt,
+      });
+    }
 
     const nextProject: EditorProject = {
       ...project,
-      generations: [g, ...(project.generations ?? [])],
-      activeGenerationId: g.id,
+      generations: [...generated, ...(project.generations ?? [])],
+      activeGenerationId: generated[0]?.id ?? project.activeGenerationId,
     };
 
     persist(nextProject);
@@ -991,6 +1014,52 @@ export default function EditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            ) : null}
+
+            {isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-2">
+                <label className="text-xs text-muted-foreground">Images to generate</label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      persistPhotoshootBuilderPatch({
+                        batchCount: clampInt(
+                          Number((safeSpec.builder?.batchCount ?? 4) - 1),
+                          1,
+                          8
+                        ),
+                      })
+                    }
+                  >
+                    -
+                  </Button>
+                  <div className="text-sm min-w-[2ch] text-center">
+                    {clampInt(Number(safeSpec.builder?.batchCount ?? 4), 1, 8)}
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      persistPhotoshootBuilderPatch({
+                        batchCount: clampInt(
+                          Number((safeSpec.builder?.batchCount ?? 4) + 1),
+                          1,
+                          8
+                        ),
+                      })
+                    }
+                  >
+                    +
+                  </Button>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  All images keep the same setup for consistency.
+                </div>
               </div>
             ) : null}
 

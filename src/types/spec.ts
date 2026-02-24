@@ -113,6 +113,7 @@ export interface ReferenceImage {
 }
 
 export interface BuilderSpec {
+  batchCount?: number;
   intensity?: number;
   finish?: string;
   subjectType?: string;
