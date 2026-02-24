@@ -522,35 +522,35 @@ export default function EditorPage() {
     { value: "pet", label: "Pet" },
   ];
   const socialPlatformOptions = [
-    { value: "instagram_feed", label: "Instagram Feed (1:1)" },
-    { value: "instagram_feed_4_5", label: "Instagram Feed (4:5)" },
-    { value: "instagram_story", label: "Instagram Story (9:16)" },
-    { value: "facebook_landscape", label: "Facebook Landscape" },
-    { value: "tiktok_vertical", label: "TikTok Vertical" },
+    { value: "instagram_feed", labelKey: "platform.instagram_feed" },
+    { value: "instagram_feed_4_5", labelKey: "platform.instagram_feed_4_5" },
+    { value: "instagram_story", labelKey: "platform.instagram_story" },
+    { value: "facebook_landscape", labelKey: "platform.facebook_landscape" },
+    { value: "tiktok_vertical", labelKey: "platform.tiktok_vertical" },
   ];
   const socialGoalOptions = [
-    "Offer",
-    "Announcement",
-    "Testimonial",
-    "Product highlight",
-    "Brand story",
-    "Educational tip",
+    { value: "Offer", labelKey: "goal.offer" },
+    { value: "Announcement", labelKey: "goal.announcement" },
+    { value: "Testimonial", labelKey: "goal.testimonial" },
+    { value: "Product highlight", labelKey: "goal.product_highlight" },
+    { value: "Brand story", labelKey: "goal.brand_story" },
+    { value: "Educational tip", labelKey: "goal.educational_tip" },
   ];
   const socialLayoutOptions = [
-    "Hero",
-    "Split",
-    "Overlay text bottom",
-    "Minimal grid",
-    "Brutalist",
-    "Glass",
+    { value: "Hero", labelKey: "layout.hero" },
+    { value: "Split", labelKey: "layout.split" },
+    { value: "Overlay text bottom", labelKey: "layout.overlay_text_bottom" },
+    { value: "Minimal grid", labelKey: "layout.minimal_grid" },
+    { value: "Brutalist", labelKey: "layout.brutalist" },
+    { value: "Glass", labelKey: "layout.glass" },
   ];
   const socialVisualStyleOptions = [
-    "Clean modern",
-    "Brutalist bold",
-    "Glass pro",
-    "Neon",
-    "Editorial",
-    "Tech dark",
+    { value: "Clean modern", labelKey: "style.clean_modern" },
+    { value: "Brutalist bold", labelKey: "style.brutalist_bold" },
+    { value: "Glass pro", labelKey: "style.glass_pro" },
+    { value: "Neon", labelKey: "style.neon" },
+    { value: "Editorial", labelKey: "style.editorial" },
+    { value: "Tech dark", labelKey: "style.tech_dark" },
   ];
 
   const bgUrl = active?.imageUrl ?? null;
@@ -1194,7 +1194,7 @@ export default function EditorPage() {
                   <SelectContent>
                     {socialPlatformOptions.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {t(opt.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1214,8 +1214,8 @@ export default function EditorPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {socialGoalOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {t(opt.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1331,8 +1331,8 @@ export default function EditorPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {socialLayoutOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {t(opt.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1352,8 +1352,8 @@ export default function EditorPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {socialVisualStyleOptions.map((opt) => (
-                      <SelectItem key={opt} value={opt}>
-                        {opt}
+                      <SelectItem key={opt.value} value={opt.value}>
+                        {t(opt.labelKey)}
                       </SelectItem>
                     ))}
                   </SelectContent>
