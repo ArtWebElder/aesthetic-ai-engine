@@ -413,6 +413,12 @@ export default function EditorPage() {
   const contextProps = builder?.contextProps ?? [];
   const referenceImages = safeSpec?.referenceImages ?? [];
   const isPhotoshoot = safeSpec?.module === "photoshoot";
+  const photoshootSubjectTypeOptions = [
+    { value: "person", label: "Person" },
+    { value: "product", label: "Product" },
+    { value: "food", label: "Food" },
+    { value: "pet", label: "Pet" },
+  ];
 
   const bgUrl = active?.imageUrl ?? null;
 
@@ -952,7 +958,11 @@ export default function EditorPage() {
                     onValueChange={(value) =>
                       persistSpec({
                         ...safeSpec,
-                        builder: { ...safeSpec.builder, subjectType: value },
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          subjectType: value,
+                          motion: "static",
+                        },
                       })
                     }
                   >
@@ -960,7 +970,7 @@ export default function EditorPage() {
                       <SelectValue placeholder="Choose" />
                     </SelectTrigger>
                     <SelectContent>
-                      {SUBJECT_TYPE_OPTIONS.map((option) => (
+                      {photoshootSubjectTypeOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -977,12 +987,103 @@ export default function EditorPage() {
                       persistSpec({
                         ...safeSpec,
                         builder: {
-                          ...safeSpec.builder,
+                          ...(safeSpec.builder ?? {}),
                           extraDetails: e.target.value,
+                          motion: "static",
                         },
                       })
                     }
                   />
+                </div>
+              </div>
+            ) : null}
+
+            {isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Camera & lens</div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Lens</label>
+                  <Select
+                    value={safeSpec.builder.lens ?? ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          lens: value,
+                          motion: "static",
+                        },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LENS_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Depth</label>
+                  <Select
+                    value={safeSpec.builder.depth ?? ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          depth: value,
+                          motion: "static",
+                        },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DEPTH_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Angle</label>
+                  <Select
+                    value={safeSpec.builder.angle ?? ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          angle: value,
+                          motion: "static",
+                        },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ANGLE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             ) : null}
