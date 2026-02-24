@@ -1088,6 +1088,142 @@ export default function EditorPage() {
               </div>
             ) : null}
 
+            {isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Light</div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Lighting setup</label>
+                  <Select
+                    value={safeSpec.builder.lightingSetup ?? ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          lightingSetup: value,
+                          motion: "static",
+                        },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LIGHTING_SETUP_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Mood</label>
+                  <Select
+                    value={safeSpec.builder.mood ?? ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          mood: value,
+                          motion: "static",
+                        },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MOOD_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Temperature</label>
+                  <Select
+                    value={safeSpec.builder.temperature ?? ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          temperature: value,
+                          motion: "static",
+                        },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TEMPERATURE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : null}
+
+            {isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Scene / props</div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Assets highlights</label>
+                  <Input
+                    value={(safeSpec.builder.assetsHighlights ?? []).join(", ")}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          assetsHighlights: e.target.value
+                            .split(",")
+                            .map((item) => item.trim())
+                            .filter(Boolean),
+                          motion: "static",
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Context props</label>
+                  <Input
+                    value={(safeSpec.builder.contextProps ?? []).join(", ")}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          contextProps: e.target.value
+                            .split(",")
+                            .map((item) => item.trim())
+                            .filter(Boolean),
+                          motion: "static",
+                        },
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
+
             <div className="pt-2 border-t border-border space-y-3">
               <button
                 type="button"
