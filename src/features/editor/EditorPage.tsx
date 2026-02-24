@@ -1224,6 +1224,39 @@ export default function EditorPage() {
               </div>
             ) : null}
 
+            {isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Finish</div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Finish</label>
+                  <Select
+                    value={safeSpec.builder.finish ?? "true_to_life"}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...(safeSpec.builder ?? {}),
+                          finish: value,
+                          motion: "static",
+                        },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FINISH_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : null}
+
             <div className="pt-2 border-t border-border space-y-3">
               <button
                 type="button"
@@ -1392,32 +1425,6 @@ export default function EditorPage() {
                         </SelectContent>
                       </Select>
                     </div>
-
-                    {isPhotoshoot ? (
-                      <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">Finish</label>
-                        <Select
-                          value={builder?.finish || "true_to_life"}
-                          onValueChange={(value) =>
-                            persistSpec({
-                              ...safeSpec,
-                              builder: { ...builder, finish: value },
-                            })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Choose" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FINISH_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : null}
 
                     {!isPhotoshoot ? (
                       <div className="space-y-1">
