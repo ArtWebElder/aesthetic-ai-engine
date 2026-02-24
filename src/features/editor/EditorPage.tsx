@@ -375,6 +375,12 @@ export default function EditorPage() {
     };
   }, [subjectPreviewUrl]);
 
+  useEffect(() => {
+    if (spec?.module === "photoshoot") {
+      setPhotoshootPreset("studio_product");
+    }
+  }, [spec?.module, project?.id]);
+
   // geraÃ§Ã£o ativa (placeholder)
   const active = useMemo(() => {
     if (!project?.generations?.length) return undefined;
@@ -933,6 +939,51 @@ export default function EditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+            ) : null}
+
+            {isPhotoshoot ? (
+              <div className="pt-2 border-t border-border space-y-3">
+                <div className="text-sm font-medium">Subject</div>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Type</label>
+                  <Select
+                    value={safeSpec.builder.subjectType ?? ""}
+                    onValueChange={(value) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: { ...safeSpec.builder, subjectType: value },
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUBJECT_TYPE_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Details</label>
+                  <Input
+                    value={safeSpec.builder.extraDetails ?? ""}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        builder: {
+                          ...safeSpec.builder,
+                          extraDetails: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
               </div>
             ) : null}
 
