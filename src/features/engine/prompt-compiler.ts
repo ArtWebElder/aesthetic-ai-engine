@@ -352,24 +352,39 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
         : "Intensity directive: strong visual impact, bolder styling, keep coherent"
       : "Intensity directive: balanced enhancement, realistic, avoid over-stylization"
     : null;
-  const amplificationLines: string[] = [];
-  if (isExtreme) {
-    if (builderLabels.macroStyle) {
-      amplificationLines.push(
-        `macro style emphasis: ${builderLabels.macroStyle} must be visually dominant`
+  const compositionSet = Boolean(builderLabels.layoutBase) || Boolean(builderLabels.safeSpace);
+  const lightingSet =
+    Boolean(builderLabels.lightingSetup) ||
+    Boolean(builderLabels.mood) ||
+    Boolean(builderLabels.temperature);
+  const styleSet = Boolean(builderLabels.macroStyle) || builderLabels.visualStyle.length > 0;
+  const assetsSet =
+    builderLabels.assetsHighlights.length > 0 || Boolean(builderLabels.materialFeel);
+  const categoryCount = [compositionSet, lightingSet, styleSet, assetsSet].filter(Boolean).length;
+  const selectiveAmplificationLines: string[] = [];
+  if (isExtreme || (isHigh && categoryCount >= 2)) {
+    if (compositionSet) {
+      selectiveAmplificationLines.push(
+        "Amplify: composition must strongly follow the selected layout and safe space."
       );
     }
-    if (builderLabels.lightingSetup) {
-      amplificationLines.push(
-        "lighting priority: lighting must strongly define scene atmosphere"
+    if (lightingSet) {
+      selectiveAmplificationLines.push(
+        "Amplify: lighting and mood must clearly match the selected setup and atmosphere."
       );
     }
-    if (builderLabels.mood) {
-      amplificationLines.push(
-        "emotional amplification: mood must be clearly expressed"
+    if (styleSet) {
+      selectiveAmplificationLines.push(
+        "Amplify: style direction must be clearly expressed and visually consistent."
+      );
+    }
+    if (assetsSet) {
+      selectiveAmplificationLines.push(
+        "Amplify: selected elements/material feel must be visible and intentional."
       );
     }
   }
+  const selectedAmplificationLines = selectiveAmplificationLines.slice(0, 2);
   const paletteMode = brand.paletteMode ?? "mono";
   const paletteGuidance =
     paletteMode === "mono"
@@ -400,8 +415,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
   const prompt = [
     ...(isExtreme
-      ? [weightedDirectiveLine, intensityDirectiveLine, ...amplificationLines, ...baseBlock]
-      : [...baseBlock, weightedDirectiveLine, intensityDirectiveLine]),
+      ? [weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines, ...baseBlock]
+      : [...baseBlock, weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines]),
     debugEnabled ? builderSubjectLineText : null,
     debugEnabled ? builderLightingLine : null,
     debugEnabled ? builderStyleLine : null,
