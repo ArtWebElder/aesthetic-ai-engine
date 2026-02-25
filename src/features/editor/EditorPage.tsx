@@ -2581,7 +2581,7 @@ export default function EditorPage() {
             {/* FORMAT */}
             {!isPhotoshoot && !isSocialPost ? (
             <div className="pt-2 border-t border-border space-y-3">
-              <div className="text-sm font-medium">Format</div>
+              <div className="text-sm font-medium">{t("editor.format.title")}</div>
 
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -2591,7 +2591,7 @@ export default function EditorPage() {
                   }
                   onClick={() => applyFormat("ecom_ultrawide_1920x800")}
                 >
-                  Desktop
+                  {t("editor.format.desktop")}
                 </Button>
 
                 <Button
@@ -2601,7 +2601,7 @@ export default function EditorPage() {
                   }
                   onClick={() => applyFormat("ecom_notebook_1366x768")}
                 >
-                  Notebook
+                  {t("editor.format.notebook")}
                 </Button>
 
                 <Button
@@ -2611,7 +2611,7 @@ export default function EditorPage() {
                   }
                   onClick={() => applyFormat("ecom_mobile_1080x1350")}
                 >
-                  Mobile
+                  {t("editor.format.mobile")}
                 </Button>
 
                 <Button
@@ -2619,14 +2619,14 @@ export default function EditorPage() {
                   variant={safeSpec.format === "ecom_custom" ? "default" : "outline"}
                   onClick={() => applyFormat("ecom_custom")}
                 >
-                  Custom
+                  {t("editor.format.custom")}
                 </Button>
               </div>
 
               {safeSpec.format === "ecom_custom" ? (
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Width</label>
+                    <label className="text-xs text-muted-foreground">{t("editor.format.width")}</label>
                     <Input
                       value={String(safeSpec.generation.width)}
                       onChange={(e) => {
@@ -2644,7 +2644,7 @@ export default function EditorPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs text-muted-foreground">Height</label>
+                    <label className="text-xs text-muted-foreground">{t("editor.format.height")}</label>
                     <Input
                       value={String(safeSpec.generation.height)}
                       onChange={(e) => {
@@ -2669,7 +2669,7 @@ export default function EditorPage() {
             {!isPhotoshoot && !isSocialPost ? (
               <>
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Headline</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.generic.headline")}</label>
                   <Input
                     value={safeSpec.content.headline}
                     onChange={(e) =>
@@ -2682,7 +2682,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Subheadline</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.generic.subheadline")}</label>
                   <Input
                     value={safeSpec.content.subheadline}
                     onChange={(e) =>
@@ -2695,7 +2695,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">CTA</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.generic.cta")}</label>
                   <Input
                     value={safeSpec.content.ctaText}
                     onChange={(e) =>
@@ -2711,7 +2711,7 @@ export default function EditorPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs text-muted-foreground">Realism</label>
+                <label className="text-xs text-muted-foreground">{t("editor.generic.realism")}</label>
                 <span className="text-xs text-muted-foreground">
                   {clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)}%
                 </span>
@@ -2737,11 +2737,11 @@ export default function EditorPage() {
 
             {/* HISTORY */}
             <div className="pt-2 border-t border-border space-y-2">
-              <div className="text-sm font-medium">History</div>
+              <div className="text-sm font-medium">{t("editor.generic.history")}</div>
 
               {(project.generations ?? []).length === 0 ? (
                 <div className="text-xs text-muted-foreground">
-                  No generations yet.
+                  {t("editor.generic.no_generations_yet")}
                 </div>
               ) : (
                 <div className="grid grid-cols-4 gap-2">
@@ -2791,7 +2791,7 @@ export default function EditorPage() {
       {/* BOTTOM ACTION BAR */}
       <div className="px-4 md:px-6 py-3 border-t border-border bg-background/70 backdrop-blur flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
-          Tip: generate multiple times to fill History.
+          {t("editor.actions.tip_generate_history")}
         </div>
 
         <div className="flex items-center gap-2">
@@ -2799,13 +2799,13 @@ export default function EditorPage() {
             variant="outline"
             onClick={() => alert("Create Variations (placeholder)")}
           >
-            Create 10 Variations
+            {t("editor.actions.create_10_variations")}
           </Button>
           <Button
             variant="outline"
             onClick={() => alert("Export 2K (placeholder)")}
           >
-            Export 2K
+            {t("editor.actions.export_2k")}
           </Button>
         </div>
       </div>
