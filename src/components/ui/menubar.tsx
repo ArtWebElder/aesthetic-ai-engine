@@ -122,17 +122,15 @@ const MenubarCheckboxItem = React.forwardRef<
   <MenubarPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent/60 focus:text-accent-foreground hover:bg-accent/50",
+      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-4 pr-2 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent/60 focus:text-accent-foreground hover:bg-accent/50",
       className,
     )}
     checked={checked}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <MenubarPrimitive.ItemIndicator>
-        <Check className="h-4 w-4 text-primary" />
-      </MenubarPrimitive.ItemIndicator>
-    </span>
+    <MenubarPrimitive.ItemIndicator>
+      <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary" />
+    </MenubarPrimitive.ItemIndicator>
     {children}
   </MenubarPrimitive.CheckboxItem>
 ));
@@ -145,16 +143,14 @@ const MenubarRadioItem = React.forwardRef<
   <MenubarPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-8 pr-2 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent/60 focus:text-accent-foreground hover:bg-accent/50",
+      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-4 pr-2 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent/60 focus:text-accent-foreground hover:bg-accent/50",
       className,
     )}
     {...props}
   >
-    <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
-      <MenubarPrimitive.ItemIndicator>
-        <Circle className="h-2 w-2 fill-current" />
-      </MenubarPrimitive.ItemIndicator>
-    </span>
+    <MenubarPrimitive.ItemIndicator>
+      <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary" />
+    </MenubarPrimitive.ItemIndicator>
     {children}
   </MenubarPrimitive.RadioItem>
 ));
