@@ -75,6 +75,7 @@ import { toast } from "@/components/ui/use-toast";
 import { STYLE_PRESETS } from "@/types";
 import { useI18n } from "@/i18n";
 import { ChevronDown, ChevronRight, Upload } from "lucide-react";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 /**
  * Seu Project do /types/spec nÃ£o tem "generations" no tipo.
@@ -1437,41 +1438,56 @@ export default function EditorPage() {
   // estados bÃ¡sicos
   if (!id) {
     return (
-      <div className="p-6">
-        <div className="text-sm text-muted-foreground">{t("editor.state.missing_project_id")}</div>
+      <div className="flex min-h-[60vh] items-center justify-center animate-fade-in">
+        <div className="bg-card border border-border rounded-xl shadow-lg p-8 max-w-md text-center space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-full bg-muted flex items-center justify-center">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="0.5" fill="currentColor"/></svg>
+          </div>
+          <div className="text-sm text-muted-foreground">{t("editor.state.missing_project_id")}</div>
+          <Button variant="secondary" onClick={() => nav("/app/projects")}>
+            {t("editor.state.back_to_projects")}
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (!project || !safeSpec) {
     return (
-      <div className="p-6 space-y-3">
-        <div className="text-lg font-semibold">{t("editor.state.project_not_found")}</div>
-        <div className="text-sm text-muted-foreground">
-          {t("editor.state.project_not_found_detail")}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => nav("/app/projects")}>
-            {t("editor.state.back_to_projects")}
-          </Button>
-          <Button
-            onClick={() => {
-              const fallbackSpec = createDefaultSpec("feed_1080x1350");
-              const fake: EditorProject = {
-                id,
-                name: t("editor.state.recovered_project_name"),
-                status: "draft",
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                spec: fallbackSpec,
-                generations: [],
-              };
-              persist(fake);
-              setSpec(fake.spec);
-            }}
-          >
-            {t("editor.state.recover")}
-          </Button>
+      <div className="flex min-h-[60vh] items-center justify-center animate-fade-in">
+        <div className="bg-card border border-border rounded-xl shadow-lg p-8 max-w-md text-center space-y-4">
+          <div className="w-14 h-14 mx-auto rounded-full bg-muted flex items-center justify-center">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+          </div>
+          <div>
+            <div className="text-lg font-semibold">{t("editor.state.project_not_found")}</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {t("editor.state.project_not_found_detail")}
+            </div>
+          </div>
+          <div className="flex gap-2 justify-center">
+            <Button variant="secondary" onClick={() => nav("/app/projects")}>
+              {t("editor.state.back_to_projects")}
+            </Button>
+            <Button
+              onClick={() => {
+                const fallbackSpec = createDefaultSpec("feed_1080x1350");
+                const fake: EditorProject = {
+                  id,
+                  name: t("editor.state.recovered_project_name"),
+                  status: "draft",
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  spec: fallbackSpec,
+                  generations: [],
+                };
+                persist(fake);
+                setSpec(fake.spec);
+              }}
+            >
+              {t("editor.state.recover")}
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -2578,23 +2594,15 @@ export default function EditorPage() {
                 </Select>
                 <div className="flex items-center gap-2 pt-1">
                   <label className="text-xs text-muted-foreground">{t("accent_color")}</label>
-                  <label className="relative cursor-pointer group inline-block">
-                    <input
-                      type="color"
-                      value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
-                      onChange={(e) =>
-                        persistSpec({
-                          ...safeSpec,
-                          brand: { ...safeSpec.brand, accent: e.target.value },
-                        })
-                      }
-                      className="sr-only"
-                    />
-                    <div
-                      className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105"
-                      style={{ backgroundColor: safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399" }}
-                    />
-                  </label>
+                  <ColorPicker
+                    value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
+                    onChange={(color) =>
+                      persistSpec({
+                        ...safeSpec,
+                        brand: { ...safeSpec.brand, accent: color },
+                      })
+                    }
+                  />
                 </div>
               </div>
             ) : null}
@@ -3665,34 +3673,18 @@ export default function EditorPage() {
               <div className="flex flex-wrap gap-3 items-center">
                 <div className="space-y-1.5 flex flex-col items-center">
                   <label className="text-[10px] text-muted-foreground">{t("editor.palette.accent_primary")}</label>
-                  <label className="relative cursor-pointer group">
-                    <input
-                      type="color"
-                      value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
-                      onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, accent: e.target.value } })}
-                      className="sr-only"
-                    />
-                    <div
-                      className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105"
-                      style={{ backgroundColor: safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399" }}
-                    />
-                  </label>
+                  <ColorPicker
+                    value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
+                    onChange={(color) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, accent: color } })}
+                  />
                 </div>
 
                 <div className="space-y-1.5 flex flex-col items-center">
                   <label className="text-[10px] text-muted-foreground">{t("editor.palette.text")}</label>
-                  <label className="relative cursor-pointer group">
-                    <input
-                      type="color"
-                      value={safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff"}
-                      onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralText: e.target.value } })}
-                      className="sr-only"
-                    />
-                    <div
-                      className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105"
-                      style={{ backgroundColor: safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff" }}
-                    />
-                  </label>
+                  <ColorPicker
+                    value={safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff"}
+                    onChange={(color) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralText: color } })}
+                  />
                 </div>
               </div>
 
@@ -3726,41 +3718,41 @@ export default function EditorPage() {
                 {showSecondary ? (
                   <div className="space-y-1.5 flex flex-col items-center">
                     <label className="text-[10px] text-muted-foreground">{t("editor.palette.secondary")}</label>
-                    <label className="relative cursor-pointer group">
-                      <input type="color" value={safeSpec.brand.secondary?.startsWith("#") ? safeSpec.brand.secondary : "#888888"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, secondary: e.target.value } })} className="sr-only" />
-                      <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.secondary?.startsWith("#") ? safeSpec.brand.secondary : "#888888" }} />
-                    </label>
+                    <ColorPicker
+                      value={safeSpec.brand.secondary?.startsWith("#") ? safeSpec.brand.secondary : "#888888"}
+                      onChange={(color) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, secondary: color } })}
+                    />
                   </div>
                 ) : null}
                 {showAccent2 ? (
                   <div className="space-y-1.5 flex flex-col items-center">
                     <label className="text-[10px] text-muted-foreground">{t("editor.palette.accent_2")}</label>
-                    <label className="relative cursor-pointer group">
-                      <input type="color" value={safeSpec.brand.accent2?.startsWith("#") ? safeSpec.brand.accent2 : "#888888"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, accent2: e.target.value } })} className="sr-only" />
-                      <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.accent2?.startsWith("#") ? safeSpec.brand.accent2 : "#888888" }} />
-                    </label>
+                    <ColorPicker
+                      value={safeSpec.brand.accent2?.startsWith("#") ? safeSpec.brand.accent2 : "#888888"}
+                      onChange={(color) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, accent2: color } })}
+                    />
                   </div>
                 ) : null}
                 <div className="space-y-1.5 flex flex-col items-center">
                   <label className="text-[10px] text-muted-foreground">{t("editor.palette.neutral_bg")}</label>
-                  <label className="relative cursor-pointer group">
-                    <input type="color" value={safeSpec.brand.neutralBg?.startsWith("#") ? safeSpec.brand.neutralBg : "#0f172a"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralBg: e.target.value } })} className="sr-only" />
-                    <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.neutralBg?.startsWith("#") ? safeSpec.brand.neutralBg : "#0f172a" }} />
-                  </label>
+                  <ColorPicker
+                    value={safeSpec.brand.neutralBg?.startsWith("#") ? safeSpec.brand.neutralBg : "#0f172a"}
+                    onChange={(color) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralBg: color } })}
+                  />
                 </div>
                 <div className="space-y-1.5 flex flex-col items-center">
                   <label className="text-[10px] text-muted-foreground">{t("editor.palette.neutral_surface")}</label>
-                  <label className="relative cursor-pointer group">
-                    <input type="color" value={safeSpec.brand.neutralSurface?.startsWith("#") ? safeSpec.brand.neutralSurface : "#1e293b"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralSurface: e.target.value } })} className="sr-only" />
-                    <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.neutralSurface?.startsWith("#") ? safeSpec.brand.neutralSurface : "#1e293b" }} />
-                  </label>
+                  <ColorPicker
+                    value={safeSpec.brand.neutralSurface?.startsWith("#") ? safeSpec.brand.neutralSurface : "#1e293b"}
+                    onChange={(color) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralSurface: color } })}
+                  />
                 </div>
                 <div className="space-y-1.5 flex flex-col items-center">
                   <label className="text-[10px] text-muted-foreground">{t("editor.palette.neutral_text")}</label>
-                  <label className="relative cursor-pointer group">
-                    <input type="color" value={safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralText: e.target.value } })} className="sr-only" />
-                    <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff" }} />
-                  </label>
+                  <ColorPicker
+                    value={safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff"}
+                    onChange={(color) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralText: color } })}
+                  />
                 </div>
               </div>
               </div>

@@ -4,7 +4,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import ThemeToggle from '@/components/ThemeToggle';
 import { mockCredits } from '@/lib/mocks/data';
 import { useAuth } from '@/features/auth/fake-auth';
-import { useI18n, type Lang } from '@/i18n';
+import { useI18n } from '@/i18n';
+import { LocaleDropdown } from '@/components/LocaleDropdown';
 
 interface TopbarProps {
   onMenuToggle?: () => void;
@@ -12,7 +13,7 @@ interface TopbarProps {
 
 const Topbar = ({ onMenuToggle }: TopbarProps) => {
   const { user } = useAuth();
-  const { lang, setLang, t } = useI18n();
+  const { t } = useI18n();
 
   return (
     <header className="h-14 border-b border-border flex items-center px-4 gap-3 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
@@ -39,16 +40,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
 
       <div className="flex-1" />
 
-      <select
-        value={lang}
-        onChange={(e) => setLang(e.target.value as Lang)}
-        className="h-8 rounded-md border border-border bg-card px-2 text-xs"
-        aria-label={t("language")}
-      >
-        <option value="en">EN</option>
-        <option value="pt-BR">PT</option>
-        <option value="es">ES</option>
-      </select>
+      <LocaleDropdown compact />
 
       {/* Credits */}
       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
