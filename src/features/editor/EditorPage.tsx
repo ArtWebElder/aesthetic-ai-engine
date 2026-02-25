@@ -659,7 +659,7 @@ export default function EditorPage() {
   if (!id) {
     return (
       <div className="p-6">
-        <div className="text-sm text-muted-foreground">Missing project id.</div>
+        <div className="text-sm text-muted-foreground">{t("editor.state.missing_project_id")}</div>
       </div>
     );
   }
@@ -667,20 +667,20 @@ export default function EditorPage() {
   if (!project || !safeSpec) {
     return (
       <div className="p-6 space-y-3">
-        <div className="text-lg font-semibold">Project not found</div>
+        <div className="text-lg font-semibold">{t("editor.state.project_not_found")}</div>
         <div className="text-sm text-muted-foreground">
-          This project id does not exist in local storage.
+          {t("editor.state.project_not_found_detail")}
         </div>
         <div className="flex gap-2">
           <Button variant="secondary" onClick={() => nav("/app/projects")}>
-            Back to Projects
+            {t("editor.state.back_to_projects")}
           </Button>
           <Button
             onClick={() => {
               const fallbackSpec = createDefaultSpec("feed_1080x1350");
               const fake: EditorProject = {
                 id,
-                name: "Recovered Project",
+                name: t("editor.state.recovered_project_name"),
                 status: "draft",
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -691,7 +691,7 @@ export default function EditorPage() {
               setSpec(fake.spec);
             }}
           >
-            Recover
+            {t("editor.state.recover")}
           </Button>
         </div>
       </div>
@@ -704,7 +704,7 @@ export default function EditorPage() {
       <div className="px-4 md:px-6 py-4 border-b border-border bg-background/60 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">Project</div>
+            <div className="text-xs text-muted-foreground">{t("editor.header.project")}</div>
             <div className="flex items-center gap-3">
               <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">
                 {project.name}
@@ -729,10 +729,10 @@ export default function EditorPage() {
 
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="outline" onClick={() => nav("/app/projects")}>
-              Back
+              {t("editor.header.back")}
             </Button>
 
-            <Button onClick={generateMock}>Generate Base Image</Button>
+            <Button onClick={generateMock}>{t("editor.header.generate_base_image")}</Button>
           </div>
         </div>
       </div>

@@ -235,5 +235,11 @@
   "social.style.glass_pro": "Glass pro",
   "social.style.neon": "Neon",
   "social.style.editorial": "Editorial",
-  "social.style.tech_dark": "Tech dark"
+  "social.style.tech_dark": "Tech dark",
+  "editor.state.missing_project_id": "Missing project id.",
+  "editor.state.project_not_found": "Project not found",
+  "editor.state.project_not_found_detail": "This project id does not exist in local storage.",
+  "editor.state.back_to_projects": "Back to Projects",
+  "editor.state.recover": "Recover",
+  "editor.state.recovered_project_name": "Recovered Project"
 }
