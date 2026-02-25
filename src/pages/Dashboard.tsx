@@ -61,7 +61,7 @@ const Dashboard = () => {
   const activeDays = [3, 5, 2, 7, 4, 6, 8].filter(v => v > 0).length;
 
   return (
-    <div className="p-4 sm:p-5 lg:p-6 max-w-6xl mx-auto space-y-5 animate-page-fade">
+    <div className="p-4 sm:p-5 lg:p-6 max-w-6xl mx-auto space-y-4 animate-page-fade">
       {/* ── Hero ── */}
       <PageHeader
         title={`Welcome back${firstName !== 'there' ? `, ${firstName}` : ''}`}
@@ -99,60 +99,56 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* ── Getting Started ── */}
-      <GettingStartedBanner
-        hasProjects={projects.length > 0}
-        hasGenerations={completedCount > 0}
-        onCreateProject={() => { setWizardType(undefined); setWizardOpen(true); }}
-      />
-
-      {/* ── Resume Card ── */}
-      {mostRecentProject && (
-        <ResumeCard
-          project={mostRecentProject}
-          onContinue={() => navigate(`/app/projects/${mostRecentProject.id}`)}
+      {/* ── Getting Started + Resume — shared row ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <GettingStartedBanner
+          hasProjects={projects.length > 0}
+          hasGenerations={completedCount > 0}
+          onCreateProject={() => { setWizardType(undefined); setWizardOpen(true); }}
         />
-      )}
+        {mostRecentProject && (
+          <ResumeCard
+            project={mostRecentProject}
+            onContinue={() => navigate(`/app/projects/${mostRecentProject.id}`)}
+          />
+        )}
+      </div>
 
-      {/* ── Dynamic Grid: Quick Create + Sidebar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left: Quick Create (2/3) */}
-        <div className="lg:col-span-2 space-y-3">
+      {/* ── Quick Create + Production — side by side ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {/* Quick Create (2/3) */}
+        <div className="lg:col-span-2 space-y-2">
           <SectionHeader label={t("dashboard.quick_create")} />
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             {quickCreate.map((item, i) => (
               <button
                 key={item.type}
                 onClick={() => handleQuickCreate(item.type)}
-                className="relative bg-card border border-border/30 rounded-xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group animate-fade-in opacity-0 [animation-fill-mode:forwards]"
+                className="relative bg-card border border-border/30 rounded-xl p-3.5 text-left transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group animate-fade-in opacity-0 [animation-fill-mode:forwards]"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 {item.popular && (
-                  <Badge variant="secondary" className="absolute top-3 right-3 text-[9px] px-1.5 py-0 h-4 font-normal opacity-70">
+                  <Badge variant="secondary" className="absolute top-2.5 right-2.5 text-[9px] px-1.5 py-0 h-4 font-normal opacity-70">
                     Popular
                   </Badge>
                 )}
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
                     <item.icon className="h-4 w-4 text-primary" />
                   </div>
                 </div>
                 <h3 className="font-medium text-sm">{t(item.labelKey)}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{t(item.hintKey)}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{t(item.hintKey)}</p>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Right: Merged production widget (1/3) */}
-        <div className="space-y-3">
+        {/* Production (1/3) */}
+        <div className="space-y-2">
           <SectionHeader label="Production" />
-
-          <div className="bg-card border border-border/30 rounded-xl p-4 space-y-3 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '120ms' }}>
+          <div className="bg-card border border-border/30 rounded-xl p-3.5 space-y-2.5 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '120ms' }}>
             <MiniProductionChart />
-
-            {/* Progress bar integrated */}
             <div className="pt-2 border-t border-border/20 space-y-1.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
