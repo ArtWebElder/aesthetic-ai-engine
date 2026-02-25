@@ -733,6 +733,19 @@ export default function EditorPage() {
       maxLines: number
     ): string[] => {
       if (!text) return [];
+      const fitLineWithEllipsis = (input: string): string => {
+        const raw = input.trim();
+        if (!raw) return "";
+        if (ctx.measureText(raw).width <= maxWidth) return raw;
+        const ellipsis = "...";
+        let end = raw.length;
+        while (end > 0) {
+          const candidate = `${raw.slice(0, end).trimEnd()}${ellipsis}`;
+          if (ctx.measureText(candidate).width <= maxWidth) return candidate;
+          end -= 1;
+        }
+        return ellipsis;
+      };
       const words = text.split(/\s+/).filter(Boolean);
       const lines: string[] = [];
       let current = "";
@@ -741,13 +754,25 @@ export default function EditorPage() {
         if (ctx.measureText(next).width <= maxWidth) {
           current = next;
         } else {
-          if (current) lines.push(current);
-          current = words[i];
-          if (lines.length >= maxLines - 1) break;
+          if (current) {
+            lines.push(current);
+          }
+          current = fitLineWithEllipsis(words[i]);
         }
       }
       if (current && lines.length < maxLines) lines.push(current);
-      return lines.slice(0, maxLines);
+      if (lines.length <= maxLines) return lines;
+      const trimmed = lines.slice(0, maxLines);
+      const overflow = `${trimmed[maxLines - 1]} ${lines.slice(maxLines).join(" ")}`.trim();
+      trimmed[maxLines - 1] = fitLineWithEllipsis(overflow);
+      return trimmed;
+    };
+
+    const truncateWithEllipsis = (text: string, maxChars: number): string => {
+      const normalized = text.trim();
+      if (normalized.length <= maxChars) return normalized;
+      if (maxChars <= 3) return "...";
+      return `${normalized.slice(0, maxChars - 3).trimEnd()}...`;
     };
 
     const downloadCanvas = (canvas: HTMLCanvasElement) => {
@@ -786,6 +811,7 @@ export default function EditorPage() {
       const ctaPadX = Math.round(w * 0.018);
       const ctaPadY = Math.round(h * 0.01);
       const maxTextWidth = Math.round(w * 0.82);
+      const ctaMaxChars = Math.max(16, Math.min(28, Math.round(w * 0.012)));
 
       ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
@@ -798,9 +824,14 @@ export default function EditorPage() {
       const subLines = wrapTextLines(ctx, subheadlineText, maxTextWidth, 2);
       const subHeight = subLines.length * Math.round(subSize * 1.2);
 
-      const ctaHeight = ctaText ? ctaSize + ctaPadY * 2 : 0;
+      ctx.font = `700 ${ctaSize}px Arial, sans-serif`;
+      const ctaDrawText = ctaText
+        ? truncateWithEllipsis(ctaText, ctaMaxChars)
+        : "";
+      const ctaHeight = ctaDrawText ? ctaSize + ctaPadY * 2 : 0;
       const gapA = headlineLines.length && subLines.length ? Math.round(h * 0.015) : 0;
-      const gapB = (headlineLines.length || subLines.length) && ctaText ? Math.round(h * 0.02) : 0;
+      const gapB =
+        (headlineLines.length || subLines.length) && ctaDrawText ? Math.round(h * 0.02) : 0;
       const totalHeight = headlineHeight + gapA + subHeight + gapB + ctaHeight;
       const blockTop = Math.max(topPad, h - bottomPad - totalHeight);
       let y = blockTop + headlineSize;
@@ -823,9 +854,9 @@ export default function EditorPage() {
         y += subHeight + gapB;
       }
 
-      if (ctaText) {
+      if (ctaDrawText) {
         ctx.font = `700 ${ctaSize}px Arial, sans-serif`;
-        const ctaWidth = Math.round(ctx.measureText(ctaText).width + ctaPadX * 2);
+        const ctaWidth = Math.round(ctx.measureText(ctaDrawText).width + ctaPadX * 2);
         const ctaY = y - ctaSize;
         ctx.fillStyle = "rgba(255,255,255,0.92)";
         const radius = Math.round(ctaHeight / 2);
@@ -847,7 +878,7 @@ export default function EditorPage() {
         ctx.closePath();
         ctx.fill();
         ctx.fillStyle = "rgba(0,0,0,0.95)";
-        ctx.fillText(ctaText, marginX + ctaPadX, ctaY + ctaHeight - ctaPadY);
+        ctx.fillText(ctaDrawText, marginX + ctaPadX, ctaY + ctaHeight - ctaPadY);
       }
     };
 
@@ -1100,6 +1131,12 @@ export default function EditorPage() {
                         const headlineText = safeSpec.builder.headline || content.headline;
                         const subheadlineText = safeSpec.builder.subheadline || content.subheadline;
                         const ctaText = safeSpec.builder.cta || content.ctaText;
+                        const twoLineClampStyle = {
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical" as const,
+                          overflow: "hidden",
+                        };
                         const productUrl = safeSpec.builder.productUploads?.[0] || "";
                         const logoUrl = safeSpec.builder.logoUploads?.[0] || "";
                         const bgImage = safeSpec.builder.backgroundUploads?.[0] || bgUrl || "";
@@ -1140,12 +1177,20 @@ export default function EditorPage() {
                                 ].join(" ")}
                               >
                                 <div className="space-y-3 md:space-y-4">
-                                  <div className="text-white text-4xl md:text-5xl font-bold leading-tight">
+                                  <div
+                                    className="text-white text-4xl md:text-5xl font-bold leading-tight"
+                                    style={twoLineClampStyle}
+                                  >
                                     {headlineText}
                                   </div>
-                                  <div className="text-white/90 text-base md:text-lg">{subheadlineText}</div>
+                                  <div
+                                    className="text-white/90 text-base md:text-lg"
+                                    style={twoLineClampStyle}
+                                  >
+                                    {subheadlineText}
+                                  </div>
                                   <div className="inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
-                                    {ctaText}
+                                    <span className="max-w-[28ch] truncate">{ctaText}</span>
                                   </div>
                                 </div>
                                 {productUrl ? (
@@ -1165,13 +1210,21 @@ export default function EditorPage() {
 
                             {layoutPreset === "overlay_bottom" ? (
                               <div className={`absolute left-6 right-6 z-10 space-y-3 ${bottomTextClass}`}>
-                                <div className="text-white text-5xl md:text-6xl font-bold leading-[0.95]">
+                                <div
+                                  className="text-white text-5xl md:text-6xl font-bold leading-[0.95]"
+                                  style={twoLineClampStyle}
+                                >
                                   {headlineText}
                                 </div>
                                 <div className="flex flex-wrap items-center gap-3">
-                                  <div className="text-white/90 text-base md:text-lg">{subheadlineText}</div>
+                                  <div
+                                    className="text-white/90 text-base md:text-lg max-w-[70%]"
+                                    style={twoLineClampStyle}
+                                  >
+                                    {subheadlineText}
+                                  </div>
                                   <div className="inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
-                                    {ctaText}
+                                    <span className="max-w-[22ch] truncate">{ctaText}</span>
                                   </div>
                                 </div>
                               </div>
@@ -1179,7 +1232,10 @@ export default function EditorPage() {
 
                             {layoutPreset === "minimal" ? (
                               <div className={`absolute inset-0 z-10 p-6 ${verticalTextPadClass}`}>
-                                <div className="text-white text-lg md:text-xl font-semibold tracking-tight">
+                                <div
+                                  className="text-white text-lg md:text-xl font-semibold tracking-tight"
+                                  style={twoLineClampStyle}
+                                >
                                   {headlineText}
                                 </div>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
@@ -1191,7 +1247,7 @@ export default function EditorPage() {
                                     />
                                   ) : null}
                                   <div className="inline-flex px-3 py-1.5 text-xs font-medium bg-white/20 text-white border border-white/30">
-                                    {ctaText}
+                                    <span className="max-w-[24ch] truncate">{ctaText}</span>
                                   </div>
                                 </div>
                               </div>
@@ -1202,16 +1258,22 @@ export default function EditorPage() {
                                 className={`absolute inset-0 z-10 p-6 md:p-8 flex flex-col justify-between ${verticalTextPadClass}`}
                               >
                                 <div className="space-y-3">
-                                  <div className="inline-block bg-black text-white px-3 py-2 text-4xl md:text-6xl font-black uppercase leading-none">
+                                  <div
+                                    className="inline-block bg-black text-white px-3 py-2 text-4xl md:text-6xl font-black uppercase leading-none"
+                                    style={twoLineClampStyle}
+                                  >
                                     {headlineText}
                                   </div>
-                                  <div className="inline-block bg-white text-black px-3 py-2 text-sm md:text-base font-bold">
+                                  <div
+                                    className="inline-block bg-white text-black px-3 py-2 text-sm md:text-base font-bold"
+                                    style={twoLineClampStyle}
+                                  >
                                     {subheadlineText}
                                   </div>
                                 </div>
                                 <div className="flex items-end justify-between gap-4">
                                   <div className="inline-flex bg-black text-white px-4 py-2 text-sm font-bold uppercase">
-                                    {ctaText}
+                                    <span className="max-w-[20ch] truncate">{ctaText}</span>
                                   </div>
                                   {productUrl ? (
                                     <img
@@ -1229,12 +1291,20 @@ export default function EditorPage() {
                                 className={`absolute inset-0 z-10 flex items-center justify-center p-6 ${verticalTextPadClass}`}
                               >
                                 <div className="w-full max-w-[78%] rounded-2xl border border-white/30 bg-white/15 backdrop-blur-md px-6 py-7 text-center space-y-3">
-                                  <div className="text-white text-4xl md:text-5xl font-semibold leading-tight">
+                                  <div
+                                    className="text-white text-4xl md:text-5xl font-semibold leading-tight"
+                                    style={twoLineClampStyle}
+                                  >
                                     {headlineText}
                                   </div>
-                                  <div className="text-white/90 text-base md:text-lg">{subheadlineText}</div>
+                                  <div
+                                    className="text-white/90 text-base md:text-lg"
+                                    style={twoLineClampStyle}
+                                  >
+                                    {subheadlineText}
+                                  </div>
                                   <div className="inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
-                                    {ctaText}
+                                    <span className="max-w-[24ch] truncate">{ctaText}</span>
                                   </div>
                                 </div>
                                 {productUrl ? (
@@ -1252,14 +1322,20 @@ export default function EditorPage() {
                                 <div
                                   className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6 ${verticalTextPadClass}`}
                                 >
-                                  <div className="text-white text-5xl md:text-6xl font-bold leading-[0.95] max-w-[90%]">
+                                  <div
+                                    className="text-white text-5xl md:text-6xl font-bold leading-[0.95] max-w-[90%]"
+                                    style={twoLineClampStyle}
+                                  >
                                     {headlineText}
                                   </div>
-                                  <div className="text-white/90 text-lg md:text-xl mt-3 max-w-[80%]">
+                                  <div
+                                    className="text-white/90 text-lg md:text-xl mt-3 max-w-[80%]"
+                                    style={twoLineClampStyle}
+                                  >
                                     {subheadlineText}
                                   </div>
                                   <div className="mt-5 inline-flex rounded-full px-5 py-2.5 text-sm font-medium bg-white/90 text-black">
-                                    {ctaText}
+                                    <span className="max-w-[24ch] truncate">{ctaText}</span>
                                   </div>
                                 </div>
                                 {productUrl ? (
