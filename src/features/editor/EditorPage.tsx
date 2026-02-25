@@ -53,6 +53,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/components/ui/use-toast";
 import { STYLE_PRESETS } from "@/types";
 import { useI18n } from "@/i18n";
 
@@ -443,6 +444,10 @@ export default function EditorPage() {
   const [spec, setSpec] = useState<ProjectSpec | null>(null);
   const [subjectPreviewUrl, setSubjectPreviewUrl] = useState<string | null>(null);
   const [photoshootPreset, setPhotoshootPreset] = useState<PhotoshootPresetId>("studio_product");
+  const [isExporting2K, setIsExporting2K] = useState(false);
+  const [isBatchExporting, setIsBatchExporting] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
+  const [lastExportError, setLastExportError] = useState<string | null>(null);
 
   // carrega projeto por ID
   useEffect(() => {
@@ -681,6 +686,9 @@ export default function EditorPage() {
       generateMock();
       return;
     }
+    setIsBatchExporting(true);
+    setBatchProgress({ current: 0, total: 10 });
+    setLastExportError(null);
     const variations = [
       { textScale: 0.96, overlayOpacity: 0.18, topPadScale: 1.06, productScale: 0.98, blurBoost: 1.0 },
       { textScale: 1.0, overlayOpacity: 0.2, topPadScale: 1.0, productScale: 1.0, blurBoost: 1.0 },
@@ -693,12 +701,25 @@ export default function EditorPage() {
       { textScale: 1.04, overlayOpacity: 0.24, topPadScale: 0.94, productScale: 1.03, blurBoost: 1.1 },
       { textScale: 0.97, overlayOpacity: 0.18, topPadScale: 1.05, productScale: 0.97, blurBoost: 0.95 },
     ] as const;
-    for (let i = 0; i < variations.length; i += 1) {
-      await exportSocialPost2K({
-        fileName: `social-post-2k-${String(i + 1).padStart(2, "0")}.png`,
-        variation: variations[i],
+    try {
+      for (let i = 0; i < variations.length; i += 1) {
+        setBatchProgress({ current: i + 1, total: variations.length });
+        await exportSocialPost2K({
+          fileName: `social-post-2k-${String(i + 1).padStart(2, "0")}.png`,
+          variation: variations[i],
+        });
+        await new Promise((resolve) => setTimeout(resolve, 80));
+      }
+      toast({ title: "10 variations exported" });
+    } catch {
+      setLastExportError("Batch export failed");
+      toast({
+        title: "Batch export failed",
+        variant: "destructive",
       });
-      await new Promise((resolve) => setTimeout(resolve, 80));
+    } finally {
+      setIsBatchExporting(false);
+      setBatchProgress(null);
     }
   }
 
@@ -1326,7 +1347,27 @@ export default function EditorPage() {
   }
 
   async function export2K() {
-    await exportSocialPost2K({ fileName: "social-post-2k.png" });
+    if (!safeSpec || safeSpec.module !== "social_post") {
+      console.log("activeGenerationId:", project?.activeGenerationId ?? null);
+      console.log("generationWidth:", safeSpec?.generation?.width ?? null);
+      console.log("generationHeight:", safeSpec?.generation?.height ?? null);
+      return;
+    }
+
+    setIsExporting2K(true);
+    setLastExportError(null);
+    try {
+      await exportSocialPost2K({ fileName: "social-post-2k.png" });
+      toast({ title: "Export ready" });
+    } catch {
+      setLastExportError("Export failed");
+      toast({
+        title: "Export failed",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting2K(false);
+    }
   }
 
   // estados bÃ¡sicos
@@ -3690,18 +3731,30 @@ export default function EditorPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            disabled={isBatchExporting || isExporting2K}
             onClick={() => void createVariations()}
           >
-            {t("editor.actions.create_10_variations")}
+            {isBatchExporting
+              ? `Exporting 10... (${batchProgress?.current ?? 0}/${batchProgress?.total ?? 10})`
+              : t("editor.actions.create_10_variations")}
           </Button>
           <Button
             variant="outline"
-            onClick={export2K}
+            disabled={isBatchExporting || isExporting2K}
+            onClick={() => void export2K()}
           >
-            {t("editor.actions.export_2k")}
+            {isExporting2K ? "Exporting..." : t("editor.actions.export_2k")}
           </Button>
         </div>
       </div>
+      {isBatchExporting ? (
+        <div className="px-4 md:px-6 pb-2 text-xs text-muted-foreground">
+          Generating variations: {batchProgress?.current ?? 0}/{batchProgress?.total ?? 10}
+        </div>
+      ) : null}
+      {lastExportError ? (
+        <div className="px-4 md:px-6 pb-2 text-xs text-red-500">{lastExportError}</div>
+      ) : null}
     </div>
   );
 }
