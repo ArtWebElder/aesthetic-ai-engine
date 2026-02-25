@@ -68,6 +68,7 @@ export default function EditorPage() {
       nav("/app/projects");
       return;
     }
+    localStorage.setItem("lastOpenedProjectId", id);
     setProject(deepClone(p) as EditorProject);
   }, [id, nav]);
 
