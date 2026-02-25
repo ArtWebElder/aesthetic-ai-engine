@@ -63,7 +63,7 @@ const CommandBar = () => {
             >
               <action.icon className="mr-3 h-4 w-4 text-foreground/70" />
               <span className="flex-1">{t(action.labelKey)}</span>
-              <kbd className="ml-auto text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-sm font-mono">
+              <kbd className="ml-auto text-xs text-primary-foreground bg-primary px-1.5 py-0.5 rounded-sm font-mono font-medium">
                 {action.shortcut}
               </kbd>
             </CommandItem>
