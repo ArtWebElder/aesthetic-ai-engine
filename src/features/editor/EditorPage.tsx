@@ -837,7 +837,7 @@ export default function EditorPage() {
                         const gw = safeSpec.generation?.width ?? 1080;
                         const gh = safeSpec.generation?.height ?? 1080;
                         const isVertical = gh > gw;
-                        const platformPreset = (safeSpec.builder.platformPreset ?? "").trim();
+                        const platformPreset = String(safeSpec.builder.platformPreset ?? "").trim().toLowerCase();
                         const isVerticalPlatform =
                           platformPreset === "instagram_story" || platformPreset === "tiktok_vertical";
                         const verticalTextPadClass = isVerticalPlatform
