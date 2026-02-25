@@ -1,5 +1,9 @@
 // src/features/editor/EditorPage.tsx
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  WheelEvent as ReactWheelEvent,
+} from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import type {
@@ -484,6 +488,13 @@ export default function EditorPage() {
   const [focusMode, setFocusMode] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
+  const canvasContainerRef = useRef<HTMLDivElement | null>(null);
+  const canvasStageRef = useRef<HTMLDivElement | null>(null);
+  const stickToFitRef = useRef(true);
+  const [canvasViewport, setCanvasViewport] = useState({ width: 0, height: 0 });
+  const [canvasScale, setCanvasScale] = useState(1);
+  const [canvasFitScale, setCanvasFitScale] = useState(1);
+  const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
 
   // carrega projeto por ID
   useEffect(() => {
@@ -632,6 +643,81 @@ export default function EditorPage() {
   ];
 
   const bgUrl = active?.imageUrl ?? null;
+  const previewBaseSize = useMemo(
+    () => ({
+      width: safeSpec?.generation?.width ?? 1080,
+      height: safeSpec?.generation?.height ?? 1350,
+    }),
+    [safeSpec?.generation?.width, safeSpec?.generation?.height]
+  );
+  const zoomClamp = useCallback((value: number) => Math.max(0.1, Math.min(4, value)), []);
+  const computeFitScale = useCallback(() => {
+    if (canvasViewport.width <= 0 || canvasViewport.height <= 0) return 1;
+    const fit = Math.min(
+      canvasViewport.width / previewBaseSize.width,
+      canvasViewport.height / previewBaseSize.height
+    );
+    return zoomClamp(fit);
+  }, [
+    canvasViewport.height,
+    canvasViewport.width,
+    previewBaseSize.height,
+    previewBaseSize.width,
+    zoomClamp,
+  ]);
+  const resetCanvasToFit = useCallback(() => {
+    const fit = computeFitScale();
+    setCanvasFitScale(fit);
+    setCanvasScale(fit);
+    setCanvasOffset({ x: 0, y: 0 });
+    stickToFitRef.current = true;
+  }, [computeFitScale]);
+  const zoomFromPoint = useCallback(
+    (targetScale: number, clientX: number, clientY: number) => {
+      const stageEl = canvasStageRef.current;
+      if (!stageEl) return;
+      const nextScale = zoomClamp(targetScale);
+      setCanvasScale((prevScale) => {
+        if (Math.abs(nextScale - prevScale) < 0.0001) return prevScale;
+        const rect = stageEl.getBoundingClientRect();
+        const pointX = (clientX - rect.left) / prevScale;
+        const pointY = (clientY - rect.top) / prevScale;
+        setCanvasOffset((prevOffset) => ({
+          x: prevOffset.x - pointX * (nextScale - prevScale),
+          y: prevOffset.y - pointY * (nextScale - prevScale),
+        }));
+        stickToFitRef.current = false;
+        return nextScale;
+      });
+    },
+    [zoomClamp]
+  );
+  const handleCanvasWheel = useCallback(
+    (event: ReactWheelEvent<HTMLDivElement>) => {
+      if (!event.shiftKey) return;
+      event.preventDefault();
+      const zoomFactor = Math.exp(-event.deltaY * 0.0015);
+      zoomFromPoint(canvasScale * zoomFactor, event.clientX, event.clientY);
+    },
+    [canvasScale, zoomFromPoint]
+  );
+  const handleCanvasKeyDown = useCallback(
+    (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (!event.shiftKey) return;
+      if (event.key !== "+" && event.key !== "=" && event.key !== "-" && event.key !== "_") {
+        return;
+      }
+      const container = canvasContainerRef.current;
+      if (!container) return;
+      event.preventDefault();
+      const zoomStep = event.key === "-" || event.key === "_" ? 0.9 : 1.1;
+      const rect = container.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      zoomFromPoint(canvasScale * zoomStep, centerX, centerY);
+    },
+    [canvasScale, zoomFromPoint]
+  );
 
   function persistPhotoshootBuilderPatch(patch: Partial<ProjectSpec["builder"]>) {
     if (!safeSpec || !isPhotoshoot) return;
@@ -745,6 +831,48 @@ export default function EditorPage() {
   }
 
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+
+  useEffect(() => {
+    const container = canvasContainerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const nextWidth = entry.contentRect.width;
+      const nextHeight = entry.contentRect.height;
+      setCanvasViewport((prev) => {
+        if (
+          Math.abs(prev.width - nextWidth) < 0.5 &&
+          Math.abs(prev.height - nextHeight) < 0.5
+        ) {
+          return prev;
+        }
+        return { width: nextWidth, height: nextHeight };
+      });
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const fit = computeFitScale();
+    setCanvasFitScale(fit);
+    if (stickToFitRef.current) {
+      setCanvasScale(fit);
+      setCanvasOffset({ x: 0, y: 0 });
+    }
+  }, [computeFitScale]);
+
+  useEffect(() => {
+    resetCanvasToFit();
+  }, [
+    resetCanvasToFit,
+    active?.id,
+    bgUrl,
+    safeSpec?.module,
+    safeSpec?.generation?.width,
+    safeSpec?.generation?.height,
+  ]);
 
   async function createVariations() {
     if (!safeSpec || safeSpec.module !== "social_post") {
@@ -1731,9 +1859,15 @@ export default function EditorPage() {
               Grid
             </button>
           </div>
-          <div className="flex-1 min-h-0 px-6 md:px-8 pb-6 md:pb-8 overflow-auto flex items-start justify-center">
+          <div className="flex-1 min-h-0 px-6 md:px-8 pb-6 md:pb-8 overflow-hidden flex items-center justify-center">
             <div className={focusMode ? "w-full max-w-[960px]" : "w-full max-w-[880px]"}>
-              <div className="relative overflow-hidden rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background">
+              <div
+                ref={canvasContainerRef}
+                tabIndex={0}
+                onWheel={handleCanvasWheel}
+                onKeyDown={handleCanvasKeyDown}
+                className="relative h-full min-h-[360px] overflow-hidden rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
                 {/* Grid overlay */}
                 {showGridOverlay && (
                   <div
@@ -1745,13 +1879,18 @@ export default function EditorPage() {
                     }}
                   />
                 )}
-                <div
-                  className="relative w-full bg-muted/30 flex items-center justify-center"
-                  style={{
-                    aspectRatio: `${safeSpec.generation.width} / ${safeSpec.generation.height}`,
-                  }}
-                >
-                  <div className="w-full h-full">
+                <div className="absolute inset-0 bg-muted/30">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div
+                      ref={canvasStageRef}
+                      style={{
+                        width: `${previewBaseSize.width}px`,
+                        height: `${previewBaseSize.height}px`,
+                        transform: `translate3d(${canvasOffset.x}px, ${canvasOffset.y}px, 0) scale(${canvasScale})`,
+                        transformOrigin: "0 0",
+                      }}
+                    >
+                      <div className="w-full h-full">
                     {isSocialPost ? (
                       (() => {
                         const layoutRaw = (safeSpec.builder.layoutPreset ?? "").trim().toLowerCase();
@@ -2028,6 +2167,20 @@ export default function EditorPage() {
                         showGrid={false}
                       />
                     )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-3 right-3 z-40 flex items-center gap-2 rounded-md border border-border/60 bg-background/85 px-2 py-1 text-[11px] backdrop-blur-sm">
+                    <span className="tabular-nums text-muted-foreground">
+                      {Math.round(canvasScale * 100)}%
+                    </span>
+                    <button
+                      type="button"
+                      onClick={resetCanvasToFit}
+                      className="rounded px-1.5 py-0.5 text-foreground hover:bg-muted"
+                    >
+                      Fit
+                    </button>
                   </div>
                 </div>
               </div>
