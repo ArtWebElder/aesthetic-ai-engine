@@ -834,7 +834,18 @@ export default function EditorPage() {
                             : layoutRaw.includes("minimal")
                             ? "minimal"
                             : "hero";
-                        const isVertical = safeSpec.generation.height > safeSpec.generation.width;
+                        const gw = safeSpec.generation?.width ?? 1080;
+                        const gh = safeSpec.generation?.height ?? 1080;
+                        const isVertical = gh > gw;
+                        const platformPreset = (safeSpec.builder.platformPreset ?? "").trim();
+                        const isVerticalPlatform =
+                          platformPreset === "instagram_story" || platformPreset === "tiktok_vertical";
+                        const verticalTextPadClass = isVerticalPlatform
+                          ? "pt-12 pb-12 md:pt-14 md:pb-14"
+                          : "";
+                        const logoTopClass = isVerticalPlatform ? "top-10" : "top-6";
+                        const bottomTextClass = isVerticalPlatform ? "bottom-14" : "bottom-8";
+                        const productBottomClass = isVerticalPlatform ? "bottom-10" : "bottom-6";
                         const headlineText = safeSpec.builder.headline || content.headline;
                         const subheadlineText = safeSpec.builder.subheadline || content.subheadline;
                         const ctaText = safeSpec.builder.cta || content.ctaText;
@@ -865,7 +876,7 @@ export default function EditorPage() {
                               <img
                                 src={logoUrl}
                                 alt=""
-                                className="absolute top-6 left-6 h-16 w-auto object-contain z-20"
+                                className={`absolute left-6 h-16 w-auto object-contain z-20 ${logoTopClass}`}
                               />
                             ) : null}
 
@@ -873,6 +884,7 @@ export default function EditorPage() {
                               <div
                                 className={[
                                   "absolute inset-0 z-10 p-6 md:p-8 gap-6",
+                                  verticalTextPadClass,
                                   isVertical ? "grid grid-rows-[auto_1fr]" : "grid grid-cols-2 items-center",
                                 ].join(" ")}
                               >
@@ -901,7 +913,7 @@ export default function EditorPage() {
                             ) : null}
 
                             {layoutPreset === "overlay_bottom" ? (
-                              <div className="absolute left-6 right-6 bottom-8 z-10 space-y-3">
+                              <div className={`absolute left-6 right-6 z-10 space-y-3 ${bottomTextClass}`}>
                                 <div className="text-white text-5xl md:text-6xl font-bold leading-[0.95]">
                                   {headlineText}
                                 </div>
@@ -915,7 +927,7 @@ export default function EditorPage() {
                             ) : null}
 
                             {layoutPreset === "minimal" ? (
-                              <div className="absolute inset-0 z-10 p-6">
+                              <div className={`absolute inset-0 z-10 p-6 ${verticalTextPadClass}`}>
                                 <div className="text-white text-lg md:text-xl font-semibold tracking-tight">
                                   {headlineText}
                                 </div>
@@ -935,7 +947,9 @@ export default function EditorPage() {
                             ) : null}
 
                             {layoutPreset === "brutalist" ? (
-                              <div className="absolute inset-0 z-10 p-6 md:p-8 flex flex-col justify-between">
+                              <div
+                                className={`absolute inset-0 z-10 p-6 md:p-8 flex flex-col justify-between ${verticalTextPadClass}`}
+                              >
                                 <div className="space-y-3">
                                   <div className="inline-block bg-black text-white px-3 py-2 text-4xl md:text-6xl font-black uppercase leading-none">
                                     {headlineText}
@@ -960,7 +974,9 @@ export default function EditorPage() {
                             ) : null}
 
                             {layoutPreset === "glass" ? (
-                              <div className="absolute inset-0 z-10 flex items-center justify-center p-6">
+                              <div
+                                className={`absolute inset-0 z-10 flex items-center justify-center p-6 ${verticalTextPadClass}`}
+                              >
                                 <div className="w-full max-w-[78%] rounded-2xl border border-white/30 bg-white/15 backdrop-blur-md px-6 py-7 text-center space-y-3">
                                   <div className="text-white text-4xl md:text-5xl font-semibold leading-tight">
                                     {headlineText}
@@ -974,7 +990,7 @@ export default function EditorPage() {
                                   <img
                                     src={productUrl}
                                     alt=""
-                                    className="absolute right-6 bottom-6 max-h-[36%] w-auto object-contain"
+                                    className={`absolute right-6 max-h-[36%] w-auto object-contain ${productBottomClass}`}
                                   />
                                 ) : null}
                               </div>
@@ -982,7 +998,9 @@ export default function EditorPage() {
 
                             {layoutPreset === "hero" ? (
                               <>
-                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6">
+                                <div
+                                  className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6 ${verticalTextPadClass}`}
+                                >
                                   <div className="text-white text-5xl md:text-6xl font-bold leading-[0.95] max-w-[90%]">
                                     {headlineText}
                                   </div>
@@ -997,7 +1015,7 @@ export default function EditorPage() {
                                   <img
                                     src={productUrl}
                                     alt=""
-                                    className="absolute right-6 bottom-6 h-[28%] w-auto object-contain z-10"
+                                    className={`absolute right-6 h-[28%] w-auto object-contain z-10 ${productBottomClass}`}
                                   />
                                 ) : null}
                               </>
