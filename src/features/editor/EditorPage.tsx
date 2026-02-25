@@ -678,10 +678,249 @@ export default function EditorPage() {
     generateMock();
   }
 
-  function export2K() {
-    console.log("activeGenerationId:", project?.activeGenerationId ?? null);
-    console.log("generationWidth:", safeSpec?.generation?.width ?? null);
-    console.log("generationHeight:", safeSpec?.generation?.height ?? null);
+  async function export2K() {
+    if (!safeSpec || safeSpec.module !== "social_post") {
+      console.log("activeGenerationId:", project?.activeGenerationId ?? null);
+      console.log("generationWidth:", safeSpec?.generation?.width ?? null);
+      console.log("generationHeight:", safeSpec?.generation?.height ?? null);
+      return;
+    }
+
+    const gw = safeSpec.generation?.width ?? 1080;
+    const gh = safeSpec.generation?.height ?? 1080;
+    const longest = 2048;
+    const canvasWidth = gw >= gh ? longest : Math.round((gw / gh) * longest);
+    const canvasHeight = gh > gw ? longest : Math.round((gh / gw) * longest);
+
+    const headlineText = (safeSpec.builder.headline || content.headline || "").trim();
+    const subheadlineText = (safeSpec.builder.subheadline || content.subheadline || "").trim();
+    const ctaText = (safeSpec.builder.cta || content.ctaText || "").trim();
+    const backgroundUrl = safeSpec.builder.backgroundUploads?.[0] || bgUrl || "";
+    const logoUrl = safeSpec.builder.logoUploads?.[0] || "";
+    const productUrl = safeSpec.builder.productUploads?.[0] || "";
+    const premiumOverlayUrl = safeSpec.builder.premiumOverlayUrls?.[0] || "";
+    const platformPreset = String(safeSpec.builder.platformPreset ?? "").trim().toLowerCase();
+    const isVerticalPlatform =
+      platformPreset === "instagram_story" || platformPreset === "tiktok_vertical";
+
+    const loadImage = (src: string): Promise<HTMLImageElement> =>
+      new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error(`Failed to load image: ${src.slice(0, 64)}`));
+        img.src = src;
+      });
+
+    const drawCover = (
+      ctx: CanvasRenderingContext2D,
+      img: HTMLImageElement,
+      w: number,
+      h: number
+    ) => {
+      const scale = Math.max(w / img.width, h / img.height);
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      const dx = (w - dw) / 2;
+      const dy = (h - dh) / 2;
+      ctx.drawImage(img, dx, dy, dw, dh);
+    };
+
+    const wrapTextLines = (
+      ctx: CanvasRenderingContext2D,
+      text: string,
+      maxWidth: number,
+      maxLines: number
+    ): string[] => {
+      if (!text) return [];
+      const words = text.split(/\s+/).filter(Boolean);
+      const lines: string[] = [];
+      let current = "";
+      for (let i = 0; i < words.length; i += 1) {
+        const next = current ? `${current} ${words[i]}` : words[i];
+        if (ctx.measureText(next).width <= maxWidth) {
+          current = next;
+        } else {
+          if (current) lines.push(current);
+          current = words[i];
+          if (lines.length >= maxLines - 1) break;
+        }
+      }
+      if (current && lines.length < maxLines) lines.push(current);
+      return lines.slice(0, maxLines);
+    };
+
+    const downloadCanvas = (canvas: HTMLCanvasElement) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = "social-post-2k.png";
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+            return;
+          }
+          const dataUrl = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = "social-post-2k.png";
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        },
+        "image/png"
+      );
+    };
+
+    const drawTextLayer = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+      const marginX = Math.round(w * 0.06);
+      const topPad = isVerticalPlatform ? Math.round(h * 0.12) : Math.round(h * 0.06);
+      const bottomPad = isVerticalPlatform ? Math.round(h * 0.12) : Math.round(h * 0.08);
+      const headlineSize = Math.max(24, Math.round(w * 0.1));
+      const subSize = Math.max(16, Math.round(w * 0.06));
+      const ctaSize = Math.max(14, Math.round(w * 0.05));
+      const ctaPadX = Math.round(w * 0.018);
+      const ctaPadY = Math.round(h * 0.01);
+      const maxTextWidth = Math.round(w * 0.82);
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+
+      ctx.font = `800 ${headlineSize}px Arial, sans-serif`;
+      const headlineLines = wrapTextLines(ctx, headlineText, maxTextWidth, 2);
+      const headlineHeight = headlineLines.length * Math.round(headlineSize * 1.08);
+
+      ctx.font = `700 ${subSize}px Arial, sans-serif`;
+      const subLines = wrapTextLines(ctx, subheadlineText, maxTextWidth, 2);
+      const subHeight = subLines.length * Math.round(subSize * 1.2);
+
+      const ctaHeight = ctaText ? ctaSize + ctaPadY * 2 : 0;
+      const gapA = headlineLines.length && subLines.length ? Math.round(h * 0.015) : 0;
+      const gapB = (headlineLines.length || subLines.length) && ctaText ? Math.round(h * 0.02) : 0;
+      const totalHeight = headlineHeight + gapA + subHeight + gapB + ctaHeight;
+      const blockTop = Math.max(topPad, h - bottomPad - totalHeight);
+      let y = blockTop + headlineSize;
+
+      if (headlineLines.length) {
+        ctx.fillStyle = "rgba(255,255,255,1)";
+        ctx.font = `800 ${headlineSize}px Arial, sans-serif`;
+        headlineLines.forEach((line, idx) => {
+          ctx.fillText(line, marginX, y + idx * Math.round(headlineSize * 1.08));
+        });
+        y += headlineHeight + gapA;
+      }
+
+      if (subLines.length) {
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        ctx.font = `700 ${subSize}px Arial, sans-serif`;
+        subLines.forEach((line, idx) => {
+          ctx.fillText(line, marginX, y + idx * Math.round(subSize * 1.2));
+        });
+        y += subHeight + gapB;
+      }
+
+      if (ctaText) {
+        ctx.font = `700 ${ctaSize}px Arial, sans-serif`;
+        const ctaWidth = Math.round(ctx.measureText(ctaText).width + ctaPadX * 2);
+        const ctaY = y - ctaSize;
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
+        const radius = Math.round(ctaHeight / 2);
+        ctx.beginPath();
+        ctx.moveTo(marginX + radius, ctaY);
+        ctx.lineTo(marginX + ctaWidth - radius, ctaY);
+        ctx.quadraticCurveTo(marginX + ctaWidth, ctaY, marginX + ctaWidth, ctaY + radius);
+        ctx.lineTo(marginX + ctaWidth, ctaY + ctaHeight - radius);
+        ctx.quadraticCurveTo(
+          marginX + ctaWidth,
+          ctaY + ctaHeight,
+          marginX + ctaWidth - radius,
+          ctaY + ctaHeight
+        );
+        ctx.lineTo(marginX + radius, ctaY + ctaHeight);
+        ctx.quadraticCurveTo(marginX, ctaY + ctaHeight, marginX, ctaY + ctaHeight - radius);
+        ctx.lineTo(marginX, ctaY + radius);
+        ctx.quadraticCurveTo(marginX, ctaY, marginX + radius, ctaY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(0,0,0,0.95)";
+        ctx.fillText(ctaText, marginX + ctaPadX, ctaY + ctaHeight - ctaPadY);
+      }
+    };
+
+    const drawTextOnlyFallbackAndDownload = () => {
+      const fallbackCanvas = document.createElement("canvas");
+      fallbackCanvas.width = canvasWidth;
+      fallbackCanvas.height = canvasHeight;
+      const fallbackCtx = fallbackCanvas.getContext("2d");
+      if (!fallbackCtx) return;
+      const grad = fallbackCtx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
+      grad.addColorStop(0, "#1f2937");
+      grad.addColorStop(1, "#111827");
+      fallbackCtx.fillStyle = grad;
+      fallbackCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+      fallbackCtx.fillStyle = "rgba(0,0,0,0.2)";
+      fallbackCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+      drawTextLayer(fallbackCtx, canvasWidth, canvasHeight);
+      downloadCanvas(fallbackCanvas);
+    };
+
+    const canvas = document.createElement("canvas");
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    try {
+      if (backgroundUrl) {
+        const bgImg = await loadImage(backgroundUrl);
+        drawCover(ctx, bgImg, canvasWidth, canvasHeight);
+      } else {
+        const gradient = ctx.createLinearGradient(0, 0, canvasWidth, canvasHeight);
+        gradient.addColorStop(0, "#171717");
+        gradient.addColorStop(1, "#404040");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+      }
+
+      ctx.fillStyle = "rgba(0,0,0,0.2)";
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+      const margin = Math.round(canvasWidth * 0.06);
+      const topPad = isVerticalPlatform ? Math.round(canvasHeight * 0.1) : margin;
+      const bottomPad = isVerticalPlatform ? Math.round(canvasHeight * 0.1) : margin;
+
+      if (logoUrl) {
+        const logo = await loadImage(logoUrl);
+        const logoTargetH = Math.round(canvasHeight * 0.1);
+        const logoW = Math.round((logo.width / logo.height) * logoTargetH);
+        ctx.drawImage(logo, margin, topPad, logoW, logoTargetH);
+      }
+
+      if (productUrl) {
+        const product = await loadImage(productUrl);
+        const hasBigText = headlineText.length > 30 || subheadlineText.length > 50;
+        const maxProductH = Math.round(canvasHeight * (hasBigText ? 0.38 : 0.45));
+        const ph = maxProductH;
+        const pw = Math.round((product.width / product.height) * ph);
+        ctx.drawImage(product, canvasWidth - margin - pw, canvasHeight - bottomPad - ph, pw, ph);
+      }
+
+      drawTextLayer(ctx, canvasWidth, canvasHeight);
+
+      if (premiumOverlayUrl) {
+        const overlay = await loadImage(premiumOverlayUrl);
+        ctx.drawImage(overlay, 0, 0, canvasWidth, canvasHeight);
+      }
+
+      downloadCanvas(canvas);
+    } catch (err) {
+      console.warn("2K export fallback due to image/CORS issue:", err);
+      drawTextOnlyFallbackAndDownload();
+    }
   }
 
   // estados bÃ¡sicos
