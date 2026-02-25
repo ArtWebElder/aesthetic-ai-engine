@@ -476,6 +476,7 @@ export default function EditorPage() {
   const [isBatchExporting, setIsBatchExporting] = useState(false);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [lastExportError, setLastExportError] = useState<string | null>(null);
+  const [templatesPanelOpen, setTemplatesPanelOpen] = useState(true);
 
   // carrega projeto por ID
   useEffect(() => {
@@ -1473,100 +1474,128 @@ export default function EditorPage() {
   return (
     <div className="h-[calc(100vh-56px)] flex flex-col">
       {/* TOP HEADER */}
-      <div className="px-4 md:px-6 py-4 border-b border-border bg-background/60 backdrop-blur">
+      <div className="px-4 md:px-6 py-3 border-b border-border bg-card">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-xs text-muted-foreground">{t("editor.header.project")}</div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl md:text-2xl font-semibold tracking-tight truncate">
+              <h1 className="text-lg font-semibold tracking-tight truncate">
                 {project.name}
               </h1>
 
-              <div className="hidden md:flex gap-2">
-                <span className="text-xs px-2 py-1 rounded border border-border">
+              <div className="hidden md:flex gap-1.5">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                   {safeSpec.module}
                 </span>
-                <span className="text-xs px-2 py-1 rounded border border-border">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                   {safeSpec.format}
                 </span>
-                <span className="text-xs px-2 py-1 rounded border border-border">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                   {safeSpec.stylePreset}
-                </span>
-                <span className="text-xs px-2 py-1 rounded border border-border">
-                  {safeSpec.templateId}
                 </span>
               </div>
             </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" onClick={() => nav("/app/projects")}>
+            <Button variant="outline" size="sm" onClick={() => nav("/app/projects")}>
               {t("editor.header.back")}
             </Button>
 
-            <Button onClick={generateMock}>{t("editor.header.generate_base_image")}</Button>
+            <Button size="sm" className="font-medium" onClick={generateMock}>{t("editor.header.generate_base_image")}</Button>
           </div>
         </div>
       </div>
 
       {/* 3-COL LAYOUT */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[320px_1fr_420px]">
+      <div className={`flex-1 min-h-0 grid grid-cols-1 ${templatesPanelOpen ? "lg:grid-cols-[240px_1fr_360px]" : "lg:grid-cols-[60px_1fr_360px]"} transition-all duration-200`}>
         {/* LEFT: TEMPLATES */}
-        <div className="hidden lg:flex flex-col min-h-0 border-r border-border bg-background/40">
-          <div className="p-4 border-b border-border">
-            <div className="text-xs text-muted-foreground">{t("editor.templates.title")}</div>
-            <div className="text-sm font-medium">{t("editor.templates.choose_layout")}</div>
+        <div className="hidden lg:flex flex-col min-h-0 border-r border-border/60">
+          <div className="px-3 py-2 border-b border-border/40 flex items-center justify-between">
+            {templatesPanelOpen ? (
+              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("editor.templates.title")}</div>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setTemplatesPanelOpen(!templatesPanelOpen)}
+              className="p-1 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+              title={templatesPanelOpen ? "Collapse" : "Expand"}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {templatesPanelOpen ? (
+                  <><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>
+                ) : (
+                  <><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>
+                )}
+              </svg>
+            </button>
           </div>
 
-          <div className="p-4 space-y-3 overflow-auto">
-            {TEMPLATE_REGISTRY.filter((t) => t.module === safeSpec.module).map((tpl) => {
-              const selected = safeSpec.templateId === tpl.id;
+          {templatesPanelOpen ? (
+            <div className="p-3 space-y-2 overflow-auto">
+              {TEMPLATE_REGISTRY.filter((t) => t.module === safeSpec.module).map((tpl) => {
+                const selected = safeSpec.templateId === tpl.id;
 
-              return (
-                <button
-                  key={tpl.id}
-                  type="button"
-                  className={[
-                    "w-full text-left rounded-lg border bg-background/60 p-3 transition",
-                    selected
-                      ? "border-primary ring-1 ring-primary/30 bg-background"
-                      : "border-border hover:bg-background",
-                  ].join(" ")}
-                  onClick={() => {
-                    persistSpec({
-                      ...safeSpec,
-                      templateId: tpl.id as any,
-                      stylePreset: (tpl.stylePreset ?? safeSpec.stylePreset) as StylePreset,
-                    });
-                  }}
-                >
-                  <div className="h-24 rounded-md bg-muted mb-2" />
-                  <div className="text-sm font-medium flex items-center justify-between">
-                    <span>{t(tpl.nameKey)}</span>
-                    {selected ? (
-                      <span className="text-[10px] px-2 py-1 rounded border border-primary/40 text-primary">
-                        {t("editor.templates.selected")}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {safeSpec.module} • {String(tpl.id)}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className={[
+                      "w-full text-left rounded-lg p-2.5 transition-all duration-150",
+                      selected
+                        ? "bg-card border-l-2 border-l-primary border border-border/60"
+                        : "border border-transparent hover:bg-card/60 hover:shadow-sm hover:-translate-y-px",
+                    ].join(" ")}
+                    onClick={() => {
+                      persistSpec({
+                        ...safeSpec,
+                        templateId: tpl.id as any,
+                        stylePreset: (tpl.stylePreset ?? safeSpec.stylePreset) as StylePreset,
+                      });
+                    }}
+                  >
+                    <div className="h-16 rounded-md bg-muted/60 mb-1.5" />
+                    <div className="text-xs font-medium truncate">{t(tpl.nameKey)}</div>
+                    <div className="text-[10px] text-muted-foreground truncate">
+                      {String(tpl.id)}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-1.5 space-y-1.5 overflow-auto">
+              {TEMPLATE_REGISTRY.filter((t) => t.module === safeSpec.module).map((tpl) => {
+                const selected = safeSpec.templateId === tpl.id;
+                return (
+                  <button
+                    key={tpl.id}
+                    type="button"
+                    className={[
+                      "w-full aspect-square rounded-lg transition-all duration-150",
+                      selected
+                        ? "bg-card border-2 border-primary/40"
+                        : "bg-muted/40 hover:bg-card/60",
+                    ].join(" ")}
+                    onClick={() => {
+                      persistSpec({
+                        ...safeSpec,
+                        templateId: tpl.id as any,
+                        stylePreset: (tpl.stylePreset ?? safeSpec.stylePreset) as StylePreset,
+                      });
+                    }}
+                    title={t(tpl.nameKey)}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* CENTER: CANVAS */}
-        <div className="min-h-0 flex flex-col">
-          <div className="px-4 md:px-6 py-3 border-b border-border flex items-center justify-between">
-            <div className="text-sm font-medium">{t("editor.canvas.title")}</div>
-          </div>
-
-          <div className="flex-1 min-h-0 p-4 md:p-6 overflow-auto">
-            <div className="mx-auto max-w-[920px]">
-              <div className="relative overflow-hidden rounded-xl border border-border">
+        <div className="min-h-0 flex flex-col bg-muted/20">
+          <div className="flex-1 min-h-0 p-6 md:p-8 overflow-auto flex items-start justify-center">
+            <div className="w-full max-w-[880px]">
+              <div className="relative overflow-hidden rounded-2xl border border-border/40 shadow-[0_1px_20px_rgba(0,0,0,0.06)] bg-background">
                 <div
                   className="relative w-full bg-muted/30 flex items-center justify-center"
                   style={{
@@ -1858,17 +1887,14 @@ export default function EditorPage() {
         </div>
 
         {/* RIGHT: INSPECTOR */}
-        <div className="min-h-0 border-l border-border bg-background/40">
-          <div className="px-4 py-3 border-b border-border">
-            <div className="text-sm font-medium">{t("editor.inspector.title")}</div>
-            <div className="text-xs text-muted-foreground">
-              {t("editor.inspector.edit_text_fields_autosave")}
-            </div>
+        <div className="min-h-0 border-l border-border/50 bg-card/30">
+          <div className="px-4 py-2.5 border-b border-border/40">
+            <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("editor.inspector.title")}</div>
           </div>
 
-          <div className="p-4 space-y-4 overflow-auto h-full">
-            <div className="pt-2 border-t border-border space-y-2">
-              <div className="text-sm font-medium">{t("editor.subject.avatar_photo")}</div>
+          <div className="px-4 py-3 space-y-6 overflow-auto h-full">
+            <div className="space-y-3">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.subject.avatar_photo")}</div>
               <input
                 type="file"
                 accept="image/*"
@@ -1923,9 +1949,9 @@ export default function EditorPage() {
               ) : null}
             </div>
 
-            <div className="pt-2 border-t border-border space-y-3">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">{t("editor.references.title")}</div>
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("editor.references.title")}</div>
                 <Button
                   type="button"
                   variant="outline"
@@ -2166,8 +2192,8 @@ export default function EditorPage() {
             ) : null}
 
             {isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("social.platform_preset")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("social.platform_preset")}</div>
                 <Select
                   value={safeSpec.builder.platformPreset ?? "instagram_feed"}
                   onValueChange={(value) => {
@@ -2277,8 +2303,8 @@ export default function EditorPage() {
             ) : null}
 
             {isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("social.goal_use_case")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("social.goal_use_case")}</div>
                 <Select
                   value={safeSpec.builder.goalPreset ?? "Offer"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ goalPreset: value })}
@@ -2298,8 +2324,8 @@ export default function EditorPage() {
             ) : null}
 
             {isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("content")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("content")}</div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("headline")}</label>
                   <Input
@@ -2394,8 +2420,8 @@ export default function EditorPage() {
             ) : null}
 
             {isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("social.layout_preset")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("social.layout_preset")}</div>
                 <Select
                   value={safeSpec.builder.layoutPreset ?? "Hero"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ layoutPreset: value })}
@@ -2415,8 +2441,8 @@ export default function EditorPage() {
             ) : null}
 
             {isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("social.visual_style")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("social.visual_style")}</div>
                 <Select
                   value={safeSpec.builder.macroStyle ?? "clean_modern"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ macroStyle: value })}
@@ -2450,8 +2476,8 @@ export default function EditorPage() {
             ) : null}
 
             {isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("social.premium_effects")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("social.premium_effects")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
@@ -2498,7 +2524,7 @@ export default function EditorPage() {
             ) : null}
 
             {isPhotoshoot ? (
-              <div className="pt-2 border-t border-border space-y-2">
+              <div className="pt-6 space-y-2">
                 <label className="text-xs text-muted-foreground">{t("images_to_generate")}</label>
                 <div className="flex items-center gap-2">
                   <Button
@@ -2544,8 +2570,8 @@ export default function EditorPage() {
             ) : null}
 
             {isPhotoshoot ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("photoshoot.subject.heading")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("photoshoot.subject.heading")}</div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("photoshoot.subject.type")}</label>
                   <Select
@@ -2577,8 +2603,8 @@ export default function EditorPage() {
             ) : null}
 
             {isPhotoshoot ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("photoshoot.camera_lens.heading")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("photoshoot.camera_lens.heading")}</div>
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("photoshoot.camera_lens.lens")}</label>
@@ -2640,8 +2666,8 @@ export default function EditorPage() {
             ) : null}
 
             {isPhotoshoot ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("photoshoot.light.heading")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("photoshoot.light.heading")}</div>
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("photoshoot.light.lighting_setup")}</label>
@@ -2705,8 +2731,8 @@ export default function EditorPage() {
             ) : null}
 
             {isPhotoshoot ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("photoshoot.scene_props.heading")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("photoshoot.scene_props.heading")}</div>
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
@@ -2819,8 +2845,8 @@ export default function EditorPage() {
             ) : null}
 
             {isPhotoshoot ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("photoshoot.finish.heading")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("photoshoot.finish.heading")}</div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("photoshoot.finish.label")}</label>
                   <Select
@@ -2842,7 +2868,7 @@ export default function EditorPage() {
               </div>
             ) : null}
 
-            <div className="pt-2 border-t border-border space-y-3">
+            <div className="pt-6 space-y-3">
               <button
                 type="button"
                 className="w-full rounded-md border border-border px-3 py-2 text-left text-xs hover:bg-background"
@@ -2880,7 +2906,7 @@ export default function EditorPage() {
             </div>
 
             {isEcom ? (
-              <div className="pt-2 border-t border-border space-y-3">
+              <div className="pt-6 space-y-3">
                 <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
                 <Select
                   value={currentScenePreset}
@@ -2959,9 +2985,9 @@ export default function EditorPage() {
               </div>
             ) : null}
 
-            <div className="pt-2 border-t border-border space-y-3">
+            <div className="pt-6 space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">{t("editor.builder.title")}</div>
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("editor.builder.title")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
@@ -3513,8 +3539,8 @@ export default function EditorPage() {
 
             {/* PALETTE */}
             {!isPhotoshoot && !isSocialPost ? (
-              <div className="space-y-3">
-                <div className="text-sm font-medium">{t("editor.palette.title")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.palette.title")}</div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
@@ -3687,8 +3713,8 @@ export default function EditorPage() {
 
             {/* TYPOGRAPHY */}
             {!isPhotoshoot && !isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("editor.typography.title")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.typography.title")}</div>
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.typography.font_preset")}</label>
                   <Select
@@ -3716,8 +3742,8 @@ export default function EditorPage() {
 
             {/* CONTRAST */}
             {!isPhotoshoot && !isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("editor.contrast.title")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.contrast.title")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
@@ -3736,8 +3762,8 @@ export default function EditorPage() {
 
             {/* STYLE PRESET */}
             {!isPhotoshoot && !isSocialPost ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("editor.typography.style_preset")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.typography.style_preset")}</div>
 
                 <Select
                   value={safeSpec.stylePreset}
@@ -3769,8 +3795,8 @@ export default function EditorPage() {
 
             {/* PHOTOSHOOT ASPECT */}
             {isPhotoshoot ? (
-              <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("photoshoot.aspect_ratio.label")}</div>
+              <div className="pt-6 space-y-3">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("photoshoot.aspect_ratio.label")}</div>
                 <Select
                   value={safeSpec.photoAspect ?? "3:2"}
                   onValueChange={(v) =>
@@ -3807,8 +3833,8 @@ export default function EditorPage() {
 
             {/* FORMAT */}
             {!isPhotoshoot && !isSocialPost ? (
-            <div className="pt-2 border-t border-border space-y-3">
-              <div className="text-sm font-medium">{t("editor.format.title")}</div>
+            <div className="pt-6 space-y-3">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.format.title")}</div>
 
               <div className="grid grid-cols-2 gap-2">
                 <Button
@@ -3963,8 +3989,8 @@ export default function EditorPage() {
             </div>
 
             {/* HISTORY */}
-            <div className="pt-2 border-t border-border space-y-2">
-              <div className="text-sm font-medium">{t("editor.generic.history")}</div>
+            <div className="pt-8 space-y-2">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.generic.history")}</div>
 
               {(project.generations ?? []).length === 0 ? (
                 <div className="text-xs text-muted-foreground">
@@ -4002,8 +4028,8 @@ export default function EditorPage() {
             </div>
 
             {/* DEBUG */}
-            <div className="pt-2 border-t border-border space-y-2">
-              <div className="text-sm font-medium">{t("editor.debug.compiled_title")}</div>
+            <div className="pt-8 space-y-2">
+              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.debug.compiled_title")}</div>
               <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
                 {compiled?.prompt}
               </pre>
@@ -4016,7 +4042,7 @@ export default function EditorPage() {
       </div>
 
       {/* BOTTOM ACTION BAR */}
-      <div className="px-4 md:px-6 py-3 border-t border-border bg-background/70 backdrop-blur flex items-center justify-between">
+      <div className="px-4 md:px-6 py-2.5 border-t border-border bg-card flex items-center justify-between">
         <div className="text-xs text-muted-foreground">
           {t("editor.actions.tip_generate_history")}
         </div>
