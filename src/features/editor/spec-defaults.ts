@@ -28,7 +28,7 @@ export function moduleFromFormat(format: ProjectFormat): ModuleType {
     format === "ecom_mobile_1080x1350" ||
     format === "ecom_custom"
   ) {
-    return "ecom";
+    return "ecom_banner";
   }
 
   return "photoshoot";
@@ -74,11 +74,9 @@ export function formatToSize(format: ProjectFormat): {
 
 export function defaultTemplateFor(module: ModuleType): TemplateId {
   switch (module) {
-    case "social":
-      return "social_01";
     case "social_post":
       return "social_post_clean";
-    case "ecom":
+    case "ecom_banner":
       return "ecom_01";
     case "photoshoot":
       return "photoshoot_clean";
@@ -87,11 +85,9 @@ export function defaultTemplateFor(module: ModuleType): TemplateId {
 
 export function defaultStyleFor(module: ModuleType): StylePreset {
   switch (module) {
-    case "social":
-      return "bold_ads";
     case "social_post":
       return "clean_modern";
-    case "ecom":
+    case "ecom_banner":
       return "minimal_clean";
     case "photoshoot":
       return "editorial";
@@ -172,7 +168,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
           : "High-performing creatives in minutes.",
       ctaText: module === "ecom_banner" ? "Shop now" : "Learn more",
       price: module === "ecom_banner" ? "$49" : undefined,
-      badgeText: module === "social" ? "NEW" : undefined,
+      badgeText: module === "social_post" ? "NEW" : undefined,
     },
 
     brand: {
@@ -199,9 +195,9 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
 
     effects: {
       preset: module === "photoshoot" ? "clean" : "bold",
-      textOutline: module === "social" ? 6 : 2,
-      shadow: module === "social" ? 6 : 3,
-      depth3d: module === "social" ? 2 : 0,
+      textOutline: module === "social_post" ? 6 : 2,
+      shadow: module === "social_post" ? 6 : 3,
+      depth3d: module === "social_post" ? 2 : 0,
       tilt: 0,
     },
 

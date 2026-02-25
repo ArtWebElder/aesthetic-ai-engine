@@ -15,9 +15,9 @@ export const SCENE_PRESET_OPTIONS: readonly ScenePresetSlug[] = [
 
 const SCENE_PRESET_SET = new Set<string>(SCENE_PRESET_OPTIONS);
 
-const SCENE_PRESET_DEFAULTS: Record<"social_post" | "ecom" | "photoshoot", ScenePresetSlug> = {
+const SCENE_PRESET_DEFAULTS: Record<"social_post" | "ecom_banner" | "photoshoot", ScenePresetSlug> = {
   social_post: "studio_gradient",
-  ecom: "minimal_texture",
+  ecom_banner: "minimal_texture",
   photoshoot: "studio_white",
 };
 
@@ -35,10 +35,10 @@ const SCENE_PRESET_DESCRIPTIONS: Record<ScenePresetSlug, string> = {
 };
 
 function normalizeModuleForScenePreset(
-  module: ModuleType | "ecom_banner" | string
+  module: ModuleType
 ): keyof typeof SCENE_PRESET_DEFAULTS | null {
   if (module === "photoshoot") return "photoshoot";
-  if (module === "ecom" || module === "ecom_banner") return "ecom";
+  if (module === "ecom_banner") return "ecom_banner";
   if (module === "social_post") return "social_post";
   return null;
 }
@@ -48,7 +48,7 @@ export function isScenePresetSlug(value: string): value is ScenePresetSlug {
 }
 
 export function getDefaultScenePreset(
-  module: ModuleType | "ecom_banner" | string
+  module: ModuleType
 ): ScenePresetSlug | "" {
   const normalizedModule = normalizeModuleForScenePreset(module);
   if (!normalizedModule) return "";
@@ -57,7 +57,7 @@ export function getDefaultScenePreset(
 
 export function normalizeScenePreset(
   value: string | null | undefined,
-  module: ModuleType | "ecom_banner" | string
+  module: ModuleType
 ): ScenePresetSlug | "" {
   const normalized = (value ?? "").trim();
   const normalizedModule = normalizeModuleForScenePreset(module);

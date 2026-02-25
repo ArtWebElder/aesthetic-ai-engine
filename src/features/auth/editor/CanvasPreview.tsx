@@ -140,7 +140,7 @@ export default function CanvasPreview({
               </div>
 
               <div style={{ fontSize: Math.round(w * 0.022), opacity: 0.7 }}>
-                {spec.module === "ecom" ? "Limited offer" : "Swipe up"}
+                {spec.module === "ecom_banner" ? "Limited offer" : "Swipe up"}
               </div>
             </div>
           </div>

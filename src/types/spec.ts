@@ -1,6 +1,6 @@
 // src/types/spec.ts
 
-export type ModuleType = "social" | "social_post" | "ecom" | "photoshoot";
+export type ModuleType = "social_post" | "ecom_banner" | "photoshoot";
 
 /* =========================
    FORMATS

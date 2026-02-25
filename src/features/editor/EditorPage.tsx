@@ -440,8 +440,8 @@ const TEMPLATE_REGISTRY: Array<{
   stylePreset?: StylePreset;
 }> = [
   { id: "social_post_clean", nameKey: "editor.template_name.social_post_clean", module: "social_post", stylePreset: "clean_modern" },
-  { id: "social_01", nameKey: "editor.template_name.social_01", module: "social", stylePreset: "bold_ads" },
-  { id: "ecom_01", nameKey: "editor.template_name.ecom_01", module: "ecom", stylePreset: "minimal_clean" },
+  { id: "social_01", nameKey: "editor.template_name.social_01", module: "social_post", stylePreset: "bold_ads" },
+  { id: "ecom_01", nameKey: "editor.template_name.ecom_01", module: "ecom_banner", stylePreset: "minimal_clean" },
   { id: "photoshoot_clean", nameKey: "editor.template_name.photoshoot_clean", module: "photoshoot", stylePreset: "editorial" },
 ];
 
@@ -550,9 +550,14 @@ export default function EditorPage() {
   const isPhotoshoot = safeSpec?.module === "photoshoot";
   const isSocialPost = safeSpec?.module === "social_post";
   const isEcom = safeSpec?.module === "ecom_banner";
+  const scenePresetModuleKey: ProjectSpec["module"] = isPhotoshoot
+    ? "photoshoot"
+    : isEcom
+    ? "ecom_banner"
+    : "social_post";
   const currentScenePreset = normalizeScenePreset(
     safeSpec?.builder?.scenePreset,
-    isPhotoshoot ? "photoshoot" : isEcom ? "ecom_banner" : "social_post"
+    scenePresetModuleKey
   );
   const photoshootSubjectTypeOptions = [
     { value: "person", label: "Person", labelKey: "photoshoot.subject_type.person" },
@@ -2169,7 +2174,11 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
                   <Select
                     value={currentScenePreset}
-                    onValueChange={(value) => persistSocialPostBuilderPatch({ scenePreset: value })}
+                    onValueChange={(value) =>
+                      persistSocialPostBuilderPatch({
+                        scenePreset: normalizeScenePreset(value, "social_post"),
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={t("editor.scene.preset.placeholder")} />
@@ -2622,7 +2631,11 @@ export default function EditorPage() {
                   <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
                   <Select
                     value={currentScenePreset}
-                    onValueChange={(value) => persistPhotoshootBuilderPatch({ scenePreset: value })}
+                    onValueChange={(value) =>
+                      persistPhotoshootBuilderPatch({
+                        scenePreset: normalizeScenePreset(value, "photoshoot"),
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue placeholder={t("editor.scene.preset.placeholder")} />
@@ -2735,7 +2748,11 @@ export default function EditorPage() {
                 <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
                 <Select
                   value={currentScenePreset}
-                  onValueChange={(value) => persistEcomBuilderPatch({ scenePreset: value })}
+                  onValueChange={(value) =>
+                    persistEcomBuilderPatch({
+                      scenePreset: normalizeScenePreset(value, "ecom_banner"),
+                    })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={t("editor.scene.preset.placeholder")} />
