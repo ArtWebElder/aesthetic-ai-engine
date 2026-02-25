@@ -79,9 +79,9 @@ const Projects = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("projects.filter.all")}</SelectItem>
-            <SelectItem value="banner">{t("projects.filter.banner")}</SelectItem>
-            <SelectItem value="thumbnail">{t("projects.filter.thumbnail")}</SelectItem>
-            <SelectItem value="photo">{t("projects.filter.photo")}</SelectItem>
+            <SelectItem value="ecom_banner">Banner Ad</SelectItem>
+            <SelectItem value="social_post">Social Post</SelectItem>
+            <SelectItem value="photoshoot">Photoshoot</SelectItem>
           </SelectContent>
         </Select>
       </div>
