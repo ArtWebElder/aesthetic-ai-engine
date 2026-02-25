@@ -62,6 +62,8 @@ import { compilePrompt } from "@/features/engine/prompt-compiler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
 import {
   Select,
   SelectContent,
@@ -72,6 +74,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { STYLE_PRESETS } from "@/types";
 import { useI18n } from "@/i18n";
+import { ChevronDown, ChevronRight, Upload } from "lucide-react";
 
 /**
  * Seu Project do /types/spec nÃ£o tem "generations" no tipo.
@@ -2106,27 +2109,34 @@ export default function EditorPage() {
                               })
                             }
                           />
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              const reader = new FileReader();
-                              reader.onload = () => {
-                                const result =
-                                  typeof reader.result === "string" ? reader.result : null;
-                                persistSpec({
-                                  ...safeSpec,
-                                  referenceImages: referenceImages.map((item) =>
-                                    item.id === ref.id ? { ...item, url: result } : item
-                                  ),
-                                });
-                              };
-                              reader.readAsDataURL(file);
-                            }}
-                            className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:text-foreground"
-                          />
+                          <label className="upload-zone text-xs">
+                            <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <div>
+                              <div className="text-xs font-medium text-foreground">Upload image</div>
+                              <div className="text-[10px] text-muted-foreground">Click to replace</div>
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="sr-only"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                const reader = new FileReader();
+                                reader.onload = () => {
+                                  const result =
+                                    typeof reader.result === "string" ? reader.result : null;
+                                  persistSpec({
+                                    ...safeSpec,
+                                    referenceImages: referenceImages.map((item) =>
+                                      item.id === ref.id ? { ...item, url: result } : item
+                                    ),
+                                  });
+                                };
+                                reader.readAsDataURL(file);
+                              }}
+                            />
+                          </label>
                         </div>
                       </div>
 
@@ -2169,41 +2179,38 @@ export default function EditorPage() {
                               {clampSize(Number(ref.weight ?? 70), 0, 100)}
                             </span>
                           </div>
-                          <input
-                            type="range"
+                          <Slider
                             min={0}
                             max={100}
                             step={1}
-                            value={clampSize(Number(ref.weight ?? 70), 0, 100)}
-                            onChange={(e) =>
+                            value={[clampSize(Number(ref.weight ?? 70), 0, 100)]}
+                            onValueChange={([val]) =>
                               persistSpec({
                                 ...safeSpec,
                                 referenceImages: referenceImages.map((item) =>
                                   item.id === ref.id
                                     ? {
                                         ...item,
-                                        weight: clampSize(Number(e.target.value), 0, 100),
+                                        weight: clampSize(val, 0, 100),
                                       }
                                     : item
                                 ),
                               })
                             }
-                            className="w-full"
                           />
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between gap-2">
                         <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={Boolean(ref.lockRealism)}
-                            onChange={(e) =>
+                            onCheckedChange={(checked) =>
                               persistSpec({
                                 ...safeSpec,
                                 referenceImages: referenceImages.map((item) =>
                                   item.id === ref.id
-                                    ? { ...item, lockRealism: e.target.checked }
+                                    ? { ...item, lockRealism: Boolean(checked) }
                                     : item
                                 ),
                               })
@@ -2369,10 +2376,9 @@ export default function EditorPage() {
                           key={option}
                           className="flex items-center gap-2 text-xs text-muted-foreground"
                         >
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={checked}
-                            onChange={() => {
+                            onCheckedChange={() => {
                               const nextValues = checked
                                 ? currentSceneProps.filter((item) => item !== option)
                                 : [...currentSceneProps, option];
@@ -2450,59 +2456,83 @@ export default function EditorPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("logo_upload")}</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const url = typeof reader.result === "string" ? reader.result : "";
-                        if (!url) return;
-                        persistSocialPostBuilderPatch({ logoUploads: [url] });
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
+                  <label className="upload-zone">
+                    <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <div className="text-xs font-medium text-foreground">{safeSpec.builder.logoUploads?.[0] ? "Logo uploaded" : t("logo_upload")}</div>
+                      <div className="text-[10px] text-muted-foreground">Click to upload</div>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const url = typeof reader.result === "string" ? reader.result : "";
+                          if (!url) return;
+                          persistSocialPostBuilderPatch({ logoUploads: [url] });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("product_upload")}</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const url = typeof reader.result === "string" ? reader.result : "";
-                        if (!url) return;
-                        persistSocialPostBuilderPatch({ productUploads: [url] });
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
+                  <label className="upload-zone">
+                    <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <div className="text-xs font-medium text-foreground">{safeSpec.builder.productUploads?.[0] ? "Product uploaded" : t("product_upload")}</div>
+                      <div className="text-[10px] text-muted-foreground">Click to upload</div>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const url = typeof reader.result === "string" ? reader.result : "";
+                          if (!url) return;
+                          persistSocialPostBuilderPatch({ productUploads: [url] });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">
                     {t("background_upload_optional")}
                   </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const url = typeof reader.result === "string" ? reader.result : "";
-                        if (!url) return;
-                        persistSocialPostBuilderPatch({ backgroundUploads: [url] });
-                      };
-                      reader.readAsDataURL(file);
-                    }}
-                  />
+                  <label className="upload-zone">
+                    <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <div className="text-xs font-medium text-foreground">{safeSpec.builder.backgroundUploads?.[0] ? "Background uploaded" : "Background"}</div>
+                      <div className="text-[10px] text-muted-foreground">Click to upload</div>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const url = typeof reader.result === "string" ? reader.result : "";
+                          if (!url) return;
+                          persistSocialPostBuilderPatch({ backgroundUploads: [url] });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
                 </div>
               </div>
             ) : null}
@@ -2546,19 +2576,25 @@ export default function EditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <label className="text-xs text-muted-foreground">{t("accent_color")}</label>
-                  <input
-                    type="color"
-                    value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
-                    onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        brand: { ...safeSpec.brand, accent: e.target.value },
-                      })
-                    }
-                    className="h-10 w-full rounded-md border border-border bg-transparent"
-                  />
+                  <label className="relative cursor-pointer group inline-block">
+                    <input
+                      type="color"
+                      value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
+                      onChange={(e) =>
+                        persistSpec({
+                          ...safeSpec,
+                          brand: { ...safeSpec.brand, accent: e.target.value },
+                        })
+                      }
+                      className="sr-only"
+                    />
+                    <div
+                      className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105"
+                      style={{ backgroundColor: safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399" }}
+                    />
+                  </label>
                 </div>
               </div>
             ) : null}
@@ -2567,11 +2603,10 @@ export default function EditorPage() {
               <div className="pt-6 space-y-3">
                 <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("social.premium_effects")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={Boolean(safeSpec.builder.premiumOverlayEnabled)}
-                    onChange={(e) =>
-                      persistSocialPostBuilderPatch({ premiumOverlayEnabled: e.target.checked })
+                    onCheckedChange={(checked) =>
+                      persistSocialPostBuilderPatch({ premiumOverlayEnabled: Boolean(checked) })
                     }
                   />
                   {t("social.enable_3d_overlay")}
@@ -2599,11 +2634,10 @@ export default function EditorPage() {
                   </Button>
                 ) : null}
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={Boolean(safeSpec.builder.designerMode)}
-                    onChange={(e) =>
-                      persistSocialPostBuilderPatch({ designerMode: e.target.checked })
+                    onCheckedChange={(checked) =>
+                      persistSocialPostBuilderPatch({ designerMode: Boolean(checked) })
                     }
                   />
                   {t("social.designer_mode")}
@@ -2881,10 +2915,9 @@ export default function EditorPage() {
                           key={option}
                           className="flex items-center gap-2 text-xs text-muted-foreground"
                         >
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={checked}
-                            onChange={() => {
+                            onCheckedChange={() => {
                               const nextValues = checked
                                 ? currentSceneProps.filter((item) => item !== option)
                                 : [...currentSceneProps, option];
@@ -2968,7 +3001,7 @@ export default function EditorPage() {
                 }
               >
                 {isPhotoshoot ? t("photoshoot.notes.optional") : t("editor.context.campaign_optional")}{" "}
-                {safeSpec.contextOpen ? "▼" : "▶"}
+                {safeSpec.contextOpen ? <ChevronDown className="inline h-3 w-3" /> : <ChevronRight className="inline h-3 w-3" />}
               </button>
 
               {!safeSpec.contextOpen ? (
@@ -3052,10 +3085,9 @@ export default function EditorPage() {
                           key={option}
                           className="flex items-center gap-2 text-xs text-muted-foreground"
                         >
-                          <input
-                            type="checkbox"
+                          <Checkbox
                             checked={checked}
-                            onChange={() => {
+                            onCheckedChange={() => {
                               const nextValues = checked
                                 ? currentSceneProps.filter((item) => item !== option)
                                 : [...currentSceneProps, option];
@@ -3077,13 +3109,12 @@ export default function EditorPage() {
               <div className="flex items-center justify-between">
                 <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("editor.builder.title")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={Boolean(safeSpec.promptDebug)}
-                    onChange={(e) =>
+                    onCheckedChange={(checked) =>
                       persistSpec({
                         ...safeSpec,
-                        promptDebug: e.target.checked,
+                        promptDebug: Boolean(checked),
                       })
                     }
                   />
@@ -3098,22 +3129,20 @@ export default function EditorPage() {
                     {clampSize(Number(builder?.intensity ?? 70), 0, 100)}%
                   </span>
                 </div>
-                <input
-                  type="range"
+                <Slider
                   min={0}
                   max={100}
                   step={1}
-                  value={clampSize(Number(builder?.intensity ?? 70), 0, 100)}
-                  onChange={(e) =>
+                  value={[clampSize(Number(builder?.intensity ?? 70), 0, 100)]}
+                  onValueChange={([val]) =>
                     persistSpec({
                       ...safeSpec,
                       builder: {
                         ...builder,
-                        intensity: clampSize(Number(e.target.value), 0, 100),
+                        intensity: clampSize(val, 0, 100),
                       },
                     })
                   }
-                  className="w-full"
                 />
               </div>
 
@@ -3128,7 +3157,7 @@ export default function EditorPage() {
                     })
                   }
                 >
-                  {t("editor.builder.advanced.label")} {builder?.advancedOpen ? "▼" : "▶"}
+                  {t("editor.builder.advanced.label")} {builder?.advancedOpen ? <ChevronDown className="inline h-3 w-3" /> : <ChevronRight className="inline h-3 w-3" />}
                 </button>
 
                 {builder?.advancedOpen ? (
@@ -3771,13 +3800,12 @@ export default function EditorPage() {
               <div className="pt-6 space-y-3">
                 <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.contrast.title")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={Boolean(safeSpec.brand.autoContrast)}
-                    onChange={(e) =>
+                    onCheckedChange={(checked) =>
                       persistSpec({
                         ...safeSpec,
-                        brand: { ...safeSpec.brand, autoContrast: e.target.checked },
+                        brand: { ...safeSpec.brand, autoContrast: Boolean(checked) },
                       })
                     }
                   />
@@ -3995,22 +4023,20 @@ export default function EditorPage() {
                   {clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)}%
                 </span>
               </div>
-              <input
-                type="range"
+              <Slider
                 min={0}
                 max={100}
                 step={1}
-                value={clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)}
-                onChange={(e) =>
+                value={[clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)]}
+                onValueChange={([val]) =>
                   persistSpec({
                     ...safeSpec,
                     generation: {
                       ...safeSpec.generation,
-                      realism: clampSize(Number(e.target.value), 0, 100),
+                      realism: clampSize(val, 0, 100),
                     },
                   })
                 }
-                className="w-full"
               />
             </div>
 
