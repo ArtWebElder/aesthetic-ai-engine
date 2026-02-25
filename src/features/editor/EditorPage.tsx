@@ -522,35 +522,35 @@ export default function EditorPage() {
     { value: "pet", label: "Pet" },
   ];
   const socialPlatformOptions = [
-    { value: "instagram_feed", labelKey: "platform.instagram_feed" },
-    { value: "instagram_feed_4_5", labelKey: "platform.instagram_feed_4_5" },
-    { value: "instagram_story", labelKey: "platform.instagram_story" },
-    { value: "facebook_landscape", labelKey: "platform.facebook_landscape" },
-    { value: "tiktok_vertical", labelKey: "platform.tiktok_vertical" },
+    { value: "instagram_feed", labelKey: "social.platform.instagram_feed" },
+    { value: "instagram_feed_4_5", labelKey: "social.platform.instagram_feed_4_5" },
+    { value: "instagram_story", labelKey: "social.platform.instagram_story" },
+    { value: "facebook_landscape", labelKey: "social.platform.facebook_landscape" },
+    { value: "tiktok_vertical", labelKey: "social.platform.tiktok_vertical" },
   ];
   const socialGoalOptions = [
-    { value: "Offer", labelKey: "goal.offer" },
-    { value: "Announcement", labelKey: "goal.announcement" },
-    { value: "Testimonial", labelKey: "goal.testimonial" },
-    { value: "Product highlight", labelKey: "goal.product_highlight" },
-    { value: "Brand story", labelKey: "goal.brand_story" },
-    { value: "Educational tip", labelKey: "goal.educational_tip" },
+    { value: "Offer", labelKey: "social.goal.offer" },
+    { value: "Announcement", labelKey: "social.goal.announcement" },
+    { value: "Testimonial", labelKey: "social.goal.testimonial" },
+    { value: "Product highlight", labelKey: "social.goal.product_highlight" },
+    { value: "Brand story", labelKey: "social.goal.brand_story" },
+    { value: "Educational tip", labelKey: "social.goal.educational_tip" },
   ];
   const socialLayoutOptions = [
-    { value: "Hero", labelKey: "layout.hero" },
-    { value: "Split", labelKey: "layout.split" },
-    { value: "Overlay text bottom", labelKey: "layout.overlay_text_bottom" },
-    { value: "Minimal grid", labelKey: "layout.minimal_grid" },
-    { value: "Brutalist", labelKey: "layout.brutalist" },
-    { value: "Glass", labelKey: "layout.glass" },
+    { value: "Hero", labelKey: "social.layout.hero" },
+    { value: "Split", labelKey: "social.layout.split" },
+    { value: "Overlay text bottom", labelKey: "social.layout.overlay_text_bottom" },
+    { value: "Minimal grid", labelKey: "social.layout.minimal_grid" },
+    { value: "Brutalist", labelKey: "social.layout.brutalist" },
+    { value: "Glass", labelKey: "social.layout.glass" },
   ];
   const socialVisualStyleOptions = [
-    { value: "Clean modern", labelKey: "style.clean_modern" },
-    { value: "Brutalist bold", labelKey: "style.brutalist_bold" },
-    { value: "Glass pro", labelKey: "style.glass_pro" },
-    { value: "Neon", labelKey: "style.neon" },
-    { value: "Editorial", labelKey: "style.editorial" },
-    { value: "Tech dark", labelKey: "style.tech_dark" },
+    { value: "Clean modern", labelKey: "social.style.clean_modern" },
+    { value: "Brutalist bold", labelKey: "social.style.brutalist_bold" },
+    { value: "Glass pro", labelKey: "social.style.glass_pro" },
+    { value: "Neon", labelKey: "social.style.neon" },
+    { value: "Editorial", labelKey: "social.style.editorial" },
+    { value: "Tech dark", labelKey: "social.style.tech_dark" },
   ];
 
   const bgUrl = active?.imageUrl ?? null;
@@ -778,7 +778,7 @@ export default function EditorPage() {
                     ) : null}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {safeSpec.module} â€¢ {String(t.id)}
+                    {safeSpec.module} • {String(t.id)}
                   </div>
                 </button>
               );
@@ -1171,7 +1171,7 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("platform_preset")}</div>
+                <div className="text-sm font-medium">{t("social.platform_preset")}</div>
                 <Select
                   value={safeSpec.builder.platformPreset ?? "instagram_feed"}
                   onValueChange={(value) => {
@@ -1189,7 +1189,7 @@ export default function EditorPage() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("choose_platform")} />
+                    <SelectValue placeholder={t("social.choose_platform")} />
                   </SelectTrigger>
                   <SelectContent>
                     {socialPlatformOptions.map((opt) => (
@@ -1204,13 +1204,13 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("goal_use_case")}</div>
+                <div className="text-sm font-medium">{t("social.goal_use_case")}</div>
                 <Select
                   value={safeSpec.builder.goalPreset ?? "Offer"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ goalPreset: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("choose_goal")} />
+                    <SelectValue placeholder={t("social.choose_goal")} />
                   </SelectTrigger>
                   <SelectContent>
                     {socialGoalOptions.map((opt) => (
@@ -1321,13 +1321,13 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("layout_preset")}</div>
+                <div className="text-sm font-medium">{t("social.layout_preset")}</div>
                 <Select
                   value={safeSpec.builder.layoutPreset ?? "Hero"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ layoutPreset: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("choose_layout")} />
+                    <SelectValue placeholder={t("social.choose_layout")} />
                   </SelectTrigger>
                   <SelectContent>
                     {socialLayoutOptions.map((opt) => (
@@ -1342,13 +1342,13 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("visual_style")}</div>
+                <div className="text-sm font-medium">{t("social.visual_style")}</div>
                 <Select
                   value={safeSpec.builder.macroStyle ?? "clean_modern"}
                   onValueChange={(value) => persistSocialPostBuilderPatch({ macroStyle: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={t("choose_style")} />
+                    <SelectValue placeholder={t("social.choose_style")} />
                   </SelectTrigger>
                   <SelectContent>
                     {socialVisualStyleOptions.map((opt) => (
@@ -1377,7 +1377,7 @@ export default function EditorPage() {
 
             {isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">{t("premium_effects")}</div>
+                <div className="text-sm font-medium">{t("social.premium_effects")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
@@ -1386,7 +1386,7 @@ export default function EditorPage() {
                       persistSocialPostBuilderPatch({ premiumOverlayEnabled: e.target.checked })
                     }
                   />
-                  {t("enable_3d_overlay")}
+                  {t("social.enable_3d_overlay")}
                 </label>
                 {safeSpec.builder.premiumOverlayEnabled ? (
                   <Button
@@ -1405,7 +1405,7 @@ export default function EditorPage() {
                       persistSocialPostBuilderPatch({ premiumOverlayUrls: [overlay] });
                     }}
                 >
-                    {t("generate_overlay_assets")}
+                    {t("social.generate_overlay_assets")}
                   </Button>
                 ) : null}
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -1416,7 +1416,7 @@ export default function EditorPage() {
                       persistSocialPostBuilderPatch({ designerMode: e.target.checked })
                     }
                   />
-                  {t("designer_mode")}
+                  {t("social.designer_mode")}
                 </label>
               </div>
             ) : null}
@@ -1700,7 +1700,7 @@ export default function EditorPage() {
                 }
               >
                 {isPhotoshoot ? "Shoot notes (optional)" : "Campaign context (optional)"}{" "}
-                {safeSpec.contextOpen ? "â–¼" : "â–¶"}
+                {safeSpec.contextOpen ? "▼" : "▶"}
               </button>
 
               {!safeSpec.contextOpen ? (
@@ -1780,7 +1780,7 @@ export default function EditorPage() {
                     })
                   }
                 >
-                  Advanced {builder?.advancedOpen ? "â–¼" : "â–¶"}
+                  Advanced {builder?.advancedOpen ? "▼" : "▶"}
                 </button>
 
                 {builder?.advancedOpen ? (
