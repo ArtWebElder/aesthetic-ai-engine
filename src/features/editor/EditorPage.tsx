@@ -789,7 +789,7 @@ export default function EditorPage() {
         {/* CENTER: CANVAS */}
         <div className="min-h-0 flex flex-col">
           <div className="px-4 md:px-6 py-3 border-b border-border flex items-center justify-between">
-            <div className="text-sm font-medium">Canvas</div>
+            <div className="text-sm font-medium">{t("editor.canvas.title")}</div>
           </div>
 
           <div className="flex-1 min-h-0 p-4 md:p-6 overflow-auto">
@@ -864,15 +864,15 @@ export default function EditorPage() {
         {/* RIGHT: INSPECTOR */}
         <div className="min-h-0 border-l border-border bg-background/40">
           <div className="px-4 py-3 border-b border-border">
-            <div className="text-sm font-medium">Content</div>
+            <div className="text-sm font-medium">{t("editor.inspector.title")}</div>
             <div className="text-xs text-muted-foreground">
-              Edit text fields (autosave).
+              {t("editor.inspector.edit_text_fields_autosave")}
             </div>
           </div>
 
           <div className="p-4 space-y-4 overflow-auto h-full">
             <div className="pt-2 border-t border-border space-y-2">
-              <div className="text-sm font-medium">Avatar / Subject Photo</div>
+              <div className="text-sm font-medium">{t("editor.subject.avatar_photo")}</div>
               <input
                 type="file"
                 accept="image/*"
@@ -903,7 +903,7 @@ export default function EditorPage() {
                 <div className="space-y-2">
                   <img
                     src={subjectPreview}
-                    alt="Subject preview"
+                    alt={t("editor.subject.preview_alt")}
                     className="h-[72px] w-[72px] rounded-full border border-border object-cover"
                   />
                   <Button
@@ -921,7 +921,7 @@ export default function EditorPage() {
                       });
                     }}
                   >
-                    Remove
+                    {t("editor.subject.remove")}
                   </Button>
                 </div>
               ) : null}
@@ -929,7 +929,7 @@ export default function EditorPage() {
 
             <div className="pt-2 border-t border-border space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Reference Images</div>
+                <div className="text-sm font-medium">{t("editor.references.title")}</div>
                 <Button
                   type="button"
                   variant="outline"
@@ -952,17 +952,17 @@ export default function EditorPage() {
                     })
                   }
                 >
-                  Add
+                  {t("editor.references.add")}
                 </Button>
               </div>
 
               <div className="text-xs text-muted-foreground">
-                {referenceImages.length}/5 images
+                {referenceImages.length}/5 {t("editor.references.images_suffix")}
               </div>
 
               {referenceImages.length === 0 ? (
                 <div className="text-xs text-muted-foreground">
-                  No reference images yet.
+                  {t("editor.references.empty")}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -984,7 +984,7 @@ export default function EditorPage() {
                         <div className="flex-1 space-y-2 min-w-0">
                           <Input
                             value={ref.url ?? ""}
-                            placeholder="https://... or upload a file"
+                            placeholder={t("editor.references.url_or_upload_placeholder")}
                             onChange={(e) =>
                               persistSpec({
                                 ...safeSpec,
@@ -1022,7 +1022,7 @@ export default function EditorPage() {
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <label className="text-xs text-muted-foreground">Role</label>
+                          <label className="text-xs text-muted-foreground">{t("editor.references.role")}</label>
                           <Select
                             value={ref.role}
                             onValueChange={(value) =>
@@ -1040,21 +1040,21 @@ export default function EditorPage() {
                             }
                           >
                             <SelectTrigger>
-                              <SelectValue placeholder="Role" />
+                              <SelectValue placeholder={t("editor.references.role")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="style">Style</SelectItem>
-                              <SelectItem value="composition">Composition</SelectItem>
-                              <SelectItem value="product">Product</SelectItem>
-                              <SelectItem value="brand">Brand</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
+                              <SelectItem value="style">{t("editor.references.role_style")}</SelectItem>
+                              <SelectItem value="composition">{t("editor.references.role_composition")}</SelectItem>
+                              <SelectItem value="product">{t("editor.references.role_product")}</SelectItem>
+                              <SelectItem value="brand">{t("editor.references.role_brand")}</SelectItem>
+                              <SelectItem value="other">{t("editor.references.role_other")}</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
 
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <label className="text-xs text-muted-foreground">Weight</label>
+                            <label className="text-xs text-muted-foreground">{t("editor.references.weight")}</label>
                             <span className="text-xs text-muted-foreground">
                               {clampSize(Number(ref.weight ?? 70), 0, 100)}
                             </span>
@@ -1099,7 +1099,7 @@ export default function EditorPage() {
                               })
                             }
                           />
-                          Lock realism
+                          {t("editor.references.lock_realism")}
                         </label>
 
                         <Button
@@ -1113,14 +1113,14 @@ export default function EditorPage() {
                             })
                           }
                         >
-                          Remove
+                          {t("editor.references.remove")}
                         </Button>
                       </div>
 
                       <Input
                         type="text"
                         maxLength={120}
-                        placeholder="Notes (optional)"
+                        placeholder={t("editor.references.notes_optional")}
                         value={ref.notes ?? ""}
                         onChange={(e) =>
                           persistSpec({
