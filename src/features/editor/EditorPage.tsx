@@ -2082,7 +2082,7 @@ export default function EditorPage() {
                   {referenceImages.map((ref) => (
                     <div key={ref.id} className="rounded-md border border-border p-3 space-y-3">
                       <div className="flex items-start gap-3">
-                        <div className="h-[72px] w-[72px] rounded-md border border-border overflow-hidden bg-muted shrink-0">
+                        <div className="h-[72px] w-[72px] rounded-full border border-border overflow-hidden bg-muted shrink-0">
                           {ref.url ? (
                             <img
                               src={ref.url}
