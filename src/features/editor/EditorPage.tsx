@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import type {
   BuilderSpec,
   Generation,
+  ModuleType,
   Project,
   ProjectSpec,
   ReferenceImage,
@@ -550,7 +551,7 @@ export default function EditorPage() {
   const isPhotoshoot = safeSpec?.module === "photoshoot";
   const isSocialPost = safeSpec?.module === "social_post";
   const isEcom = safeSpec?.module === "ecom_banner";
-  const scenePresetModuleKey: ProjectSpec["module"] = isPhotoshoot
+  const scenePresetModuleKey: ModuleType = isPhotoshoot
     ? "photoshoot"
     : isEcom
     ? "ecom_banner"
