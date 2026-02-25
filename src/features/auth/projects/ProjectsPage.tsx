@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 
 import type { ProjectFormat } from "@/types/spec";
 import { useProjects } from "@/features/projects/useProjects";
-import { createProject, deleteProject, resetDemoData } from "../../projects/store";
+import { createProject, deleteProject, resetDemoData } from "@/features/projects/store";
 import { useI18n } from "@/i18n";
 
 const formats: { label: string; value: ProjectFormat }[] = [

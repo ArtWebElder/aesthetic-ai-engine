@@ -33,7 +33,7 @@ function humanStyleFromSpec(spec: ProjectSpec): HumanStyle {
 }
 
 export function resolveCanvasTokens(spec: ProjectSpec): CssVars {
-  const accent = spec.brand?.accent?.startsWith("#") ? spec.brand.accent : "#34d399";
+  const accent = spec.brand?.accent?.startsWith("#") ? spec.brand.accent : "#FF6A3D";
   const text = spec.brand?.primary?.startsWith("#") ? spec.brand.primary : "#ffffff";
 
   const human = humanStyleFromSpec(spec);

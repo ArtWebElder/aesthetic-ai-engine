@@ -1,8 +1,8 @@
-import { Project, Generation, CreditBalance, Template } from '@/types';
+import { Generation, CreditBalance, Template } from '@/types';
 
 export const mockCredits: CreditBalance = { current: 247 };
 
-export const mockProjects: Project[] = [
+export const mockProjects: { id: string; name: string; type: string; format: string; stylePreset: string; createdAt: string; updatedAt: string }[] = [
   { id: '1', name: 'Summer Campaign Hero', type: 'social_post', format: 'feed_1080x1350', stylePreset: 'bold_ads', createdAt: '2026-02-10T10:00:00Z', updatedAt: '2026-02-14T14:30:00Z' },
   { id: '2', name: 'Product Launch Banner', type: 'ecom_banner', format: 'ecom_desktop_1920x800', stylePreset: 'glass', createdAt: '2026-02-08T09:00:00Z', updatedAt: '2026-02-13T11:00:00Z' },
   { id: '3', name: 'Skincare Photoshoot', type: 'photoshoot', format: 'square_1024', stylePreset: 'editorial', createdAt: '2026-02-05T15:00:00Z', updatedAt: '2026-02-12T09:45:00Z' },

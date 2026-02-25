@@ -1,4 +1,4 @@
-import CanvasPreview from "@/features/editor/CanvasPreview";
+import CanvasPreview from "@/features/auth/editor/CanvasPreview";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
