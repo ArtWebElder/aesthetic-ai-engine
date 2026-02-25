@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 
-type User = { email: string };
+type User = { email: string; name?: string };
 
 type AuthCtx = {
   isAuthed: boolean;

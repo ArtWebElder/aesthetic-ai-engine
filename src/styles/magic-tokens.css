@@ -1,13 +1,13 @@
 /* src/styles/magic-tokens.css */
 :root{
   /* Fonts */
-  --mi-font-display: "Space Grotesk", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  --mi-font-body: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --mi-font-display: "Outfit", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --mi-font-body: "Instrument Sans", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
 
   /* Colors */
-  --mi-text: #ffffff;
-  --mi-muted: rgba(255,255,255,.84);
-  --mi-accent: #34d399;
+  --mi-text: #F3F3F1;
+  --mi-muted: rgba(243,243,241,.84);
+  --mi-accent: #FF6A3D;
 
   /* Overlays / effects */
   --mi-overlay-from: rgba(0,0,0,.72);
@@ -18,8 +18,8 @@
   --mi-card-border: rgba(255,255,255,.10);
 
   /* Radius + shadow */
-  --mi-radius: 16px;
-  --mi-shadow: 0 24px 60px rgba(0,0,0,.40);
+  --mi-radius: 10px;
+  --mi-shadow: 0 20px 50px rgba(0,0,0,.35);
 
   /* Typography scale */
   --mi-h1-size: clamp(28px, 3.6vw, 52px);

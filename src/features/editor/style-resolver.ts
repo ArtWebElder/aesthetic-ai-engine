@@ -3,7 +3,7 @@ import React from "react";
 import type { ProjectSpec } from "@/types/spec";
 
 export function resolveStyleVars(spec: ProjectSpec): React.CSSProperties {
-  const accent = spec.brand?.accent || "#34d399";
+  const accent = spec.brand?.accent || "#FF6A3D";
   const text = spec.brand?.primary || "#ffffff";
   const bg = spec.brand?.secondary || "#0b0f14";
 
@@ -17,8 +17,8 @@ export function resolveStyleVars(spec: ProjectSpec): React.CSSProperties {
     "--mi-bg": bg,
 
     // fonts (defaults)
-    "--mi-font-display": `"Space Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`,
-    "--mi-font-body": `"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`,
+    "--mi-font-display": `"Outfit", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`,
+    "--mi-font-body": `"Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif`,
 
     // overlays
     "--mi-overlay-from": "rgba(0,0,0,.70)",
