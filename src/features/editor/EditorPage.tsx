@@ -477,6 +477,9 @@ export default function EditorPage() {
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [lastExportError, setLastExportError] = useState<string | null>(null);
   const [templatesPanelOpen, setTemplatesPanelOpen] = useState(true);
+  const [focusMode, setFocusMode] = useState(false);
+  const [compactMode, setCompactMode] = useState(false);
+  const [showGridOverlay, setShowGridOverlay] = useState(false);
 
   // carrega projeto por ID
   useEffect(() => {
@@ -1471,10 +1474,16 @@ export default function EditorPage() {
     );
   }
 
+  const sectionSpacing = compactMode ? "space-y-4" : "space-y-6";
+  const fieldSpacing = compactMode ? "space-y-2" : "space-y-3";
+  const sectionTitle = compactMode
+    ? "text-[10px] font-semibold uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/30 mb-2"
+    : "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30 mb-3";
+
   return (
     <div className="h-[calc(100vh-56px)] flex flex-col">
       {/* TOP HEADER */}
-      <div className="px-4 md:px-6 py-3 border-b border-border bg-card">
+      <div className="px-4 md:px-6 py-2.5 border-b border-border bg-card">
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-3">
@@ -1482,37 +1491,85 @@ export default function EditorPage() {
                 {project.name}
               </h1>
 
-              <div className="hidden md:flex gap-1.5">
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  {safeSpec.module}
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  {safeSpec.format}
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  {safeSpec.stylePreset}
-                </span>
-              </div>
+              {!focusMode && (
+                <div className="hidden md:flex gap-1.5">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    {safeSpec.module}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    {safeSpec.format}
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                    {safeSpec.stylePreset}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Focus Mode */}
+            <button
+              type="button"
+              onClick={() => setFocusMode(!focusMode)}
+              className={[
+                "hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+                focusMode
+                  ? "bg-primary/10 text-primary border border-primary/30"
+                  : "text-muted-foreground hover:bg-muted border border-transparent",
+              ].join(" ")}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>
+              Focus
+            </button>
+
+            {/* Compact Mode */}
+            <button
+              type="button"
+              onClick={() => setCompactMode(!compactMode)}
+              className={[
+                "hidden md:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+                compactMode
+                  ? "bg-primary/10 text-primary border border-primary/30"
+                  : "text-muted-foreground hover:bg-muted border border-transparent",
+              ].join(" ")}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              {compactMode ? "Comfortable" : "Compact"}
+            </button>
+
+            <div className="w-px h-5 bg-border/60 mx-1 hidden md:block" />
+
             <Button variant="outline" size="sm" onClick={() => nav("/app/projects")}>
               {t("editor.header.back")}
             </Button>
 
-            <Button size="sm" className="font-medium" onClick={generateMock}>{t("editor.header.generate_base_image")}</Button>
+            <Button size="sm" className="font-medium btn-gradient" onClick={generateMock}>{t("editor.header.generate_base_image")}</Button>
           </div>
         </div>
       </div>
 
-      {/* 3-COL LAYOUT */}
-      <div className={`flex-1 min-h-0 grid grid-cols-1 ${templatesPanelOpen ? "lg:grid-cols-[240px_1fr_360px]" : "lg:grid-cols-[60px_1fr_360px]"} transition-all duration-200`}>
-        {/* LEFT: TEMPLATES */}
-        <div className="hidden lg:flex flex-col min-h-0 border-r border-border/60">
+      {/* 3-COL LAYOUT: Inspector (left) | Canvas (center) | Templates (right) */}
+      <div className={[
+        "flex-1 min-h-0 grid grid-cols-1 transition-all duration-200",
+        focusMode
+          ? "lg:grid-cols-[1fr]"
+          : templatesPanelOpen
+            ? "lg:grid-cols-[360px_1fr_240px]"
+            : "lg:grid-cols-[360px_1fr_60px]",
+      ].join(" ")}>
+
+        {/* Empty placeholder removed — inspector uses CSS order from old RIGHT panel */}
+
+        {/* TEMPLATES — visually RIGHT via order-3 */}
+        {!focusMode && (
+        <div className="hidden lg:flex flex-col min-h-0 border-l border-border/40 order-3">
           <div className="px-3 py-2 border-b border-border/40 flex items-center justify-between">
             {templatesPanelOpen ? (
-              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("editor.templates.title")}</div>
+              <div className="flex items-center gap-1.5">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{t("editor.templates.title")}</div>
+              </div>
             ) : null}
             <button
               type="button"
@@ -1522,28 +1579,27 @@ export default function EditorPage() {
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 {templatesPanelOpen ? (
-                  <><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>
-                ) : (
                   <><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>
+                ) : (
+                  <><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></>
                 )}
               </svg>
             </button>
           </div>
 
           {templatesPanelOpen ? (
-            <div className="p-3 space-y-2 overflow-auto">
+            <div className="p-2.5 space-y-1.5 overflow-auto flex-1">
               {TEMPLATE_REGISTRY.filter((t) => t.module === safeSpec.module).map((tpl) => {
                 const selected = safeSpec.templateId === tpl.id;
-
                 return (
                   <button
                     key={tpl.id}
                     type="button"
                     className={[
-                      "w-full text-left rounded-lg p-2.5 transition-all duration-150",
+                      "w-full text-left rounded-lg p-2 transition-all duration-150 group",
                       selected
                         ? "bg-card border-l-2 border-l-primary border border-border/60"
-                        : "border border-transparent hover:bg-card/60 hover:shadow-sm hover:-translate-y-px",
+                        : "border border-transparent hover:bg-card/60 hover:-translate-y-px",
                     ].join(" ")}
                     onClick={() => {
                       persistSpec({
@@ -1553,17 +1609,14 @@ export default function EditorPage() {
                       });
                     }}
                   >
-                    <div className="h-16 rounded-md bg-muted/60 mb-1.5" />
-                    <div className="text-xs font-medium truncate">{t(tpl.nameKey)}</div>
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      {String(tpl.id)}
-                    </div>
+                    <div className="h-12 rounded-md bg-muted/60 mb-1" />
+                    <div className="text-[11px] font-medium truncate">{t(tpl.nameKey)}</div>
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div className="p-1.5 space-y-1.5 overflow-auto">
+            <div className="p-1.5 space-y-1.5 overflow-auto flex-1">
               {TEMPLATE_REGISTRY.filter((t) => t.module === safeSpec.module).map((tpl) => {
                 const selected = safeSpec.templateId === tpl.id;
                 return (
@@ -1590,12 +1643,43 @@ export default function EditorPage() {
             </div>
           )}
         </div>
+        )}
 
-        {/* CENTER: CANVAS */}
-        <div className="min-h-0 flex flex-col bg-muted/20">
-          <div className="flex-1 min-h-0 p-6 md:p-8 overflow-auto flex items-start justify-center">
-            <div className="w-full max-w-[880px]">
-              <div className="relative overflow-hidden rounded-2xl border border-border/40 shadow-[0_1px_20px_rgba(0,0,0,0.06)] bg-background">
+        {/* CENTER: CANVAS — order-2 */}
+        <div className={[
+          "min-h-0 flex flex-col order-2",
+          focusMode ? "bg-muted/30" : "bg-muted/20",
+        ].join(" ")}>
+          {/* Canvas action bar */}
+          <div className="flex items-center justify-end gap-1.5 px-4 py-1.5">
+            <button
+              type="button"
+              onClick={() => setShowGridOverlay(!showGridOverlay)}
+              className={[
+                "inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-all duration-150",
+                showGridOverlay
+                  ? "bg-primary/10 text-primary border border-primary/30"
+                  : "text-muted-foreground hover:bg-muted border border-transparent",
+              ].join(" ")}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/></svg>
+              Grid
+            </button>
+          </div>
+          <div className="flex-1 min-h-0 px-6 md:px-8 pb-6 md:pb-8 overflow-auto flex items-start justify-center">
+            <div className={focusMode ? "w-full max-w-[960px]" : "w-full max-w-[880px]"}>
+              <div className="relative overflow-hidden rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background">
+                {/* Grid overlay */}
+                {showGridOverlay && (
+                  <div
+                    className="absolute inset-0 pointer-events-none z-30"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(to right, hsl(var(--border) / 0.15) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.15) 1px, transparent 1px)",
+                      backgroundSize: "8px 8px",
+                    }}
+                  />
+                )}
                 <div
                   className="relative w-full bg-muted/30 flex items-center justify-center"
                   style={{
@@ -1886,40 +1970,44 @@ export default function EditorPage() {
           </div>
         </div>
 
-        {/* RIGHT: INSPECTOR */}
-        <div className="min-h-0 border-l border-border/50 bg-card/30">
-          <div className="px-4 py-2.5 border-b border-border/40">
-            <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("editor.inspector.title")}</div>
+        {/* LEFT: INSPECTOR — order-1 to visually appear first */}
+        {!focusMode && (
+        <div className="min-h-0 border-r border-border/50 bg-card/30 hidden lg:flex flex-col order-1">
+          <div className="px-4 py-2.5 border-b border-border/40 flex items-center gap-2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("editor.inspector.title")}</div>
           </div>
 
-          <div className="px-4 py-3 space-y-6 overflow-auto h-full">
-            <div className="space-y-3">
-              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.subject.avatar_photo")}</div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-
-                  const objectUrl = URL.createObjectURL(file);
-                  setSubjectPreviewUrl((prev) => {
-                    if (prev) URL.revokeObjectURL(prev);
-                    return objectUrl;
-                  });
-
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const result = typeof reader.result === "string" ? reader.result : null;
-                    persistSpec({
-                      ...safeSpec,
-                      subjectImageUrl: result,
+          <div className={`px-4 py-3 ${sectionSpacing} overflow-auto flex-1`}>
+            <div className={fieldSpacing}>
+              <div className={sectionTitle}>{t("editor.subject.avatar_photo")}</div>
+              <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer transition-all duration-150 hover:bg-muted/50 hover:border-border group">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <div>
+                  <div className="text-xs font-medium text-foreground">{t("editor.subject.avatar_photo")}</div>
+                  <div className="text-[10px] text-muted-foreground">Click or drag to upload</div>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const objectUrl = URL.createObjectURL(file);
+                    setSubjectPreviewUrl((prev) => {
+                      if (prev) URL.revokeObjectURL(prev);
+                      return objectUrl;
                     });
-                  };
-                  reader.readAsDataURL(file);
-                }}
-                className="block w-full text-xs text-muted-foreground file:mr-3 file:rounded-md file:border file:border-border file:bg-background file:px-3 file:py-1.5 file:text-xs file:text-foreground"
-              />
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const result = typeof reader.result === "string" ? reader.result : null;
+                      persistSpec({ ...safeSpec, subjectImageUrl: result });
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="sr-only"
+                />
+              </label>
 
               {subjectPreview ? (
                 <div className="space-y-2">
@@ -3540,45 +3628,42 @@ export default function EditorPage() {
             {/* PALETTE */}
             {!isPhotoshoot && !isSocialPost ? (
               <div className="pt-6 space-y-3">
-                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.palette.title")}</div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">{t("editor.palette.accent_primary")}</label>
-                  <input
-                    type="color"
-                    value={
-                      safeSpec.brand.accent?.startsWith("#")
-                        ? safeSpec.brand.accent
-                        : "#34d399"
-                    }
-                    onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        brand: { ...safeSpec.brand, accent: e.target.value },
-                      })
-                    }
-                    className="h-10 w-full rounded-md border border-border bg-transparent"
-                  />
+                <div className={sectionTitle}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1.5 -mt-px"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12" r="2.5"/><path d="M12 22c5.5-2 8-7 8-12a8 8 0 0 0-16 0c0 5 2.5 10 8 12"/></svg>
+                  {t("editor.palette.title")}
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">{t("editor.palette.text")}</label>
-                  <input
-                    type="color"
-                    value={
-                      safeSpec.brand.neutralText?.startsWith("#")
-                        ? safeSpec.brand.neutralText
-                        : "#ffffff"
-                    }
-                    onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        brand: { ...safeSpec.brand, neutralText: e.target.value },
-                      })
-                    }
-                    className="h-10 w-full rounded-md border border-border bg-transparent"
-                  />
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="space-y-1.5 flex flex-col items-center">
+                  <label className="text-[10px] text-muted-foreground">{t("editor.palette.accent_primary")}</label>
+                  <label className="relative cursor-pointer group">
+                    <input
+                      type="color"
+                      value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
+                      onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, accent: e.target.value } })}
+                      className="sr-only"
+                    />
+                    <div
+                      className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105"
+                      style={{ backgroundColor: safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399" }}
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-1.5 flex flex-col items-center">
+                  <label className="text-[10px] text-muted-foreground">{t("editor.palette.text")}</label>
+                  <label className="relative cursor-pointer group">
+                    <input
+                      type="color"
+                      value={safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff"}
+                      onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralText: e.target.value } })}
+                      className="sr-only"
+                    />
+                    <div
+                      className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105"
+                      style={{ backgroundColor: safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff" }}
+                    />
+                  </label>
                 </div>
               </div>
 
@@ -3608,104 +3693,45 @@ export default function EditorPage() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-wrap gap-3 items-center">
                 {showSecondary ? (
-                  <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">{t("editor.palette.secondary")}</label>
-                    <input
-                      type="color"
-                      value={
-                        safeSpec.brand.secondary?.startsWith("#")
-                          ? safeSpec.brand.secondary
-                          : "#888888"
-                      }
-                      onChange={(e) =>
-                        persistSpec({
-                          ...safeSpec,
-                          brand: { ...safeSpec.brand, secondary: e.target.value },
-                        })
-                      }
-                      className="h-10 w-full rounded-md border border-border bg-transparent"
-                    />
+                  <div className="space-y-1.5 flex flex-col items-center">
+                    <label className="text-[10px] text-muted-foreground">{t("editor.palette.secondary")}</label>
+                    <label className="relative cursor-pointer group">
+                      <input type="color" value={safeSpec.brand.secondary?.startsWith("#") ? safeSpec.brand.secondary : "#888888"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, secondary: e.target.value } })} className="sr-only" />
+                      <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.secondary?.startsWith("#") ? safeSpec.brand.secondary : "#888888" }} />
+                    </label>
                   </div>
                 ) : null}
-
                 {showAccent2 ? (
-                  <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">{t("editor.palette.accent_2")}</label>
-                    <input
-                      type="color"
-                      value={
-                        safeSpec.brand.accent2?.startsWith("#")
-                          ? safeSpec.brand.accent2
-                          : "#888888"
-                      }
-                      onChange={(e) =>
-                        persistSpec({
-                          ...safeSpec,
-                          brand: { ...safeSpec.brand, accent2: e.target.value },
-                        })
-                      }
-                      className="h-10 w-full rounded-md border border-border bg-transparent"
-                    />
+                  <div className="space-y-1.5 flex flex-col items-center">
+                    <label className="text-[10px] text-muted-foreground">{t("editor.palette.accent_2")}</label>
+                    <label className="relative cursor-pointer group">
+                      <input type="color" value={safeSpec.brand.accent2?.startsWith("#") ? safeSpec.brand.accent2 : "#888888"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, accent2: e.target.value } })} className="sr-only" />
+                      <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.accent2?.startsWith("#") ? safeSpec.brand.accent2 : "#888888" }} />
+                    </label>
                   </div>
                 ) : null}
-
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">{t("editor.palette.neutral_bg")}</label>
-                  <input
-                    type="color"
-                    value={
-                      safeSpec.brand.neutralBg?.startsWith("#")
-                        ? safeSpec.brand.neutralBg
-                        : "#0f172a"
-                    }
-                    onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        brand: { ...safeSpec.brand, neutralBg: e.target.value },
-                      })
-                    }
-                    className="h-10 w-full rounded-md border border-border bg-transparent"
-                  />
+                <div className="space-y-1.5 flex flex-col items-center">
+                  <label className="text-[10px] text-muted-foreground">{t("editor.palette.neutral_bg")}</label>
+                  <label className="relative cursor-pointer group">
+                    <input type="color" value={safeSpec.brand.neutralBg?.startsWith("#") ? safeSpec.brand.neutralBg : "#0f172a"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralBg: e.target.value } })} className="sr-only" />
+                    <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.neutralBg?.startsWith("#") ? safeSpec.brand.neutralBg : "#0f172a" }} />
+                  </label>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">{t("editor.palette.neutral_surface")}</label>
-                  <input
-                    type="color"
-                    value={
-                      safeSpec.brand.neutralSurface?.startsWith("#")
-                        ? safeSpec.brand.neutralSurface
-                        : "#1e293b"
-                    }
-                    onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        brand: { ...safeSpec.brand, neutralSurface: e.target.value },
-                      })
-                    }
-                    className="h-10 w-full rounded-md border border-border bg-transparent"
-                  />
+                <div className="space-y-1.5 flex flex-col items-center">
+                  <label className="text-[10px] text-muted-foreground">{t("editor.palette.neutral_surface")}</label>
+                  <label className="relative cursor-pointer group">
+                    <input type="color" value={safeSpec.brand.neutralSurface?.startsWith("#") ? safeSpec.brand.neutralSurface : "#1e293b"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralSurface: e.target.value } })} className="sr-only" />
+                    <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.neutralSurface?.startsWith("#") ? safeSpec.brand.neutralSurface : "#1e293b" }} />
+                  </label>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">{t("editor.palette.neutral_text")}</label>
-                  <input
-                    type="color"
-                    value={
-                      safeSpec.brand.neutralText?.startsWith("#")
-                        ? safeSpec.brand.neutralText
-                        : "#ffffff"
-                    }
-                    onChange={(e) =>
-                      persistSpec({
-                        ...safeSpec,
-                        brand: { ...safeSpec.brand, neutralText: e.target.value },
-                      })
-                    }
-                    className="h-10 w-full rounded-md border border-border bg-transparent"
-                  />
+                <div className="space-y-1.5 flex flex-col items-center">
+                  <label className="text-[10px] text-muted-foreground">{t("editor.palette.neutral_text")}</label>
+                  <label className="relative cursor-pointer group">
+                    <input type="color" value={safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff"} onChange={(e) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, neutralText: e.target.value } })} className="sr-only" />
+                    <div className="w-7 h-7 rounded-full shadow-sm border border-border/60 transition-transform duration-150 group-hover:scale-105" style={{ backgroundColor: safeSpec.brand.neutralText?.startsWith("#") ? safeSpec.brand.neutralText : "#ffffff" }} />
+                  </label>
                 </div>
               </div>
               </div>
@@ -4039,6 +4065,7 @@ export default function EditorPage() {
             </div>
           </div>
         </div>
+        )}
       </div>
 
       {/* BOTTOM ACTION BAR */}
