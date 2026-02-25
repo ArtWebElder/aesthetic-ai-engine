@@ -674,11 +674,44 @@ export default function EditorPage() {
     persist(nextProject);
   }
 
-  function createVariations() {
-    generateMock();
+  const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+
+  async function createVariations() {
+    if (!safeSpec || safeSpec.module !== "social_post") {
+      generateMock();
+      return;
+    }
+    const variations = [
+      { textScale: 0.96, overlayOpacity: 0.18, topPadScale: 1.06, productScale: 0.98, blurBoost: 1.0 },
+      { textScale: 1.0, overlayOpacity: 0.2, topPadScale: 1.0, productScale: 1.0, blurBoost: 1.0 },
+      { textScale: 1.03, overlayOpacity: 0.22, topPadScale: 0.98, productScale: 1.02, blurBoost: 1.05 },
+      { textScale: 0.98, overlayOpacity: 0.19, topPadScale: 1.04, productScale: 0.96, blurBoost: 0.96 },
+      { textScale: 1.05, overlayOpacity: 0.23, topPadScale: 0.95, productScale: 1.04, blurBoost: 1.08 },
+      { textScale: 0.94, overlayOpacity: 0.17, topPadScale: 1.08, productScale: 0.94, blurBoost: 0.92 },
+      { textScale: 1.02, overlayOpacity: 0.21, topPadScale: 1.02, productScale: 1.01, blurBoost: 1.02 },
+      { textScale: 0.99, overlayOpacity: 0.2, topPadScale: 0.97, productScale: 1.05, blurBoost: 1.04 },
+      { textScale: 1.04, overlayOpacity: 0.24, topPadScale: 0.94, productScale: 1.03, blurBoost: 1.1 },
+      { textScale: 0.97, overlayOpacity: 0.18, topPadScale: 1.05, productScale: 0.97, blurBoost: 0.95 },
+    ] as const;
+    for (let i = 0; i < variations.length; i += 1) {
+      await exportSocialPost2K({
+        fileName: `social-post-2k-${String(i + 1).padStart(2, "0")}.png`,
+        variation: variations[i],
+      });
+      await new Promise((resolve) => setTimeout(resolve, 80));
+    }
   }
 
-  async function export2K() {
+  async function exportSocialPost2K(opts?: {
+    fileName?: string;
+    variation?: {
+      textScale?: number;
+      overlayOpacity?: number;
+      topPadScale?: number;
+      productScale?: number;
+      blurBoost?: number;
+    };
+  }): Promise<void> {
     if (!safeSpec || safeSpec.module !== "social_post") {
       console.log("activeGenerationId:", project?.activeGenerationId ?? null);
       console.log("generationWidth:", safeSpec?.generation?.width ?? null);
@@ -715,7 +748,17 @@ export default function EditorPage() {
         : layoutRaw.includes("minimal")
         ? "minimal"
         : "hero";
-    const exportFontFamily = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
+    const rawFont =
+      getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
+    const primaryFont =
+      rawFont.split(",")[0]?.replace(/["']/g, "").trim() || "system-ui";
+    const exportFontFamily = `${primaryFont}, system-ui, sans-serif`;
+    const fileName = opts?.fileName ?? "social-post-2k.png";
+    const textScale = opts?.variation?.textScale ?? 1;
+    const overlayOpacity = clamp(opts?.variation?.overlayOpacity ?? 0.2, 0, 1);
+    const topPadScale = opts?.variation?.topPadScale ?? 1;
+    const productScale = opts?.variation?.productScale ?? 1;
+    const blurBoost = opts?.variation?.blurBoost ?? 1;
 
     const loadImage = (src: string): Promise<HTMLImageElement> =>
       new Promise((resolve, reject) => {
@@ -803,17 +846,17 @@ export default function EditorPage() {
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
-            link.download = "social-post-2k.png";
+            link.download = fileName;
             document.body.appendChild(link);
             link.click();
             link.remove();
-            URL.revokeObjectURL(url);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
             return;
           }
           const dataUrl = canvas.toDataURL("image/png");
           const link = document.createElement("a");
           link.href = dataUrl;
-          link.download = "social-post-2k.png";
+          link.download = fileName;
           document.body.appendChild(link);
           link.click();
           link.remove();
@@ -833,28 +876,33 @@ export default function EditorPage() {
       blurPx: number
     ) => {
       if (w <= 0 || h <= 0) return;
+      const sx = Math.round(x);
+      const sy = Math.round(y);
+      const sw = Math.round(w);
+      const sh = Math.round(h);
+      const rr = Math.min(r, sw / 2, sh / 2);
       const temp = document.createElement("canvas");
-      temp.width = Math.max(1, Math.round(w));
-      temp.height = Math.max(1, Math.round(h));
+      temp.width = Math.max(1, sw);
+      temp.height = Math.max(1, sh);
       const tempCtx = temp.getContext("2d");
       if (!tempCtx) return;
-      tempCtx.drawImage(sourceCanvas, x, y, w, h, 0, 0, w, h);
+      tempCtx.drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
 
       ctx.save();
       ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.moveTo(sx + rr, sy);
+      ctx.lineTo(sx + sw - rr, sy);
+      ctx.quadraticCurveTo(sx + sw, sy, sx + sw, sy + rr);
+      ctx.lineTo(sx + sw, sy + sh - rr);
+      ctx.quadraticCurveTo(sx + sw, sy + sh, sx + sw - rr, sy + sh);
+      ctx.lineTo(sx + rr, sy + sh);
+      ctx.quadraticCurveTo(sx, sy + sh, sx, sy + sh - rr);
+      ctx.lineTo(sx, sy + rr);
+      ctx.quadraticCurveTo(sx, sy, sx + rr, sy);
       ctx.closePath();
       ctx.clip();
       ctx.filter = `blur(${blurPx}px)`;
-      ctx.drawImage(temp, x, y, w, h);
+      ctx.drawImage(temp, sx, sy, sw, sh);
       ctx.filter = "none";
       ctx.restore();
     };
@@ -866,10 +914,16 @@ export default function EditorPage() {
       assets: { logo: HTMLImageElement | null; product: HTMLImageElement | null }
     ) => {
       const marginX = Math.round(w * 0.06);
-      const topPad = isVerticalPlatform ? Math.round(h * 0.12) : Math.round(h * 0.06);
-      const bottomPad = isVerticalPlatform ? Math.round(h * 0.12) : Math.round(h * 0.08);
+      const topPad = Math.round(
+        (isVerticalPlatform ? Math.round(h * 0.12) : Math.round(h * 0.06)) * topPadScale
+      );
+      const bottomPad = Math.round(
+        (isVerticalPlatform ? Math.round(h * 0.12) : Math.round(h * 0.08)) * topPadScale
+      );
       const textTopBump = assets.logo ? Math.round(h * 0.08) : 0;
       const isVertical = h > w;
+      const scaleProductRatio = (baseRatio: number) =>
+        clamp(baseRatio * productScale, baseRatio * 0.85, baseRatio * 1.15);
 
       const drawLogo = () => {
         if (!assets.logo) return;
@@ -880,7 +934,7 @@ export default function EditorPage() {
 
       const drawProductBottomRight = (ratio: number) => {
         if (!assets.product) return;
-        const ph = Math.round(h * ratio);
+        const ph = Math.round(h * scaleProductRatio(ratio));
         const pw = Math.round((assets.product.width / assets.product.height) * ph);
         ctx.drawImage(assets.product, w - marginX - pw, h - bottomPad - ph, pw, ph);
       };
@@ -895,61 +949,68 @@ export default function EditorPage() {
           subSize: number;
           ctaSize: number;
           anchor?: "top" | "bottom" | "center";
+          bottomLift?: number;
         }
       ) => {
         const align = opts.align ?? "left";
         const anchor = opts.anchor ?? "top";
+        const bottomLift = opts.bottomLift ?? 0;
         const ctaPadX = Math.round(w * 0.018);
         const ctaPadY = Math.round(h * 0.01);
         const ctaMaxChars = Math.max(16, Math.min(28, Math.round(w * 0.012)));
+        const headlineSize = Math.max(1, Math.round(opts.headlineSize * textScale));
+        const subSize = Math.max(1, Math.round(opts.subSize * textScale));
+        const ctaSize = Math.max(1, Math.round(opts.ctaSize * textScale));
         ctx.textAlign = align;
         ctx.textBaseline = "alphabetic";
 
-        ctx.font = `800 ${opts.headlineSize}px ${exportFontFamily}`;
+        ctx.font = `800 ${headlineSize}px ${exportFontFamily}`;
         const headlineLines = wrapTextLines(ctx, headlineText, opts.maxWidth, 2);
-        const headlineHeight = headlineLines.length * Math.round(opts.headlineSize * 1.08);
+        const headlineHeight = headlineLines.length * Math.round(headlineSize * 1.08);
 
-        ctx.font = `700 ${opts.subSize}px ${exportFontFamily}`;
+        ctx.font = `700 ${subSize}px ${exportFontFamily}`;
         const subLines = wrapTextLines(ctx, subheadlineText, opts.maxWidth, 2);
-        const subHeight = subLines.length * Math.round(opts.subSize * 1.2);
+        const subHeight = subLines.length * Math.round(subSize * 1.2);
 
-        ctx.font = `700 ${opts.ctaSize}px ${exportFontFamily}`;
+        ctx.font = `700 ${ctaSize}px ${exportFontFamily}`;
         const ctaDrawText = ctaText ? truncateWithEllipsis(ctaText, ctaMaxChars) : "";
-        const ctaHeight = ctaDrawText ? opts.ctaSize + ctaPadY * 2 : 0;
+        const ctaHeight = ctaDrawText ? ctaSize + ctaPadY * 2 : 0;
         const gapA = headlineLines.length && subLines.length ? Math.round(h * 0.015) : 0;
         const gapB =
           (headlineLines.length || subLines.length) && ctaDrawText ? Math.round(h * 0.02) : 0;
         const totalHeight = headlineHeight + gapA + subHeight + gapB + ctaHeight;
         let y = opts.y;
-        if (anchor === "bottom") y = Math.max(topPad + textTopBump, h - bottomPad - totalHeight);
+        if (anchor === "bottom") {
+          y = Math.max(topPad + textTopBump, h - bottomPad - totalHeight - bottomLift);
+        }
         if (anchor === "center") {
           y = Math.max(topPad + textTopBump, Math.round((h - totalHeight) / 2));
         }
 
-        let cursorY = y + opts.headlineSize;
+        let cursorY = y + headlineSize;
         if (headlineLines.length) {
           ctx.fillStyle = "rgba(255,255,255,1)";
-          ctx.font = `800 ${opts.headlineSize}px ${exportFontFamily}`;
+          ctx.font = `800 ${headlineSize}px ${exportFontFamily}`;
           headlineLines.forEach((line, idx) => {
-            ctx.fillText(line, opts.x, cursorY + idx * Math.round(opts.headlineSize * 1.08));
+            ctx.fillText(line, opts.x, cursorY + idx * Math.round(headlineSize * 1.08));
           });
           cursorY += headlineHeight + gapA;
         }
 
         if (subLines.length) {
           ctx.fillStyle = "rgba(255,255,255,0.92)";
-          ctx.font = `700 ${opts.subSize}px ${exportFontFamily}`;
+          ctx.font = `700 ${subSize}px ${exportFontFamily}`;
           subLines.forEach((line, idx) => {
-            ctx.fillText(line, opts.x, cursorY + idx * Math.round(opts.subSize * 1.2));
+            ctx.fillText(line, opts.x, cursorY + idx * Math.round(subSize * 1.2));
           });
           cursorY += subHeight + gapB;
         }
 
         if (ctaDrawText) {
-          ctx.font = `700 ${opts.ctaSize}px ${exportFontFamily}`;
+          ctx.font = `700 ${ctaSize}px ${exportFontFamily}`;
           const ctaWidth = Math.round(ctx.measureText(ctaDrawText).width + ctaPadX * 2);
           const ctaLeft = align === "center" ? Math.round(opts.x - ctaWidth / 2) : opts.x;
-          const ctaY = cursorY - opts.ctaSize;
+          const ctaY = cursorY - ctaSize;
           ctx.fillStyle = "rgba(255,255,255,0.92)";
           const radius = Math.round(ctaHeight / 2);
           ctx.beginPath();
@@ -996,9 +1057,10 @@ export default function EditorPage() {
       const drawSplit = () => {
         drawLogo();
         if (isVertical) {
+          const splitTopExtra = isVerticalPlatform ? Math.round(h * 0.03) : Math.round(h * 0.015);
           drawTextBlock({
             x: marginX,
-            y: topPad + textTopBump,
+            y: topPad + textTopBump + splitTopExtra,
             maxWidth: Math.round(w - marginX * 2),
             headlineSize: Math.max(24, Math.round(w * 0.085)),
             subSize: Math.max(15, Math.round(w * 0.045)),
@@ -1006,9 +1068,17 @@ export default function EditorPage() {
             anchor: "top",
           });
           if (assets.product) {
-            const ph = Math.round(h * (isVerticalPlatform ? 0.36 : 0.44));
+            const splitProductRatio = isVerticalPlatform ? 0.34 : 0.42;
+            const ph = Math.round(h * scaleProductRatio(splitProductRatio));
             const pw = Math.round((assets.product.width / assets.product.height) * ph);
-            ctx.drawImage(assets.product, Math.round((w - pw) / 2), h - bottomPad - ph, pw, ph);
+            const splitBottomLift = isVerticalPlatform ? Math.round(h * 0.02) : 0;
+            ctx.drawImage(
+              assets.product,
+              Math.round((w - pw) / 2),
+              h - bottomPad - ph - splitBottomLift,
+              pw,
+              ph
+            );
           }
           return;
         }
@@ -1022,7 +1092,7 @@ export default function EditorPage() {
           anchor: "center",
         });
         if (assets.product) {
-          const ph = Math.round(h * 0.72);
+          const ph = Math.round(h * scaleProductRatio(0.72));
           const pw = Math.round((assets.product.width / assets.product.height) * ph);
           const x = Math.round(w * 0.58 + (w * 0.42 - pw) / 2);
           const y = Math.round((h - ph) / 2);
@@ -1032,9 +1102,10 @@ export default function EditorPage() {
 
       const drawOverlayBottom = () => {
         drawLogo();
-        const grad = ctx.createLinearGradient(0, h * 0.35, 0, h);
-        grad.addColorStop(0, "rgba(0,0,0,0)");
-        grad.addColorStop(1, "rgba(0,0,0,0.55)");
+        const grad = ctx.createLinearGradient(0, h * 0.45, 0, h);
+        grad.addColorStop(0, "rgba(0,0,0,0.05)");
+        grad.addColorStop(0.65, "rgba(0,0,0,0.35)");
+        grad.addColorStop(1, "rgba(0,0,0,0.75)");
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, w, h);
         drawTextBlock({
@@ -1045,6 +1116,7 @@ export default function EditorPage() {
           subSize: Math.max(15, Math.round(w * 0.038)),
           ctaSize: Math.max(13, Math.round(w * 0.03)),
           anchor: "bottom",
+          bottomLift: isVerticalPlatform ? Math.round(h * 0.04) : Math.round(h * 0.015),
         });
       };
 
@@ -1060,7 +1132,7 @@ export default function EditorPage() {
           anchor: "top",
         });
         if (assets.product) {
-          const ph = Math.round(h * (isVerticalPlatform ? 0.42 : 0.5));
+          const ph = Math.round(h * scaleProductRatio(isVerticalPlatform ? 0.42 : 0.5));
           const pw = Math.round((assets.product.width / assets.product.height) * ph);
           const py = Math.round((h - ph) / 2) + Math.round(textTopBump * 0.25);
           ctx.drawImage(assets.product, Math.round((w - pw) / 2), py, pw, ph);
@@ -1069,8 +1141,8 @@ export default function EditorPage() {
 
       const drawBrutalist = () => {
         drawLogo();
-        const headlineSize = Math.max(24, Math.round(w * 0.08));
-        const subSize = Math.max(14, Math.round(w * 0.03));
+        const headlineSize = Math.max(24, Math.round(w * 0.08 * textScale));
+        const subSize = Math.max(14, Math.round(w * 0.03 * textScale));
         const maxWidth = Math.round(w * 0.6);
 
         ctx.font = `900 ${headlineSize}px ${exportFontFamily}`;
@@ -1101,7 +1173,7 @@ export default function EditorPage() {
         });
 
         if (ctaDrawText) {
-          ctx.font = `800 ${Math.max(13, Math.round(w * 0.028))}px ${exportFontFamily}`;
+          ctx.font = `800 ${Math.max(13, Math.round(w * 0.028 * textScale))}px ${exportFontFamily}`;
           const ctaW = Math.round(ctx.measureText(ctaDrawText).width) + 28;
           const ctaH = Math.round(h * 0.06);
           const ctaY = h - bottomPad - ctaH;
@@ -1121,7 +1193,8 @@ export default function EditorPage() {
         const cardX = Math.round((w - cardW) / 2);
         const cardY = Math.max(topPad + textTopBump, Math.round((h - cardH) / 2));
         const radius = Math.round(Math.min(cardW, cardH) * 0.08);
-        const blurPx = Math.round(Math.max(14, w * 0.01));
+        const baseBlurPx = Math.min(28, Math.round(Math.max(14, w * 0.01)));
+        const blurPx = clamp(Math.round(baseBlurPx * blurBoost), 10, 28);
         blurBackdropRoundedRect(
           ctx,
           ctx.canvas as HTMLCanvasElement,
@@ -1198,7 +1271,7 @@ export default function EditorPage() {
       grad.addColorStop(1, "#111827");
       fallbackCtx.fillStyle = grad;
       fallbackCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-      fallbackCtx.fillStyle = "rgba(0,0,0,0.2)";
+      fallbackCtx.fillStyle = `rgba(0,0,0,${overlayOpacity})`;
       fallbackCtx.fillRect(0, 0, canvasWidth, canvasHeight);
       drawPresetLayer(fallbackCtx, canvasWidth, canvasHeight, { logo: null, product: null });
       downloadCanvas(fallbackCanvas);
@@ -1213,9 +1286,9 @@ export default function EditorPage() {
     try {
       if ("fonts" in document) {
         await (document as any).fonts.ready;
-        await (document as any).fonts.load(`700 24px ${exportFontFamily}`);
-        await (document as any).fonts.load(`800 24px ${exportFontFamily}`);
-        await (document as any).fonts.load(`900 24px ${exportFontFamily}`);
+        await (document as any).fonts.load(`700 24px ${primaryFont}`);
+        await (document as any).fonts.load(`800 24px ${primaryFont}`);
+        await (document as any).fonts.load(`900 24px ${primaryFont}`);
       }
     } catch {
       // Best-effort font preloading; continue export if unavailable.
@@ -1233,7 +1306,7 @@ export default function EditorPage() {
         ctx.fillRect(0, 0, canvasWidth, canvasHeight);
       }
 
-      ctx.fillStyle = "rgba(0,0,0,0.2)";
+      ctx.fillStyle = `rgba(0,0,0,${overlayOpacity})`;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
       const logo = logoUrl ? await loadImage(logoUrl) : null;
@@ -1250,6 +1323,10 @@ export default function EditorPage() {
       console.warn("2K export fallback due to image/CORS issue:", err);
       drawTextOnlyFallbackAndDownload();
     }
+  }
+
+  async function export2K() {
+    await exportSocialPost2K({ fileName: "social-post-2k.png" });
   }
 
   // estados bÃ¡sicos
@@ -3613,7 +3690,7 @@ export default function EditorPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={createVariations}
+            onClick={() => void createVariations()}
           >
             {t("editor.actions.create_10_variations")}
           </Button>
