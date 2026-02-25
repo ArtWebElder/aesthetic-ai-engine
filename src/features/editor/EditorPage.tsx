@@ -74,7 +74,7 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { STYLE_PRESETS } from "@/types";
 import { useI18n } from "@/i18n";
-import { ChevronDown, ChevronRight, Upload } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Upload } from "lucide-react";
 import { ColorPicker } from "@/components/ui/color-picker";
 
 /**
@@ -1567,6 +1567,52 @@ export default function EditorPage() {
           </div>
         </div>
       </div>
+
+      {/* Progress checklist bar */}
+      {!focusMode && (() => {
+        const hasSubject = !!(subjectImageUrl || safeSpec.subjectText?.trim() || safeSpec.builder?.subjectType);
+        const hasStyle = !!(safeSpec.builder?.scenePreset || safeSpec.builder?.sceneMood || (safeSpec.builder?.visualStyle?.length ?? 0) > 0);
+        const hasGenerations = (project.generations?.length ?? 0) > 0;
+        const hasExportReady = project.generations?.some(g => g.status === "done" && g.imageUrl) ?? false;
+
+        const steps = [
+          { label: "Subject", done: hasSubject },
+          { label: "Style", done: hasStyle },
+          { label: "Generated", done: hasGenerations },
+          { label: "Export ready", done: hasExportReady },
+        ];
+
+        const completedCount = steps.filter(s => s.done).length;
+        if (completedCount === 4) return null;
+
+        return (
+          <div className="px-4 md:px-6 py-1.5 border-b border-border/40 bg-card/50 flex items-center gap-4">
+            {steps.map((step, i) => (
+              <div key={step.label} className="flex items-center gap-1.5">
+                <div className={`h-4 w-4 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150 ${
+                  step.done
+                    ? "bg-primary/15 text-primary"
+                    : "bg-muted/50 text-muted-foreground/40"
+                }`}>
+                  {step.done ? (
+                    <Check className="h-2.5 w-2.5" />
+                  ) : (
+                    <span className="text-[8px] font-medium">{i + 1}</span>
+                  )}
+                </div>
+                <span className={`text-[10px] font-medium transition-colors duration-150 ${
+                  step.done ? "text-foreground/70" : "text-muted-foreground/50"
+                }`}>
+                  {step.label}
+                </span>
+                {i < steps.length - 1 && (
+                  <div className={`w-4 h-px ml-1 ${step.done ? "bg-primary/30" : "bg-border/40"}`} />
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       {/* 3-COL LAYOUT: Inspector (left) | Canvas (center) | Templates (right) */}
       <div className={[
