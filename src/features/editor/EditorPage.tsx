@@ -754,17 +754,24 @@ export default function EditorPage() {
         if (ctx.measureText(next).width <= maxWidth) {
           current = next;
         } else {
-          if (current) {
-            lines.push(current);
+          if (current) lines.push(current);
+          current = words[i];
+          if (lines.length >= maxLines) {
+            const overflow = [current, ...words.slice(i + 1)].join(" ");
+            lines[maxLines - 1] = fitLineWithEllipsis(
+              [lines[maxLines - 1], overflow].filter(Boolean).join(" ")
+            );
+            return lines.slice(0, maxLines);
           }
-          current = fitLineWithEllipsis(words[i]);
         }
       }
       if (current && lines.length < maxLines) lines.push(current);
       if (lines.length <= maxLines) return lines;
       const trimmed = lines.slice(0, maxLines);
-      const overflow = `${trimmed[maxLines - 1]} ${lines.slice(maxLines).join(" ")}`.trim();
-      trimmed[maxLines - 1] = fitLineWithEllipsis(overflow);
+      const overflow = lines.slice(maxLines).join(" ");
+      trimmed[maxLines - 1] = fitLineWithEllipsis(
+        [trimmed[maxLines - 1], overflow].filter(Boolean).join(" ")
+      );
       return trimmed;
     };
 
@@ -1125,6 +1132,12 @@ export default function EditorPage() {
                         const verticalTextPadClass = isVerticalPlatform
                           ? "pt-12 pb-12 md:pt-14 md:pb-14"
                           : "";
+                        const marginClass = "left-6 right-6";
+                        const logoHClass = "h-14 md:h-16";
+                        const productMaxHSmallClass = isVerticalPlatform ? "max-h-[30%]" : "max-h-[36%]";
+                        const productMaxHMediumClass = isVerticalPlatform ? "max-h-[32%]" : "max-h-[44%]";
+                        const productMaxHLargeClass = isVerticalPlatform ? "max-h-[42%]" : "max-h-[50%]";
+                        const productHeroHClass = isVerticalPlatform ? "h-[24%]" : "h-[28%]";
                         const logoTopClass = isVerticalPlatform ? "top-10" : "top-6";
                         const bottomTextClass = isVerticalPlatform ? "bottom-14" : "bottom-8";
                         const productBottomClass = isVerticalPlatform ? "bottom-10" : "bottom-6";
@@ -1139,6 +1152,8 @@ export default function EditorPage() {
                         };
                         const productUrl = safeSpec.builder.productUploads?.[0] || "";
                         const logoUrl = safeSpec.builder.logoUploads?.[0] || "";
+                        const hasLogo = Boolean(logoUrl);
+                        const textTopBumpClass = hasLogo ? "pt-16 md:pt-20" : "";
                         const bgImage = safeSpec.builder.backgroundUploads?.[0] || bgUrl || "";
 
                         return (
@@ -1164,7 +1179,7 @@ export default function EditorPage() {
                               <img
                                 src={logoUrl}
                                 alt=""
-                                className={`absolute left-6 h-16 w-auto object-contain z-20 ${logoTopClass}`}
+                                className={`absolute left-6 w-auto object-contain z-20 ${logoHClass} ${logoTopClass}`}
                               />
                             ) : null}
 
@@ -1173,6 +1188,7 @@ export default function EditorPage() {
                                 className={[
                                   "absolute inset-0 z-10 p-6 md:p-8 gap-6",
                                   verticalTextPadClass,
+                                  textTopBumpClass,
                                   isVertical ? "grid grid-rows-[auto_1fr]" : "grid grid-cols-2 items-center",
                                 ].join(" ")}
                               >
@@ -1200,7 +1216,7 @@ export default function EditorPage() {
                                       alt=""
                                       className={[
                                         "w-auto object-contain",
-                                        isVertical ? "max-h-[48%]" : "max-h-[72%]",
+                                        isVertical ? productMaxHMediumClass : "max-h-[72%]",
                                       ].join(" ")}
                                     />
                                   </div>
@@ -1209,9 +1225,9 @@ export default function EditorPage() {
                             ) : null}
 
                             {layoutPreset === "overlay_bottom" ? (
-                              <div className={`absolute left-6 right-6 z-10 space-y-3 ${bottomTextClass}`}>
+                              <div className={`absolute ${marginClass} z-10 space-y-3 ${bottomTextClass}`}>
                                 <div
-                                  className="text-white text-5xl md:text-6xl font-bold leading-[0.95]"
+                                  className={`text-white font-bold leading-[0.95] md:text-6xl ${isVerticalPlatform ? "text-4xl" : "text-5xl"}`}
                                   style={twoLineClampStyle}
                                 >
                                   {headlineText}
@@ -1231,7 +1247,7 @@ export default function EditorPage() {
                             ) : null}
 
                             {layoutPreset === "minimal" ? (
-                              <div className={`absolute inset-0 z-10 p-6 ${verticalTextPadClass}`}>
+                              <div className={`absolute inset-0 z-10 p-6 ${verticalTextPadClass} ${textTopBumpClass}`}>
                                 <div
                                   className="text-white text-lg md:text-xl font-semibold tracking-tight"
                                   style={twoLineClampStyle}
@@ -1243,7 +1259,7 @@ export default function EditorPage() {
                                     <img
                                       src={productUrl}
                                       alt=""
-                                      className="max-h-[50%] w-auto object-contain"
+                                      className={`w-auto object-contain ${productMaxHLargeClass}`}
                                     />
                                   ) : null}
                                   <div className="inline-flex px-3 py-1.5 text-xs font-medium bg-white/20 text-white border border-white/30">
@@ -1279,7 +1295,7 @@ export default function EditorPage() {
                                     <img
                                       src={productUrl}
                                       alt=""
-                                      className="max-h-[44%] w-auto object-contain"
+                                      className={`w-auto object-contain ${productMaxHMediumClass}`}
                                     />
                                   ) : null}
                                 </div>
@@ -1288,7 +1304,7 @@ export default function EditorPage() {
 
                             {layoutPreset === "glass" ? (
                               <div
-                                className={`absolute inset-0 z-10 flex items-center justify-center p-6 ${verticalTextPadClass}`}
+                                className={`absolute inset-0 z-10 flex items-center justify-center p-6 ${verticalTextPadClass} ${textTopBumpClass}`}
                               >
                                 <div className="w-full max-w-[78%] rounded-2xl border border-white/30 bg-white/15 backdrop-blur-md px-6 py-7 text-center space-y-3">
                                   <div
@@ -1311,7 +1327,7 @@ export default function EditorPage() {
                                   <img
                                     src={productUrl}
                                     alt=""
-                                    className={`absolute right-6 max-h-[36%] w-auto object-contain ${productBottomClass}`}
+                                    className={`absolute right-6 w-auto object-contain ${productMaxHSmallClass} ${productBottomClass}`}
                                   />
                                 ) : null}
                               </div>
@@ -1320,7 +1336,7 @@ export default function EditorPage() {
                             {layoutPreset === "hero" ? (
                               <>
                                 <div
-                                  className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6 ${verticalTextPadClass}`}
+                                  className={`absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6 ${verticalTextPadClass} ${textTopBumpClass}`}
                                 >
                                   <div
                                     className="text-white text-5xl md:text-6xl font-bold leading-[0.95] max-w-[90%]"
@@ -1342,7 +1358,7 @@ export default function EditorPage() {
                                   <img
                                     src={productUrl}
                                     alt=""
-                                    className={`absolute right-6 h-[28%] w-auto object-contain z-10 ${productBottomClass}`}
+                                    className={`absolute right-6 ${productHeroHClass} w-auto object-contain z-10 ${productBottomClass}`}
                                   />
                                 ) : null}
                               </>
