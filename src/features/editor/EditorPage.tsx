@@ -523,10 +523,10 @@ export default function EditorPage() {
   const isPhotoshoot = safeSpec?.module === "photoshoot";
   const isSocialPost = safeSpec?.module === "social_post";
   const photoshootSubjectTypeOptions = [
-    { value: "person", label: t("photoshoot.subject_type.person") },
-    { value: "product", label: t("photoshoot.subject_type.product") },
-    { value: "food", label: t("photoshoot.subject_type.food") },
-    { value: "pet", label: t("photoshoot.subject_type.pet") },
+    { value: "person", label: "Person", labelKey: "photoshoot.subject_type.person" },
+    { value: "product", label: "Product", labelKey: "photoshoot.subject_type.product" },
+    { value: "food", label: "Food", labelKey: "photoshoot.subject_type.food" },
+    { value: "pet", label: "Pet", labelKey: "photoshoot.subject_type.pet" },
   ];
   const socialPlatformOptions = [
     { value: "instagram_feed", labelKey: "social.platform.instagram_feed" },
@@ -1168,7 +1168,7 @@ export default function EditorPage() {
                   <SelectContent>
                     {PHOTOSHOOT_PRESET_OPTIONS.map((option) => (
                       <SelectItem key={option.id} value={option.id}>
-                        {option.label}
+                        {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1489,7 +1489,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {photoshootSubjectTypeOptions.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1523,7 +1523,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {LENS_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1542,7 +1542,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {DEPTH_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1561,7 +1561,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {ANGLE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1588,7 +1588,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {LIGHTING_SETUP_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1607,7 +1607,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {MOOD_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1626,7 +1626,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {TEMPERATURE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1686,7 +1686,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {FINISH_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1746,7 +1746,7 @@ export default function EditorPage() {
                       })
                     }
                   />
-                  Debug prompt
+                  {t("editor.debug.toggle")}
                 </label>
               </div>
 
@@ -1809,7 +1809,7 @@ export default function EditorPage() {
                         <SelectContent>
                           {LENS_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                              {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1833,7 +1833,7 @@ export default function EditorPage() {
                         <SelectContent>
                           {DEPTH_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                              {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1857,7 +1857,7 @@ export default function EditorPage() {
                         <SelectContent>
                           {ANGLE_OPTIONS.map((option) => (
                             <SelectItem key={option.value} value={option.value}>
-                              {option.label}
+                              {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -1882,7 +1882,7 @@ export default function EditorPage() {
                           <SelectContent>
                             {MOTION_OPTIONS.map((option) => (
                               <SelectItem key={option.value} value={option.value}>
-                                {option.label}
+                                {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -1911,7 +1911,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {SUBJECT_TYPE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1935,7 +1935,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {FRAMING_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1959,7 +1959,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {EXPRESSION_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1983,7 +1983,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {ACTION_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2009,7 +2009,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {LIGHTING_SETUP_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2033,7 +2033,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {TEMPERATURE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2057,7 +2057,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {MOOD_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2081,7 +2081,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {MACRO_STYLE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2107,7 +2107,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {LAYOUT_BASE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2131,7 +2131,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {SAFE_SPACE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2164,7 +2164,7 @@ export default function EditorPage() {
                           });
                         }}
                       >
-                        {option.label}
+                        {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                       </button>
                     );
                   })}
@@ -2202,7 +2202,7 @@ export default function EditorPage() {
                             });
                           }}
                         >
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </button>
                       );
                     })}
@@ -2237,7 +2237,7 @@ export default function EditorPage() {
                             });
                           }}
                         >
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </button>
                       );
                     })}
@@ -2261,7 +2261,7 @@ export default function EditorPage() {
                     <SelectContent>
                       {MATERIAL_FEEL_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
-                          {option.label}
+                          {(option.labelKey ? t(option.labelKey) : option.label) || option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -2776,12 +2776,12 @@ export default function EditorPage() {
 
             {/* DEBUG */}
             <div className="pt-2 border-t border-border space-y-2">
-              <div className="text-sm font-medium">Compiled Prompt (debug)</div>
+              <div className="text-sm font-medium">{t("editor.debug.compiled_title")}</div>
               <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
                 {compiled?.prompt}
               </pre>
               <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
-                NEG: {compiled?.negativePrompt}
+                {t("editor.debug.negative_prefix")} {compiled?.negativePrompt}
               </pre>
             </div>
           </div>
@@ -2811,6 +2811,4 @@ export default function EditorPage() {
       </div>
     </div>
   );
-} 
-
-
+}

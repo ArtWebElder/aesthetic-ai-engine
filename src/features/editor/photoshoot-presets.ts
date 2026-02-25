@@ -7,12 +7,16 @@ export type PhotoshootPresetId =
   | "lifestyle"
   | "onwhite_ecom";
 
-export const PHOTOSHOOT_PRESET_OPTIONS: { id: PhotoshootPresetId; label: string }[] = [
-  { id: "studio_product", label: "Studio Product" },
-  { id: "editorial_portrait", label: "Editorial Portrait" },
-  { id: "food_hero", label: "Food Hero" },
-  { id: "lifestyle", label: "Lifestyle" },
-  { id: "onwhite_ecom", label: "On White Ecom" },
+export const PHOTOSHOOT_PRESET_OPTIONS: { id: PhotoshootPresetId; label: string; labelKey?: string }[] = [
+  { id: "studio_product", label: "Studio Product", labelKey: "photoshoot.preset.studio_product" },
+  {
+    id: "editorial_portrait",
+    label: "Editorial Portrait",
+    labelKey: "photoshoot.preset.editorial_portrait",
+  },
+  { id: "food_hero", label: "Food Hero", labelKey: "photoshoot.preset.food_hero" },
+  { id: "lifestyle", label: "Lifestyle", labelKey: "photoshoot.preset.lifestyle" },
+  { id: "onwhite_ecom", label: "On White Ecom", labelKey: "photoshoot.preset.onwhite_ecom" },
 ];
 
 export const PHOTOSHOOT_PRESETS: Record<PhotoshootPresetId, Partial<ProjectSpec["builder"]>> = {
