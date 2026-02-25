@@ -93,6 +93,10 @@ export default {
           from: { opacity: "0", transform: "translateY(4px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        "scale-y-in": {
+          from: { transform: "scaleY(0)", opacity: "0" },
+          to: { transform: "scaleY(1)", opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -100,6 +104,7 @@ export default {
         "fade-in": "fade-in 0.15s ease-out",
         "slide-up": "slide-up 0.2s ease-out",
         "tab-fade": "tab-fade 0.15s ease-out",
+        "scale-y-in": "scale-y-in 0.2s ease-out",
       },
     },
   },

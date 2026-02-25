@@ -25,7 +25,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
   <DropdownMenuPrimitive.SubTrigger
     ref={ref}
     className={cn(
-      "flex cursor-default select-none items-center rounded-lg px-2 py-1.5 text-sm outline-none transition-all duration-150 data-[state=open]:bg-accent focus:bg-accent/60 hover:bg-accent/50 hover:pl-3",
+      "flex cursor-default select-none items-center rounded-lg px-2 py-1.5 text-sm outline-none transition-all duration-150 data-[state=open]:bg-accent focus:bg-accent hover:bg-muted",
       inset && "pl-8",
       className,
     )}
@@ -79,7 +79,7 @@ const DropdownMenuItem = React.forwardRef<
   <DropdownMenuPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-lg px-3 py-1.5 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent/60 focus:text-accent-foreground hover:bg-accent/50",
+      "relative flex cursor-default select-none items-center rounded-lg px-3 py-1.5 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground hover:bg-muted",
       inset && "pl-8",
       className,
     )}
@@ -95,14 +95,14 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   <DropdownMenuPrimitive.CheckboxItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-4 pr-2 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent/60 focus:text-accent-foreground hover:bg-accent/50",
+      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-4 pr-2 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground hover:bg-muted",
       className,
     )}
     checked={checked}
     {...props}
   >
     <DropdownMenuPrimitive.ItemIndicator>
-      <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary" />
+      <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary origin-center animate-scale-y-in" />
     </DropdownMenuPrimitive.ItemIndicator>
     {children}
   </DropdownMenuPrimitive.CheckboxItem>
@@ -116,13 +116,13 @@ const DropdownMenuRadioItem = React.forwardRef<
   <DropdownMenuPrimitive.RadioItem
     ref={ref}
     className={cn(
-      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-4 pr-2 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent/60 focus:text-accent-foreground hover:bg-accent/50",
+      "relative flex cursor-default select-none items-center rounded-lg py-1.5 pl-4 pr-2 text-sm outline-none transition-all duration-150 data-[disabled]:pointer-events-none data-[disabled]:opacity-50 focus:bg-accent focus:text-accent-foreground hover:bg-muted",
       className,
     )}
     {...props}
   >
     <DropdownMenuPrimitive.ItemIndicator>
-      <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary" />
+      <span className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-primary origin-center animate-scale-y-in" />
     </DropdownMenuPrimitive.ItemIndicator>
     {children}
   </DropdownMenuPrimitive.RadioItem>
