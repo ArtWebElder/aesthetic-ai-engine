@@ -662,6 +662,16 @@ export default function EditorPage() {
     persist(nextProject);
   }
 
+  function createVariations() {
+    generateMock();
+  }
+
+  function export2K() {
+    console.log("activeGenerationId:", project?.activeGenerationId ?? null);
+    console.log("generationWidth:", safeSpec?.generation?.width ?? null);
+    console.log("generationHeight:", safeSpec?.generation?.height ?? null);
+  }
+
   // estados bÃ¡sicos
   if (!id) {
     return (
@@ -2797,13 +2807,13 @@ export default function EditorPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => alert(t("editor.actions.alert_create_variations_placeholder"))}
+            onClick={createVariations}
           >
             {t("editor.actions.create_10_variations")}
           </Button>
           <Button
             variant="outline"
-            onClick={() => alert(t("editor.actions.alert_export_2k_placeholder"))}
+            onClick={export2K}
           >
             {t("editor.actions.export_2k")}
           </Button>
