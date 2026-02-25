@@ -2576,7 +2576,7 @@ export default function EditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <div className="space-y-1.5">
+                <div className="flex items-center gap-2 pt-1">
                   <label className="text-xs text-muted-foreground">{t("accent_color")}</label>
                   <label className="relative cursor-pointer group inline-block">
                     <input
