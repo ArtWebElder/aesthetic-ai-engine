@@ -56,6 +56,18 @@ export type TemplateId =
   | "photo_04"
   | "photo_05";
 
+export type ScenePresetSlug =
+  | "studio_white"
+  | "studio_dark"
+  | "studio_gradient"
+  | "lifestyle_home"
+  | "luxury_interior"
+  | "urban_day"
+  | "urban_night"
+  | "nature_outdoor"
+  | "minimal_texture"
+  | "editorial_backdrop";
+
 /* =========================
    BRAND / TOKENS
 ========================= */
@@ -127,6 +139,7 @@ export interface BuilderSpec {
   platformPreset?: string;
   goalPreset?: string;
   layoutPreset?: string;
+  scenePreset?: ScenePresetSlug | "";
   compositionFlags?: string[];
   logoUploads?: string[];
   productUploads?: string[];

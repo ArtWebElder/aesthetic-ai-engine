@@ -22,6 +22,7 @@ import {
   TEMPERATURE_OPTIONS,
   VISUAL_STYLE_OPTIONS,
 } from "@/features/editor/editor-presets";
+import { getScenePresetDescription } from "@/features/editor/scene-presets";
 
 export interface CompiledPrompt {
   prompt: string;
@@ -132,8 +133,13 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     layoutBase: builder?.layoutBase?.trim() ?? "",
     safeSpace: builder?.safeSpace?.trim() ?? "",
     extraDetails: builder?.extraDetails?.trim() ?? "",
+    scenePreset: builder?.scenePreset?.trim() ?? "",
   };
   const intensity = cleanedBuilder.intensity;
+  const scenePresetDescription = getScenePresetDescription(cleanedBuilder.scenePreset);
+  const scenePresetLine = scenePresetDescription
+    ? `Scene preset: ${scenePresetDescription}`
+    : null;
   const isLow = intensity <= 40;
   const isHigh = intensity >= 76;
   const isExtreme = intensity >= 85;
@@ -458,6 +464,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     textHints,
     debugCopyLine,
     cleanedSubject ? `Main subject: ${cleanedSubject}` : null,
+    scenePresetLine,
     moduleBase,
     styleHints,
     `template: ${templateId}`,

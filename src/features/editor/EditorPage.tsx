@@ -41,6 +41,11 @@ import {
   applyPhotoshootPreset,
 } from "@/features/editor/photoshoot-presets";
 import type { PhotoshootPresetId } from "@/features/editor/photoshoot-presets";
+import {
+  SCENE_PRESET_OPTIONS,
+  getScenePresetLabelKey,
+  normalizeScenePreset,
+} from "@/features/editor/scene-presets";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 
 import { Button } from "@/components/ui/button";
@@ -210,8 +215,10 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const generation = spec.generation ?? ({} as any);
   const builder = spec.builder ?? ({} as BuilderSpec);
   const content = spec.content ?? ({} as any);
+  const moduleKey = String(spec.module ?? "");
   const normalizedPhotoAspect = (spec.photoAspect ?? "3:2") as NonNullable<ProjectSpec["photoAspect"]>;
   const isSocialPost = spec.module === "social_post";
+  const isEcom = moduleKey === "ecom" || moduleKey === "ecom_banner";
   const photoshootSize =
     spec.module === "photoshoot" ? aspectToSize(normalizedPhotoAspect) : null;
   const normalizedReferenceImages = normalizeReferenceImages(
@@ -253,6 +260,10 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       platformPreset: (builder.platformPreset ?? (isSocialPost ? "instagram_feed" : "")).trim(),
       goalPreset: (builder.goalPreset ?? (isSocialPost ? "Offer" : "")).trim(),
       layoutPreset: (builder.layoutPreset ?? (isSocialPost ? "Hero" : "")).trim(),
+      scenePreset: normalizeScenePreset(
+        (builder.scenePreset ?? "").trim(),
+        moduleKey
+      ),
       headline: (builder.headline ?? "").trim(),
       subheadline: (builder.subheadline ?? "").trim(),
       cta: (builder.cta ?? "").trim(),
@@ -537,8 +548,14 @@ export default function EditorPage() {
   const assetsHighlights = builder?.assetsHighlights ?? [];
   const contextProps = builder?.contextProps ?? [];
   const referenceImages = safeSpec?.referenceImages ?? [];
-  const isPhotoshoot = safeSpec?.module === "photoshoot";
-  const isSocialPost = safeSpec?.module === "social_post";
+  const safeModuleKey = String(safeSpec?.module ?? "");
+  const isPhotoshoot = safeModuleKey === "photoshoot";
+  const isSocialPost = safeModuleKey === "social_post";
+  const isEcom = safeModuleKey === "ecom" || safeModuleKey === "ecom_banner";
+  const currentScenePreset = normalizeScenePreset(
+    safeSpec?.builder?.scenePreset,
+    safeModuleKey
+  );
   const photoshootSubjectTypeOptions = [
     { value: "person", label: "Person", labelKey: "photoshoot.subject_type.person" },
     { value: "product", label: "Product", labelKey: "photoshoot.subject_type.product" },
@@ -593,6 +610,17 @@ export default function EditorPage() {
 
   function persistSocialPostBuilderPatch(patch: Partial<ProjectSpec["builder"]>) {
     if (!safeSpec || !isSocialPost) return;
+    persistSpec({
+      ...safeSpec,
+      builder: {
+        ...(safeSpec.builder ?? {}),
+        ...patch,
+      },
+    });
+  }
+
+  function persistEcomBuilderPatch(patch: Partial<ProjectSpec["builder"]>) {
+    if (!safeSpec || !isEcom) return;
     persistSpec({
       ...safeSpec,
       builder: {
@@ -2138,6 +2166,25 @@ export default function EditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
+                  <Select
+                    value={currentScenePreset}
+                    onValueChange={(value) => persistSocialPostBuilderPatch({ scenePreset: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("editor.scene.preset.placeholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SCENE_PRESET_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {t(getScenePresetLabelKey(option))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             ) : null}
 
@@ -2574,6 +2621,25 @@ export default function EditorPage() {
                 <div className="text-sm font-medium">{t("photoshoot.scene_props.heading")}</div>
 
                 <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
+                  <Select
+                    value={currentScenePreset}
+                    onValueChange={(value) => persistPhotoshootBuilderPatch({ scenePreset: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("editor.scene.preset.placeholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SCENE_PRESET_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {t(getScenePresetLabelKey(option))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("photoshoot.scene_props.assets_highlights")}</label>
                   <Input
                     value={(safeSpec.builder.assetsHighlights ?? []).join(", ")}
@@ -2665,6 +2731,27 @@ export default function EditorPage() {
                 />
               )}
             </div>
+
+            {isEcom ? (
+              <div className="pt-2 border-t border-border space-y-1">
+                <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
+                <Select
+                  value={currentScenePreset}
+                  onValueChange={(value) => persistEcomBuilderPatch({ scenePreset: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t("editor.scene.preset.placeholder")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SCENE_PRESET_OPTIONS.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {t(getScenePresetLabelKey(option))}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
 
             <div className="pt-2 border-t border-border space-y-3">
               <div className="flex items-center justify-between">

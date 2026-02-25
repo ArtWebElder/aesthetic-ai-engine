@@ -8,6 +8,7 @@ import type {
   TemplateId,
   Project,
 } from "@/types/spec";
+import { getDefaultScenePreset } from "@/features/editor/scene-presets";
 
 const nowIso = () => new Date().toISOString();
 
@@ -123,6 +124,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       platformPreset: isSocialPost ? "instagram_feed" : "",
       goalPreset: isSocialPost ? "Offer" : "",
       layoutPreset: isSocialPost ? "Hero" : "",
+      scenePreset: getDefaultScenePreset(module) || "",
       compositionFlags: isSocialPost ? [] : [],
       headline: "",
       subheadline: "",
