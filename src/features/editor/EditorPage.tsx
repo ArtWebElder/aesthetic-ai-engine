@@ -135,13 +135,25 @@ function socialPlatformToSize(platformPreset: string): {
   }
 }
 
-function buildSocialOverlayDataUrl(lines: string[], color: string): string {
+function buildSocialOverlayDataUrl(
+  lines: string[],
+  color: string,
+  width: number = 1080,
+  height: number = 1080
+): string {
   const safeLines = lines.filter(Boolean).slice(0, 3);
   const escaped = safeLines.map((line) => line.replace(/[<>&"]/g, ""));
   const t1 = escaped[0] ?? "";
   const t2 = escaped[1] ?? "";
   const t3 = escaped[2] ?? "";
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080"><rect width="1080" height="1080" fill="transparent"/><text x="70" y="250" fill="${color}" font-family="Arial,sans-serif" font-weight="800" font-size="110">${t1}</text><text x="70" y="390" fill="${color}" font-family="Arial,sans-serif" font-weight="700" font-size="68">${t2}</text><text x="70" y="500" fill="${color}" font-family="Arial,sans-serif" font-weight="700" font-size="58">${t3}</text></svg>`;
+  const marginX = Math.round(width * 0.06);
+  const y1 = Math.round(height * 0.23);
+  const y2 = Math.round(height * 0.36);
+  const y3 = Math.round(height * 0.46);
+  const font1 = Math.round(width * 0.1);
+  const font2 = Math.round(width * 0.06);
+  const font3 = Math.round(width * 0.05);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="${width}" height="${height}" fill="transparent"/><text x="${marginX}" y="${y1}" fill="${color}" font-family="Arial,sans-serif" font-weight="800" font-size="${font1}">${t1}</text><text x="${marginX}" y="${y2}" fill="${color}" font-family="Arial,sans-serif" font-weight="700" font-size="${font2}">${t2}</text><text x="${marginX}" y="${y3}" fill="${color}" font-family="Arial,sans-serif" font-weight="700" font-size="${font3}">${t3}</text></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
@@ -1584,7 +1596,9 @@ export default function EditorPage() {
                       ];
                       const overlay = buildSocialOverlayDataUrl(
                         lines,
-                        safeSpec.brand.accent || "#ffffff"
+                        safeSpec.brand.accent || "#ffffff",
+                        safeSpec.generation?.width ?? 1080,
+                        safeSpec.generation?.height ?? 1080
                       );
                       persistSocialPostBuilderPatch({ premiumOverlayUrls: [overlay] });
                     }}
