@@ -49,7 +49,7 @@ export function ProjectCard({ project, index = 0, onDelete, onDuplicate }: Proje
       onClick={() => navigate(`/app/projects/${project.id}`)}
     >
       {/* Thumbnail with aspect ratio */}
-      <AspectRatio ratio={4 / 3}>
+      <AspectRatio ratio={16 / 9}>
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
