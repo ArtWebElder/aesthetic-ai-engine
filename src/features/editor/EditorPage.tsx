@@ -1706,20 +1706,20 @@ export default function EditorPage() {
                   })
                 }
               >
-                {isPhotoshoot ? t("photoshoot.notes.optional") : "Campaign context (optional)"}{" "}
+                {isPhotoshoot ? t("photoshoot.notes.optional") : t("editor.context.campaign_optional")}{" "}
                 {safeSpec.contextOpen ? "▼" : "▶"}
               </button>
 
               {!safeSpec.contextOpen ? (
                 <div className="text-xs text-muted-foreground truncate">
-                  {safeSpec.contextText?.trim() || "None"}
+                  {safeSpec.contextText?.trim() || t("editor.context.none")}
                 </div>
               ) : (
                 <Input
                   placeholder={
                     isPhotoshoot
                       ? t("photoshoot.notes.placeholder")
-                      : "e.g. Valentine's promo, premium vibe, summer sale"
+                      : t("editor.context.campaign_placeholder")
                   }
                   value={safeSpec.contextText ?? ""}
                   onChange={(e) =>
@@ -2017,7 +2017,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Temperature</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.temperature")}</label>
                   <Select
                     value={builder?.temperature || ""}
                     onValueChange={(value) =>
@@ -2041,7 +2041,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Mood</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.mood")}</label>
                   <Select
                     value={builder?.mood || ""}
                     onValueChange={(value) =>
@@ -2527,14 +2527,14 @@ export default function EditorPage() {
                   <SelectContent>
                     {STYLE_PRESETS.map((s) => (
                       <SelectItem key={s.value} value={s.value}>
-                        {s.label}
+                        {(s.labelKey ? t(s.labelKey) : s.label) || s.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
                 <div className="text-xs text-muted-foreground">
-                  (Você pode depois mapear stylePreset ? tokens/effects automaticamente.)
+                  {t("editor.style_preset.helper")}
                 </div>
               </div>
             ) : null}
@@ -2543,7 +2543,7 @@ export default function EditorPage() {
             {/* PHOTOSHOOT ASPECT */}
             {isPhotoshoot ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Aspect ratio</div>
+                <div className="text-sm font-medium">{t("photoshoot.aspect_ratio.label")}</div>
                 <Select
                   value={safeSpec.photoAspect ?? "3:2"}
                   onValueChange={(v) =>
@@ -2564,7 +2564,7 @@ export default function EditorPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose an aspect ratio" />
+                    <SelectValue placeholder={t("photoshoot.aspect_ratio.placeholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1:1">1:1</SelectItem>
@@ -2797,13 +2797,13 @@ export default function EditorPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => alert("Create Variations (placeholder)")}
+            onClick={() => alert(t("editor.actions.alert_create_variations_placeholder"))}
           >
             {t("editor.actions.create_10_variations")}
           </Button>
           <Button
             variant="outline"
-            onClick={() => alert("Export 2K (placeholder)")}
+            onClick={() => alert(t("editor.actions.alert_export_2k_placeholder"))}
           >
             {t("editor.actions.export_2k")}
           </Button>

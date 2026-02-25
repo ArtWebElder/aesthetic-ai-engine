@@ -41,11 +41,11 @@ export const FORMAT_OPTIONS: Record<ProjectType, { value: FormatPreset; label: s
   photoshoot: [{ value: "square_1024", label: "Square 1024×1024" }],
 };
 
-export const STYLE_PRESETS: { value: StylePreset; label: string }[] = [
-  { value: "minimal_clean", label: "Minimal Clean" },
-  { value: "bold_ads", label: "Bold Ads" },
-  { value: "glass", label: "Glass" },
-  { value: "editorial", label: "Editorial" },
+export const STYLE_PRESETS: { value: StylePreset; label: string; labelKey?: string }[] = [
+  { value: "minimal_clean", label: "Minimal Clean", labelKey: "editor.style_preset.minimal_clean" },
+  { value: "bold_ads", label: "Bold Ads", labelKey: "editor.style_preset.bold_ads" },
+  { value: "glass", label: "Glass", labelKey: "editor.style_preset.glass" },
+  { value: "editorial", label: "Editorial", labelKey: "editor.style_preset.editorial" },
 ];
 
 export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {

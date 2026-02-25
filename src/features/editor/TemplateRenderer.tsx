@@ -4,6 +4,7 @@ import type { ProjectSpec, TemplateId } from "@/types/spec";
 import { TEMPLATE_CATALOG } from "@/features/editor/templates/registry";
 import { resolveStyleVars } from "@/features/editor/style-resolver";
 import TEcom01 from "@/features/editor/templates/ecom/ecom_01";
+import { useI18n } from "@/i18n";
 
 type Props = {
   spec: ProjectSpec;
@@ -22,6 +23,7 @@ function GridOverlay() {
 }
 
 function FallbackTemplate({ spec, imageUrl, showGrid }: Props) {
+  const { t } = useI18n();
   const vars = resolveStyleVars(spec);
   const tpl = TEMPLATE_CATALOG.find((item) => item.id === spec.templateId);
 
@@ -32,7 +34,9 @@ function FallbackTemplate({ spec, imageUrl, showGrid }: Props) {
           <img src={imageUrl} className="h-full w-full object-cover" alt="" />
         ) : (
           <div className="h-full w-full flex items-center justify-center bg-muted/30">
-            <div className="text-xs text-muted-foreground">No image yet - template: {spec.templateId}</div>
+            <div className="text-xs text-muted-foreground">
+              {t("editor.template.no_image_yet")} {spec.templateId}
+            </div>
           </div>
         )}
       </div>
@@ -41,7 +45,11 @@ function FallbackTemplate({ spec, imageUrl, showGrid }: Props) {
       {showGrid ? <GridOverlay /> : null}
 
       <div className="absolute inset-0 p-6 flex flex-col justify-end gap-2">
-        <div className="text-[10px] uppercase tracking-wider text-white/70">{tpl?.name ?? "Template"}</div>
+        <div className="text-[10px] uppercase tracking-wider text-white/70">
+          {(tpl?.id ? t(`editor.template_name.${tpl.id}`) : t("editor.template.default")) ||
+            tpl?.name ||
+            t("editor.template.default")}
+        </div>
         <div className="text-white font-semibold leading-tight text-2xl md:text-3xl">
           {spec.content?.headline ?? ""}
         </div>

@@ -1,7 +1,9 @@
 import React from "react";
 import type { TemplateRenderProps } from "@/features/editor/templates/types";
+import { useI18n } from "@/i18n";
 
 export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProps) {
+  const { t } = useI18n();
   const { headline, subheadline, ctaText, price, badgeText } = spec.content;
 
   return (
@@ -59,7 +61,7 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
               textShadow: "var(--mi-title-shadow)",
             }}
           >
-            {headline || "New Collection"}
+            {headline || t("editor.template.ecom_01.default_headline")}
           </div>
 
           <div
@@ -70,7 +72,7 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
               maxWidth: 560,
             }}
           >
-            {subheadline || "Premium pieces, limited stock."}
+            {subheadline || t("editor.template.ecom_01.default_subheadline")}
           </div>
 
           <div className="flex items-center gap-3 pt-2">
@@ -84,7 +86,7 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
                 fontFamily: "var(--mi-font-body)",
               }}
             >
-              {ctaText || "Shop now"}
+              {ctaText || t("editor.template.ecom_01.default_cta")}
             </span>
 
             {price ? (
@@ -102,7 +104,7 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
           </div>
 
           <div style={{ color: "rgba(255,255,255,.45)", fontSize: 12, paddingTop: 12 }}>
-            © Your Brand — All rights reserved
+            {t("editor.template.ecom_01.footer")}
           </div>
         </div>
       </div>
