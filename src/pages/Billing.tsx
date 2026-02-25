@@ -52,7 +52,7 @@ const Billing = () => {
         <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.plans')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {plans.map((plan, i) => (
-            <div key={plan.name} className={`bg-card border rounded-lg p-5 hover-lift ${i === 1 ? 'border-primary/40' : 'border-border'}`}>
+            <div key={plan.name} className={`bg-card border rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] ${i === 1 ? 'border-primary/40' : 'border-border/50'}`}>
               <h3 className="font-heading font-semibold">{plan.name}</h3>
               <p className="text-2xl font-heading font-bold mt-1">${plan.price}<span className="text-sm text-muted-foreground font-normal">{t('billing.mo_suffix')}</span></p>
               <ul className="mt-4 space-y-2">
@@ -79,7 +79,7 @@ const Billing = () => {
         </div>
         <div className="grid grid-cols-3 gap-3">
           {creditPacks.map((pack) => (
-            <button key={pack.amount} className="bg-card border border-border rounded-lg p-4 text-center hover-lift" onClick={() => setBuyOpen(true)}>
+            <button key={pack.amount} className="bg-card border border-border/50 rounded-xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04]" onClick={() => setBuyOpen(true)}>
               <p className="text-xl font-heading font-bold">{pack.amount}</p>
               <p className="text-xs text-muted-foreground">{t('billing.credits_unit')}</p>
               <p className="text-sm font-medium mt-2">${pack.price}</p>
@@ -88,12 +88,12 @@ const Billing = () => {
         </div>
       </div>
 
-      <div className="h-px bg-border" />
+      <div className="h-px bg-border/50" />
 
       {/* BYOK */}
       <div>
         <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.byok_title')}</h2>
-        <div className="bg-card border border-border rounded-lg p-5 space-y-4">
+        <div className="bg-card border border-border/50 rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Key className="h-4 w-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">{t('billing.byok_subtitle')}</p>
@@ -124,7 +124,7 @@ const Billing = () => {
           </DialogHeader>
           <div className="space-y-3 pt-2">
             {creditPacks.map((pack) => (
-              <button key={pack.amount} className="w-full bg-card border border-border rounded-lg p-4 flex items-center justify-between hover-lift">
+              <button key={pack.amount} className="w-full bg-card border border-border/50 rounded-xl p-4 flex items-center justify-between transition-all duration-200 hover:bg-muted/30">
                 <span className="font-medium">{t('billing.credit_pack', { amount: pack.amount })}</span>
                 <span className="text-sm">${pack.price}</span>
               </button>
