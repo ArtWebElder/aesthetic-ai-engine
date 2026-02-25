@@ -54,7 +54,8 @@ const Dashboard = () => {
 
   const firstName = user?.name?.split(' ')[0] || 'there';
   const completedCount = mockGenerations.filter(g => g.status === 'completed').length;
-  const mostRecentProject = projects.length > 0 ? projects[0] : null;
+  const lastOpenedId = localStorage.getItem("lastOpenedProjectId");
+  const mostRecentProject = (lastOpenedId && projects.find(p => p.id === lastOpenedId)) || (projects.length > 0 ? projects[0] : null);
   const weeklyGoal = 10;
 
   return (

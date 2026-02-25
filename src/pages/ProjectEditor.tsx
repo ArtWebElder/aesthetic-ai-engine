@@ -31,6 +31,7 @@ export default function ProjectEditor() {
       return;
     }
 
+    localStorage.setItem("lastOpenedProjectId", id);
     setProject(clone(p));
   }, [id, nav]);
 
