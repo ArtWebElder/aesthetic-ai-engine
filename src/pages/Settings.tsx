@@ -11,11 +11,12 @@ import {
 } from '@/components/ui/select';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useAuth } from '@/features/auth/fake-auth';
-import { useI18n, type Lang } from '@/i18n';
+import { useI18n } from '@/i18n';
+import { LocaleDropdown } from '@/components/LocaleDropdown';
 
 const Settings = () => {
   const { user } = useAuth();
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-2xl mx-auto space-y-8 animate-fade-in">
@@ -47,14 +48,7 @@ const Settings = () => {
           <Globe className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-heading font-semibold">{t('language')}</h2>
         </div>
-        <Select value={lang} onValueChange={(v) => setLang(v as Lang)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en">{t('settings.lang_en')}</SelectItem>
-            <SelectItem value="pt-BR">{t('settings.lang_pt')}</SelectItem>
-            <SelectItem value="es">{t('settings.lang_es')}</SelectItem>
-          </SelectContent>
-        </Select>
+        <LocaleDropdown />
       </section>
 
       <section className="bg-card border border-border rounded-lg p-5 space-y-4">
