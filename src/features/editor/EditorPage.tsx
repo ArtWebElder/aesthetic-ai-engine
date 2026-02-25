@@ -74,7 +74,6 @@ function newId() {
 function clampSize(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(n)));
 }
-
 function clampInt(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(n)));
 }
@@ -1735,7 +1734,7 @@ export default function EditorPage() {
 
             <div className="pt-2 border-t border-border space-y-3">
               <div className="flex items-center justify-between">
-                <div className="text-sm font-medium">Builder</div>
+                <div className="text-sm font-medium">{t("editor.builder.title")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
@@ -1753,7 +1752,7 @@ export default function EditorPage() {
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs text-muted-foreground">Intensity</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.intensity")}</label>
                   <span className="text-xs text-muted-foreground">
                     {clampSize(Number(builder?.intensity ?? 70), 0, 100)}%
                   </span>
@@ -1788,13 +1787,13 @@ export default function EditorPage() {
                     })
                   }
                 >
-                  Advanced {builder?.advancedOpen ? "▼" : "▶"}
+                  {t("editor.builder.advanced.label")} {builder?.advancedOpen ? "▼" : "▶"}
                 </button>
 
                 {builder?.advancedOpen ? (
                   <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3">
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Lens</label>
+                      <label className="text-xs text-muted-foreground">{t("editor.builder.advanced.lens")}</label>
                       <Select
                         value={builder?.lens || ""}
                         onValueChange={(value) =>
@@ -1805,7 +1804,7 @@ export default function EditorPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Choose" />
+                          <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                         </SelectTrigger>
                         <SelectContent>
                           {LENS_OPTIONS.map((option) => (
@@ -1818,7 +1817,7 @@ export default function EditorPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Depth</label>
+                      <label className="text-xs text-muted-foreground">{t("editor.builder.advanced.depth")}</label>
                       <Select
                         value={builder?.depth || ""}
                         onValueChange={(value) =>
@@ -1829,7 +1828,7 @@ export default function EditorPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Choose" />
+                          <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                         </SelectTrigger>
                         <SelectContent>
                           {DEPTH_OPTIONS.map((option) => (
@@ -1842,7 +1841,7 @@ export default function EditorPage() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-xs text-muted-foreground">Angle</label>
+                      <label className="text-xs text-muted-foreground">{t("editor.builder.advanced.angle")}</label>
                       <Select
                         value={builder?.angle || ""}
                         onValueChange={(value) =>
@@ -1853,7 +1852,7 @@ export default function EditorPage() {
                         }
                       >
                         <SelectTrigger>
-                          <SelectValue placeholder="Choose" />
+                          <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                         </SelectTrigger>
                         <SelectContent>
                           {ANGLE_OPTIONS.map((option) => (
@@ -1867,7 +1866,7 @@ export default function EditorPage() {
 
                     {!isPhotoshoot && !isSocialPost ? (
                       <div className="space-y-1">
-                        <label className="text-xs text-muted-foreground">Motion</label>
+                        <label className="text-xs text-muted-foreground">{t("editor.builder.advanced.motion")}</label>
                         <Select
                           value={builder?.motion || ""}
                           onValueChange={(value) =>
@@ -1878,7 +1877,7 @@ export default function EditorPage() {
                           }
                         >
                           <SelectTrigger>
-                            <SelectValue placeholder="Choose" />
+                            <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                           </SelectTrigger>
                           <SelectContent>
                             {MOTION_OPTIONS.map((option) => (
@@ -1896,7 +1895,7 @@ export default function EditorPage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Subject Type</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.subject_type")}</label>
                   <Select
                     value={builder?.subjectType || ""}
                     onValueChange={(value) =>
@@ -1907,7 +1906,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {SUBJECT_TYPE_OPTIONS.map((option) => (
@@ -1920,7 +1919,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Framing</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.framing")}</label>
                   <Select
                     value={builder?.framing || ""}
                     onValueChange={(value) =>
@@ -1931,7 +1930,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {FRAMING_OPTIONS.map((option) => (
@@ -1944,7 +1943,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Expression</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.expression")}</label>
                   <Select
                     value={builder?.expression || ""}
                     onValueChange={(value) =>
@@ -1955,7 +1954,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {EXPRESSION_OPTIONS.map((option) => (
@@ -1968,7 +1967,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Action</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.action")}</label>
                   <Select
                     value={builder?.action || ""}
                     onValueChange={(value) =>
@@ -1979,7 +1978,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {ACTION_OPTIONS.map((option) => (
@@ -1994,7 +1993,7 @@ export default function EditorPage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Lighting Setup</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.lighting_setup")}</label>
                   <Select
                     value={builder?.lightingSetup || ""}
                     onValueChange={(value) =>
@@ -2005,7 +2004,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {LIGHTING_SETUP_OPTIONS.map((option) => (
@@ -2029,7 +2028,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {TEMPERATURE_OPTIONS.map((option) => (
@@ -2053,7 +2052,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {MOOD_OPTIONS.map((option) => (
@@ -2066,7 +2065,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Macro Style</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.macro_style")}</label>
                   <Select
                     value={builder?.macroStyle || ""}
                     onValueChange={(value) =>
@@ -2077,7 +2076,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {MACRO_STYLE_OPTIONS.map((option) => (
@@ -2092,7 +2091,7 @@ export default function EditorPage() {
 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Layout Base</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.layout_base")}</label>
                   <Select
                     value={builder?.layoutBase || ""}
                     onValueChange={(value) =>
@@ -2103,7 +2102,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {LAYOUT_BASE_OPTIONS.map((option) => (
@@ -2116,7 +2115,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Safe Space</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.safe_space")}</label>
                   <Select
                     value={builder?.safeSpace || ""}
                     onValueChange={(value) =>
@@ -2127,7 +2126,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {SAFE_SPACE_OPTIONS.map((option) => (
@@ -2141,7 +2140,7 @@ export default function EditorPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Visual Style</label>
+                <label className="text-xs text-muted-foreground">{t("editor.builder.visual_style")}</label>
                 <div className="flex flex-wrap gap-2">
                   {VISUAL_STYLE_OPTIONS.map((option) => {
                     const active = visualStyle.includes(option.value);
@@ -2173,10 +2172,10 @@ export default function EditorPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Assets / Elements</label>
+                <label className="text-xs text-muted-foreground">{t("editor.builder.assets_elements")}</label>
 
                 <div className="space-y-1">
-                  <div className="text-[11px] text-muted-foreground">Highlights</div>
+                  <div className="text-[11px] text-muted-foreground">{t("editor.builder.highlights")}</div>
                   <div className="flex flex-wrap gap-2">
                     {ASSET_HIGHLIGHTS_OPTIONS.map((option) => {
                       const active = assetsHighlights.includes(option.value);
@@ -2211,7 +2210,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <div className="text-[11px] text-muted-foreground">Context Props</div>
+                  <div className="text-[11px] text-muted-foreground">{t("editor.builder.context_props")}</div>
                   <div className="flex flex-wrap gap-2">
                     {CONTEXT_PROPS_OPTIONS.map((option) => {
                       const active = contextProps.includes(option.value);
@@ -2246,7 +2245,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Material Feel</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.builder.material_feel")}</label>
                   <Select
                     value={builder?.materialFeel || ""}
                     onValueChange={(value) =>
@@ -2257,7 +2256,7 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose" />
+                      <SelectValue placeholder={t("editor.builder.advanced.choose")} />
                     </SelectTrigger>
                     <SelectContent>
                       {MATERIAL_FEEL_OPTIONS.map((option) => (
@@ -2271,7 +2270,7 @@ export default function EditorPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs text-muted-foreground">Extra Details</label>
+                <label className="text-xs text-muted-foreground">{t("editor.builder.extra_details")}</label>
                 <Input
                   maxLength={140}
                   value={builder?.extraDetails ?? ""}
@@ -2813,4 +2812,5 @@ export default function EditorPage() {
     </div>
   );
 } 
+
 
