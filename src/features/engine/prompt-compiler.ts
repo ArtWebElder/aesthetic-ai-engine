@@ -23,6 +23,8 @@ import {
   VISUAL_STYLE_OPTIONS,
 } from "@/features/editor/editor-presets";
 import { getScenePresetDescription } from "@/features/editor/scene-presets";
+import { getSceneMoodDescription } from "@/features/editor/scene-moods";
+import { getScenePropDescription } from "@/features/editor/scene-props";
 
 export interface CompiledPrompt {
   prompt: string;
@@ -134,12 +136,23 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     safeSpace: builder?.safeSpace?.trim() ?? "",
     extraDetails: builder?.extraDetails?.trim() ?? "",
     scenePreset: builder?.scenePreset?.trim() ?? "",
+    sceneMood: builder?.sceneMood?.trim() ?? "",
+    sceneProps: Array.isArray(builder?.sceneProps) ? builder.sceneProps : [],
   };
   const intensity = cleanedBuilder.intensity;
   const scenePresetDescription = getScenePresetDescription(cleanedBuilder.scenePreset);
   const scenePresetLine = scenePresetDescription
     ? `Scene preset: ${scenePresetDescription}`
     : null;
+  const sceneMoodDescription = getSceneMoodDescription(cleanedBuilder.sceneMood);
+  const sceneMoodLine = sceneMoodDescription ? `Scene mood: ${sceneMoodDescription}` : null;
+  const scenePropsDescriptions = cleanedBuilder.sceneProps
+    .map((value) => getScenePropDescription(value))
+    .filter((value): value is string => Boolean(value));
+  const scenePropsLine =
+    scenePropsDescriptions.length > 0
+      ? `Scene props: ${scenePropsDescriptions.join(", ")}`
+      : null;
   const isLow = intensity <= 40;
   const isHigh = intensity >= 76;
   const isExtreme = intensity >= 85;
@@ -465,6 +478,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     debugCopyLine,
     cleanedSubject ? `Main subject: ${cleanedSubject}` : null,
     scenePresetLine,
+    sceneMoodLine,
+    scenePropsLine,
     moduleBase,
     styleHints,
     `template: ${templateId}`,

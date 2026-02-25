@@ -47,6 +47,16 @@ import {
   getScenePresetLabelKey,
   normalizeScenePreset,
 } from "@/features/editor/scene-presets";
+import {
+  SCENE_MOOD_OPTIONS,
+  getSceneMoodLabelKey,
+  normalizeSceneMood,
+} from "@/features/editor/scene-moods";
+import {
+  SCENE_PROP_OPTIONS,
+  getScenePropLabelKey,
+  normalizeSceneProps,
+} from "@/features/editor/scene-props";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 
 import { Button } from "@/components/ui/button";
@@ -220,6 +230,11 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const isSocialPost = spec.module === "social_post";
   const isEcom = spec.module === "ecom_banner";
   const isPhotoshoot = spec.module === "photoshoot";
+  const moduleKey: ModuleType = isPhotoshoot
+    ? "photoshoot"
+    : isEcom
+    ? "ecom_banner"
+    : "social_post";
   const photoshootSize = isPhotoshoot ? aspectToSize(normalizedPhotoAspect) : null;
   const normalizedReferenceImages = normalizeReferenceImages(
     spec.referenceImages,
@@ -262,8 +277,10 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       layoutPreset: (builder.layoutPreset ?? (isSocialPost ? "Hero" : "")).trim(),
       scenePreset: normalizeScenePreset(
         (builder.scenePreset ?? "").trim(),
-        isPhotoshoot ? "photoshoot" : isEcom ? "ecom_banner" : "social_post"
+        moduleKey
       ),
+      sceneMood: normalizeSceneMood((builder.sceneMood ?? "").trim(), moduleKey),
+      sceneProps: normalizeSceneProps(builder.sceneProps, moduleKey),
       headline: (builder.headline ?? "").trim(),
       subheadline: (builder.subheadline ?? "").trim(),
       cta: (builder.cta ?? "").trim(),
@@ -558,6 +575,14 @@ export default function EditorPage() {
     : "social_post";
   const currentScenePreset = normalizeScenePreset(
     safeSpec?.builder?.scenePreset,
+    scenePresetModuleKey
+  );
+  const currentSceneMood = normalizeSceneMood(
+    safeSpec?.builder?.sceneMood,
+    scenePresetModuleKey
+  );
+  const currentSceneProps = normalizeSceneProps(
+    safeSpec?.builder?.sceneProps,
     scenePresetModuleKey
   );
   const photoshootSubjectTypeOptions = [
@@ -2193,6 +2218,61 @@ export default function EditorPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("editor.scene.mood.label")}</label>
+                  <Select
+                    value={currentSceneMood}
+                    onValueChange={(value) =>
+                      persistSocialPostBuilderPatch({
+                        sceneMood: normalizeSceneMood(value, "social_post"),
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("editor.scene.mood.placeholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SCENE_MOOD_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {t(getSceneMoodLabelKey(option))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
+                  <div className="rounded-md border border-border p-2 space-y-2">
+                    <div className="text-[11px] text-muted-foreground">
+                      {t("editor.scene.props.placeholder")}
+                    </div>
+                    {SCENE_PROP_OPTIONS.map((option) => {
+                      const checked = currentSceneProps.includes(option);
+                      return (
+                        <label
+                          key={option}
+                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              const nextValues = checked
+                                ? currentSceneProps.filter((item) => item !== option)
+                                : [...currentSceneProps, option];
+                              persistSocialPostBuilderPatch({
+                                sceneProps: normalizeSceneProps(nextValues, "social_post"),
+                              });
+                            }}
+                          />
+                          {t(getScenePropLabelKey(option))}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             ) : null}
 
@@ -2652,6 +2732,61 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("editor.scene.mood.label")}</label>
+                  <Select
+                    value={currentSceneMood}
+                    onValueChange={(value) =>
+                      persistPhotoshootBuilderPatch({
+                        sceneMood: normalizeSceneMood(value, "photoshoot"),
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("editor.scene.mood.placeholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SCENE_MOOD_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {t(getSceneMoodLabelKey(option))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
+                  <div className="rounded-md border border-border p-2 space-y-2">
+                    <div className="text-[11px] text-muted-foreground">
+                      {t("editor.scene.props.placeholder")}
+                    </div>
+                    {SCENE_PROP_OPTIONS.map((option) => {
+                      const checked = currentSceneProps.includes(option);
+                      return (
+                        <label
+                          key={option}
+                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              const nextValues = checked
+                                ? currentSceneProps.filter((item) => item !== option)
+                                : [...currentSceneProps, option];
+                              persistPhotoshootBuilderPatch({
+                                sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
+                              });
+                            }}
+                          />
+                          {t(getScenePropLabelKey(option))}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("photoshoot.scene_props.assets_highlights")}</label>
                   <Input
                     value={(safeSpec.builder.assetsHighlights ?? []).join(", ")}
@@ -2745,7 +2880,7 @@ export default function EditorPage() {
             </div>
 
             {isEcom ? (
-              <div className="pt-2 border-t border-border space-y-1">
+              <div className="pt-2 border-t border-border space-y-3">
                 <label className="text-xs text-muted-foreground">{t("editor.scene.preset.label")}</label>
                 <Select
                   value={currentScenePreset}
@@ -2766,6 +2901,61 @@ export default function EditorPage() {
                     ))}
                   </SelectContent>
                 </Select>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("editor.scene.mood.label")}</label>
+                  <Select
+                    value={currentSceneMood}
+                    onValueChange={(value) =>
+                      persistEcomBuilderPatch({
+                        sceneMood: normalizeSceneMood(value, "ecom_banner"),
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("editor.scene.mood.placeholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SCENE_MOOD_OPTIONS.map((option) => (
+                        <SelectItem key={option} value={option}>
+                          {t(getSceneMoodLabelKey(option))}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
+                  <div className="rounded-md border border-border p-2 space-y-2">
+                    <div className="text-[11px] text-muted-foreground">
+                      {t("editor.scene.props.placeholder")}
+                    </div>
+                    {SCENE_PROP_OPTIONS.map((option) => {
+                      const checked = currentSceneProps.includes(option);
+                      return (
+                        <label
+                          key={option}
+                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              const nextValues = checked
+                                ? currentSceneProps.filter((item) => item !== option)
+                                : [...currentSceneProps, option];
+                              persistEcomBuilderPatch({
+                                sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
+                              });
+                            }}
+                          />
+                          {t(getScenePropLabelKey(option))}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             ) : null}
 

@@ -9,6 +9,8 @@ import type {
   Project,
 } from "@/types/spec";
 import { getDefaultScenePreset } from "@/features/editor/scene-presets";
+import { getDefaultSceneMood } from "@/features/editor/scene-moods";
+import { getDefaultSceneProps } from "@/features/editor/scene-props";
 
 const nowIso = () => new Date().toISOString();
 
@@ -121,6 +123,8 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       goalPreset: isSocialPost ? "Offer" : "",
       layoutPreset: isSocialPost ? "Hero" : "",
       scenePreset: getDefaultScenePreset(module) || "",
+      sceneMood: getDefaultSceneMood(module),
+      sceneProps: getDefaultSceneProps(module),
       compositionFlags: isSocialPost ? [] : [],
       headline: "",
       subheadline: "",

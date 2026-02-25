@@ -68,6 +68,28 @@ export type ScenePresetSlug =
   | "minimal_texture"
   | "editorial_backdrop";
 
+export type SceneMoodSlug =
+  | "clean_bright"
+  | "warm_cozy"
+  | "cool_modern"
+  | "cinematic_moody"
+  | "luxury_premium"
+  | "energetic_pop"
+  | "natural_authentic"
+  | "night_neon";
+
+export type ScenePropSlug =
+  | "soft_shadow"
+  | "reflection_surface"
+  | "floating_elements"
+  | "bokeh_lights"
+  | "smoke_haze"
+  | "plants_greenery"
+  | "paper_texture"
+  | "marble_stone"
+  | "wood_warm"
+  | "neon_glow";
+
 /* =========================
    BRAND / TOKENS
 ========================= */
@@ -140,6 +162,8 @@ export interface BuilderSpec {
   goalPreset?: string;
   layoutPreset?: string;
   scenePreset?: ScenePresetSlug | "";
+  sceneMood?: SceneMoodSlug | "";
+  sceneProps?: ScenePropSlug[];
   compositionFlags?: string[];
   logoUploads?: string[];
   productUploads?: string[];
