@@ -2287,11 +2287,11 @@ export default function EditorPage() {
             {/* PALETTE */}
             {!isPhotoshoot && !isSocialPost ? (
               <div className="space-y-3">
-                <div className="text-sm font-medium">Palette</div>
+                <div className="text-sm font-medium">{t("editor.palette.title")}</div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Accent (Primary)</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.palette.accent_primary")}</label>
                   <input
                     type="color"
                     value={
@@ -2310,7 +2310,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Text</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.palette.text")}</label>
                   <input
                     type="color"
                     value={
@@ -2330,7 +2330,7 @@ export default function EditorPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">Palette mode</label>
+                <label className="text-xs text-muted-foreground">{t("editor.palette.mode")}</label>
                 <Select
                   value={paletteMode}
                   onValueChange={(v) =>
@@ -2344,13 +2344,13 @@ export default function EditorPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a palette mode" />
+                    <SelectValue placeholder={t("editor.palette.choose_mode")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mono">Mono</SelectItem>
-                    <SelectItem value="duo">Duo</SelectItem>
-                    <SelectItem value="tri">Tri</SelectItem>
-                    <SelectItem value="custom">Custom</SelectItem>
+                    <SelectItem value="mono">{t("editor.palette.mode_mono")}</SelectItem>
+                    <SelectItem value="duo">{t("editor.palette.mode_duo")}</SelectItem>
+                    <SelectItem value="tri">{t("editor.palette.mode_tri")}</SelectItem>
+                    <SelectItem value="custom">{t("editor.palette.mode_custom")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -2358,7 +2358,7 @@ export default function EditorPage() {
               <div className="grid grid-cols-2 gap-3">
                 {showSecondary ? (
                   <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">Secondary</label>
+                    <label className="text-xs text-muted-foreground">{t("editor.palette.secondary")}</label>
                     <input
                       type="color"
                       value={
@@ -2379,7 +2379,7 @@ export default function EditorPage() {
 
                 {showAccent2 ? (
                   <div className="space-y-2">
-                    <label className="text-xs text-muted-foreground">Accent 2</label>
+                    <label className="text-xs text-muted-foreground">{t("editor.palette.accent_2")}</label>
                     <input
                       type="color"
                       value={
@@ -2399,7 +2399,7 @@ export default function EditorPage() {
                 ) : null}
 
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Neutral BG</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.palette.neutral_bg")}</label>
                   <input
                     type="color"
                     value={
@@ -2418,7 +2418,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Neutral Surface</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.palette.neutral_surface")}</label>
                   <input
                     type="color"
                     value={
@@ -2437,7 +2437,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Neutral Text</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.palette.neutral_text")}</label>
                   <input
                     type="color"
                     value={
@@ -2461,9 +2461,9 @@ export default function EditorPage() {
             {/* TYPOGRAPHY */}
             {!isPhotoshoot && !isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Typography</div>
+                <div className="text-sm font-medium">{t("editor.typography.title")}</div>
                 <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">Font preset</label>
+                  <label className="text-xs text-muted-foreground">{t("editor.typography.font_preset")}</label>
                   <Select
                     value={safeSpec.brand.fontPreset}
                     onValueChange={(v) =>
@@ -2474,13 +2474,13 @@ export default function EditorPage() {
                     }
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose a font" />
+                      <SelectValue placeholder={t("editor.typography.choose_font")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="space_grotesk">Space Grotesk</SelectItem>
-                      <SelectItem value="plus_jakarta">Plus Jakarta</SelectItem>
-                      <SelectItem value="inter">Inter</SelectItem>
-                      <SelectItem value="satoshi">Satoshi</SelectItem>
+                      <SelectItem value="space_grotesk">{t("editor.typography.font_space_grotesk")}</SelectItem>
+                      <SelectItem value="plus_jakarta">{t("editor.typography.font_plus_jakarta")}</SelectItem>
+                      <SelectItem value="inter">{t("editor.typography.font_inter")}</SelectItem>
+                      <SelectItem value="satoshi">{t("editor.typography.font_satoshi")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -2490,7 +2490,7 @@ export default function EditorPage() {
             {/* CONTRAST */}
             {!isPhotoshoot && !isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Contrast</div>
+                <div className="text-sm font-medium">{t("editor.contrast.title")}</div>
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   <input
                     type="checkbox"
@@ -2502,7 +2502,7 @@ export default function EditorPage() {
                       })
                     }
                   />
-                  Auto contrast
+                  {t("editor.contrast.auto")}
                 </label>
               </div>
             ) : null}
@@ -2510,7 +2510,7 @@ export default function EditorPage() {
             {/* STYLE PRESET */}
             {!isPhotoshoot && !isSocialPost ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Style Preset</div>
+                <div className="text-sm font-medium">{t("editor.typography.style_preset")}</div>
 
                 <Select
                   value={safeSpec.stylePreset}
@@ -2522,7 +2522,7 @@ export default function EditorPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a style" />
+                    <SelectValue placeholder={t("editor.typography.choose_style")} />
                   </SelectTrigger>
                   <SelectContent>
                     {STYLE_PRESETS.map((s) => (
