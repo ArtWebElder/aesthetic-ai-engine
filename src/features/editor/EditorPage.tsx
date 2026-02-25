@@ -516,10 +516,10 @@ export default function EditorPage() {
   const isPhotoshoot = safeSpec?.module === "photoshoot";
   const isSocialPost = safeSpec?.module === "social_post";
   const photoshootSubjectTypeOptions = [
-    { value: "person", label: "Person" },
-    { value: "product", label: "Product" },
-    { value: "food", label: "Food" },
-    { value: "pet", label: "Pet" },
+    { value: "person", label: t("photoshoot.subject_type.person") },
+    { value: "product", label: t("photoshoot.subject_type.product") },
+    { value: "food", label: t("photoshoot.subject_type.food") },
+    { value: "pet", label: t("photoshoot.subject_type.pet") },
   ];
   const socialPlatformOptions = [
     { value: "instagram_feed", labelKey: "social.platform.instagram_feed" },
@@ -1141,7 +1141,7 @@ export default function EditorPage() {
 
             {isPhotoshoot ? (
               <div className="pt-1 space-y-2">
-                <label className="text-xs text-muted-foreground">Shoot type</label>
+                <label className="text-xs text-muted-foreground">{t("photoshoot.shoot_type.label")}</label>
                 <Select
                   value={photoshootPreset}
                   onValueChange={(value) => {
@@ -1156,7 +1156,7 @@ export default function EditorPage() {
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Choose a shoot type" />
+                    <SelectValue placeholder={t("photoshoot.shoot_type.placeholder")} />
                   </SelectTrigger>
                   <SelectContent>
                     {PHOTOSHOOT_PRESET_OPTIONS.map((option) => (
@@ -1469,9 +1469,9 @@ export default function EditorPage() {
 
             {isPhotoshoot ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Subject</div>
+                <div className="text-sm font-medium">{t("photoshoot.subject.heading")}</div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Type</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.subject.type")}</label>
                   <Select
                     value={safeSpec.builder.subjectType ?? ""}
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ subjectType: value })}
@@ -1490,7 +1490,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Details</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.subject.details")}</label>
                   <Textarea
                     rows={2}
                     value={safeSpec.builder.extraDetails ?? ""}
@@ -1502,10 +1502,10 @@ export default function EditorPage() {
 
             {isPhotoshoot ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Camera & lens</div>
+                <div className="text-sm font-medium">{t("photoshoot.camera_lens.heading")}</div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Lens</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.camera_lens.lens")}</label>
                   <Select
                     value={safeSpec.builder.lens ?? ""}
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ lens: value })}
@@ -1524,7 +1524,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Depth</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.camera_lens.depth")}</label>
                   <Select
                     value={safeSpec.builder.depth ?? ""}
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ depth: value })}
@@ -1543,7 +1543,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Angle</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.camera_lens.angle")}</label>
                   <Select
                     value={safeSpec.builder.angle ?? ""}
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ angle: value })}
@@ -1565,10 +1565,10 @@ export default function EditorPage() {
 
             {isPhotoshoot ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Light</div>
+                <div className="text-sm font-medium">{t("photoshoot.light.heading")}</div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Lighting setup</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.light.lighting_setup")}</label>
                   <Select
                     value={safeSpec.builder.lightingSetup ?? ""}
                     onValueChange={(value) =>
@@ -1589,7 +1589,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Mood</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.light.mood")}</label>
                   <Select
                     value={safeSpec.builder.mood ?? ""}
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ mood: value })}
@@ -1608,7 +1608,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Temperature</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.light.temperature")}</label>
                   <Select
                     value={safeSpec.builder.temperature ?? ""}
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ temperature: value })}
@@ -1630,10 +1630,10 @@ export default function EditorPage() {
 
             {isPhotoshoot ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Scene / props</div>
+                <div className="text-sm font-medium">{t("photoshoot.scene_props.heading")}</div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Assets highlights</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.scene_props.assets_highlights")}</label>
                   <Input
                     value={(safeSpec.builder.assetsHighlights ?? []).join(", ")}
                     onChange={(e) =>
@@ -1648,7 +1648,7 @@ export default function EditorPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Context props</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.scene_props.context_props")}</label>
                   <Input
                     value={(safeSpec.builder.contextProps ?? []).join(", ")}
                     onChange={(e) =>
@@ -1666,9 +1666,9 @@ export default function EditorPage() {
 
             {isPhotoshoot ? (
               <div className="pt-2 border-t border-border space-y-3">
-                <div className="text-sm font-medium">Finish</div>
+                <div className="text-sm font-medium">{t("photoshoot.finish.heading")}</div>
                 <div className="space-y-1">
-                  <label className="text-xs text-muted-foreground">Finish</label>
+                  <label className="text-xs text-muted-foreground">{t("photoshoot.finish.label")}</label>
                   <Select
                     value={safeSpec.builder.finish ?? "true_to_life"}
                     onValueChange={(value) => persistPhotoshootBuilderPatch({ finish: value })}
@@ -1699,7 +1699,7 @@ export default function EditorPage() {
                   })
                 }
               >
-                {isPhotoshoot ? "Shoot notes (optional)" : "Campaign context (optional)"}{" "}
+                {isPhotoshoot ? t("photoshoot.notes.optional") : "Campaign context (optional)"}{" "}
                 {safeSpec.contextOpen ? "▼" : "▶"}
               </button>
 
@@ -1711,7 +1711,7 @@ export default function EditorPage() {
                 <Input
                   placeholder={
                     isPhotoshoot
-                      ? "e.g. lifestyle gym, editorial portrait, clean studio"
+                      ? t("photoshoot.notes.placeholder")
                       : "e.g. Valentine's promo, premium vibe, summer sale"
                   }
                   value={safeSpec.contextText ?? ""}
