@@ -106,11 +106,12 @@ const Dashboard = () => {
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{t("dashboard.quick_create")}</span>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {quickCreate.map((item) => (
+            {quickCreate.map((item, i) => (
               <button
                 key={item.type}
                 onClick={() => handleQuickCreate(item.type)}
-                className="relative bg-card border border-border/50 rounded-xl p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group"
+                className="relative bg-card border border-border/50 rounded-xl p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group animate-fade-in opacity-0 [animation-fill-mode:forwards]"
+                style={{ animationDelay: `${i * 80}ms` }}
               >
                 {item.popular && (
                   <Badge variant="secondary" className="absolute top-3 right-3 text-[9px] px-1.5 py-0 h-4 font-normal opacity-70">
@@ -173,14 +174,15 @@ const Dashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {projects.slice(0, 6).map((project) => {
+            {projects.slice(0, 6).map((project, i) => {
               const moduleType = (project as any).spec?.module || '';
               const ModuleIcon = TYPE_ICONS[moduleType] || FolderOpen;
 
               return (
                 <div
                   key={project.id}
-                  className="bg-card border border-border/50 rounded-xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group cursor-pointer relative"
+                  className="bg-card border border-border/50 rounded-xl p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group cursor-pointer relative animate-fade-in opacity-0 [animation-fill-mode:forwards]"
+                  style={{ animationDelay: `${i * 60 + 100}ms` }}
                   onClick={() => navigate(`/app/projects/${project.id}`)}
                 >
                   {/* Thumbnail area */}
