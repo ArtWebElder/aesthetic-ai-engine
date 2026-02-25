@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, FolderOpen } from "lucide-react";
+import { Plus, Search, FolderOpen, ImagePlus, ShoppingBag, Camera, MoreHorizontal, Pencil, Trash2, Copy, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -10,15 +11,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import CreateProjectModal from "@/components/CreateProjectModal";
-import { listProjects } from "../features/projects/store";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import ProjectWizard from "@/components/ProjectWizard";
+import { listProjects, deleteProject, createProject } from "../features/projects/store";
 import { useI18n } from "@/i18n";
+import type { Project } from "@/types/spec";
+
+const TYPE_ICONS: Record<string, typeof ImagePlus> = {
+  banner: ShoppingBag,
+  thumbnail: ImagePlus,
+  photo: Camera,
+};
 
 const Projects = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [projects, setProjects] = useState(() => listProjects());
+  const [projects, setProjects] = useState<Project[]>(() => listProjects());
   const navigate = useNavigate();
   const { t } = useI18n();
 
@@ -34,8 +48,19 @@ const Projects = () => {
     });
   }, [projects, typeFilter, search]);
 
+  const handleDelete = (id: string) => {
+    deleteProject(id);
+    setProjects(listProjects());
+  };
+
+  const handleDuplicate = (p: Project) => {
+    const dup = createProject(`${p.name} (copy)`, p.spec.format);
+    setProjects(listProjects());
+    navigate(`/app/projects/${dup.id}`);
+  };
+
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-fade-in">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-page-fade">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-heading font-bold tracking-tight">{t("projects.title")}</h1>
@@ -74,38 +99,79 @@ const Projects = () => {
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="bg-card border border-border rounded-lg p-12 text-center">
-            <FolderOpen className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground">{t("projects.empty")}</p>
+          <div className="bg-card border border-border rounded-xl p-12 text-center animate-fade-in">
+            <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <Sparkles className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="font-heading font-semibold">{t("projects.empty_title")}</p>
+            <p className="text-sm text-muted-foreground mt-1 mb-4">{t("projects.empty_subtitle")}</p>
+            <Button onClick={() => setCreateOpen(true)} size="sm">
+              <Plus className="h-4 w-4 mr-1.5" />
+              {t("projects.new_project")}
+            </Button>
           </div>
         ) : (
-          filtered.map((project: any) => (
-            <button
-              key={project.id}
-              onClick={() => navigate(`/app/projects/${project.id}`)}
-              className="w-full bg-card border border-border rounded-lg p-4 flex items-center gap-4 hover-lift text-left"
-            >
-              <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0">
-                <FolderOpen className="h-4 w-4 text-muted-foreground" />
+          filtered.map((project: any) => {
+            const moduleType = project.spec?.module || '';
+            const ModuleIcon = TYPE_ICONS[moduleType] || FolderOpen;
+
+            return (
+              <div
+                key={project.id}
+                className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 hover-lift group cursor-pointer"
+                onClick={() => navigate(`/app/projects/${project.id}`)}
+              >
+                <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <ModuleIcon className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-sm truncate">{project.name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-normal">
+                      {project.spec?.module || 'project'}
+                    </Badge>
+                    <span className="text-[11px] text-muted-foreground">{project.spec?.format}</span>
+                  </div>
+                </div>
+                <div className="text-right hidden sm:block shrink-0">
+                  <p className="text-xs text-muted-foreground">{project.spec?.stylePreset}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {new Date(project.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenuItem onClick={() => navigate(`/app/projects/${project.id}`)}>
+                      <Pencil className="h-3.5 w-3.5 mr-2" />
+                      {t("common.open")}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDuplicate(project)}>
+                      <Copy className="h-3.5 w-3.5 mr-2" />
+                      Duplicate
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDelete(project.id)} className="text-destructive focus:text-destructive">
+                      <Trash2 className="h-3.5 w-3.5 mr-2" />
+                      {t("common.delete")}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-sm truncate">{project.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {project.spec?.module} · {project.spec?.format}
-                </p>
-              </div>
-              <div className="text-right hidden sm:block">
-                <p className="text-xs text-muted-foreground">{project.spec?.stylePreset}</p>
-                <p className="text-xs text-muted-foreground">
-                  {new Date(project.updatedAt).toLocaleDateString()}
-                </p>
-              </div>
-            </button>
-          ))
+            );
+          })
         )}
       </div>
 
-      <CreateProjectModal open={createOpen} onOpenChange={setCreateOpen} />
+      <ProjectWizard open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 };

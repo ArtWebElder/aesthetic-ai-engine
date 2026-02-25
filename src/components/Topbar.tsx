@@ -16,7 +16,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
   const { t } = useI18n();
 
   return (
-    <header className="h-14 border-b border-border flex items-center px-4 gap-3 bg-card/80 backdrop-blur-sm sticky top-0 z-30">
+    <header className="h-14 border-b border-border flex items-center px-4 gap-3 bg-card/60 backdrop-blur-md sticky top-0 z-30">
       {onMenuToggle && (
         <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={onMenuToggle}>
           <Menu className="h-4 w-4" />

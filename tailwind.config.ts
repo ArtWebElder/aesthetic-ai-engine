@@ -97,6 +97,18 @@ export default {
           from: { transform: "scaleY(0)", opacity: "0" },
           to: { transform: "scaleY(1)", opacity: "1" },
         },
+        "page-fade": {
+          from: { opacity: "0", transform: "translateY(6px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "modal-pop": {
+          from: { opacity: "0", transform: "scale(0.98)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "dropdown-in": {
+          from: { opacity: "0", transform: "translateY(4px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -105,6 +117,9 @@ export default {
         "slide-up": "slide-up 0.2s ease-out",
         "tab-fade": "tab-fade 0.15s ease-out",
         "scale-y-in": "scale-y-in 0.2s ease-out",
+        "page-fade": "page-fade 0.16s ease-out",
+        "modal-pop": "modal-pop 0.2s ease-out",
+        "dropdown-in": "dropdown-in 0.12s ease-out",
       },
     },
   },
