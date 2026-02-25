@@ -22,7 +22,7 @@ const ThemeToggle = () => {
           <span className="sr-only">{t('theme.toggle')}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="glass-surface">
+      <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => setTheme('light')} className={theme === 'light' ? 'text-primary' : ''}>
           <Sun className="mr-2 h-4 w-4" /> {t('theme.light')}
         </DropdownMenuItem>

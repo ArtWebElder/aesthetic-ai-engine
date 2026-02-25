@@ -22,7 +22,6 @@ const Projects = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
 
-  // recarrega quando abrir a página (e quando fechar o modal)
   useEffect(() => {
     setProjects(listProjects());
   }, [createOpen]);
@@ -39,7 +38,7 @@ const Projects = () => {
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-heading font-bold">{t("projects.title")}</h1>
+          <h1 className="text-2xl font-heading font-bold tracking-tight">{t("projects.title")}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t("projects.count", { count: projects.length })}</p>
         </div>
 
@@ -75,7 +74,7 @@ const Projects = () => {
 
       <div className="space-y-2">
         {filtered.length === 0 ? (
-          <div className="glass-surface rounded-lg p-12 text-center">
+          <div className="bg-card border border-border rounded-lg p-12 text-center">
             <FolderOpen className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
             <p className="text-sm text-muted-foreground">{t("projects.empty")}</p>
           </div>
@@ -84,9 +83,9 @@ const Projects = () => {
             <button
               key={project.id}
               onClick={() => navigate(`/app/projects/${project.id}`)}
-              className="w-full glass-surface rounded-lg p-4 flex items-center gap-4 hover-lift text-left"
+              className="w-full bg-card border border-border rounded-lg p-4 flex items-center gap-4 hover-lift text-left"
             >
-              <div className="h-10 w-10 rounded-md bg-secondary flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center shrink-0">
                 <FolderOpen className="h-4 w-4 text-muted-foreground" />
               </div>
               <div className="min-w-0 flex-1">

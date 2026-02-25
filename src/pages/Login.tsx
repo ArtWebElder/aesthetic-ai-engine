@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/fake-auth";
-import AuroraDivider from "@/components/AuroraDivider";
+import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/i18n";
 
 const Login = () => {
@@ -25,19 +25,19 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center noise-overlay p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="relative z-10 w-full max-w-sm">
         <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 mb-4">
-            <Sparkles className="h-7 w-7 text-primary" />
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary mb-4">
+            <span className="text-xl font-heading font-bold text-primary-foreground">C</span>
           </div>
-          <h1 className="text-2xl font-heading font-bold mb-2">Magic Idea</h1>
+          <h1 className="text-2xl font-heading font-bold mb-2 tracking-tight">Creatyng</h1>
           <p className="text-sm text-muted-foreground">
             {t('auth.subtitle')}
           </p>
         </div>
 
-        <div className="glass-surface rounded-lg p-6 animate-slide-up">
+        <div className="bg-card border border-border rounded-lg p-6 animate-slide-up">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <div className="relative">
@@ -67,11 +67,11 @@ const Login = () => {
 
             <Button type="submit" className="w-full group">
               {t('auth.sign_in')}
-              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-0.5 transition-transform duration-150" />
             </Button>
           </form>
 
-          <AuroraDivider className="my-5" />
+          <Separator className="my-5" />
 
           <div className="space-y-2">
             <Button
