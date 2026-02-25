@@ -215,12 +215,11 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const generation = spec.generation ?? ({} as any);
   const builder = spec.builder ?? ({} as BuilderSpec);
   const content = spec.content ?? ({} as any);
-  const moduleKey = String(spec.module ?? "");
   const normalizedPhotoAspect = (spec.photoAspect ?? "3:2") as NonNullable<ProjectSpec["photoAspect"]>;
   const isSocialPost = spec.module === "social_post";
-  const isEcom = moduleKey === "ecom" || moduleKey === "ecom_banner";
-  const photoshootSize =
-    spec.module === "photoshoot" ? aspectToSize(normalizedPhotoAspect) : null;
+  const isEcom = spec.module === "ecom_banner";
+  const isPhotoshoot = spec.module === "photoshoot";
+  const photoshootSize = isPhotoshoot ? aspectToSize(normalizedPhotoAspect) : null;
   const normalizedReferenceImages = normalizeReferenceImages(
     spec.referenceImages,
     spec.referenceImageUrl
@@ -262,7 +261,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       layoutPreset: (builder.layoutPreset ?? (isSocialPost ? "Hero" : "")).trim(),
       scenePreset: normalizeScenePreset(
         (builder.scenePreset ?? "").trim(),
-        moduleKey
+        isPhotoshoot ? "photoshoot" : isEcom ? "ecom_banner" : "social_post"
       ),
       headline: (builder.headline ?? "").trim(),
       subheadline: (builder.subheadline ?? "").trim(),
@@ -548,13 +547,12 @@ export default function EditorPage() {
   const assetsHighlights = builder?.assetsHighlights ?? [];
   const contextProps = builder?.contextProps ?? [];
   const referenceImages = safeSpec?.referenceImages ?? [];
-  const safeModuleKey = String(safeSpec?.module ?? "");
-  const isPhotoshoot = safeModuleKey === "photoshoot";
-  const isSocialPost = safeModuleKey === "social_post";
-  const isEcom = safeModuleKey === "ecom" || safeModuleKey === "ecom_banner";
+  const isPhotoshoot = safeSpec?.module === "photoshoot";
+  const isSocialPost = safeSpec?.module === "social_post";
+  const isEcom = safeSpec?.module === "ecom_banner";
   const currentScenePreset = normalizeScenePreset(
     safeSpec?.builder?.scenePreset,
-    safeModuleKey
+    isPhotoshoot ? "photoshoot" : isEcom ? "ecom_banner" : "social_post"
   );
   const photoshootSubjectTypeOptions = [
     { value: "person", label: "Person", labelKey: "photoshoot.subject_type.person" },
