@@ -61,7 +61,7 @@ const CommandBar = () => {
               onSelect={() => handleSelect(action.route)}
               className="cursor-pointer"
             >
-              <action.icon className="mr-3 h-4 w-4 text-muted-foreground" />
+              <action.icon className="mr-3 h-4 w-4 text-foreground/70" />
               <span className="flex-1">{t(action.labelKey)}</span>
               <kbd className="ml-auto text-xs text-muted-foreground bg-secondary px-1.5 py-0.5 rounded-sm font-mono">
                 {action.shortcut}
