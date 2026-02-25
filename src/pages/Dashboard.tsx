@@ -1,14 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, FolderOpen, Zap, Download, ImagePlus, ShoppingBag, Camera, Plus, Sparkles, MoreHorizontal, Pencil, Trash2, Copy, ArrowRight, TrendingUp, Target } from 'lucide-react';
+import { Coins, FolderOpen, Zap, Download, ImagePlus, ShoppingBag, Camera, Plus, Sparkles, ArrowRight, TrendingUp, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import MiniProductionChart from '@/components/MiniProductionChart';
 import ProjectWizard from '@/components/ProjectWizard';
 import { PageHeader } from '@/components/ui-premium/PageHeader';
@@ -16,18 +10,13 @@ import { SectionHeader } from '@/components/ui-premium/SectionHeader';
 import { EmptyState } from '@/components/ui-premium/EmptyState';
 import { GettingStartedBanner } from '@/components/ui-premium/GettingStartedBanner';
 import { ResumeCard } from '@/components/ui-premium/ResumeCard';
+import { ProjectCard } from '@/components/ui-premium/ProjectCard';
 import { mockCredits, mockGenerations } from '@/lib/mocks/data';
 import { listProjects, deleteProject, createProject } from '@/features/projects/store';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/fake-auth';
 import type { ProjectType } from '@/types';
 import type { Project } from '@/types/spec';
-
-const TYPE_ICONS: Record<string, typeof ImagePlus> = {
-  banner: ShoppingBag,
-  thumbnail: ImagePlus,
-  photo: Camera,
-};
 
 const quickCreate: { labelKey: string; hintKey: string; icon: typeof ImagePlus; type: ProjectType; popular?: boolean }[] = [
   { labelKey: 'dashboard.quick_create_social', hintKey: 'dashboard.quick_create_social_hint', icon: ImagePlus, type: 'social_post', popular: true },
@@ -213,66 +202,15 @@ const Dashboard = () => {
           />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {projects.slice(0, 6).map((project, i) => {
-              const moduleType = (project as any).spec?.module || '';
-              const ModuleIcon = TYPE_ICONS[moduleType] || FolderOpen;
-
-              return (
-                <div
-                  key={project.id}
-                  className="bg-card border border-border/50 rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group cursor-pointer relative animate-fade-in opacity-0 [animation-fill-mode:forwards]"
-                  style={{ animationDelay: `${i * 60 + 100}ms` }}
-                  onClick={() => navigate(`/app/projects/${project.id}`)}
-                >
-                  {/* Thumbnail area — taller, premium placeholder */}
-                  <div className="h-32 bg-muted/30 flex items-center justify-center relative">
-                    <div className="h-12 w-12 rounded-2xl bg-muted/50 flex items-center justify-center">
-                      <ModuleIcon className="h-6 w-6 text-muted-foreground/30" />
-                    </div>
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-foreground/[0.03] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center backdrop-blur-[1px]">
-                      <Button size="sm" className="h-8 text-xs btn-gradient shadow-md shadow-primary/15">
-                        Continue
-                        <ArrowRight className="h-3 w-3 ml-1" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-4 space-y-2">
-                    <p className="font-medium text-sm truncate">{project.name}</p>
-                    <div className="flex items-center justify-between">
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
-                        {project.spec?.module || 'project'}
-                      </Badge>
-                      <span className="text-[10px] text-muted-foreground">{new Date(project.updatedAt).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-
-                  {/* Kebab menu */}
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 bg-card/80 backdrop-blur-sm hover:bg-card">
-                          <MoreHorizontal className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenuItem onClick={() => navigate(`/app/projects/${project.id}`)}>
-                          <Pencil className="h-3.5 w-3.5 mr-2" /> {t("common.open")}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDuplicate(project)}>
-                          <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDelete(project.id)} className="text-destructive focus:text-destructive">
-                          <Trash2 className="h-3.5 w-3.5 mr-2" /> {t("common.delete")}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              );
-            })}
+            {projects.slice(0, 6).map((project, i) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                index={i}
+                onDelete={handleDelete}
+                onDuplicate={handleDuplicate}
+              />
+            ))}
           </div>
         )}
       </div>
