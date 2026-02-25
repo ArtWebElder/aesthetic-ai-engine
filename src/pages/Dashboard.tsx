@@ -89,8 +89,8 @@ const Dashboard = () => {
             { icon: FolderOpen, label: t("dashboard.stat_projects"), value: projects.length },
             { icon: Zap, label: t("dashboard.stat_generations"), value: completedCount },
             { icon: Download, label: t("dashboard.stat_exports"), value: 12 },
-          ].map((s) => (
-            <div key={s.label} className="flex items-center gap-2 bg-card border border-border/50 rounded-full px-3.5 py-1.5 text-sm">
+          ].map((s, i) => (
+            <div key={s.label} className="flex items-center gap-2 bg-card border border-border/50 rounded-full px-3.5 py-1.5 text-sm animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: `${i * 60}ms` }}>
               <s.icon className="h-3.5 w-3.5 text-primary" />
               <span className="font-medium tabular-nums">{s.value}</span>
               <span className="text-muted-foreground text-xs">{s.label}</span>
@@ -134,11 +134,11 @@ const Dashboard = () => {
         <div className="space-y-4">
           <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Production</span>
 
-          <div className="bg-card border border-border/50 rounded-xl p-5">
+          <div className="bg-card border border-border/50 rounded-xl p-5 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '120ms' }}>
             <MiniProductionChart />
           </div>
 
-          <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center gap-3">
+          <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center gap-3 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '200ms' }}>
             <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
               <TrendingUp className="h-4 w-4 text-primary" />
             </div>
