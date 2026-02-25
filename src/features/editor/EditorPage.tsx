@@ -702,6 +702,20 @@ export default function EditorPage() {
     const platformPreset = String(safeSpec.builder.platformPreset ?? "").trim().toLowerCase();
     const isVerticalPlatform =
       platformPreset === "instagram_story" || platformPreset === "tiktok_vertical";
+    const layoutRaw = String(safeSpec.builder.layoutPreset ?? "").trim().toLowerCase();
+    const layoutPreset =
+      layoutRaw === "split"
+        ? "split"
+        : layoutRaw === "brutalist"
+        ? "brutalist"
+        : layoutRaw === "glass"
+        ? "glass"
+        : layoutRaw.includes("overlay")
+        ? "overlay_bottom"
+        : layoutRaw.includes("minimal")
+        ? "minimal"
+        : "hero";
+    const exportFontFamily = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
 
     const loadImage = (src: string): Promise<HTMLImageElement> =>
       new Promise((resolve, reject) => {
@@ -808,85 +822,369 @@ export default function EditorPage() {
       );
     };
 
-    const drawTextLayer = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+    const blurBackdropRoundedRect = (
+      ctx: CanvasRenderingContext2D,
+      sourceCanvas: HTMLCanvasElement,
+      x: number,
+      y: number,
+      w: number,
+      h: number,
+      r: number,
+      blurPx: number
+    ) => {
+      if (w <= 0 || h <= 0) return;
+      const temp = document.createElement("canvas");
+      temp.width = Math.max(1, Math.round(w));
+      temp.height = Math.max(1, Math.round(h));
+      const tempCtx = temp.getContext("2d");
+      if (!tempCtx) return;
+      tempCtx.drawImage(sourceCanvas, x, y, w, h, 0, 0, w, h);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      ctx.clip();
+      ctx.filter = `blur(${blurPx}px)`;
+      ctx.drawImage(temp, x, y, w, h);
+      ctx.filter = "none";
+      ctx.restore();
+    };
+
+    const drawPresetLayer = (
+      ctx: CanvasRenderingContext2D,
+      w: number,
+      h: number,
+      assets: { logo: HTMLImageElement | null; product: HTMLImageElement | null }
+    ) => {
       const marginX = Math.round(w * 0.06);
       const topPad = isVerticalPlatform ? Math.round(h * 0.12) : Math.round(h * 0.06);
       const bottomPad = isVerticalPlatform ? Math.round(h * 0.12) : Math.round(h * 0.08);
-      const headlineSize = Math.max(24, Math.round(w * 0.1));
-      const subSize = Math.max(16, Math.round(w * 0.06));
-      const ctaSize = Math.max(14, Math.round(w * 0.05));
-      const ctaPadX = Math.round(w * 0.018);
-      const ctaPadY = Math.round(h * 0.01);
-      const maxTextWidth = Math.round(w * 0.82);
-      const ctaMaxChars = Math.max(16, Math.min(28, Math.round(w * 0.012)));
+      const textTopBump = assets.logo ? Math.round(h * 0.08) : 0;
+      const isVertical = h > w;
 
-      ctx.textAlign = "left";
-      ctx.textBaseline = "alphabetic";
+      const drawLogo = () => {
+        if (!assets.logo) return;
+        const logoTargetH = Math.round(h * 0.1);
+        const logoW = Math.round((assets.logo.width / assets.logo.height) * logoTargetH);
+        ctx.drawImage(assets.logo, marginX, topPad, logoW, logoTargetH);
+      };
 
-      ctx.font = `800 ${headlineSize}px Arial, sans-serif`;
-      const headlineLines = wrapTextLines(ctx, headlineText, maxTextWidth, 2);
-      const headlineHeight = headlineLines.length * Math.round(headlineSize * 1.08);
+      const drawProductBottomRight = (ratio: number) => {
+        if (!assets.product) return;
+        const ph = Math.round(h * ratio);
+        const pw = Math.round((assets.product.width / assets.product.height) * ph);
+        ctx.drawImage(assets.product, w - marginX - pw, h - bottomPad - ph, pw, ph);
+      };
 
-      ctx.font = `700 ${subSize}px Arial, sans-serif`;
-      const subLines = wrapTextLines(ctx, subheadlineText, maxTextWidth, 2);
-      const subHeight = subLines.length * Math.round(subSize * 1.2);
+      const drawTextBlock = (
+        opts: {
+          x: number;
+          y: number;
+          maxWidth: number;
+          align?: "left" | "center";
+          headlineSize: number;
+          subSize: number;
+          ctaSize: number;
+          anchor?: "top" | "bottom" | "center";
+        }
+      ) => {
+        const align = opts.align ?? "left";
+        const anchor = opts.anchor ?? "top";
+        const ctaPadX = Math.round(w * 0.018);
+        const ctaPadY = Math.round(h * 0.01);
+        const ctaMaxChars = Math.max(16, Math.min(28, Math.round(w * 0.012)));
+        ctx.textAlign = align;
+        ctx.textBaseline = "alphabetic";
 
-      ctx.font = `700 ${ctaSize}px Arial, sans-serif`;
-      const ctaDrawText = ctaText
-        ? truncateWithEllipsis(ctaText, ctaMaxChars)
-        : "";
-      const ctaHeight = ctaDrawText ? ctaSize + ctaPadY * 2 : 0;
-      const gapA = headlineLines.length && subLines.length ? Math.round(h * 0.015) : 0;
-      const gapB =
-        (headlineLines.length || subLines.length) && ctaDrawText ? Math.round(h * 0.02) : 0;
-      const totalHeight = headlineHeight + gapA + subHeight + gapB + ctaHeight;
-      const blockTop = Math.max(topPad, h - bottomPad - totalHeight);
-      let y = blockTop + headlineSize;
+        ctx.font = `800 ${opts.headlineSize}px ${exportFontFamily}`;
+        const headlineLines = wrapTextLines(ctx, headlineText, opts.maxWidth, 2);
+        const headlineHeight = headlineLines.length * Math.round(opts.headlineSize * 1.08);
 
-      if (headlineLines.length) {
-        ctx.fillStyle = "rgba(255,255,255,1)";
-        ctx.font = `800 ${headlineSize}px Arial, sans-serif`;
+        ctx.font = `700 ${opts.subSize}px ${exportFontFamily}`;
+        const subLines = wrapTextLines(ctx, subheadlineText, opts.maxWidth, 2);
+        const subHeight = subLines.length * Math.round(opts.subSize * 1.2);
+
+        ctx.font = `700 ${opts.ctaSize}px ${exportFontFamily}`;
+        const ctaDrawText = ctaText ? truncateWithEllipsis(ctaText, ctaMaxChars) : "";
+        const ctaHeight = ctaDrawText ? opts.ctaSize + ctaPadY * 2 : 0;
+        const gapA = headlineLines.length && subLines.length ? Math.round(h * 0.015) : 0;
+        const gapB =
+          (headlineLines.length || subLines.length) && ctaDrawText ? Math.round(h * 0.02) : 0;
+        const totalHeight = headlineHeight + gapA + subHeight + gapB + ctaHeight;
+        let y = opts.y;
+        if (anchor === "bottom") y = Math.max(topPad + textTopBump, h - bottomPad - totalHeight);
+        if (anchor === "center") {
+          y = Math.max(topPad + textTopBump, Math.round((h - totalHeight) / 2));
+        }
+
+        let cursorY = y + opts.headlineSize;
+        if (headlineLines.length) {
+          ctx.fillStyle = "rgba(255,255,255,1)";
+          ctx.font = `800 ${opts.headlineSize}px ${exportFontFamily}`;
+          headlineLines.forEach((line, idx) => {
+            ctx.fillText(line, opts.x, cursorY + idx * Math.round(opts.headlineSize * 1.08));
+          });
+          cursorY += headlineHeight + gapA;
+        }
+
+        if (subLines.length) {
+          ctx.fillStyle = "rgba(255,255,255,0.92)";
+          ctx.font = `700 ${opts.subSize}px ${exportFontFamily}`;
+          subLines.forEach((line, idx) => {
+            ctx.fillText(line, opts.x, cursorY + idx * Math.round(opts.subSize * 1.2));
+          });
+          cursorY += subHeight + gapB;
+        }
+
+        if (ctaDrawText) {
+          ctx.font = `700 ${opts.ctaSize}px ${exportFontFamily}`;
+          const ctaWidth = Math.round(ctx.measureText(ctaDrawText).width + ctaPadX * 2);
+          const ctaLeft = align === "center" ? Math.round(opts.x - ctaWidth / 2) : opts.x;
+          const ctaY = cursorY - opts.ctaSize;
+          ctx.fillStyle = "rgba(255,255,255,0.92)";
+          const radius = Math.round(ctaHeight / 2);
+          ctx.beginPath();
+          ctx.moveTo(ctaLeft + radius, ctaY);
+          ctx.lineTo(ctaLeft + ctaWidth - radius, ctaY);
+          ctx.quadraticCurveTo(ctaLeft + ctaWidth, ctaY, ctaLeft + ctaWidth, ctaY + radius);
+          ctx.lineTo(ctaLeft + ctaWidth, ctaY + ctaHeight - radius);
+          ctx.quadraticCurveTo(
+            ctaLeft + ctaWidth,
+            ctaY + ctaHeight,
+            ctaLeft + ctaWidth - radius,
+            ctaY + ctaHeight
+          );
+          ctx.lineTo(ctaLeft + radius, ctaY + ctaHeight);
+          ctx.quadraticCurveTo(ctaLeft, ctaY + ctaHeight, ctaLeft, ctaY + ctaHeight - radius);
+          ctx.lineTo(ctaLeft, ctaY + radius);
+          ctx.quadraticCurveTo(ctaLeft, ctaY, ctaLeft + radius, ctaY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.fillStyle = "rgba(0,0,0,0.95)";
+          ctx.fillText(
+            ctaDrawText,
+            align === "center" ? opts.x : ctaLeft + ctaPadX,
+            ctaY + ctaHeight - ctaPadY
+          );
+        }
+      };
+
+      const drawHero = () => {
+        drawLogo();
+        drawTextBlock({
+          x: Math.round(w / 2),
+          y: topPad + textTopBump,
+          maxWidth: Math.round(w * 0.84),
+          align: "center",
+          headlineSize: Math.max(24, Math.round(w * 0.1)),
+          subSize: Math.max(16, Math.round(w * 0.055)),
+          ctaSize: Math.max(14, Math.round(w * 0.036)),
+          anchor: "center",
+        });
+        drawProductBottomRight(isVerticalPlatform ? 0.24 : 0.28);
+      };
+
+      const drawSplit = () => {
+        drawLogo();
+        if (isVertical) {
+          drawTextBlock({
+            x: marginX,
+            y: topPad + textTopBump,
+            maxWidth: Math.round(w - marginX * 2),
+            headlineSize: Math.max(24, Math.round(w * 0.085)),
+            subSize: Math.max(15, Math.round(w * 0.045)),
+            ctaSize: Math.max(13, Math.round(w * 0.032)),
+            anchor: "top",
+          });
+          if (assets.product) {
+            const ph = Math.round(h * (isVerticalPlatform ? 0.36 : 0.44));
+            const pw = Math.round((assets.product.width / assets.product.height) * ph);
+            ctx.drawImage(assets.product, Math.round((w - pw) / 2), h - bottomPad - ph, pw, ph);
+          }
+          return;
+        }
+        drawTextBlock({
+          x: marginX,
+          y: topPad + textTopBump,
+          maxWidth: Math.round(w * 0.44),
+          headlineSize: Math.max(24, Math.round(w * 0.085)),
+          subSize: Math.max(15, Math.round(w * 0.04)),
+          ctaSize: Math.max(13, Math.round(w * 0.03)),
+          anchor: "center",
+        });
+        if (assets.product) {
+          const ph = Math.round(h * 0.72);
+          const pw = Math.round((assets.product.width / assets.product.height) * ph);
+          const x = Math.round(w * 0.58 + (w * 0.42 - pw) / 2);
+          const y = Math.round((h - ph) / 2);
+          ctx.drawImage(assets.product, x, y, pw, ph);
+        }
+      };
+
+      const drawOverlayBottom = () => {
+        drawLogo();
+        const grad = ctx.createLinearGradient(0, h * 0.35, 0, h);
+        grad.addColorStop(0, "rgba(0,0,0,0)");
+        grad.addColorStop(1, "rgba(0,0,0,0.55)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        drawTextBlock({
+          x: marginX,
+          y: topPad + textTopBump,
+          maxWidth: Math.round(w * 0.82),
+          headlineSize: Math.max(24, Math.round(w * (isVerticalPlatform ? 0.08 : 0.095))),
+          subSize: Math.max(15, Math.round(w * 0.038)),
+          ctaSize: Math.max(13, Math.round(w * 0.03)),
+          anchor: "bottom",
+        });
+      };
+
+      const drawMinimal = () => {
+        drawLogo();
+        drawTextBlock({
+          x: marginX,
+          y: topPad + textTopBump,
+          maxWidth: Math.round(w * 0.5),
+          headlineSize: Math.max(18, Math.round(w * 0.045)),
+          subSize: Math.max(14, Math.round(w * 0.03)),
+          ctaSize: Math.max(12, Math.round(w * 0.024)),
+          anchor: "top",
+        });
+        if (assets.product) {
+          const ph = Math.round(h * (isVerticalPlatform ? 0.42 : 0.5));
+          const pw = Math.round((assets.product.width / assets.product.height) * ph);
+          const py = Math.round((h - ph) / 2) + Math.round(textTopBump * 0.25);
+          ctx.drawImage(assets.product, Math.round((w - pw) / 2), py, pw, ph);
+        }
+      };
+
+      const drawBrutalist = () => {
+        drawLogo();
+        const headlineSize = Math.max(24, Math.round(w * 0.08));
+        const subSize = Math.max(14, Math.round(w * 0.03));
+        const maxWidth = Math.round(w * 0.6);
+
+        ctx.font = `900 ${headlineSize}px ${exportFontFamily}`;
+        const headlineLines = wrapTextLines(ctx, headlineText, maxWidth, 2);
+        const subLines = wrapTextLines(ctx, subheadlineText, maxWidth, 2);
+        const ctaDrawText = truncateWithEllipsis(ctaText, Math.max(16, Math.round(w * 0.012)));
+        let y = topPad + textTopBump + headlineSize;
+
+        ctx.fillStyle = "rgba(0,0,0,0.92)";
         headlineLines.forEach((line, idx) => {
-          ctx.fillText(line, marginX, y + idx * Math.round(headlineSize * 1.08));
+          const lineY = y + idx * Math.round(headlineSize * 1.08);
+          const textW = Math.round(ctx.measureText(line).width);
+          ctx.fillRect(marginX - 12, lineY - headlineSize, textW + 24, headlineSize + 14);
+          ctx.fillStyle = "white";
+          ctx.fillText(line, marginX, lineY);
+          ctx.fillStyle = "rgba(0,0,0,0.92)";
         });
-        y += headlineHeight + gapA;
-      }
 
-      if (subLines.length) {
-        ctx.fillStyle = "rgba(255,255,255,0.92)";
-        ctx.font = `700 ${subSize}px Arial, sans-serif`;
+        y += headlineLines.length * Math.round(headlineSize * 1.08) + Math.round(h * 0.02);
+        ctx.font = `700 ${subSize}px ${exportFontFamily}`;
         subLines.forEach((line, idx) => {
-          ctx.fillText(line, marginX, y + idx * Math.round(subSize * 1.2));
+          const lineY = y + idx * Math.round(subSize * 1.2);
+          const textW = Math.round(ctx.measureText(line).width);
+          ctx.fillStyle = "rgba(255,255,255,0.95)";
+          ctx.fillRect(marginX - 10, lineY - subSize, textW + 20, subSize + 12);
+          ctx.fillStyle = "rgba(0,0,0,0.95)";
+          ctx.fillText(line, marginX, lineY);
         });
-        y += subHeight + gapB;
-      }
 
-      if (ctaDrawText) {
-        ctx.font = `700 ${ctaSize}px Arial, sans-serif`;
-        const ctaWidth = Math.round(ctx.measureText(ctaDrawText).width + ctaPadX * 2);
-        const ctaY = y - ctaSize;
-        ctx.fillStyle = "rgba(255,255,255,0.92)";
-        const radius = Math.round(ctaHeight / 2);
-        ctx.beginPath();
-        ctx.moveTo(marginX + radius, ctaY);
-        ctx.lineTo(marginX + ctaWidth - radius, ctaY);
-        ctx.quadraticCurveTo(marginX + ctaWidth, ctaY, marginX + ctaWidth, ctaY + radius);
-        ctx.lineTo(marginX + ctaWidth, ctaY + ctaHeight - radius);
-        ctx.quadraticCurveTo(
-          marginX + ctaWidth,
-          ctaY + ctaHeight,
-          marginX + ctaWidth - radius,
-          ctaY + ctaHeight
+        if (ctaDrawText) {
+          ctx.font = `800 ${Math.max(13, Math.round(w * 0.028))}px ${exportFontFamily}`;
+          const ctaW = Math.round(ctx.measureText(ctaDrawText).width) + 28;
+          const ctaH = Math.round(h * 0.06);
+          const ctaY = h - bottomPad - ctaH;
+          ctx.fillStyle = "rgba(0,0,0,0.95)";
+          ctx.fillRect(marginX, ctaY, ctaW, ctaH);
+          ctx.fillStyle = "white";
+          ctx.fillText(ctaDrawText, marginX + 14, ctaY + Math.round(ctaH * 0.7));
+        }
+
+        drawProductBottomRight(isVerticalPlatform ? 0.32 : 0.44);
+      };
+
+      const drawGlass = () => {
+        drawLogo();
+        const cardW = Math.round(w * 0.78);
+        const cardH = Math.round(h * (isVertical ? 0.42 : 0.36));
+        const cardX = Math.round((w - cardW) / 2);
+        const cardY = Math.max(topPad + textTopBump, Math.round((h - cardH) / 2));
+        const radius = Math.round(Math.min(cardW, cardH) * 0.08);
+        const blurPx = Math.round(Math.max(14, w * 0.01));
+        blurBackdropRoundedRect(
+          ctx,
+          ctx.canvas as HTMLCanvasElement,
+          cardX,
+          cardY,
+          cardW,
+          cardH,
+          radius,
+          blurPx
         );
-        ctx.lineTo(marginX + radius, ctaY + ctaHeight);
-        ctx.quadraticCurveTo(marginX, ctaY + ctaHeight, marginX, ctaY + ctaHeight - radius);
-        ctx.lineTo(marginX, ctaY + radius);
-        ctx.quadraticCurveTo(marginX, ctaY, marginX + radius, ctaY);
+
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cardX + radius, cardY);
+        ctx.lineTo(cardX + cardW - radius, cardY);
+        ctx.quadraticCurveTo(cardX + cardW, cardY, cardX + cardW, cardY + radius);
+        ctx.lineTo(cardX + cardW, cardY + cardH - radius);
+        ctx.quadraticCurveTo(cardX + cardW, cardY + cardH, cardX + cardW - radius, cardY + cardH);
+        ctx.lineTo(cardX + radius, cardY + cardH);
+        ctx.quadraticCurveTo(cardX, cardY + cardH, cardX, cardY + cardH - radius);
+        ctx.lineTo(cardX, cardY + radius);
+        ctx.quadraticCurveTo(cardX, cardY, cardX + radius, cardY);
         ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = "rgba(0,0,0,0.95)";
-        ctx.fillText(ctaDrawText, marginX + ctaPadX, ctaY + ctaHeight - ctaPadY);
+        ctx.stroke();
+
+        drawTextBlock({
+          x: Math.round(w / 2),
+          y: cardY + Math.round(cardH * 0.18),
+          maxWidth: Math.round(cardW * 0.82),
+          align: "center",
+          headlineSize: Math.max(22, Math.round(w * 0.08)),
+          subSize: Math.max(15, Math.round(w * 0.04)),
+          ctaSize: Math.max(13, Math.round(w * 0.03)),
+          anchor: "top",
+        });
+
+        drawProductBottomRight(isVerticalPlatform ? 0.3 : 0.36);
+      };
+
+      if (layoutPreset === "split") {
+        drawSplit();
+        return;
       }
+      if (layoutPreset === "overlay_bottom") {
+        drawOverlayBottom();
+        return;
+      }
+      if (layoutPreset === "minimal") {
+        drawMinimal();
+        return;
+      }
+      if (layoutPreset === "brutalist") {
+        drawBrutalist();
+        return;
+      }
+      if (layoutPreset === "glass") {
+        drawGlass();
+        return;
+      }
+      drawHero();
     };
 
     const drawTextOnlyFallbackAndDownload = () => {
@@ -902,7 +1200,7 @@ export default function EditorPage() {
       fallbackCtx.fillRect(0, 0, canvasWidth, canvasHeight);
       fallbackCtx.fillStyle = "rgba(0,0,0,0.2)";
       fallbackCtx.fillRect(0, 0, canvasWidth, canvasHeight);
-      drawTextLayer(fallbackCtx, canvasWidth, canvasHeight);
+      drawPresetLayer(fallbackCtx, canvasWidth, canvasHeight, { logo: null, product: null });
       downloadCanvas(fallbackCanvas);
     };
 
@@ -911,6 +1209,17 @@ export default function EditorPage() {
     canvas.height = canvasHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
+    try {
+      if ("fonts" in document) {
+        await (document as any).fonts.ready;
+        await (document as any).fonts.load(`700 24px ${exportFontFamily}`);
+        await (document as any).fonts.load(`800 24px ${exportFontFamily}`);
+        await (document as any).fonts.load(`900 24px ${exportFontFamily}`);
+      }
+    } catch {
+      // Best-effort font preloading; continue export if unavailable.
+    }
 
     try {
       if (backgroundUrl) {
@@ -927,27 +1236,9 @@ export default function EditorPage() {
       ctx.fillStyle = "rgba(0,0,0,0.2)";
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
-      const margin = Math.round(canvasWidth * 0.06);
-      const topPad = isVerticalPlatform ? Math.round(canvasHeight * 0.1) : margin;
-      const bottomPad = isVerticalPlatform ? Math.round(canvasHeight * 0.1) : margin;
-
-      if (logoUrl) {
-        const logo = await loadImage(logoUrl);
-        const logoTargetH = Math.round(canvasHeight * 0.1);
-        const logoW = Math.round((logo.width / logo.height) * logoTargetH);
-        ctx.drawImage(logo, margin, topPad, logoW, logoTargetH);
-      }
-
-      if (productUrl) {
-        const product = await loadImage(productUrl);
-        const hasBigText = headlineText.length > 30 || subheadlineText.length > 50;
-        const maxProductH = Math.round(canvasHeight * (hasBigText ? 0.38 : 0.45));
-        const ph = maxProductH;
-        const pw = Math.round((product.width / product.height) * ph);
-        ctx.drawImage(product, canvasWidth - margin - pw, canvasHeight - bottomPad - ph, pw, ph);
-      }
-
-      drawTextLayer(ctx, canvasWidth, canvasHeight);
+      const logo = logoUrl ? await loadImage(logoUrl) : null;
+      const product = productUrl ? await loadImage(productUrl) : null;
+      drawPresetLayer(ctx, canvasWidth, canvasHeight, { logo, product });
 
       if (premiumOverlayUrl) {
         const overlay = await loadImage(premiumOverlayUrl);
