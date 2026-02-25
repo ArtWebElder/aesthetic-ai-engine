@@ -406,14 +406,14 @@ function TemplateRendererPlaceholder({
  */
 const TEMPLATE_REGISTRY: Array<{
   id: ProjectSpec["templateId"] | string;
-  name: string;
+  nameKey: string;
   module: ProjectSpec["module"];
   stylePreset?: StylePreset;
 }> = [
-  { id: "social_post_clean", name: "Social Post Clean", module: "social_post", stylePreset: "clean_modern" },
-  { id: "social_01", name: "Social 01", module: "social", stylePreset: "bold_ads" },
-  { id: "ecom_01", name: "Ecom 01", module: "ecom", stylePreset: "minimal_clean" },
-  { id: "photoshoot_clean", name: "Photoshoot Clean", module: "photoshoot", stylePreset: "editorial" },
+  { id: "social_post_clean", nameKey: "editor.template_name.social_post_clean", module: "social_post", stylePreset: "clean_modern" },
+  { id: "social_01", nameKey: "editor.template_name.social_01", module: "social", stylePreset: "bold_ads" },
+  { id: "ecom_01", nameKey: "editor.template_name.ecom_01", module: "ecom", stylePreset: "minimal_clean" },
+  { id: "photoshoot_clean", nameKey: "editor.template_name.photoshoot_clean", module: "photoshoot", stylePreset: "editorial" },
 ];
 
 export default function EditorPage() {
@@ -742,8 +742,8 @@ export default function EditorPage() {
         {/* LEFT: TEMPLATES */}
         <div className="hidden lg:flex flex-col min-h-0 border-r border-border bg-background/40">
           <div className="p-4 border-b border-border">
-            <div className="text-xs text-muted-foreground">TEMPLATES</div>
-            <div className="text-sm font-medium">Choose a layout</div>
+            <div className="text-xs text-muted-foreground">{t("editor.templates.title")}</div>
+            <div className="text-sm font-medium">{t("editor.templates.choose_layout")}</div>
           </div>
 
           <div className="p-4 space-y-3 overflow-auto">
@@ -770,10 +770,10 @@ export default function EditorPage() {
                 >
                   <div className="h-24 rounded-md bg-muted mb-2" />
                   <div className="text-sm font-medium flex items-center justify-between">
-                    <span>{t.name}</span>
+                    <span>{t(t.nameKey)}</span>
                     {selected ? (
                       <span className="text-[10px] px-2 py-1 rounded border border-primary/40 text-primary">
-                        Selected
+                        {t("editor.templates.selected")}
                       </span>
                     ) : null}
                   </div>
