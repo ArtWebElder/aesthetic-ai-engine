@@ -1137,6 +1137,9 @@ export default function EditorPage() {
                         const productMaxHSmallClass = isVerticalPlatform ? "max-h-[30%]" : "max-h-[36%]";
                         const productMaxHMediumClass = isVerticalPlatform ? "max-h-[32%]" : "max-h-[44%]";
                         const productMaxHLargeClass = isVerticalPlatform ? "max-h-[42%]" : "max-h-[50%]";
+                        const productSplitVerticalClass = isVerticalPlatform
+                          ? "max-h-[36%]"
+                          : "max-h-[44%]";
                         const productHeroHClass = isVerticalPlatform ? "h-[24%]" : "h-[28%]";
                         const logoTopClass = isVerticalPlatform ? "top-10" : "top-6";
                         const bottomTextClass = isVerticalPlatform ? "bottom-14" : "bottom-8";
@@ -1216,7 +1219,7 @@ export default function EditorPage() {
                                       alt=""
                                       className={[
                                         "w-auto object-contain",
-                                        isVertical ? productMaxHMediumClass : "max-h-[72%]",
+                                        isVertical ? productSplitVerticalClass : "max-h-[72%]",
                                       ].join(" ")}
                                     />
                                   </div>
