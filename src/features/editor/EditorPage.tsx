@@ -820,50 +820,199 @@ export default function EditorPage() {
                 >
                   <div className="w-full h-full">
                     {isSocialPost ? (
-                      <div className="relative h-full w-full overflow-hidden rounded-xl">
-                        {(safeSpec.builder.backgroundUploads?.[0] || bgUrl) ? (
-                          <img
-                            src={safeSpec.builder.backgroundUploads?.[0] || bgUrl || ""}
-                            alt=""
-                            className="absolute inset-0 h-full w-full object-cover"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 to-neutral-700" />
-                        )}
-                        <div className="absolute inset-0 bg-black/20" />
-                        {safeSpec.builder.logoUploads?.[0] ? (
-                          <img
-                            src={safeSpec.builder.logoUploads[0]}
-                            alt=""
-                            className="absolute top-6 left-6 h-16 w-auto object-contain"
-                          />
-                        ) : null}
-                        {safeSpec.builder.productUploads?.[0] ? (
-                          <img
-                            src={safeSpec.builder.productUploads[0]}
-                            alt=""
-                            className="absolute right-6 bottom-6 h-[45%] w-auto object-contain"
-                          />
-                        ) : null}
-                        <div className="absolute left-6 right-6 bottom-8">
-                          <div className="text-white text-4xl font-bold leading-tight">
-                            {safeSpec.builder.headline || content.headline}
+                      (() => {
+                        const layoutRaw = (safeSpec.builder.layoutPreset ?? "").trim().toLowerCase();
+                        const layoutPreset =
+                          layoutRaw === "split"
+                            ? "split"
+                            : layoutRaw === "brutalist"
+                            ? "brutalist"
+                            : layoutRaw === "glass"
+                            ? "glass"
+                            : layoutRaw.includes("overlay")
+                            ? "overlay_bottom"
+                            : layoutRaw.includes("minimal")
+                            ? "minimal"
+                            : "hero";
+                        const isVertical = safeSpec.generation.height > safeSpec.generation.width;
+                        const headlineText = safeSpec.builder.headline || content.headline;
+                        const subheadlineText = safeSpec.builder.subheadline || content.subheadline;
+                        const ctaText = safeSpec.builder.cta || content.ctaText;
+                        const productUrl = safeSpec.builder.productUploads?.[0] || "";
+                        const logoUrl = safeSpec.builder.logoUploads?.[0] || "";
+                        const bgImage = safeSpec.builder.backgroundUploads?.[0] || bgUrl || "";
+
+                        return (
+                          <div className="relative h-full w-full overflow-hidden rounded-xl">
+                            {bgImage ? (
+                              <img
+                                src={bgImage}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-cover"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-br from-neutral-900 to-neutral-700" />
+                            )}
+                            <div
+                              className={[
+                                "absolute inset-0",
+                                layoutPreset === "overlay_bottom"
+                                  ? "bg-gradient-to-t from-black/75 via-black/30 to-black/10"
+                                  : "bg-black/20",
+                              ].join(" ")}
+                            />
+                            {logoUrl ? (
+                              <img
+                                src={logoUrl}
+                                alt=""
+                                className="absolute top-6 left-6 h-16 w-auto object-contain z-20"
+                              />
+                            ) : null}
+
+                            {layoutPreset === "split" ? (
+                              <div
+                                className={[
+                                  "absolute inset-0 z-10 p-6 md:p-8 gap-6",
+                                  isVertical ? "grid grid-rows-[auto_1fr]" : "grid grid-cols-2 items-center",
+                                ].join(" ")}
+                              >
+                                <div className="space-y-3 md:space-y-4">
+                                  <div className="text-white text-4xl md:text-5xl font-bold leading-tight">
+                                    {headlineText}
+                                  </div>
+                                  <div className="text-white/90 text-base md:text-lg">{subheadlineText}</div>
+                                  <div className="inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
+                                    {ctaText}
+                                  </div>
+                                </div>
+                                {productUrl ? (
+                                  <div className="flex items-center justify-center">
+                                    <img
+                                      src={productUrl}
+                                      alt=""
+                                      className={[
+                                        "w-auto object-contain",
+                                        isVertical ? "max-h-[48%]" : "max-h-[72%]",
+                                      ].join(" ")}
+                                    />
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            {layoutPreset === "overlay_bottom" ? (
+                              <div className="absolute left-6 right-6 bottom-8 z-10 space-y-3">
+                                <div className="text-white text-5xl md:text-6xl font-bold leading-[0.95]">
+                                  {headlineText}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-3">
+                                  <div className="text-white/90 text-base md:text-lg">{subheadlineText}</div>
+                                  <div className="inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
+                                    {ctaText}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {layoutPreset === "minimal" ? (
+                              <div className="absolute inset-0 z-10 p-6">
+                                <div className="text-white text-lg md:text-xl font-semibold tracking-tight">
+                                  {headlineText}
+                                </div>
+                                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                                  {productUrl ? (
+                                    <img
+                                      src={productUrl}
+                                      alt=""
+                                      className="max-h-[50%] w-auto object-contain"
+                                    />
+                                  ) : null}
+                                  <div className="inline-flex px-3 py-1.5 text-xs font-medium bg-white/20 text-white border border-white/30">
+                                    {ctaText}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {layoutPreset === "brutalist" ? (
+                              <div className="absolute inset-0 z-10 p-6 md:p-8 flex flex-col justify-between">
+                                <div className="space-y-3">
+                                  <div className="inline-block bg-black text-white px-3 py-2 text-4xl md:text-6xl font-black uppercase leading-none">
+                                    {headlineText}
+                                  </div>
+                                  <div className="inline-block bg-white text-black px-3 py-2 text-sm md:text-base font-bold">
+                                    {subheadlineText}
+                                  </div>
+                                </div>
+                                <div className="flex items-end justify-between gap-4">
+                                  <div className="inline-flex bg-black text-white px-4 py-2 text-sm font-bold uppercase">
+                                    {ctaText}
+                                  </div>
+                                  {productUrl ? (
+                                    <img
+                                      src={productUrl}
+                                      alt=""
+                                      className="max-h-[44%] w-auto object-contain"
+                                    />
+                                  ) : null}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {layoutPreset === "glass" ? (
+                              <div className="absolute inset-0 z-10 flex items-center justify-center p-6">
+                                <div className="w-full max-w-[78%] rounded-2xl border border-white/30 bg-white/15 backdrop-blur-md px-6 py-7 text-center space-y-3">
+                                  <div className="text-white text-4xl md:text-5xl font-semibold leading-tight">
+                                    {headlineText}
+                                  </div>
+                                  <div className="text-white/90 text-base md:text-lg">{subheadlineText}</div>
+                                  <div className="inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
+                                    {ctaText}
+                                  </div>
+                                </div>
+                                {productUrl ? (
+                                  <img
+                                    src={productUrl}
+                                    alt=""
+                                    className="absolute right-6 bottom-6 max-h-[36%] w-auto object-contain"
+                                  />
+                                ) : null}
+                              </div>
+                            ) : null}
+
+                            {layoutPreset === "hero" ? (
+                              <>
+                                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-center px-6">
+                                  <div className="text-white text-5xl md:text-6xl font-bold leading-[0.95] max-w-[90%]">
+                                    {headlineText}
+                                  </div>
+                                  <div className="text-white/90 text-lg md:text-xl mt-3 max-w-[80%]">
+                                    {subheadlineText}
+                                  </div>
+                                  <div className="mt-5 inline-flex rounded-full px-5 py-2.5 text-sm font-medium bg-white/90 text-black">
+                                    {ctaText}
+                                  </div>
+                                </div>
+                                {productUrl ? (
+                                  <img
+                                    src={productUrl}
+                                    alt=""
+                                    className="absolute right-6 bottom-6 h-[28%] w-auto object-contain z-10"
+                                  />
+                                ) : null}
+                              </>
+                            ) : null}
+
+                            {safeSpec.builder.premiumOverlayUrls?.[0] ? (
+                              <img
+                                src={safeSpec.builder.premiumOverlayUrls[0]}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-cover pointer-events-none"
+                              />
+                            ) : null}
                           </div>
-                          <div className="text-white/90 text-lg mt-2">
-                            {safeSpec.builder.subheadline || content.subheadline}
-                          </div>
-                          <div className="mt-4 inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
-                            {safeSpec.builder.cta || content.ctaText}
-                          </div>
-                        </div>
-                        {safeSpec.builder.premiumOverlayUrls?.[0] ? (
-                          <img
-                            src={safeSpec.builder.premiumOverlayUrls[0]}
-                            alt=""
-                            className="absolute inset-0 h-full w-full object-cover pointer-events-none"
-                          />
-                        ) : null}
-                      </div>
+                        );
+                      })()
                     ) : (
                       <TemplateRenderer
                         spec={safeSpec}
