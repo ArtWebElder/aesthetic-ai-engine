@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, FolderOpen, Zap, Download, ImagePlus, ShoppingBag, Camera, Plus, Sparkles, ArrowRight, TrendingUp, Target } from 'lucide-react';
+import { Coins, FolderOpen, Zap, Download, ImagePlus, ShoppingBag, Camera, Plus, Sparkles, ArrowRight, Target, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import MiniProductionChart from '@/components/MiniProductionChart';
@@ -57,9 +57,11 @@ const Dashboard = () => {
   const lastOpenedId = localStorage.getItem("lastOpenedProjectId");
   const mostRecentProject = (lastOpenedId && projects.find(p => p.id === lastOpenedId)) || (projects.length > 0 ? projects[0] : null);
   const weeklyGoal = 10;
+  // Streak: count days with activity this week (mock: days with data > 0)
+  const activeDays = [3, 5, 2, 7, 4, 6, 8].filter(v => v > 0).length;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-8 animate-page-fade">
+    <div className="p-4 sm:p-5 lg:p-6 max-w-6xl mx-auto space-y-5 animate-page-fade">
       {/* ── Hero ── */}
       <PageHeader
         title={`Welcome back${firstName !== 'there' ? `, ${firstName}` : ''}`}
@@ -67,7 +69,7 @@ const Dashboard = () => {
         action={
           <Button
             onClick={() => { setWizardType(undefined); setWizardOpen(true); }}
-            className="btn-gradient h-11 px-6 text-sm font-semibold shadow-lg shadow-primary/20"
+            className="btn-gradient h-10 px-5 text-sm font-semibold shadow-lg shadow-primary/20"
           >
             <Plus className="h-4 w-4 mr-1.5" />
             {t("projects.new_project")}
@@ -75,20 +77,26 @@ const Dashboard = () => {
         }
       />
 
-      {/* Compact stat pills */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* Compact stat pills + streak */}
+      <div className="flex flex-wrap items-center gap-1.5">
         {[
           { icon: Coins, label: t("dashboard.stat_credits"), value: mockCredits.current },
           { icon: FolderOpen, label: t("dashboard.stat_projects"), value: projects.length },
           { icon: Zap, label: t("dashboard.stat_generations"), value: completedCount },
           { icon: Download, label: t("dashboard.stat_exports"), value: 12 },
         ].map((s, i) => (
-          <div key={s.label} className="flex items-center gap-2 bg-card border border-border/50 rounded-full px-3.5 py-1.5 text-sm animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: `${i * 60}ms` }}>
-            <s.icon className="h-3.5 w-3.5 text-primary" />
+          <div key={s.label} className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1 text-xs animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: `${i * 60}ms` }}>
+            <s.icon className="h-3 w-3 text-primary" />
             <span className="font-medium tabular-nums">{s.value}</span>
-            <span className="text-muted-foreground text-xs">{s.label}</span>
+            <span className="text-muted-foreground/70 text-[10px]">{s.label}</span>
           </div>
         ))}
+        {activeDays > 0 && (
+          <div className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1 text-xs animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '300ms' }}>
+            <Flame className="h-3 w-3 text-orange-500" />
+            <span className="text-muted-foreground/70 text-[10px]">Active {activeDays}d this week</span>
+          </div>
+        )}
       </div>
 
       {/* ── Getting Started ── */}
@@ -107,9 +115,9 @@ const Dashboard = () => {
       )}
 
       {/* ── Dynamic Grid: Quick Create + Sidebar ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Left: Quick Create (2/3) */}
-        <div className="lg:col-span-2 space-y-4">
+        <div className="lg:col-span-2 space-y-3">
           <SectionHeader label={t("dashboard.quick_create")} />
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -117,7 +125,7 @@ const Dashboard = () => {
               <button
                 key={item.type}
                 onClick={() => handleQuickCreate(item.type)}
-                className="relative bg-card border border-border/50 rounded-xl p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group animate-fade-in opacity-0 [animation-fill-mode:forwards]"
+                className="relative bg-card border border-border/30 rounded-xl p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group animate-fade-in opacity-0 [animation-fill-mode:forwards]"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 {item.popular && (
@@ -125,60 +133,47 @@ const Dashboard = () => {
                     Popular
                   </Badge>
                 )}
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
-                    <item.icon className="h-5 w-5 text-primary" />
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-xl bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
+                    <item.icon className="h-4 w-4 text-primary" />
                   </div>
                 </div>
                 <h3 className="font-medium text-sm">{t(item.labelKey)}</h3>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{t(item.hintKey)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{t(item.hintKey)}</p>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Right: Sidebar widgets (1/3) */}
-        <div className="space-y-4">
+        {/* Right: Merged production widget (1/3) */}
+        <div className="space-y-3">
           <SectionHeader label="Production" />
 
-          <div className="bg-card border border-border/50 rounded-xl p-5 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '120ms' }}>
+          <div className="bg-card border border-border/30 rounded-xl p-4 space-y-3 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '120ms' }}>
             <MiniProductionChart />
-          </div>
 
-          {/* This Week progress widget */}
-          <div className="bg-card border border-border/50 rounded-xl p-4 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '200ms' }}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
-                <Target className="h-4 w-4 text-primary" />
+            {/* Progress bar integrated */}
+            <div className="pt-2 border-t border-border/20 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Target className="h-3 w-3 text-primary" />
+                  <span className="text-[11px] font-medium">Weekly goal</span>
+                </div>
+                <span className="text-[11px] text-muted-foreground tabular-nums">{completedCount}/{weeklyGoal}</span>
               </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium">This week</p>
-                <p className="text-[11px] text-muted-foreground">{completedCount} of {weeklyGoal} goal</p>
+              <div className="h-1 bg-muted/50 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${Math.min((completedCount / weeklyGoal) * 100, 100)}%` }}
+                />
               </div>
-            </div>
-            {/* Progress bar */}
-            <div className="h-1.5 bg-muted/60 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-primary rounded-full transition-all duration-500"
-                style={{ width: `${Math.min((completedCount / weeklyGoal) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="bg-card border border-border/50 rounded-xl p-4 flex items-center gap-3 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '280ms' }}>
-            <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center shrink-0">
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-medium">{completedCount} completed</p>
-              <p className="text-[11px] text-muted-foreground">this week</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── Recent Projects ── */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <SectionHeader
           label={t("dashboard.recent_projects")}
           action={
