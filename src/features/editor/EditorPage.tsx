@@ -197,6 +197,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const brand = spec.brand ?? ({} as any);
   const generation = spec.generation ?? ({} as any);
   const builder = spec.builder ?? ({} as BuilderSpec);
+  const content = spec.content ?? ({} as any);
   const normalizedPhotoAspect = (spec.photoAspect ?? "3:2") as NonNullable<ProjectSpec["photoAspect"]>;
   const isSocialPost = spec.module === "social_post";
   const photoshootSize =
@@ -230,6 +231,12 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     lightingText: spec.lightingText ?? "",
     assetsText: spec.assetsText ?? "",
     promptDebug: Boolean(spec.promptDebug),
+    content: {
+      ...content,
+      headline: content.headline ?? "",
+      subheadline: content.subheadline ?? "",
+      ctaText: content.ctaText ?? "",
+    },
     builder: {
       platformPreset: (builder.platformPreset ?? (isSocialPost ? "instagram_feed" : "")).trim(),
       goalPreset: (builder.goalPreset ?? (isSocialPost ? "Offer" : "")).trim(),
@@ -509,6 +516,7 @@ export default function EditorPage() {
   const subjectImageUrl = (safeSpec?.subjectImageUrl ?? "").trim();
   const subjectPreview = subjectPreviewUrl || subjectImageUrl;
   const builder = safeSpec?.builder;
+  const content = safeSpec?.content ?? { headline: "", subheadline: "", ctaText: "" };
   const visualStyle = builder?.visualStyle ?? [];
   const assetsHighlights = builder?.assetsHighlights ?? [];
   const contextProps = builder?.contextProps ?? [];
@@ -747,12 +755,12 @@ export default function EditorPage() {
           </div>
 
           <div className="p-4 space-y-3 overflow-auto">
-            {TEMPLATE_REGISTRY.filter((t) => t.module === safeSpec.module).map((t) => {
-              const selected = safeSpec.templateId === t.id;
+            {TEMPLATE_REGISTRY.filter((t) => t.module === safeSpec.module).map((tpl) => {
+              const selected = safeSpec.templateId === tpl.id;
 
               return (
                 <button
-                  key={t.id}
+                  key={tpl.id}
                   type="button"
                   className={[
                     "w-full text-left rounded-lg border bg-background/60 p-3 transition",
@@ -763,14 +771,14 @@ export default function EditorPage() {
                   onClick={() => {
                     persistSpec({
                       ...safeSpec,
-                      templateId: t.id as any,
-                      stylePreset: (t.stylePreset ?? safeSpec.stylePreset) as StylePreset,
+                      templateId: tpl.id as any,
+                      stylePreset: (tpl.stylePreset ?? safeSpec.stylePreset) as StylePreset,
                     });
                   }}
                 >
                   <div className="h-24 rounded-md bg-muted mb-2" />
                   <div className="text-sm font-medium flex items-center justify-between">
-                    <span>{t(t.nameKey)}</span>
+                    <span>{t(tpl.nameKey)}</span>
                     {selected ? (
                       <span className="text-[10px] px-2 py-1 rounded border border-primary/40 text-primary">
                         {t("editor.templates.selected")}
@@ -778,7 +786,7 @@ export default function EditorPage() {
                     ) : null}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {safeSpec.module} • {String(t.id)}
+                    {safeSpec.module} • {String(tpl.id)}
                   </div>
                 </button>
               );
@@ -830,13 +838,13 @@ export default function EditorPage() {
                         ) : null}
                         <div className="absolute left-6 right-6 bottom-8">
                           <div className="text-white text-4xl font-bold leading-tight">
-                            {safeSpec.builder.headline || safeSpec.content.headline}
+                            {safeSpec.builder.headline || content.headline}
                           </div>
                           <div className="text-white/90 text-lg mt-2">
-                            {safeSpec.builder.subheadline || safeSpec.content.subheadline}
+                            {safeSpec.builder.subheadline || content.subheadline}
                           </div>
                           <div className="mt-4 inline-flex rounded-full px-4 py-2 text-sm font-medium bg-white/90 text-black">
-                            {safeSpec.builder.cta || safeSpec.content.ctaText}
+                            {safeSpec.builder.cta || content.ctaText}
                           </div>
                         </div>
                         {safeSpec.builder.premiumOverlayUrls?.[0] ? (
@@ -1394,9 +1402,9 @@ export default function EditorPage() {
                     variant="outline"
                     onClick={() => {
                       const lines = [
-                        safeSpec.builder.headline || safeSpec.content.headline,
-                        safeSpec.builder.subheadline || safeSpec.content.subheadline,
-                        safeSpec.builder.cta || safeSpec.content.ctaText,
+                        safeSpec.builder.headline || content.headline,
+                        safeSpec.builder.subheadline || content.subheadline,
+                        safeSpec.builder.cta || content.ctaText,
                       ];
                       const overlay = buildSocialOverlayDataUrl(
                         lines,
