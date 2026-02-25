@@ -16,7 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import AuroraDivider from '@/components/AuroraDivider';
 import StatCard from '@/components/StatCard';
 import { mockCredits } from '@/lib/mocks/data';
 import { useI18n } from '@/i18n';
@@ -39,7 +38,7 @@ const Billing = () => {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-heading font-bold">{t('billing.title')}</h1>
+        <h1 className="text-2xl font-heading font-bold tracking-tight">{t('billing.title')}</h1>
         <p className="text-sm text-muted-foreground mt-1">{t('billing.subtitle')}</p>
       </div>
 
@@ -53,7 +52,7 @@ const Billing = () => {
         <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.plans')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {plans.map((plan, i) => (
-            <div key={plan.name} className={`glass-surface rounded-lg p-5 hover-lift ${i === 1 ? 'ring-1 ring-primary/30' : ''}`}>
+            <div key={plan.name} className={`bg-card border rounded-lg p-5 hover-lift ${i === 1 ? 'border-primary/40' : 'border-border'}`}>
               <h3 className="font-heading font-semibold">{plan.name}</h3>
               <p className="text-2xl font-heading font-bold mt-1">${plan.price}<span className="text-sm text-muted-foreground font-normal">{t('billing.mo_suffix')}</span></p>
               <ul className="mt-4 space-y-2">
@@ -80,7 +79,7 @@ const Billing = () => {
         </div>
         <div className="grid grid-cols-3 gap-3">
           {creditPacks.map((pack) => (
-            <button key={pack.amount} className="glass-surface rounded-lg p-4 text-center hover-lift" onClick={() => setBuyOpen(true)}>
+            <button key={pack.amount} className="bg-card border border-border rounded-lg p-4 text-center hover-lift" onClick={() => setBuyOpen(true)}>
               <p className="text-xl font-heading font-bold">{pack.amount}</p>
               <p className="text-xs text-muted-foreground">{t('billing.credits_unit')}</p>
               <p className="text-sm font-medium mt-2">${pack.price}</p>
@@ -89,12 +88,12 @@ const Billing = () => {
         </div>
       </div>
 
-      <AuroraDivider />
+      <div className="h-px bg-border" />
 
       {/* BYOK */}
       <div>
         <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.byok_title')}</h2>
-        <div className="glass-surface rounded-lg p-5 space-y-4">
+        <div className="bg-card border border-border rounded-lg p-5 space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Key className="h-4 w-4 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">{t('billing.byok_subtitle')}</p>
@@ -125,7 +124,7 @@ const Billing = () => {
           </DialogHeader>
           <div className="space-y-3 pt-2">
             {creditPacks.map((pack) => (
-              <button key={pack.amount} className="w-full glass-surface rounded-lg p-4 flex items-center justify-between hover-lift">
+              <button key={pack.amount} className="w-full bg-card border border-border rounded-lg p-4 flex items-center justify-between hover-lift">
                 <span className="font-medium">{t('billing.credit_pack', { amount: pack.amount })}</span>
                 <span className="text-sm">${pack.price}</span>
               </button>

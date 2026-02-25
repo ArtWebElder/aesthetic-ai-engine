@@ -9,7 +9,7 @@ interface StatCardProps {
 
 const StatCard = ({ title, value, icon: Icon, subtitle }: StatCardProps) => {
   return (
-    <div className="glass-surface rounded-lg p-5 hover-lift">
+    <div className="bg-card border border-border rounded-lg p-5 hover-lift">
       <div className="flex items-center justify-between mb-3">
         <span className="text-sm text-muted-foreground">{title}</span>
         <Icon className="h-4 w-4 text-muted-foreground" />
