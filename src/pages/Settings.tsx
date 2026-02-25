@@ -25,7 +25,7 @@ const Settings = () => {
         <p className="text-sm text-muted-foreground mt-1">{t('settings.subtitle')}</p>
       </div>
 
-      <section className="bg-card border border-border rounded-lg p-5 space-y-4">
+      <section className="bg-card border border-border/50 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <User className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-heading font-semibold">{t('settings.profile')}</h2>
@@ -41,9 +41,9 @@ const Settings = () => {
         <Button variant="outline" size="sm" disabled>{t('common.save')}</Button>
       </section>
 
-      <div className="h-px bg-border" />
+      <div className="h-px bg-border/50" />
 
-      <section className="bg-card border border-border rounded-lg p-5 space-y-4">
+      <section className="bg-card border border-border/50 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <Globe className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-heading font-semibold">{t('language')}</h2>
@@ -51,7 +51,7 @@ const Settings = () => {
         <LocaleDropdown />
       </section>
 
-      <section className="bg-card border border-border rounded-lg p-5 space-y-4">
+      <section className="bg-card border border-border/50 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2 mb-1">
           <Download className="h-4 w-4 text-muted-foreground" />
           <h2 className="text-sm font-heading font-semibold">{t('settings.export_preferences')}</h2>
@@ -66,7 +66,7 @@ const Settings = () => {
         </Select>
       </section>
 
-      <section className="bg-card border border-border rounded-lg p-5">
+      <section className="bg-card border border-border/50 rounded-xl p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Palette className="h-4 w-4 text-muted-foreground" />

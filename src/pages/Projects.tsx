@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, FolderOpen, ImagePlus, ShoppingBag, Camera, MoreHorizontal, Pencil, Trash2, Copy, Sparkles } from "lucide-react";
+import { Plus, Search, FolderOpen, ImagePlus, ShoppingBag, Camera, MoreHorizontal, Pencil, Trash2, Copy, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import ProjectWizard from "@/components/ProjectWizard";
+import { PageHeader } from "@/components/ui-premium/PageHeader";
+import { EmptyState } from "@/components/ui-premium/EmptyState";
 import { listProjects, deleteProject, createProject } from "../features/projects/store";
 import { useI18n } from "@/i18n";
 import type { Project } from "@/types/spec";
@@ -61,17 +63,16 @@ const Projects = () => {
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-page-fade">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-heading font-bold tracking-tight">{t("projects.title")}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("projects.count", { count: projects.length })}</p>
-        </div>
-
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t("projects.new_project")}
-        </Button>
-      </div>
+      <PageHeader
+        title={t("projects.title")}
+        subtitle={t("projects.count", { count: projects.length })}
+        action={
+          <Button onClick={() => setCreateOpen(true)} className="btn-gradient h-10 px-5 text-sm font-semibold">
+            <Plus className="h-4 w-4 mr-1.5" />
+            {t("projects.new_project")}
+          </Button>
+        }
+      />
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -97,79 +98,85 @@ const Projects = () => {
         </Select>
       </div>
 
-      <div className="space-y-2">
-        {filtered.length === 0 ? (
-          <div className="bg-card border border-border rounded-xl p-12 text-center animate-fade-in">
-            <div className="h-12 w-12 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="h-5 w-5 text-muted-foreground" />
-            </div>
-            <p className="font-heading font-semibold">{t("projects.empty_title")}</p>
-            <p className="text-sm text-muted-foreground mt-1 mb-4">{t("projects.empty_subtitle")}</p>
-            <Button onClick={() => setCreateOpen(true)} size="sm">
+      {filtered.length === 0 ? (
+        <EmptyState
+          title={t("projects.empty_title")}
+          description={t("projects.empty_subtitle")}
+          action={
+            <Button onClick={() => setCreateOpen(true)} size="sm" className="btn-gradient">
               <Plus className="h-4 w-4 mr-1.5" />
               {t("projects.new_project")}
             </Button>
-          </div>
-        ) : (
-          filtered.map((project: any) => {
+          }
+        />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {filtered.map((project: any, i: number) => {
             const moduleType = project.spec?.module || '';
             const ModuleIcon = TYPE_ICONS[moduleType] || FolderOpen;
 
             return (
               <div
                 key={project.id}
-                className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 hover-lift group cursor-pointer"
+                className="bg-card border border-border/50 rounded-xl overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group cursor-pointer relative animate-fade-in opacity-0 [animation-fill-mode:forwards]"
+                style={{ animationDelay: `${i * 50}ms` }}
                 onClick={() => navigate(`/app/projects/${project.id}`)}
               >
-                <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                  <ModuleIcon className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm truncate">{project.name}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5 font-normal">
-                      {project.spec?.module || 'project'}
-                    </Badge>
-                    <span className="text-[11px] text-muted-foreground">{project.spec?.format}</span>
+                {/* Thumbnail */}
+                <div className="h-28 bg-muted/30 flex items-center justify-center relative">
+                  <div className="h-10 w-10 rounded-2xl bg-muted/50 flex items-center justify-center">
+                    <ModuleIcon className="h-5 w-5 text-muted-foreground/30" />
+                  </div>
+                  <div className="absolute inset-0 bg-foreground/[0.03] opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                    <Button size="sm" className="h-7 text-xs btn-gradient shadow-md shadow-primary/15" onClick={(e) => { e.stopPropagation(); navigate(`/app/projects/${project.id}`); }}>
+                      Continue
+                      <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
                   </div>
                 </div>
-                <div className="text-right hidden sm:block shrink-0">
-                  <p className="text-xs text-muted-foreground">{project.spec?.stylePreset}</p>
-                  <p className="text-[11px] text-muted-foreground">
-                    {new Date(project.updatedAt).toLocaleDateString()}
-                  </p>
+
+                {/* Info */}
+                <div className="p-4 space-y-2">
+                  <p className="font-medium text-sm truncate">{project.name}</p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal">
+                        {moduleType || 'project'}
+                      </Badge>
+                      <span className="text-[10px] text-muted-foreground">{project.spec?.format}</span>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(project.updatedAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenuItem onClick={() => navigate(`/app/projects/${project.id}`)}>
-                      <Pencil className="h-3.5 w-3.5 mr-2" />
-                      {t("common.open")}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDuplicate(project)}>
-                      <Copy className="h-3.5 w-3.5 mr-2" />
-                      Duplicate
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDelete(project.id)} className="text-destructive focus:text-destructive">
-                      <Trash2 className="h-3.5 w-3.5 mr-2" />
-                      {t("common.delete")}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                {/* Kebab */}
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 bg-card/80 backdrop-blur-sm hover:bg-card">
+                        <MoreHorizontal className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem onClick={() => navigate(`/app/projects/${project.id}`)}>
+                        <Pencil className="h-3.5 w-3.5 mr-2" /> {t("common.open")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDuplicate(project)}>
+                        <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDelete(project.id)} className="text-destructive focus:text-destructive">
+                        <Trash2 className="h-3.5 w-3.5 mr-2" /> {t("common.delete")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             );
-          })
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
       <ProjectWizard open={createOpen} onOpenChange={setCreateOpen} />
     </div>
