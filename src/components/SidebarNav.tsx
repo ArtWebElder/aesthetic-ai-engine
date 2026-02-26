@@ -10,6 +10,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/fake-auth';
 import { useI18n } from '@/i18n';
+import { useTheme } from 'next-themes';
+import logoLight from '@/assets/logo-light.png';
+import logoDark from '@/assets/logo-dark.png';
 
 const navItems = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
@@ -28,6 +31,8 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { t } = useI18n();
+  const { resolvedTheme } = useTheme();
+  const logo = resolvedTheme === 'dark' ? logoDark : logoLight;
 
   const handleNav = (path: string) => {
     navigate(path);
@@ -38,10 +43,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
     <div className="flex flex-col h-full w-60 bg-sidebar border-r border-sidebar-border">
       {/* Brand */}
       <div className="p-4 flex items-center gap-2.5">
-        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-          <span className="text-sm font-heading font-bold text-primary-foreground">C</span>
-        </div>
-        <span className="font-heading font-semibold text-base tracking-tight">Creatyng</span>
+        <img src={logo} alt="Creatyng" className="h-7 w-auto" />
       </div>
 
       <div className="mx-4 h-px bg-border" />
