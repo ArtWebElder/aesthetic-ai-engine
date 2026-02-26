@@ -33,7 +33,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="relative z-10 w-full max-w-sm">
         <div className="text-center mb-8 animate-fade-in">
-          <img src={logo} alt="Creatyng" className="h-10 w-auto mb-4" />
+          <img src={logo} alt="Creatyng" className="h-10 w-auto mb-4 mx-auto" />
           <p className="text-sm text-muted-foreground">
             {t('auth.subtitle')}
           </p>
