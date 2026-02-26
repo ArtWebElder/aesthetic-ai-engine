@@ -42,7 +42,14 @@ export function createTranslator(lang: Lang) {
     const table = dictionaries[lang] ?? dictionaries.en;
     const fallback = dictionaries.en;
     const template = table[key] ?? fallback[key] ?? key;
-    return interpolate(template, vars);
+    const result = interpolate(template, vars);
+    if (import.meta.env.DEV) {
+      const remaining = result.match(/\{(\w+)\}/g);
+      if (remaining) {
+        console.warn(`[i18n] Missing interpolation params for key "${key}": ${remaining.join(", ")}`);
+      }
+    }
+    return result;
   };
 }
 
