@@ -674,18 +674,22 @@ export default function EditorPage() {
   }, [computeFitScale]);
   const zoomFromPoint = useCallback(
     (targetScale: number, clientX: number, clientY: number) => {
-      const stageEl = canvasStageRef.current;
-      if (!stageEl) return;
+      const containerEl = canvasContainerRef.current;
+      if (!containerEl) return;
       const nextScale = zoomClamp(targetScale);
+      const rect = containerEl.getBoundingClientRect();
+      const px = clientX - rect.left;
+      const py = clientY - rect.top;
       setCanvasScale((prevScale) => {
         if (Math.abs(nextScale - prevScale) < 0.0001) return prevScale;
-        const rect = stageEl.getBoundingClientRect();
-        const pointX = (clientX - rect.left) / prevScale;
-        const pointY = (clientY - rect.top) / prevScale;
-        setCanvasOffset((prevOffset) => ({
-          x: prevOffset.x - pointX * (nextScale - prevScale),
-          y: prevOffset.y - pointY * (nextScale - prevScale),
-        }));
+        setCanvasOffset((prevOffset) => {
+          const wx = (px - prevOffset.x) / prevScale;
+          const wy = (py - prevOffset.y) / prevScale;
+          return {
+            x: px - wx * nextScale,
+            y: py - wy * nextScale,
+          };
+        });
         stickToFitRef.current = false;
         return nextScale;
       });
