@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/features/auth/fake-auth";
 import { Separator } from "@/components/ui/separator";
 import { useI18n } from "@/i18n";
+import { useTheme } from "next-themes";
+import logoLight from "@/assets/logo-light.png";
+import logoDark from "@/assets/logo-dark.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -13,6 +16,8 @@ const Login = () => {
   const { login, isAuthed } = useAuth();
   const navigate = useNavigate();
   const { t } = useI18n();
+  const { resolvedTheme } = useTheme();
+  const logo = resolvedTheme === 'dark' ? logoDark : logoLight;
 
   useEffect(() => {
     if (isAuthed) navigate("/app/dashboard", { replace: true });
@@ -28,10 +33,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="relative z-10 w-full max-w-sm">
         <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-primary mb-4">
-            <span className="text-xl font-heading font-bold text-primary-foreground">C</span>
-          </div>
-          <h1 className="text-2xl font-heading font-bold mb-2 tracking-tight">Creatyng</h1>
+          <img src={logo} alt="Creatyng" className="h-10 w-auto mb-4" />
           <p className="text-sm text-muted-foreground">
             {t('auth.subtitle')}
           </p>
