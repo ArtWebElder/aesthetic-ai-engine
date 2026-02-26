@@ -1,6 +1,6 @@
 import { ArrowRight, FolderOpen, ImagePlus, ShoppingBag, Camera } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useI18n } from '@/i18n';
 import type { Project } from '@/types/spec';
 
 const TYPE_ICONS: Record<string, typeof ImagePlus> = {
@@ -9,10 +9,10 @@ const TYPE_ICONS: Record<string, typeof ImagePlus> = {
   photoshoot: Camera,
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  social_post: "Social",
-  ecom_banner: "E-com",
-  photoshoot: "Photo",
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  social_post: "project_type.social",
+  ecom_banner: "project_type.ecom",
+  photoshoot: "project_type.photo",
 };
 
 interface ResumeCardProps {
@@ -21,9 +21,10 @@ interface ResumeCardProps {
 }
 
 export function ResumeCard({ project, onContinue }: ResumeCardProps) {
+  const { t } = useI18n();
   const moduleType = (project as any).spec?.module || '';
   const ModuleIcon = TYPE_ICONS[moduleType] || FolderOpen;
-  const typeLabel = TYPE_LABELS[moduleType] || 'Project';
+  const typeLabel = TYPE_LABEL_KEYS[moduleType] ? t(TYPE_LABEL_KEYS[moduleType]) : t("common.project");
   const thumbnailUrl = project.generations?.[0]?.imageUrl;
 
   return (
@@ -45,7 +46,7 @@ export function ResumeCard({ project, onContinue }: ResumeCardProps) {
       {/* Info */}
       <div className="flex-1 flex items-center gap-3 px-4 py-3.5 min-w-0">
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] text-muted-foreground mb-0.5">Continue where you left off</p>
+          <p className="text-[11px] text-muted-foreground mb-0.5">{t("resume.continue_where_left_off")}</p>
           <p className="font-medium text-sm truncate">{project.name}</p>
         </div>
         <Badge variant="secondary" className="text-[10px] px-2 py-0 h-[18px] font-medium shrink-0 hidden sm:flex">

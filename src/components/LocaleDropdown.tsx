@@ -50,14 +50,13 @@ const FLAG_ES = (
   </svg>
 );
 
-const LOCALES: { value: Lang; label: string; flag: JSX.Element }[] = [
-  { value: "en", label: "English (EN)", flag: FLAG_US },
-  { value: "pt-BR", label: "Português (BR)", flag: FLAG_BR },
-  { value: "es", label: "Español (ES)", flag: FLAG_ES },
-];
-
 export function LocaleDropdown({ compact }: { compact?: boolean }) {
   const { lang, setLang, t } = useI18n();
+  const LOCALES: { value: Lang; label: string; flag: JSX.Element }[] = [
+    { value: "en", label: t("locale.label_en"), flag: FLAG_US },
+    { value: "pt-BR", label: t("locale.label_pt_br"), flag: FLAG_BR },
+    { value: "es", label: t("locale.label_es"), flag: FLAG_ES },
+  ];
 
   const current = LOCALES.find((l) => l.value === lang) ?? LOCALES[0];
 
@@ -85,3 +84,4 @@ export function LocaleDropdown({ compact }: { compact?: boolean }) {
     </Select>
   );
 }
+

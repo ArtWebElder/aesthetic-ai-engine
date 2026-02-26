@@ -47,7 +47,7 @@ const Dashboard = () => {
   };
 
   const handleDuplicate = (p: Project) => {
-    const dup = createProject(`${p.name} (copy)`, p.spec.format);
+    const dup = createProject(`${p.name} ${t("common.copy_suffix")}`, p.spec.format);
     setProjects(listProjects());
     navigate(`/app/projects/${dup.id}`);
   };
@@ -64,8 +64,8 @@ const Dashboard = () => {
     <div className="p-4 sm:p-5 lg:p-6 max-w-6xl mx-auto space-y-4 animate-page-fade">
       {/* ── Hero ── */}
       <PageHeader
-        title={`Welcome back${firstName !== 'there' ? `, ${firstName}` : ''}`}
-        subtitle="Your creative studio awaits."
+        title={`${t("dashboard.welcome_back")}${firstName !== 'there' ? `, ${firstName}` : ''}`}
+        subtitle={t("dashboard.welcome_subtitle")}
         action={
           <Button
             onClick={() => { setWizardType(undefined); setWizardOpen(true); }}
@@ -94,7 +94,7 @@ const Dashboard = () => {
         {activeDays > 0 && (
           <div className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1 text-xs animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '300ms' }}>
             <Flame className="h-3 w-3 text-orange-500" />
-            <span className="text-muted-foreground/70 text-[10px]">Active {activeDays}d this week</span>
+            <span className="text-muted-foreground/70 text-[10px]">{t("dashboard.active_days_this_week", { days: activeDays })}</span>
           </div>
         )}
       </div>
@@ -129,7 +129,7 @@ const Dashboard = () => {
               >
                 {item.popular && (
                   <Badge variant="secondary" className="absolute top-2.5 right-2.5 text-[9px] px-1.5 py-0 h-4 font-normal opacity-70">
-                    Popular
+                    {t("dashboard.popular")}
                   </Badge>
                 )}
                 <div className="flex items-center gap-2.5 mb-2.5">
@@ -146,14 +146,14 @@ const Dashboard = () => {
 
         {/* Production (1/3) */}
         <div className="space-y-2">
-          <SectionHeader label="Production" />
+          <SectionHeader label={t("dashboard.production")} />
           <div className="bg-card border border-border/30 rounded-xl p-3.5 space-y-2.5 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '120ms' }}>
             <MiniProductionChart />
             <div className="pt-2 border-t border-border/20 space-y-1.5">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Target className="h-3 w-3 text-primary" />
-                  <span className="text-[11px] font-medium">Weekly goal</span>
+                  <span className="text-[11px] font-medium">{t("dashboard.weekly_goal")}</span>
                 </div>
                 <span className="text-[11px] text-muted-foreground tabular-nums">{completedCount}/{weeklyGoal}</span>
               </div>
@@ -184,7 +184,7 @@ const Dashboard = () => {
           <EmptyState
             icon={Sparkles}
             title={t("projects.empty_title")}
-            description="Start by creating your first project — it only takes a few seconds."
+            description={t("dashboard.empty_description")}
             action={
               <Button onClick={() => { setWizardType(undefined); setWizardOpen(true); }} className="btn-gradient">
                 <Plus className="h-4 w-4 mr-1.5" />

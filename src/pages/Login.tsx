@@ -95,7 +95,7 @@ const Login = () => {
             <button
               type="button"
               className="text-primary hover:underline"
-              onClick={() => alert("Signup (placeholder)")}
+              onClick={() => alert(t("auth.signup_placeholder_alert"))}
             >
               {t('auth.sign_up_free')}
             </button>

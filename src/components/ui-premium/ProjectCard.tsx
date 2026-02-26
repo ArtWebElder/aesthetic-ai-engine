@@ -18,10 +18,10 @@ const TYPE_ICONS: Record<string, typeof ImagePlus> = {
   photoshoot: Camera,
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  social_post: "Social",
-  ecom_banner: "E-com",
-  photoshoot: "Photo",
+const TYPE_LABEL_KEYS: Record<string, string> = {
+  social_post: "project_type.social",
+  ecom_banner: "project_type.ecom",
+  photoshoot: "project_type.photo",
 };
 
 interface ProjectCardProps {
@@ -37,7 +37,7 @@ export function ProjectCard({ project, index = 0, onDelete, onDuplicate }: Proje
 
   const moduleType = project.spec?.module || "";
   const ModuleIcon = TYPE_ICONS[moduleType] || FolderOpen;
-  const typeLabel = TYPE_LABELS[moduleType] || "Project";
+  const typeLabel = TYPE_LABEL_KEYS[moduleType] ? t(TYPE_LABEL_KEYS[moduleType]) : t("common.project");
 
   // Check for real thumbnail from generations
   const thumbnailUrl = project.generations?.[0]?.imageUrl;
@@ -71,7 +71,7 @@ export function ProjectCard({ project, index = 0, onDelete, onDuplicate }: Proje
             className="h-8 text-xs btn-gradient shadow-lg shadow-primary/20 translate-y-1 group-hover:translate-y-0 transition-transform duration-200"
             onClick={(e) => { e.stopPropagation(); navigate(`/app/projects/${project.id}`); }}
           >
-            Continue
+            {t("project_card.continue")}
             <ArrowRight className="h-3 w-3 ml-1" />
           </Button>
         </div>
@@ -111,10 +111,10 @@ export function ProjectCard({ project, index = 0, onDelete, onDuplicate }: Proje
               <Pencil className="h-3.5 w-3.5 mr-2" /> {t("common.open")}
             </DropdownMenuItem>
             {onDuplicate && (
-              <DropdownMenuItem onClick={() => onDuplicate(project)}>
-                <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
-              </DropdownMenuItem>
-            )}
+                <DropdownMenuItem onClick={() => onDuplicate(project)}>
+                  <Copy className="h-3.5 w-3.5 mr-2" /> {t("project_card.duplicate")}
+                </DropdownMenuItem>
+              )}
             {onDelete && (
               <DropdownMenuItem onClick={() => onDelete(project.id)} className="text-destructive focus:text-destructive">
                 <Trash2 className="h-3.5 w-3.5 mr-2" /> {t("common.delete")}

@@ -111,7 +111,7 @@ const Billing = () => {
           </div>
           <div className="space-y-2">
             <Label className="text-xs">{t('billing.api_key')}</Label>
-            <Input type="password" placeholder="sk-..." />
+            <Input type="password" placeholder={t("billing.api_key_placeholder")} />
           </div>
           <Button variant="outline" size="sm" disabled>{t('billing.save_key')}</Button>
         </div>

@@ -907,11 +907,11 @@ export default function EditorPage() {
         });
         await new Promise((resolve) => setTimeout(resolve, 80));
       }
-      toast({ title: "10 variations exported" });
+      toast({ title: t("editor.toast.variations_exported") });
     } catch {
-      setLastExportError("Batch export failed");
+      setLastExportError(t("editor.toast.batch_export_failed"));
       toast({
-        title: "Batch export failed",
+        title: t("editor.toast.batch_export_failed"),
         variant: "destructive",
       });
     } finally {
@@ -1555,11 +1555,11 @@ export default function EditorPage() {
     setLastExportError(null);
     try {
       await exportSocialPost2K({ fileName: "social-post-2k.png" });
-      toast({ title: "Export ready" });
+      toast({ title: t("editor.toast.export_ready") });
     } catch {
-      setLastExportError("Export failed");
+      setLastExportError(t("editor.toast.export_failed"));
       toast({
-        title: "Export failed",
+        title: t("editor.toast.export_failed"),
         variant: "destructive",
       });
     } finally {
@@ -4302,7 +4302,10 @@ export default function EditorPage() {
             onClick={() => void createVariations()}
           >
             {isBatchExporting
-              ? `Exporting 10... (${batchProgress?.current ?? 0}/${batchProgress?.total ?? 10})`
+              ? t("editor.actions.exporting_10_progress", {
+                  current: batchProgress?.current ?? 0,
+                  total: batchProgress?.total ?? 10,
+                })
               : t("editor.actions.create_10_variations")}
           </Button>
           <Button
@@ -4310,13 +4313,16 @@ export default function EditorPage() {
             disabled={isBatchExporting || isExporting2K}
             onClick={() => void export2K()}
           >
-            {isExporting2K ? "Exporting..." : t("editor.actions.export_2k")}
+            {isExporting2K ? t("editor.actions.exporting") : t("editor.actions.export_2k")}
           </Button>
         </div>
       </div>
       {isBatchExporting ? (
         <div className="px-4 md:px-6 pb-2 text-xs text-muted-foreground">
-          Generating variations: {batchProgress?.current ?? 0}/{batchProgress?.total ?? 10}
+          {t("editor.actions.generating_variations_progress", {
+            current: batchProgress?.current ?? 0,
+            total: batchProgress?.total ?? 10,
+          })}
         </div>
       ) : null}
       {lastExportError ? (

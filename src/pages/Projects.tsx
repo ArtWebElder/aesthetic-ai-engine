@@ -44,7 +44,7 @@ const Projects = () => {
   };
 
   const handleDuplicate = (p: Project) => {
-    const dup = createProject(`${p.name} (copy)`, p.spec.format);
+    const dup = createProject(`${p.name} ${t("common.copy_suffix")}`, p.spec.format);
     setProjects(listProjects());
     navigate(`/app/projects/${dup.id}`);
   };
@@ -79,9 +79,9 @@ const Projects = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t("projects.filter.all")}</SelectItem>
-            <SelectItem value="ecom_banner">Banner Ad</SelectItem>
-            <SelectItem value="social_post">Social Post</SelectItem>
-            <SelectItem value="photoshoot">Photoshoot</SelectItem>
+            <SelectItem value="ecom_banner">{t("projects.filter.banner_ad")}</SelectItem>
+            <SelectItem value="social_post">{t("project_type.social_post")}</SelectItem>
+            <SelectItem value="photoshoot">{t("project_type.photoshoot")}</SelectItem>
           </SelectContent>
         </Select>
       </div>

@@ -31,7 +31,7 @@ const NotFound = () => {
             <Link to="/">{t("not_found.back_home")}</Link>
           </Button>
           <Button asChild>
-            <Link to="/app/projects">Projects</Link>
+            <Link to="/app/projects">{t("projects.title")}</Link>
           </Button>
         </div>
       </div>

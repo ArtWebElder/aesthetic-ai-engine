@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, FolderPlus, Wand2, Download, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useI18n } from '@/i18n';
 
 interface Step {
   icon: typeof FolderPlus;
@@ -18,13 +19,14 @@ interface GettingStartedBannerProps {
 
 export function GettingStartedBanner({ hasProjects, hasGenerations, onCreateProject }: GettingStartedBannerProps) {
   const [dismissed, setDismissed] = useState(false);
+  const { t } = useI18n();
 
   if (dismissed) return null;
 
   const steps: Step[] = [
-    { icon: FolderPlus, label: 'Create a project', done: hasProjects, action: onCreateProject, actionLabel: 'Create' },
-    { icon: Wand2, label: 'Generate variations', done: hasGenerations },
-    { icon: Download, label: 'Export your assets', done: false },
+    { icon: FolderPlus, label: t("onboarding.step_create_project"), done: hasProjects, action: onCreateProject, actionLabel: t("onboarding.action_create") },
+    { icon: Wand2, label: t("onboarding.step_generate_variations"), done: hasGenerations },
+    { icon: Download, label: t("onboarding.step_export_assets"), done: false },
   ];
 
   const completedCount = steps.filter(s => s.done).length;
@@ -42,7 +44,7 @@ export function GettingStartedBanner({ hasProjects, hasGenerations, onCreateProj
       </button>
 
       <div className="flex items-center gap-2 mb-4">
-        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Getting started</span>
+        <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">{t("onboarding.title")}</span>
         <span className="text-[10px] text-muted-foreground">·</span>
         <span className="text-[10px] text-muted-foreground">{completedCount}/{steps.length}</span>
       </div>
