@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
   WheelEvent as ReactWheelEvent,
 } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -489,12 +490,18 @@ export default function EditorPage() {
   const [compactMode, setCompactMode] = useState(false);
   const [showGridOverlay, setShowGridOverlay] = useState(false);
   const canvasContainerRef = useRef<HTMLDivElement | null>(null);
-  const canvasStageRef = useRef<HTMLDivElement | null>(null);
+  const panSessionRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startScrollLeft: number;
+    startScrollTop: number;
+  } | null>(null);
   const stickToFitRef = useRef(true);
   const [canvasViewport, setCanvasViewport] = useState({ width: 0, height: 0 });
   const [canvasScale, setCanvasScale] = useState(1);
   const [canvasFitScale, setCanvasFitScale] = useState(1);
-  const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
+  const [isCanvasPanning, setIsCanvasPanning] = useState(false);
 
   // carrega projeto por ID
   useEffect(() => {
@@ -650,15 +657,44 @@ export default function EditorPage() {
     }),
     [safeSpec?.generation?.width, safeSpec?.generation?.height]
   );
-  const zoomClamp = useCallback((value: number) => Math.max(0.1, Math.min(4, value)), []);
+  const CANVAS_PADDING = 96;
+  const zoomClamp = useCallback((value: number) => Math.max(0.25, Math.min(3, value)), []);
+  const computeCanvasGeometry = useCallback(
+    (scale: number, viewport = canvasViewport) => {
+      const scaledWidth = previewBaseSize.width * scale;
+      const scaledHeight = previewBaseSize.height * scale;
+      const innerWidth = Math.max(viewport.width, scaledWidth + CANVAS_PADDING * 2);
+      const innerHeight = Math.max(viewport.height, scaledHeight + CANVAS_PADDING * 2);
+      return {
+        innerWidth,
+        innerHeight,
+        originX: (innerWidth - scaledWidth) / 2,
+        originY: (innerHeight - scaledHeight) / 2,
+      };
+    },
+    [canvasViewport, previewBaseSize.height, previewBaseSize.width]
+  );
+  const centerViewportForScale = useCallback(
+    (scale: number) => {
+      const container = canvasContainerRef.current;
+      if (!container) return;
+      const geom = computeCanvasGeometry(scale);
+      requestAnimationFrame(() => {
+        container.scrollLeft = Math.max(0, (geom.innerWidth - container.clientWidth) / 2);
+        container.scrollTop = Math.max(0, (geom.innerHeight - container.clientHeight) / 2);
+      });
+    },
+    [computeCanvasGeometry]
+  );
   const computeFitScale = useCallback(() => {
     if (canvasViewport.width <= 0 || canvasViewport.height <= 0) return 1;
     const fit = Math.min(
-      canvasViewport.width / previewBaseSize.width,
-      canvasViewport.height / previewBaseSize.height
+      Math.max(canvasViewport.width - CANVAS_PADDING * 2, 1) / previewBaseSize.width,
+      Math.max(canvasViewport.height - CANVAS_PADDING * 2, 1) / previewBaseSize.height
     );
     return zoomClamp(fit);
   }, [
+    CANVAS_PADDING,
     canvasViewport.height,
     canvasViewport.width,
     previewBaseSize.height,
@@ -669,58 +705,107 @@ export default function EditorPage() {
     const fit = computeFitScale();
     setCanvasFitScale(fit);
     setCanvasScale(fit);
-    setCanvasOffset({ x: 0, y: 0 });
+    centerViewportForScale(fit);
     stickToFitRef.current = true;
-  }, [computeFitScale]);
-  const zoomFromPoint = useCallback(
+  }, [centerViewportForScale, computeFitScale]);
+  const zoomToPoint = useCallback(
     (targetScale: number, clientX: number, clientY: number) => {
       const containerEl = canvasContainerRef.current;
       if (!containerEl) return;
       const nextScale = zoomClamp(targetScale);
+      if (Math.abs(nextScale - canvasScale) < 0.0001) return;
       const rect = containerEl.getBoundingClientRect();
       const px = clientX - rect.left;
       const py = clientY - rect.top;
-      setCanvasScale((prevScale) => {
-        if (Math.abs(nextScale - prevScale) < 0.0001) return prevScale;
-        setCanvasOffset((prevOffset) => {
-          const wx = (px - prevOffset.x) / prevScale;
-          const wy = (py - prevOffset.y) / prevScale;
-          return {
-            x: px - wx * nextScale,
-            y: py - wy * nextScale,
-          };
-        });
-        stickToFitRef.current = false;
-        return nextScale;
+      const prevGeom = computeCanvasGeometry(canvasScale);
+      const nextGeom = computeCanvasGeometry(nextScale);
+      const worldX = (px + containerEl.scrollLeft - prevGeom.originX) / canvasScale;
+      const worldY = (py + containerEl.scrollTop - prevGeom.originY) / canvasScale;
+      setCanvasScale(nextScale);
+      requestAnimationFrame(() => {
+        containerEl.scrollLeft = worldX * nextScale + nextGeom.originX - px;
+        containerEl.scrollTop = worldY * nextScale + nextGeom.originY - py;
       });
+      stickToFitRef.current = false;
     },
-    [zoomClamp]
+    [canvasScale, computeCanvasGeometry, zoomClamp]
+  );
+  const zoomToViewportCenter = useCallback(
+    (targetScale: number) => {
+      const container = canvasContainerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      zoomToPoint(targetScale, rect.left + rect.width / 2, rect.top + rect.height / 2);
+    },
+    [zoomToPoint]
+  );
+  const adjustZoomByStep = useCallback(
+    (direction: 1 | -1) => {
+      const next = zoomClamp(canvasScale + direction * 0.1);
+      zoomToViewportCenter(next);
+    },
+    [canvasScale, zoomClamp, zoomToViewportCenter]
+  );
+  const setZoom100 = useCallback(() => {
+    zoomToViewportCenter(1);
+  }, [zoomToViewportCenter]);
+  const handleCanvasPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 && event.button !== 1) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("[data-canvas-zoom-controls='true']")) return;
+    const container = canvasContainerRef.current;
+    if (!container) return;
+    panSessionRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startScrollLeft: container.scrollLeft,
+      startScrollTop: container.scrollTop,
+    };
+    stickToFitRef.current = false;
+    setIsCanvasPanning(true);
+    (event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId);
+  }, []);
+  const handleCanvasPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const session = panSessionRef.current;
+    const container = canvasContainerRef.current;
+    if (!session || !container || session.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    container.scrollLeft = session.startScrollLeft - (event.clientX - session.startX);
+    container.scrollTop = session.startScrollTop - (event.clientY - session.startY);
+  }, []);
+  const handleCanvasPointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const session = panSessionRef.current;
+    if (!session || session.pointerId !== event.pointerId) return;
+    panSessionRef.current = null;
+    setIsCanvasPanning(false);
+    if ((event.currentTarget as HTMLDivElement).hasPointerCapture(event.pointerId)) {
+      (event.currentTarget as HTMLDivElement).releasePointerCapture(event.pointerId);
+    }
+  }, []);
+  const canvasGeometry = useMemo(
+    () => computeCanvasGeometry(canvasScale),
+    [canvasScale, computeCanvasGeometry]
   );
   const handleCanvasWheel = useCallback(
     (event: ReactWheelEvent<HTMLDivElement>) => {
-      if (!event.shiftKey) return;
+      if (!event.ctrlKey && !event.metaKey && !event.shiftKey) return;
       event.preventDefault();
       const zoomFactor = Math.exp(-event.deltaY * 0.0015);
-      zoomFromPoint(canvasScale * zoomFactor, event.clientX, event.clientY);
+      zoomToPoint(canvasScale * zoomFactor, event.clientX, event.clientY);
     },
-    [canvasScale, zoomFromPoint]
+    [canvasScale, zoomToPoint]
   );
   const handleCanvasKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (!event.shiftKey) return;
+      if (!event.ctrlKey && !event.metaKey && !event.shiftKey) return;
       if (event.key !== "+" && event.key !== "=" && event.key !== "-" && event.key !== "_") {
         return;
       }
-      const container = canvasContainerRef.current;
-      if (!container) return;
       event.preventDefault();
-      const zoomStep = event.key === "-" || event.key === "_" ? 0.9 : 1.1;
-      const rect = container.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
-      zoomFromPoint(canvasScale * zoomStep, centerX, centerY);
+      adjustZoomByStep(event.key === "-" || event.key === "_" ? -1 : 1);
     },
-    [canvasScale, zoomFromPoint]
+    [adjustZoomByStep]
   );
 
   function persistPhotoshootBuilderPatch(patch: Partial<ProjectSpec["builder"]>) {
@@ -863,9 +948,9 @@ export default function EditorPage() {
     setCanvasFitScale(fit);
     if (stickToFitRef.current) {
       setCanvasScale(fit);
-      setCanvasOffset({ x: 0, y: 0 });
+      centerViewportForScale(fit);
     }
-  }, [computeFitScale]);
+  }, [centerViewportForScale, computeFitScale]);
 
   useEffect(() => {
     resetCanvasToFit();
@@ -1863,38 +1948,51 @@ export default function EditorPage() {
               Grid
             </button>
           </div>
-          <div className="flex-1 min-h-0 px-6 md:px-8 pb-6 md:pb-8 overflow-hidden flex items-center justify-center">
-            <div className={focusMode ? "w-full max-w-[960px]" : "w-full max-w-[880px]"}>
-              <div
-                ref={canvasContainerRef}
-                tabIndex={0}
-                onWheel={handleCanvasWheel}
-                onKeyDown={handleCanvasKeyDown}
-                className="relative h-full min-h-[360px] overflow-hidden rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              >
-                {/* Grid overlay */}
-                {showGridOverlay && (
+          <div className="flex-1 min-h-0 px-4 md:px-6 pb-4 md:pb-6 overflow-hidden">
+            <div
+              ref={canvasContainerRef}
+              tabIndex={0}
+              onWheel={handleCanvasWheel}
+              onKeyDown={handleCanvasKeyDown}
+              onPointerDown={handleCanvasPointerDown}
+              onPointerMove={handleCanvasPointerMove}
+              onPointerUp={handleCanvasPointerUp}
+              onPointerCancel={handleCanvasPointerUp}
+              className={[
+                "relative h-full min-h-0 overflow-auto rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                isCanvasPanning ? "cursor-grabbing" : "cursor-grab",
+              ].join(" ")}
+            >
+              {/* Grid overlay */}
+              {showGridOverlay && (
+                <div
+                  className="absolute inset-0 pointer-events-none z-30"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(to right, hsl(var(--border) / 0.15) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.15) 1px, transparent 1px)",
+                    backgroundSize: "8px 8px",
+                  }}
+                />
+              )}
+              <div className="relative min-h-full min-w-full bg-muted/30">
+                <div
+                  style={{
+                    width: `${canvasGeometry.innerWidth}px`,
+                    height: `${canvasGeometry.innerHeight}px`,
+                  }}
+                >
                   <div
-                    className="absolute inset-0 pointer-events-none z-30"
                     style={{
-                      backgroundImage:
-                        "linear-gradient(to right, hsl(var(--border) / 0.15) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.15) 1px, transparent 1px)",
-                      backgroundSize: "8px 8px",
+                      position: "absolute",
+                      left: `${canvasGeometry.originX}px`,
+                      top: `${canvasGeometry.originY}px`,
+                      width: `${previewBaseSize.width}px`,
+                      height: `${previewBaseSize.height}px`,
+                      transform: `scale(${canvasScale})`,
+                      transformOrigin: "0 0",
                     }}
-                  />
-                )}
-                <div className="absolute inset-0 bg-muted/30">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div
-                      ref={canvasStageRef}
-                      style={{
-                        width: `${previewBaseSize.width}px`,
-                        height: `${previewBaseSize.height}px`,
-                        transform: `translate3d(${canvasOffset.x}px, ${canvasOffset.y}px, 0) scale(${canvasScale})`,
-                        transformOrigin: "0 0",
-                      }}
-                    >
-                      <div className="w-full h-full">
+                  >
+                    <div className="w-full h-full">
                     {isSocialPost ? (
                       (() => {
                         const layoutRaw = (safeSpec.builder.layoutPreset ?? "").trim().toLowerCase();
@@ -2171,22 +2269,55 @@ export default function EditorPage() {
                         showGrid={false}
                       />
                     )}
-                      </div>
                     </div>
                   </div>
-                  <div className="absolute bottom-3 right-3 z-40 flex items-center gap-2 rounded-md border border-border/60 bg-background/85 px-2 py-1 text-[11px] backdrop-blur-sm">
-                    <span className="tabular-nums text-muted-foreground">
-                      {Math.round(canvasScale * 100)}%
-                    </span>
-                    <button
-                      type="button"
-                      onClick={resetCanvasToFit}
-                      className="rounded px-1.5 py-0.5 text-foreground hover:bg-muted"
-                    >
-                      Fit
-                    </button>
-                  </div>
                 </div>
+              </div>
+              <div
+                data-canvas-zoom-controls="true"
+                className="absolute bottom-3 right-3 z-40 flex items-center gap-1 rounded-md border border-border/60 bg-background/90 p-1 text-[11px] backdrop-blur-sm"
+              >
+                <button
+                  type="button"
+                  onClick={() => adjustZoomByStep(-1)}
+                  className="rounded px-2 py-1 text-foreground hover:bg-muted"
+                  aria-label="Zoom out"
+                >
+                  -
+                </button>
+                <button
+                  type="button"
+                  onClick={setZoom100}
+                  className={[
+                    "rounded px-2 py-1 tabular-nums",
+                    Math.abs(canvasScale - 1) < 0.0001
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-muted",
+                  ].join(" ")}
+                  aria-label="Set zoom to 100%"
+                >
+                  {Math.round(canvasScale * 100)}%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => adjustZoomByStep(1)}
+                  className="rounded px-2 py-1 text-foreground hover:bg-muted"
+                  aria-label="Zoom in"
+                >
+                  +
+                </button>
+                <button
+                  type="button"
+                  onClick={resetCanvasToFit}
+                  className={[
+                    "rounded px-2 py-1",
+                    Math.abs(canvasScale - canvasFitScale) < 0.0001
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-muted",
+                  ].join(" ")}
+                >
+                  Fit
+                </button>
               </div>
             </div>
           </div>
