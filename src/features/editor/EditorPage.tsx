@@ -1793,10 +1793,10 @@ export default function EditorPage() {
         const hasExportReady = project.generations?.some(g => g.status === "done" && g.imageUrl) ?? false;
 
         const steps = [
-          { label: "Subject", done: hasSubject },
-          { label: "Style", done: hasStyle },
-          { label: "Generated", done: hasGenerations },
-          { label: "Export ready", done: hasExportReady },
+          { label: t("editor.progress.subject"), done: hasSubject },
+          { label: t("editor.progress.style"), done: hasStyle },
+          { label: t("editor.progress.generated"), done: hasGenerations },
+          { label: t("editor.progress.export_ready"), done: hasExportReady },
         ];
 
         const completedCount = steps.filter(s => s.done).length;
