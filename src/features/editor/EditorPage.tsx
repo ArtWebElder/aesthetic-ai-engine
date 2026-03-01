@@ -657,8 +657,14 @@ export default function EditorPage() {
     }),
     [safeSpec?.generation?.width, safeSpec?.generation?.height]
   );
-  const CANVAS_PADDING = 96;
-  const zoomClamp = useCallback((value: number) => Math.max(0.25, Math.min(3, value)), []);
+  const isCanvasMobileViewport = canvasViewport.width > 0 && canvasViewport.width < 768;
+  const CANVAS_PADDING = isCanvasMobileViewport ? 24 : 96;
+  const minCanvasScale = isCanvasMobileViewport ? 0.1 : 0.25;
+  const maxCanvasScale = 3;
+  const zoomClamp = useCallback(
+    (value: number) => Math.max(minCanvasScale, Math.min(maxCanvasScale, value)),
+    [maxCanvasScale, minCanvasScale]
+  );
   const computeCanvasGeometry = useCallback(
     (scale: number, viewport = canvasViewport) => {
       const scaledWidth = previewBaseSize.width * scale;
@@ -672,7 +678,7 @@ export default function EditorPage() {
         originY: (innerHeight - scaledHeight) / 2,
       };
     },
-    [canvasViewport, previewBaseSize.height, previewBaseSize.width]
+    [CANVAS_PADDING, canvasViewport, previewBaseSize.height, previewBaseSize.width]
   );
   const centerViewportForScale = useCallback(
     (scale: number) => {
@@ -789,23 +795,31 @@ export default function EditorPage() {
   );
   const handleCanvasWheel = useCallback(
     (event: ReactWheelEvent<HTMLDivElement>) => {
-      if (!event.ctrlKey && !event.metaKey && !event.shiftKey) return;
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        const zoomFactor = Math.exp(-event.deltaY * 0.0015);
+        zoomToPoint(canvasScale * zoomFactor, event.clientX, event.clientY);
+        return;
+      }
+      if (!event.shiftKey) return;
+      const container = canvasContainerRef.current;
+      if (!container) return;
       event.preventDefault();
-      const zoomFactor = Math.exp(-event.deltaY * 0.0015);
-      zoomToPoint(canvasScale * zoomFactor, event.clientX, event.clientY);
+      container.scrollLeft += event.deltaY + event.deltaX;
     },
     [canvasScale, zoomToPoint]
   );
   const handleCanvasKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (!event.ctrlKey && !event.metaKey && !event.shiftKey) return;
+      if (isCanvasMobileViewport) return;
+      if (!event.ctrlKey && !event.metaKey) return;
       if (event.key !== "+" && event.key !== "=" && event.key !== "-" && event.key !== "_") {
         return;
       }
       event.preventDefault();
       adjustZoomByStep(event.key === "-" || event.key === "_" ? -1 : 1);
     },
-    [adjustZoomByStep]
+    [adjustZoomByStep, isCanvasMobileViewport]
   );
 
   function persistPhotoshootBuilderPatch(patch: Partial<ProjectSpec["builder"]>) {
@@ -1977,6 +1991,7 @@ export default function EditorPage() {
               <div className="relative min-h-full min-w-full bg-muted/30">
                 <div
                   style={{
+                    position: "relative",
                     width: `${canvasGeometry.innerWidth}px`,
                     height: `${canvasGeometry.innerHeight}px`,
                   }}
@@ -1984,11 +1999,11 @@ export default function EditorPage() {
                   <div
                     style={{
                       position: "absolute",
-                      left: `${canvasGeometry.originX}px`,
-                      top: `${canvasGeometry.originY}px`,
+                      left: 0,
+                      top: 0,
                       width: `${previewBaseSize.width}px`,
                       height: `${previewBaseSize.height}px`,
-                      transform: `scale(${canvasScale})`,
+                      transform: `translate(${canvasGeometry.originX}px, ${canvasGeometry.originY}px) scale(${canvasScale})`,
                       transformOrigin: "0 0",
                     }}
                   >
@@ -2280,7 +2295,7 @@ export default function EditorPage() {
                 <button
                   type="button"
                   onClick={() => adjustZoomByStep(-1)}
-                  className="rounded px-2 py-1 text-foreground hover:bg-muted"
+                  className="inline-flex h-11 min-w-11 items-center justify-center rounded px-3 text-foreground hover:bg-muted md:h-8 md:min-w-8 md:px-2"
                   aria-label="Zoom out"
                 >
                   -
@@ -2289,7 +2304,7 @@ export default function EditorPage() {
                   type="button"
                   onClick={setZoom100}
                   className={[
-                    "rounded px-2 py-1 tabular-nums",
+                    "inline-flex h-11 min-w-[56px] items-center justify-center rounded px-3 tabular-nums md:h-8 md:min-w-[52px] md:px-2",
                     Math.abs(canvasScale - 1) < 0.0001
                       ? "bg-primary/10 text-primary"
                       : "text-foreground hover:bg-muted",
@@ -2301,7 +2316,7 @@ export default function EditorPage() {
                 <button
                   type="button"
                   onClick={() => adjustZoomByStep(1)}
-                  className="rounded px-2 py-1 text-foreground hover:bg-muted"
+                  className="inline-flex h-11 min-w-11 items-center justify-center rounded px-3 text-foreground hover:bg-muted md:h-8 md:min-w-8 md:px-2"
                   aria-label="Zoom in"
                 >
                   +
@@ -2310,7 +2325,7 @@ export default function EditorPage() {
                   type="button"
                   onClick={resetCanvasToFit}
                   className={[
-                    "rounded px-2 py-1",
+                    "inline-flex h-11 min-w-11 items-center justify-center rounded px-3 md:h-8 md:min-w-8 md:px-2",
                     Math.abs(canvasScale - canvasFitScale) < 0.0001
                       ? "bg-primary/10 text-primary"
                       : "text-foreground hover:bg-muted",
