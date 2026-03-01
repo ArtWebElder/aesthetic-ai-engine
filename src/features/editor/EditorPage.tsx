@@ -744,10 +744,17 @@ export default function EditorPage() {
     return g ?? project.generations[0];
   }, [project]);
 
+  const currentSpec = spec ?? project?.spec ?? null;
   const safeSpec = useMemo(() => {
-    if (!spec) return null;
-    return ensureSpecDefaults(spec);
-  }, [spec]);
+    if (!currentSpec) return null;
+    return ensureSpecDefaults(currentSpec);
+  }, [currentSpec]);
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as any).__MI_SPEC__ = safeSpec;
+    (window as any).__MI_PROJECT__ = project;
+  }, [project, safeSpec]);
 
   // compiled prompt placeholder
   const compiled = useMemo(() => {
@@ -828,12 +835,6 @@ export default function EditorPage() {
   ];
 
   const bgUrl = active?.imageUrl ?? null;
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    (window as any).__MI_SPEC__ = safeSpec;
-    (window as any).__MI_PROJECT__ = project;
-  }, [project, safeSpec]);
   const previewBaseSize = useMemo(
     () => ({
       width: safeSpec?.generation?.width ?? 1080,
