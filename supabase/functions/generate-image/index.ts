@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "supabase";
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {
@@ -16,8 +16,7 @@ function corsHeaders(origin: string | null) {
   return {
     "access-control-allow-origin": allowOrigin === "null" ? "*" : allowOrigin,
     "access-control-allow-credentials": "true",
-    "access-control-allow-headers":
-      "authorization, x-client-info, apikey, content-type, x-requested-with",
+    "access-control-allow-headers": "authorization, x-client-info, apikey, content-type, x-requested-with",
     "access-control-allow-methods": "GET,POST,OPTIONS",
     vary: "Origin",
   };
@@ -58,17 +57,11 @@ async function signJwtRS256(payload: Record<string, unknown>, privateKeyPem: str
     ["sign"],
   );
 
-  const signature = await crypto.subtle.sign(
-    "RSASSA-PKCS1-v1_5",
-    cryptoKey,
-    enc.encode(data),
-  );
-
-  const sigB64 = b64url(new Uint8Array(signature));
-  return `${data}.${sigB64}`;
+  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", cryptoKey, enc.encode(data));
+  return `${data}.${b64url(new Uint8Array(signature))}`;
 }
 
-async function getGoogleAccessToken(serviceAccount: any) {
+async function getGoogleAccessToken(serviceAccount: { client_email: string; private_key: string }) {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: serviceAccount.client_email,
@@ -80,7 +73,6 @@ async function getGoogleAccessToken(serviceAccount: any) {
   };
 
   const assertion = await signJwtRS256(payload, serviceAccount.private_key);
-
   const body = new URLSearchParams();
   body.set("grant_type", "urn:ietf:params:oauth:grant-type:jwt-bearer");
   body.set("assertion", assertion);
@@ -108,156 +100,347 @@ type GenerateBody = {
   module?: string;
 };
 
+type ParsedRequest = {
+  prompt: string;
+  negativePrompt: string | null;
+  width: number;
+  height: number;
+  seed: number | null;
+  module: string | null;
+};
+
+type VertexAttemptError = {
+  endpoint: string;
+  payloadKind: string;
+  status?: number;
+  details: string;
+};
+
+type VertexSuccess = {
+  base64: string;
+  endpoint: string;
+  payloadKind: string;
+  raw: unknown;
+};
+
+function clampInt(n: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, Math.round(n)));
+}
+
+function parseJsonSafe(text: string): unknown {
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { ok: false; error: string; details: string } {
+  if (!raw || typeof raw !== "object") {
+    return { ok: false, error: "bad_request", details: "Body must be a JSON object." };
+  }
+
+  const body = raw as Partial<GenerateBody>;
+  const prompt = String(body.prompt ?? "").trim();
+  if (!prompt) return { ok: false, error: "bad_request", details: "Field 'prompt' is required." };
+  if (prompt.length > 8000) return { ok: false, error: "bad_request", details: "Field 'prompt' is too long." };
+
+  const widthRaw = Number(body.width ?? 1080);
+  const heightRaw = Number(body.height ?? 1350);
+  if (!Number.isFinite(widthRaw) || !Number.isFinite(heightRaw)) {
+    return { ok: false, error: "bad_request", details: "Fields 'width' and 'height' must be numbers." };
+  }
+
+  const width = clampInt(widthRaw, 256, 4096);
+  const height = clampInt(heightRaw, 256, 4096);
+
+  const negativePrompt = typeof body.negativePrompt === "string" ? body.negativePrompt.trim() : null;
+
+  const seedRaw = body.seed;
+  const seed = Number.isFinite(Number(seedRaw)) ? clampInt(Number(seedRaw), 0, 2_147_483_647) : null;
+
+  const module = typeof body.module === "string" && body.module.trim() ? body.module.trim().slice(0, 80) : null;
+
+  return {
+    ok: true,
+    data: {
+      prompt,
+      negativePrompt,
+      width,
+      height,
+      seed,
+      module,
+    },
+  };
+}
+
+function pickClosestAspectRatio(width: number, height: number): "1:1" | "4:5" | "9:16" | "16:9" {
+  const target = width / height;
+  const options: Array<{ ratio: "1:1" | "4:5" | "9:16" | "16:9"; value: number }> = [
+    { ratio: "1:1", value: 1 },
+    { ratio: "4:5", value: 4 / 5 },
+    { ratio: "9:16", value: 9 / 16 },
+    { ratio: "16:9", value: 16 / 9 },
+  ];
+
+  let best = options[0];
+  let diff = Math.abs(target - best.value);
+  for (let i = 1; i < options.length; i++) {
+    const d = Math.abs(target - options[i].value);
+    if (d < diff) {
+      best = options[i];
+      diff = d;
+    }
+  }
+  return best.ratio;
+}
+
+function extractBase64FromVertex(raw: unknown): string | null {
+  const j = raw as any;
+  return (
+    j?.predictions?.[0]?.bytesBase64Encoded ??
+    j?.predictions?.[0]?.image?.bytesBase64Encoded ??
+    j?.predictions?.[0]?.imageBytes ??
+    j?.predictions?.[0]?.bytesBase64 ??
+    null
+  );
+}
+
+function buildVertexPayloads(input: ParsedRequest, aspectRatio: string): Array<{ kind: string; payload: Record<string, unknown> }> {
+  const baseParams: Record<string, unknown> = {
+    sampleCount: 1,
+    aspectRatio,
+  };
+
+  if (input.negativePrompt) baseParams.negativePrompt = input.negativePrompt;
+  if (input.seed !== null) baseParams.seed = input.seed;
+
+  const withSizeParams: Record<string, unknown> = {
+    ...baseParams,
+    width: input.width,
+    height: input.height,
+  };
+
+  const instanceWithNegative: Record<string, unknown> = { prompt: input.prompt };
+  if (input.negativePrompt) instanceWithNegative.negativePrompt = input.negativePrompt;
+
+  return [
+    {
+      kind: "aspect_ratio_parameters",
+      payload: { instances: [{ prompt: input.prompt }], parameters: baseParams },
+    },
+    {
+      kind: "aspect_ratio_instance_negative",
+      payload: { instances: [instanceWithNegative], parameters: { sampleCount: 1, aspectRatio, ...(input.seed !== null ? { seed: input.seed } : {}) } },
+    },
+    {
+      kind: "width_height_fallback",
+      payload: { instances: [{ prompt: input.prompt }], parameters: withSizeParams },
+    },
+  ];
+}
+
+function buildVertexEndpoints(projectId: string, location: string) {
+  const base = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models`;
+  return [
+    `${base}/imagen-3.0-generate-001:predict`,
+    `${base}/imagen-3.0-fast-generate-001:predict`,
+    `${base}/imagegeneration@006:predict`,
+  ];
+}
+
+async function callVertexWithFallback(
+  token: string,
+  endpoints: string[],
+  payloads: Array<{ kind: string; payload: Record<string, unknown> }>,
+): Promise<{ ok: true; value: VertexSuccess } | { ok: false; errors: VertexAttemptError[] }> {
+  const errors: VertexAttemptError[] = [];
+
+  for (const endpoint of endpoints) {
+    for (const item of payloads) {
+      try {
+        const resp = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(item.payload),
+        });
+
+        const text = await resp.text();
+        if (!resp.ok) {
+          errors.push({ endpoint, payloadKind: item.kind, status: resp.status, details: text.slice(0, 1200) || "vertex_request_failed" });
+          continue;
+        }
+
+        const parsed = parseJsonSafe(text);
+        const b64 = extractBase64FromVertex(parsed);
+        if (b64) {
+          return {
+            ok: true,
+            value: {
+              base64: b64,
+              endpoint,
+              payloadKind: item.kind,
+              raw: parsed,
+            },
+          };
+        }
+
+        errors.push({ endpoint, payloadKind: item.kind, details: `unexpected_response: ${text.slice(0, 1200)}` });
+      } catch (e) {
+        errors.push({ endpoint, payloadKind: item.kind, details: String((e as { message?: string })?.message ?? e).slice(0, 1200) });
+      }
+    }
+  }
+
+  return { ok: false, errors };
+}
+
 function looksLikeBucketMissing(message: string) {
   const m = message.toLowerCase();
   return m.includes("bucket") && (m.includes("not found") || m.includes("does not exist"));
 }
 
-Deno.serve(async (req) => {
+function isAlreadyExistsError(message: string) {
+  const m = message.toLowerCase();
+  return m.includes("already") && m.includes("exist");
+}
+
+async function ensurePrivateBucket(supabase: any, bucket: string): Promise<string | null> {
+  const { error: getError } = await supabase.storage.getBucket(bucket);
+  if (!getError) return null;
+
+  const { error: createError } = await supabase.storage.createBucket(bucket, { public: false });
+  if (createError && !isAlreadyExistsError(createError.message)) {
+    return createError.message;
+  }
+  return null;
+}
+
+async function updateGenerationError(supabase: any, generationId: string, startedAt: number, details: string) {
+  await supabase
+    .from("generations")
+    .update({
+      status: "error",
+      duration_ms: Date.now() - startedAt,
+      error_message: details.slice(0, 1200),
+    })
+    .eq("id", generationId);
+}
+
+Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   const headers = corsHeaders(origin);
 
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
-  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
+  if (req.method !== "POST") return json({ error: "method_not_allowed", details: "Use POST." }, 405, headers);
 
   try {
+    let bodyRaw: unknown;
+    try {
+      bodyRaw = await req.json();
+    } catch {
+      return json({ error: "bad_request", details: "Invalid JSON body." }, 400, headers);
+    }
+
+    const parsed = parseRequestBody(bodyRaw);
+    if (!parsed.ok) return json({ error: parsed.error, details: parsed.details }, 400, headers);
+
+    const input = parsed.data;
+    const aspectRatio = pickClosestAspectRatio(input.width, input.height);
+
     const GCP_PROJECT_ID = Deno.env.get("GCP_PROJECT_ID") ?? "";
     const GCP_LOCATION = Deno.env.get("GCP_LOCATION") ?? "us-central1";
     const GCP_SA_KEY_B64 = Deno.env.get("GCP_SA_KEY_B64") ?? "";
 
-    if (!GCP_PROJECT_ID) return json({ error: "missing_secret", key: "GCP_PROJECT_ID" }, 500, headers);
-    if (!GCP_SA_KEY_B64) return json({ error: "missing_secret", key: "GCP_SA_KEY_B64" }, 500, headers);
-
-    const body = (await req.json()) as GenerateBody;
-    const prompt = String(body.prompt ?? "").trim();
-    if (!prompt) return json({ error: "missing_prompt" }, 400, headers);
-
-    const width = Number(body.width ?? 1080);
-    const height = Number(body.height ?? 1350);
+    if (!GCP_PROJECT_ID) return json({ error: "missing_secret", details: "GCP_PROJECT_ID is required." }, 500, headers);
+    if (!GCP_SA_KEY_B64) return json({ error: "missing_secret", details: "GCP_SA_KEY_B64 is required." }, 500, headers);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-    const SUPABASE_SERVICE_ROLE_KEY =
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
-      Deno.env.get("SUPABASE_SECRET_KEY") ??
-      "";
-    const STORAGE_BUCKET = Deno.env.get("SUPABASE_STORAGE_BUCKET") ?? "generations-private";
-    const SIGNED_URL_TTL_SECONDS = Number(Deno.env.get("SIGNED_URL_TTL_SECONDS") ?? "600");
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
+    const STORAGE_BUCKET = Deno.env.get("GENS_BUCKET") ?? Deno.env.get("SUPABASE_STORAGE_BUCKET") ?? "generations-private";
+    const ttlRaw = Number(Deno.env.get("SIGNED_URL_TTL_SECONDS") ?? "600");
+    const signedUrlTtl = Number.isFinite(ttlRaw) ? clampInt(ttlRaw, 60, 86400) : 600;
 
-    if (!SUPABASE_URL) return json({ error: "missing_secret", key: "SUPABASE_URL" }, 500, headers);
+    if (!SUPABASE_URL) return json({ error: "missing_secret", details: "SUPABASE_URL is required." }, 500, headers);
     if (!SUPABASE_SERVICE_ROLE_KEY) {
-      return json(
-        { error: "missing_secret", key: "SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY" },
-        500,
-        headers,
-      );
+      return json({ error: "missing_secret", details: "SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY is required." }, 500, headers);
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: { persistSession: false },
-    });
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
     const startedAt = Date.now();
     const provider = "vertex-imagen";
-    let genId = crypto.randomUUID();
+    let generationId = crypto.randomUUID();
     let createdAt = new Date().toISOString();
 
     {
       const { data, error } = await supabase
         .from("generations")
         .insert({
-          id: genId,
+          id: generationId,
           user_id: null,
           provider,
           bucket: STORAGE_BUCKET,
           path: null,
           signed_url: null,
-          prompt,
-          width,
-          height,
+          mime: null,
+          prompt: input.prompt,
+          width: input.width,
+          height: input.height,
           credits_used: 0,
           status: "pending",
           meta: {
-            module: body.module ?? null,
-            negativePrompt: body.negativePrompt ?? null,
-            seed: body.seed ?? null,
+            module: input.module,
+            negativePrompt: input.negativePrompt,
+            seed: input.seed,
+            aspectRatio,
           },
         })
         .select("id,created_at")
         .single();
 
-      if (!error) {
-        if (data?.id) genId = String(data.id);
-        if ((data as { created_at?: string } | null)?.created_at) {
-          createdAt = String((data as { created_at: string }).created_at);
-        }
+      if (error) {
+        return json({ error: "db_error", details: error.message }, 500, headers);
+      }
+
+      if (data?.id) generationId = String(data.id);
+      if ((data as { created_at?: string } | null)?.created_at) {
+        createdAt = String((data as { created_at: string }).created_at);
       }
     }
 
-    const serviceAccount = JSON.parse(atob(GCP_SA_KEY_B64));
-    const token = await getGoogleAccessToken(serviceAccount);
-
-    const endpoint =
-      `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/imagen-3.0-generate-001:predict`;
-
-    const payload: any = {
-      instances: [{ prompt }],
-      parameters: {
-        sampleCount: 1,
-        width,
-        height,
-      },
-    };
-
-    if (body.negativePrompt) payload.parameters.negativePrompt = body.negativePrompt;
-    if (Number.isFinite(body.seed)) payload.parameters.seed = body.seed;
-
-    const aiResp = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        authorization: `Bearer ${token.access_token}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const aiText = await aiResp.text();
-
-    if (!aiResp.ok) {
-      await supabase
-        .from("generations")
-        .update({
-          status: "error",
-          duration_ms: Date.now() - startedAt,
-          error_message: aiText.slice(0, 1200),
-        })
-        .eq("id", genId);
-
-      return json({ error: "vertex_error", status: aiResp.status, details: aiText }, 500, headers);
+    const bucketError = await ensurePrivateBucket(supabase, STORAGE_BUCKET);
+    if (bucketError) {
+      await updateGenerationError(supabase, generationId, startedAt, `bucket_error: ${bucketError}`);
+      return json({ error: "storage_bucket_error", details: bucketError }, 500, headers);
     }
 
-    const aiJson = JSON.parse(aiText);
-    const b64 =
-      aiJson?.predictions?.[0]?.bytesBase64Encoded ??
-      aiJson?.predictions?.[0]?.image?.bytesBase64Encoded ??
-      aiJson?.predictions?.[0]?.imageBytes ??
-      null;
+    let serviceAccount: { client_email: string; private_key: string };
+    try {
+      serviceAccount = JSON.parse(atob(GCP_SA_KEY_B64));
+    } catch {
+      await updateGenerationError(supabase, generationId, startedAt, "invalid_service_account_json");
+      return json({ error: "auth_error", details: "Invalid GCP_SA_KEY_B64 payload." }, 500, headers);
+    }
 
-    if (!b64) {
-      await supabase
-        .from("generations")
-        .update({
-          status: "error",
-          duration_ms: Date.now() - startedAt,
-          error_message: `unexpected_response: ${aiText.slice(0, 1200)}`,
-        })
-        .eq("id", genId);
+    const token = await getGoogleAccessToken(serviceAccount);
 
-      return json({ error: "unexpected_response", details: aiJson }, 500, headers);
+    const endpoints = buildVertexEndpoints(GCP_PROJECT_ID, GCP_LOCATION);
+    const payloads = buildVertexPayloads(input, aspectRatio);
+    const vertex = await callVertexWithFallback(token.access_token, endpoints, payloads);
+
+    if (!vertex.ok) {
+      const details = JSON.stringify(vertex.errors).slice(0, 1200);
+      await updateGenerationError(supabase, generationId, startedAt, `vertex_error: ${details}`);
+      return json({ error: "vertex_error", details }, 500, headers);
     }
 
     const mime = "image/png";
-    const imageBytes = base64ToUint8(String(b64));
-    const path = `anon/${genId}.png`;
+    const imageBytes = base64ToUint8(vertex.value.base64);
+    const path: string = `anon/${generationId}.png`;
 
     let { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(path, imageBytes, {
       contentType: mime,
@@ -266,78 +449,74 @@ Deno.serve(async (req) => {
     });
 
     if (uploadError && looksLikeBucketMissing(uploadError.message)) {
-      await supabase.storage.createBucket(STORAGE_BUCKET, { public: false });
-      const retry = await supabase.storage.from(STORAGE_BUCKET).upload(path, imageBytes, {
-        contentType: mime,
-        upsert: true,
-        cacheControl: "3600",
-      });
-      uploadError = retry.error ?? null;
+      const ensureError = await ensurePrivateBucket(supabase, STORAGE_BUCKET);
+      if (!ensureError) {
+        const retry = await supabase.storage.from(STORAGE_BUCKET).upload(path, imageBytes, {
+          contentType: mime,
+          upsert: true,
+          cacheControl: "3600",
+        });
+        uploadError = retry.error ?? null;
+      }
     }
 
     if (uploadError) {
-      await supabase
-        .from("generations")
-        .update({
-          status: "error",
-          duration_ms: Date.now() - startedAt,
-          error_message: `storage_upload_error: ${uploadError.message.slice(0, 1200)}`,
-        })
-        .eq("id", genId);
-
+      await updateGenerationError(supabase, generationId, startedAt, `storage_upload_error: ${uploadError.message}`);
       return json({ error: "storage_upload_error", details: uploadError.message }, 500, headers);
     }
 
-    const { data: signedData, error: signedError } = await supabase
-      .storage
+    const { data: signedData, error: signedError } = await supabase.storage
       .from(STORAGE_BUCKET)
-      .createSignedUrl(path, Number.isFinite(SIGNED_URL_TTL_SECONDS) ? SIGNED_URL_TTL_SECONDS : 600);
+      .createSignedUrl(path, signedUrlTtl);
 
     if (signedError || !signedData?.signedUrl) {
-      await supabase
-        .from("generations")
-        .update({
-          status: "error",
-          duration_ms: Date.now() - startedAt,
-          error_message: `signed_url_error: ${String(signedError?.message ?? "unknown")}`.slice(0, 1200),
-        })
-        .eq("id", genId);
-
-      return json(
-        { error: "signed_url_error", details: signedError?.message ?? "missing_signed_url" },
-        500,
-        headers,
-      );
+      await updateGenerationError(supabase, generationId, startedAt, `signed_url_error: ${String(signedError?.message ?? "missing_signed_url")}`);
+      return json({ error: "signed_url_error", details: signedError?.message ?? "missing_signed_url" }, 500, headers);
     }
 
     const creditsUsed = 1;
 
-    await supabase
-      .from("generations")
-      .update({
-        status: "ok",
-        duration_ms: Date.now() - startedAt,
-        provider,
-        bucket: STORAGE_BUCKET,
-        path,
-        signed_url: signedData.signedUrl,
-        mime,
-        width,
-        height,
-        credits_used: creditsUsed,
-      })
-      .eq("id", genId);
+    {
+      const { error } = await supabase
+        .from("generations")
+        .update({
+          status: "ok",
+          duration_ms: Date.now() - startedAt,
+          provider,
+          bucket: STORAGE_BUCKET,
+          path,
+          signed_url: signedData.signedUrl,
+          mime,
+          width: input.width,
+          height: input.height,
+          prompt: input.prompt,
+          credits_used: creditsUsed,
+          meta: {
+            module: input.module,
+            negativePrompt: input.negativePrompt,
+            seed: input.seed,
+            aspectRatio,
+            vertexEndpoint: vertex.value.endpoint,
+            vertexPayloadKind: vertex.value.payloadKind,
+          },
+        })
+        .eq("id", generationId);
+
+      if (error) {
+        return json({ error: "db_error", details: error.message }, 500, headers);
+      }
+    }
 
     return json(
       {
-        generationId: genId,
+        generationId,
         provider,
         bucket: STORAGE_BUCKET,
         path,
         signedUrl: signedData.signedUrl,
         mime,
-        width,
-        height,
+        width: input.width,
+        height: input.height,
         creditsUsed,
         createdAt,
       },
@@ -345,6 +524,6 @@ Deno.serve(async (req) => {
       headers,
     );
   } catch (e) {
-    return json({ error: "server_error", message: String((e as { message?: string })?.message ?? e) }, 500, headers);
+    return json({ error: "server_error", details: String((e as { message?: string })?.message ?? e) }, 500, headers);
   }
 });
