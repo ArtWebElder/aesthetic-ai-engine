@@ -995,6 +995,11 @@ export default function EditorPage() {
   ]);
 
   useEffect(() => {
+    if (!isCanvasMobileViewport) return;
+    mobileFitAppliedRef.current = false;
+  }, [isCanvasMobileViewport, previewBaseSize.height, previewBaseSize.width]);
+
+  useEffect(() => {
     resetCanvasToFit();
   }, [
     resetCanvasToFit,
@@ -1998,6 +2003,8 @@ export default function EditorPage() {
               ref={canvasContainerRef}
               tabIndex={0}
               onPointerDownCapture={(event) => {
+                const target = event.target as HTMLElement | null;
+                if (target?.closest("[data-canvas-zoom-controls='true']")) return;
                 event.currentTarget.focus({ preventScroll: true });
               }}
               onWheel={handleCanvasWheel}
@@ -2011,17 +2018,6 @@ export default function EditorPage() {
                 isCanvasPanning ? "cursor-grabbing" : "cursor-grab",
               ].join(" ")}
             >
-              {/* Grid overlay */}
-              {showGridOverlay && (
-                <div
-                  className="absolute inset-0 pointer-events-none z-30"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(to right, hsl(var(--border) / 0.15) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.15) 1px, transparent 1px)",
-                    backgroundSize: "8px 8px",
-                  }}
-                />
-              )}
               <div className="relative min-h-full min-w-full bg-muted/30">
                 <div
                   style={{
@@ -2030,6 +2026,16 @@ export default function EditorPage() {
                     height: `${canvasGeometry.innerHeight}px`,
                   }}
                 >
+                  {showGridOverlay && (
+                    <div
+                      className="absolute inset-0 pointer-events-none z-30"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(to right, hsl(var(--border) / 0.15) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / 0.15) 1px, transparent 1px)",
+                        backgroundSize: "8px 8px",
+                      }}
+                    />
+                  )}
                   <div
                     style={{
                       position: "absolute",
@@ -4567,11 +4573,14 @@ export default function EditorPage() {
           </div>
 
           {/* Tab content — scrollable */}
-          <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
 
             {/* SUBJECT TAB */}
             {mobileInspectorTab === "subject" && (
-              <div className="space-y-4">
+              <details open className="space-y-4 rounded-lg border border-border/50 bg-card/40 p-3">
+                <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-wider text-muted-foreground min-h-[44px] flex items-center">
+                  {t("editor.mobile.tab_subject")}
+                </summary>
                 <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer min-h-[56px]">
                   <Upload className="h-5 w-5 text-muted-foreground shrink-0" />
                   <div>
@@ -4651,12 +4660,15 @@ export default function EditorPage() {
                     </Select>
                   </div>
                 )}
-              </div>
+              </details>
             )}
 
             {/* CONTENT TAB */}
             {mobileInspectorTab === "content" && (
-              <div className="space-y-4">
+              <details open className="space-y-4 rounded-lg border border-border/50 bg-card/40 p-3">
+                <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-wider text-muted-foreground min-h-[44px] flex items-center">
+                  {t("editor.mobile.tab_content")}
+                </summary>
                 {!isPhotoshoot && (
                   <>
                     <div className="space-y-2">
@@ -4724,12 +4736,15 @@ export default function EditorPage() {
                     />
                   </div>
                 )}
-              </div>
+              </details>
             )}
 
             {/* STYLE TAB */}
             {mobileInspectorTab === "style" && (
-              <div className="space-y-4">
+              <details open className="space-y-4 rounded-lg border border-border/50 bg-card/40 p-3">
+                <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-wider text-muted-foreground min-h-[44px] flex items-center">
+                  {t("editor.mobile.tab_style")}
+                </summary>
                 {isSocialPost && (
                   <>
                     <div className="space-y-2">
@@ -4825,12 +4840,15 @@ export default function EditorPage() {
                     onValueChange={([val]) => persistSpec({ ...safeSpec, generation: { ...safeSpec.generation, realism: clampSize(val, 0, 100) } })}
                   />
                 </div>
-              </div>
+              </details>
             )}
 
             {/* ADVANCED TAB */}
             {mobileInspectorTab === "advanced" && (
-              <div className="space-y-4">
+              <details open className="space-y-4 rounded-lg border border-border/50 bg-card/40 p-3">
+                <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-wider text-muted-foreground min-h-[44px] flex items-center">
+                  {t("editor.mobile.tab_advanced")}
+                </summary>
                 {/* Export actions */}
                 <div className="space-y-2">
                   <Button
@@ -4863,7 +4881,7 @@ export default function EditorPage() {
                     {compiled?.prompt}
                   </pre>
                 </div>
-              </div>
+              </details>
             )}
           </div>
         </DrawerContent>
