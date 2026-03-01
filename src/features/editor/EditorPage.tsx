@@ -504,6 +504,7 @@ export default function EditorPage() {
     startScrollTop: number;
   } | null>(null);
   const stickToFitRef = useRef(true);
+  const mobileFitAppliedRef = useRef(false);
   const [canvasViewport, setCanvasViewport] = useState({ width: 0, height: 0 });
   const [canvasScale, setCanvasScale] = useState(1);
   const [canvasFitScale, setCanvasFitScale] = useState(1);
@@ -753,7 +754,10 @@ export default function EditorPage() {
   );
   const adjustZoomByStep = useCallback(
     (direction: 1 | -1) => {
-      const next = zoomClamp(canvasScale + direction * 0.1);
+      const next =
+        direction === 1
+          ? zoomClamp(canvasScale * 1.1)
+          : zoomClamp(canvasScale / 1.1);
       zoomToViewportCenter(next);
     },
     [canvasScale, zoomClamp, zoomToViewportCenter]
@@ -971,6 +975,24 @@ export default function EditorPage() {
       centerViewportForScale(fit);
     }
   }, [centerViewportForScale, computeFitScale]);
+
+  useEffect(() => {
+    if (!isCanvasMobileViewport) {
+      mobileFitAppliedRef.current = false;
+      return;
+    }
+    if (canvasViewport.width <= 0 || canvasViewport.height <= 0) return;
+    if (!stickToFitRef.current && mobileFitAppliedRef.current) return;
+    resetCanvasToFit();
+    mobileFitAppliedRef.current = true;
+  }, [
+    canvasViewport.height,
+    canvasViewport.width,
+    isCanvasMobileViewport,
+    previewBaseSize.height,
+    previewBaseSize.width,
+    resetCanvasToFit,
+  ]);
 
   useEffect(() => {
     resetCanvasToFit();
@@ -1971,10 +1993,13 @@ export default function EditorPage() {
               Grid
             </button>
           </div>
-          <div className="flex-1 min-h-0 px-1 md:px-6 pb-1 md:pb-6 overflow-hidden">
+          <div className="flex-1 min-h-0 px-1 md:px-6 pb-0 md:pb-6 overflow-hidden">
             <div
               ref={canvasContainerRef}
               tabIndex={0}
+              onPointerDownCapture={(event) => {
+                event.currentTarget.focus({ preventScroll: true });
+              }}
               onWheel={handleCanvasWheel}
               onKeyDown={handleCanvasKeyDown}
               onPointerDown={handleCanvasPointerDown}
