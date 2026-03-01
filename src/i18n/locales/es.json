@@ -601,5 +601,11 @@
   "editor.progress.subject": "Sujeto",
   "editor.progress.style": "Estilo",
   "editor.progress.generated": "Generado",
-  "editor.progress.export_ready": "Listo para exportar"
+  "editor.progress.export_ready": "Listo para exportar",
+  "editor.mobile.tab_subject": "Sujeto",
+  "editor.mobile.tab_content": "Contenido",
+  "editor.mobile.tab_style": "Estilo",
+  "editor.mobile.tab_advanced": "Avanzado",
+  "editor.mobile.edit": "Editar",
+  "editor.mobile.generate": "Generar"
 }
