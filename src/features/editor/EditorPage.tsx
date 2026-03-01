@@ -107,36 +107,53 @@ function clampInt(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(n)));
 }
 
-const UPLOADS_BUCKET = String(import.meta.env.VITE_SUPABASE_UPLOADS_BUCKET ?? "project-assets").trim() || "project-assets";
+const UPLOADS_BUCKET =
+  String(import.meta.env.VITE_SUPABASE_UPLOADS_BUCKET ?? "project-assets").trim() ||
+  "project-assets";
+const warnedUploadTokenUrls = new Set<string>();
 
-function normalizeStorageUrl(input: string | null | undefined): string | null {
+function normalizeProjectAssetsUrl(input: string | null | undefined): string | null {
   if (typeof input !== "string") return null;
   const raw = input.trim();
   if (!raw || raw.startsWith("data:")) return null;
-  const objectPrefix = "/storage/v1/object/";
-  const objectIdx = raw.indexOf(objectPrefix);
-  if (objectIdx < 0 || !raw.includes(`/${UPLOADS_BUCKET}/`)) return raw;
+  const publicPrefix = `/storage/v1/object/public/${UPLOADS_BUCKET}/`;
+  if (!raw.includes(publicPrefix)) return raw;
+  if (!raw.includes("?token=")) return raw;
+  const normalized = raw.split("?")[0];
+  if (import.meta.env.DEV && !warnedUploadTokenUrls.has(raw)) {
+    warnedUploadTokenUrls.add(raw);
+    console.warn("[uploads] project-assets URL should not include token query. Normalized.", {
+      original: raw,
+      normalized,
+    });
+  }
+  return normalized;
+}
 
-  const origin = raw.slice(0, objectIdx);
-  const rest = raw.slice(objectIdx + objectPrefix.length);
-  const cleanPath = (value: string) => value.split("?")[0].replace(/^\/+/, "");
+function getReferenceRoleDefaultWeight(role: ReferenceImage["role"]): number {
+  if (role === "subject") return 90;
+  if (role === "style") return 55;
+  return 70;
+}
 
-  if (rest.startsWith(`public/${UPLOADS_BUCKET}/`)) {
-    return `${origin}${objectPrefix}public/${UPLOADS_BUCKET}/${cleanPath(
-      rest.slice(`public/${UPLOADS_BUCKET}/`.length)
-    )}`;
-  }
-  if (rest.startsWith(`sign/${UPLOADS_BUCKET}/`)) {
-    return `${origin}${objectPrefix}public/${UPLOADS_BUCKET}/${cleanPath(
-      rest.slice(`sign/${UPLOADS_BUCKET}/`.length)
-    )}`;
-  }
-  if (rest.startsWith(`${UPLOADS_BUCKET}/`)) {
-    return `${origin}${objectPrefix}public/${UPLOADS_BUCKET}/${cleanPath(
-      rest.slice(`${UPLOADS_BUCKET}/`.length)
-    )}`;
-  }
-  return raw;
+function normalizeReferenceRole(input: ReferenceImage["role"]): "subject" | "style" {
+  return input === "subject" ? "subject" : "style";
+}
+
+function normalizeReferenceItem(entry: ReferenceImage): ReferenceImage {
+  const role = normalizeReferenceRole(entry.role);
+  return {
+    ...entry,
+    role,
+    weight:
+      Number.isFinite(Number(entry.weight)) && Number(entry.weight) >= 0
+        ? clampSize(Number(entry.weight), 0, 100)
+        : getReferenceRoleDefaultWeight(role),
+  };
+}
+
+function normalizeReferenceRoleInput(input: string): "subject" | "style" {
+  return input === "subject" ? "subject" : "style";
 }
 
 function getSafeDims(spec: ProjectSpec): { w: number; h: number } {
@@ -218,33 +235,29 @@ function normalizeReferenceImages(
   referenceImages: ReferenceImage[] | undefined,
   legacyReferenceImageUrl: string | null | undefined
 ): ReferenceImage[] {
-  const validRoles: ReferenceImage["role"][] = [
-    "style",
-    "composition",
-    "product",
-    "brand",
-    "subject",
-    "other",
-  ];
-
   const normalized = (referenceImages ?? [])
-    .map((entry) => ({
-      id: entry?.id || newId(),
-      url: normalizeStorageUrl(entry?.url) ?? null,
-      role: validRoles.includes(entry?.role) ? entry.role : "style",
-      weight: clampSize(Number(entry?.weight ?? 70), 0, 100),
-      lockRealism: Boolean(entry?.lockRealism),
-      notes: (entry?.notes ?? "").slice(0, 120),
-    }))
+    .map((entry) =>
+      normalizeReferenceItem({
+        id: entry?.id || newId(),
+        url: normalizeProjectAssetsUrl(entry?.url) ?? null,
+        role: (entry?.role as ReferenceImage["role"]) ?? "style",
+        weight:
+          typeof entry?.weight === "number"
+            ? entry.weight
+            : getReferenceRoleDefaultWeight(normalizeReferenceRole((entry?.role as ReferenceImage["role"]) ?? "style")),
+        lockRealism: Boolean(entry?.lockRealism),
+        notes: (entry?.notes ?? "").slice(0, 120),
+      })
+    )
     .slice(0, 5);
 
-  const legacyUrl = normalizeStorageUrl(legacyReferenceImageUrl);
+  const legacyUrl = normalizeProjectAssetsUrl(legacyReferenceImageUrl);
   if (normalized.length === 0 && legacyUrl) {
     normalized.push({
       id: newId(),
       url: legacyUrl,
       role: "style",
-      weight: 70,
+      weight: 55,
       lockRealism: false,
       notes: "",
     });
@@ -311,11 +324,11 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     nextReferenceImages[nextReferenceImages.length - 1] = nextRef;
   };
   if (spec.module === "ecom_banner" && spec.templateId === "ecom_v2_01") {
-    const subjectRef = normalizeStorageUrl(spec.subjectImageUrl);
+    const subjectRef = normalizeProjectAssetsUrl(spec.subjectImageUrl);
     if (subjectRef) {
       upsertReferenceByRole("subject", subjectRef, 90, true);
     }
-    const styleRef = normalizeStorageUrl(ecomV2.styleRefImageUrl);
+    const styleRef = normalizeProjectAssetsUrl(ecomV2.styleRefImageUrl);
     if (styleRef) {
       upsertReferenceByRole("style", styleRef, 55, true);
     }
@@ -340,7 +353,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     styleText: spec.styleText ?? "",
     cameraText: spec.cameraText ?? "",
     compositionText: spec.compositionText ?? "",
-    subjectImageUrl: normalizeStorageUrl(spec.subjectImageUrl) ?? null,
+    subjectImageUrl: normalizeProjectAssetsUrl(spec.subjectImageUrl) ?? null,
     subjectImagePath: spec.subjectImagePath ?? null,
     contextOpen: Boolean(spec.contextOpen),
     lightingText: spec.lightingText ?? "",
@@ -368,16 +381,26 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       cta: (builder.cta ?? "").trim(),
       badge: (builder.badge ?? "").trim(),
       brandName: (builder.brandName ?? "").trim(),
-      logoUploads: Array.isArray(builder.logoUploads) ? builder.logoUploads.filter(Boolean) : [],
+      logoUploads: Array.isArray(builder.logoUploads)
+        ? builder.logoUploads
+            .map((value) => normalizeProjectAssetsUrl(value))
+            .filter((value): value is string => Boolean(value))
+        : [],
       productUploads: Array.isArray(builder.productUploads)
-        ? builder.productUploads.filter(Boolean)
+        ? builder.productUploads
+            .map((value) => normalizeProjectAssetsUrl(value))
+            .filter((value): value is string => Boolean(value))
         : [],
       backgroundUploads: Array.isArray(builder.backgroundUploads)
-        ? builder.backgroundUploads.filter(Boolean)
+        ? builder.backgroundUploads
+            .map((value) => normalizeProjectAssetsUrl(value))
+            .filter((value): value is string => Boolean(value))
         : [],
       premiumOverlayEnabled: Boolean(builder.premiumOverlayEnabled),
       premiumOverlayUrls: Array.isArray(builder.premiumOverlayUrls)
-        ? builder.premiumOverlayUrls.filter(Boolean)
+        ? builder.premiumOverlayUrls
+            .map((value) => normalizeProjectAssetsUrl(value))
+            .filter((value): value is string => Boolean(value))
         : [],
       designerMode: Boolean(builder.designerMode),
       batchCount: clampInt(
@@ -415,7 +438,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     referenceImages: nextReferenceImages,
     referenceImageUrl: null,
     ecomV2: {
-      styleRefImageUrl: normalizeStorageUrl(ecomV2.styleRefImageUrl) ?? null,
+      styleRefImageUrl: normalizeProjectAssetsUrl(ecomV2.styleRefImageUrl) ?? null,
       styleRefImagePath: ecomV2.styleRefImagePath ?? null,
       styleDNA: ecomV2.styleDNA ?? null,
       layoutPreset:
@@ -729,9 +752,9 @@ export default function EditorPage() {
   const paletteMode = safeSpec?.brand.paletteMode ?? "mono";
   const showSecondary = paletteMode === "duo" || paletteMode === "tri" || paletteMode === "custom";
   const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
-  const subjectImageUrl = normalizeStorageUrl((safeSpec?.subjectImageUrl ?? "").trim()) ?? "";
+  const subjectImageUrl = normalizeProjectAssetsUrl((safeSpec?.subjectImageUrl ?? "").trim()) ?? "";
   const subjectPreview = subjectPreviewUrl || subjectImageUrl;
-  const styleRefImageUrl = normalizeStorageUrl(safeSpec?.ecomV2?.styleRefImageUrl ?? "") ?? "";
+  const styleRefImageUrl = normalizeProjectAssetsUrl(safeSpec?.ecomV2?.styleRefImageUrl ?? "") ?? "";
   const stylePreview = stylePreviewUrl || styleRefImageUrl;
   const builder = safeSpec?.builder;
   const content = safeSpec?.content ?? { headline: "", subheadline: "", ctaText: "" };
@@ -1074,6 +1097,14 @@ export default function EditorPage() {
     height: number;
     seed?: number;
     module?: string;
+    subjectImageUrl?: string;
+    styleRefImageUrl?: string;
+    referenceImages?: Array<{
+      url: string;
+      role: "subject" | "style";
+      weight: number;
+      lockRealism: boolean;
+    }>;
   }): Promise<GenerateImageResponse> {
     const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
     const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY ?? "").trim();
@@ -1134,6 +1165,28 @@ export default function EditorPage() {
     setIsGenerating(true);
     try {
       const generated: Generation[] = [];
+      const normalizedReferences = (safeSpec.referenceImages ?? [])
+        .map((ref) => ({
+          url: normalizeProjectAssetsUrl(ref.url),
+          role: normalizeReferenceRole(ref.role),
+          weight: clampSize(
+            Number(ref.weight ?? getReferenceRoleDefaultWeight(normalizeReferenceRole(ref.role))),
+            0,
+            100
+          ),
+          lockRealism: Boolean(ref.lockRealism),
+        }))
+        .filter((ref) => Boolean(ref.url))
+        .map((ref) => ({
+          url: ref.url as string,
+          role: ref.role,
+          weight: ref.weight,
+          lockRealism: ref.lockRealism,
+        }))
+        .slice(0, 4);
+      const subjectImageForGenerate = normalizeProjectAssetsUrl(safeSpec.subjectImageUrl) ?? undefined;
+      const styleRefForGenerate =
+        normalizeProjectAssetsUrl(safeSpec.ecomV2?.styleRefImageUrl) ?? undefined;
       for (let i = 0; i < count; i += 1) {
         const res = await invokeGenerateEdge({
           prompt: compiledNow.prompt,
@@ -1142,6 +1195,9 @@ export default function EditorPage() {
           height: h,
           ...(normalizedSeed !== null ? { seed: normalizedSeed } : {}),
           module: safeSpec.module,
+          ...(subjectImageForGenerate ? { subjectImageUrl: subjectImageForGenerate } : {}),
+          ...(styleRefForGenerate ? { styleRefImageUrl: styleRefForGenerate } : {}),
+          ...(normalizedReferences.length ? { referenceImages: normalizedReferences } : {}),
         });
 
         generated.push({
@@ -1317,10 +1373,10 @@ export default function EditorPage() {
     const subheadlineText = (safeSpec.builder.subheadline || content.subheadline || "").trim();
     const ctaText = (safeSpec.builder.cta || content.ctaText || "").trim();
     const backgroundUrl =
-      normalizeStorageUrl(safeSpec.builder.backgroundUploads?.[0]) || bgUrl || "";
-    const logoUrl = normalizeStorageUrl(safeSpec.builder.logoUploads?.[0]) || "";
-    const productUrl = normalizeStorageUrl(safeSpec.builder.productUploads?.[0]) || "";
-    const premiumOverlayUrl = normalizeStorageUrl(safeSpec.builder.premiumOverlayUrls?.[0]) || "";
+      normalizeProjectAssetsUrl(safeSpec.builder.backgroundUploads?.[0]) || bgUrl || "";
+    const logoUrl = normalizeProjectAssetsUrl(safeSpec.builder.logoUploads?.[0]) || "";
+    const productUrl = normalizeProjectAssetsUrl(safeSpec.builder.productUploads?.[0]) || "";
+    const premiumOverlayUrl = normalizeProjectAssetsUrl(safeSpec.builder.premiumOverlayUrls?.[0]) || "";
     const platformPreset = String(safeSpec.builder.platformPreset ?? "").trim().toLowerCase();
     const isVerticalPlatform =
       platformPreset === "instagram_story" || platformPreset === "tiktok_vertical";
@@ -2144,7 +2200,7 @@ export default function EditorPage() {
               <div>referenceImages.count: {referenceImages.length}</div>
               <div>
                 referenceImages.firstUrl:{" "}
-                {normalizeStorageUrl(referenceImages[0]?.url) || referenceImages[0]?.url || "(empty)"}
+                {normalizeProjectAssetsUrl(referenceImages[0]?.url) || referenceImages[0]?.url || "(empty)"}
               </div>
             </div>
           </details>
@@ -2372,12 +2428,12 @@ export default function EditorPage() {
                           WebkitBoxOrient: "vertical" as const,
                           overflow: "hidden",
                         };
-                        const productUrl = normalizeStorageUrl(safeSpec.builder.productUploads?.[0]) || "";
-                        const logoUrl = normalizeStorageUrl(safeSpec.builder.logoUploads?.[0]) || "";
+                        const productUrl = normalizeProjectAssetsUrl(safeSpec.builder.productUploads?.[0]) || "";
+                        const logoUrl = normalizeProjectAssetsUrl(safeSpec.builder.logoUploads?.[0]) || "";
                         const hasLogo = Boolean(logoUrl);
                         const textTopBumpClass = hasLogo ? "pt-16 md:pt-20" : "";
                         const bgImage =
-                          normalizeStorageUrl(safeSpec.builder.backgroundUploads?.[0]) || bgUrl || "";
+                          normalizeProjectAssetsUrl(safeSpec.builder.backgroundUploads?.[0]) || bgUrl || "";
 
                         return (
                           <div className="relative h-full w-full overflow-hidden rounded-xl">
@@ -2587,9 +2643,9 @@ export default function EditorPage() {
                               </>
                             ) : null}
 
-                            {normalizeStorageUrl(safeSpec.builder.premiumOverlayUrls?.[0]) ? (
+                            {normalizeProjectAssetsUrl(safeSpec.builder.premiumOverlayUrls?.[0]) ? (
                               <img
-                                src={normalizeStorageUrl(safeSpec.builder.premiumOverlayUrls?.[0]) || ""}
+                                src={normalizeProjectAssetsUrl(safeSpec.builder.premiumOverlayUrls?.[0]) || ""}
                                 alt=""
                                 className="absolute inset-0 h-full w-full object-cover pointer-events-none"
                               />
@@ -2693,7 +2749,7 @@ export default function EditorPage() {
                         });
                         try {
                           const uploaded = await uploadImageFile(file, "refs/style");
-                          const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                          const nextUrl = normalizeProjectAssetsUrl(uploaded.url) ?? uploaded.url;
                           setStylePreviewUrl((prev) => {
                             if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                             return nextUrl;
@@ -2747,7 +2803,7 @@ export default function EditorPage() {
                         });
                         try {
                           const uploaded = await uploadImageFile(file, "refs/subject");
-                          const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                          const nextUrl = normalizeProjectAssetsUrl(uploaded.url) ?? uploaded.url;
                           setSubjectPreviewUrl((prev) => {
                             if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                             return nextUrl;
@@ -2905,7 +2961,7 @@ export default function EditorPage() {
                     });
                     try {
                       const uploaded = await uploadImageFile(file, "refs/subject");
-                      const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                      const nextUrl = normalizeProjectAssetsUrl(uploaded.url) ?? uploaded.url;
                       setSubjectPreviewUrl((prev) => {
                         if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                         return nextUrl;
@@ -2975,7 +3031,7 @@ export default function EditorPage() {
                           id: newId(),
                           url: null,
                           role: "style",
-                          weight: 70,
+                          weight: 55,
                           lockRealism: false,
                           notes: "",
                         },
@@ -3001,9 +3057,9 @@ export default function EditorPage() {
                     <div key={ref.id} className="rounded-md border border-border p-3 space-y-3">
                       <div className="flex items-start gap-3">
                         <div className="h-[72px] w-[72px] rounded-full border border-border overflow-hidden bg-muted shrink-0">
-                          {(referencePreviewUrls[ref.id] || normalizeStorageUrl(ref.url)) ? (
+                          {(referencePreviewUrls[ref.id] || normalizeProjectAssetsUrl(ref.url)) ? (
                             <img
-                              src={referencePreviewUrls[ref.id] || normalizeStorageUrl(ref.url) || ""}
+                              src={referencePreviewUrls[ref.id] || normalizeProjectAssetsUrl(ref.url) || ""}
                               alt=""
                               className="h-full w-full object-cover"
                             />
@@ -3014,7 +3070,7 @@ export default function EditorPage() {
 
                         <div className="flex-1 space-y-2 min-w-0">
                           <Input
-                            value={normalizeStorageUrl(ref.url) ?? ref.url ?? ""}
+                            value={normalizeProjectAssetsUrl(ref.url) ?? ref.url ?? ""}
                             placeholder={t("editor.references.url_or_upload_placeholder")}
                             onChange={(e) =>
                               persistSpec({
@@ -3048,7 +3104,7 @@ export default function EditorPage() {
                                 });
                                 try {
                                   const uploaded = await uploadImageFile(file, "refs/reference");
-                                  const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                                  const nextUrl = normalizeProjectAssetsUrl(uploaded.url) ?? uploaded.url;
                                   setReferencePreviewUrls((prev) => {
                                     const old = prev[ref.id];
                                     if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
@@ -3085,7 +3141,12 @@ export default function EditorPage() {
                                   item.id === ref.id
                                     ? {
                                         ...item,
-                                        role: value as ReferenceImage["role"],
+                                        role: normalizeReferenceRoleInput(value),
+                                        weight: getReferenceRoleDefaultWeight(
+                                          normalizeReferenceRoleInput(value)
+                                        ),
+                                        lockRealism:
+                                          normalizeReferenceRoleInput(value) === "subject",
                                       }
                                     : item
                                 ),
@@ -3097,10 +3158,7 @@ export default function EditorPage() {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="style">{t("editor.references.role_style")}</SelectItem>
-                              <SelectItem value="composition">{t("editor.references.role_composition")}</SelectItem>
-                              <SelectItem value="product">{t("editor.references.role_product")}</SelectItem>
-                              <SelectItem value="brand">{t("editor.references.role_brand")}</SelectItem>
-                              <SelectItem value="other">{t("editor.references.role_other")}</SelectItem>
+                              <SelectItem value="subject">Subject</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -3578,7 +3636,7 @@ export default function EditorPage() {
                         );
                         const uploaded = await uploadImageFile(overlayFile, "builder/overlay");
                         persistSocialPostBuilderPatch({
-                          premiumOverlayUrls: [normalizeStorageUrl(uploaded.url) ?? uploaded.url],
+                          premiumOverlayUrls: [normalizeProjectAssetsUrl(uploaded.url) ?? uploaded.url],
                         });
                       } catch (error) {
                         toast({
@@ -5237,7 +5295,7 @@ export default function EditorPage() {
                       });
                       try {
                         const uploaded = await uploadImageFile(file, "refs/subject");
-                        const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                        const nextUrl = normalizeProjectAssetsUrl(uploaded.url) ?? uploaded.url;
                         setSubjectPreviewUrl((prev) => {
                           if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                           return nextUrl;
@@ -5417,7 +5475,7 @@ export default function EditorPage() {
                             });
                             try {
                               const uploaded = await uploadImageFile(file, "refs/style");
-                              const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                              const nextUrl = normalizeProjectAssetsUrl(uploaded.url) ?? uploaded.url;
                               setStylePreviewUrl((prev) => {
                                 if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                                 return nextUrl;
@@ -5468,7 +5526,7 @@ export default function EditorPage() {
                             });
                             try {
                               const uploaded = await uploadImageFile(file, "refs/subject");
-                              const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                              const nextUrl = normalizeProjectAssetsUrl(uploaded.url) ?? uploaded.url;
                               setSubjectPreviewUrl((prev) => {
                                 if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                                 return nextUrl;

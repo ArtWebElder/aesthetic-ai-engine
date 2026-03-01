@@ -98,6 +98,21 @@ type GenerateBody = {
   seed?: number;
   negativePrompt?: string;
   module?: string;
+  subjectImageUrl?: string;
+  styleRefImageUrl?: string;
+  referenceImages?: Array<{
+    url?: string;
+    role?: string;
+    weight?: number;
+    lockRealism?: boolean;
+  }>;
+};
+
+type ParsedReferenceImage = {
+  url: string;
+  role: "subject" | "style";
+  weight: number;
+  lockRealism: boolean;
 };
 
 type ParsedRequest = {
@@ -107,6 +122,7 @@ type ParsedRequest = {
   height: number;
   seed: number | null;
   module: string | null;
+  referenceImages: ParsedReferenceImage[];
 };
 
 type VertexAttemptError = {
@@ -135,6 +151,57 @@ function parseJsonSafe(text: string): unknown {
   }
 }
 
+function uint8ToBase64(bytes: Uint8Array) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  return btoa(s);
+}
+
+function parseReferenceRole(role: string | undefined): "subject" | "style" {
+  return role === "subject" ? "subject" : "style";
+}
+
+function parseReferenceImages(body: Partial<GenerateBody>): ParsedReferenceImage[] {
+  const rows = Array.isArray(body.referenceImages) ? body.referenceImages : [];
+  const parsed = rows
+    .map((row) => {
+      const url = typeof row?.url === "string" ? row.url.trim() : "";
+      if (!url) return null;
+      if (!/^https?:\/\//i.test(url)) return null;
+      const role = parseReferenceRole(typeof row?.role === "string" ? row.role.trim() : undefined);
+      const weight = Number.isFinite(Number(row?.weight))
+        ? clampInt(Number(row?.weight), 0, 100)
+        : role === "subject"
+        ? 90
+        : 55;
+      return {
+        url,
+        role,
+        weight,
+        lockRealism: Boolean(row?.lockRealism),
+      } as ParsedReferenceImage;
+    })
+    .filter((row): row is ParsedReferenceImage => Boolean(row));
+
+  const subjectImageUrl =
+    typeof body.subjectImageUrl === "string" ? body.subjectImageUrl.trim() : "";
+  if (subjectImageUrl && /^https?:\/\//i.test(subjectImageUrl)) {
+    parsed.unshift({ url: subjectImageUrl, role: "subject", weight: 90, lockRealism: true });
+  }
+
+  const styleRefImageUrl =
+    typeof body.styleRefImageUrl === "string" ? body.styleRefImageUrl.trim() : "";
+  if (styleRefImageUrl && /^https?:\/\//i.test(styleRefImageUrl)) {
+    parsed.unshift({ url: styleRefImageUrl, role: "style", weight: 55, lockRealism: true });
+  }
+
+  const dedup = new Map<string, ParsedReferenceImage>();
+  for (const entry of parsed) {
+    dedup.set(`${entry.role}:${entry.url}`, entry);
+  }
+  return Array.from(dedup.values()).slice(0, 4);
+}
+
 function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { ok: false; error: string; details: string } {
   if (!raw || typeof raw !== "object") {
     return { ok: false, error: "bad_request", details: "Body must be a JSON object." };
@@ -160,6 +227,7 @@ function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { o
   const seed = Number.isFinite(Number(seedRaw)) ? clampInt(Number(seedRaw), 0, 2_147_483_647) : null;
 
   const module = typeof body.module === "string" && body.module.trim() ? body.module.trim().slice(0, 80) : null;
+  const referenceImages = parseReferenceImages(body);
 
   return {
     ok: true,
@@ -170,8 +238,26 @@ function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { o
       height,
       seed,
       module,
+      referenceImages,
     },
   };
+}
+
+async function fetchImageAsBase64(url: string): Promise<{ base64: string; mime: string }> {
+  const resp = await fetch(url, { method: "GET" });
+  if (!resp.ok) {
+    throw new Error(`reference_fetch_failed: ${resp.status} ${url}`);
+  }
+  const mime = String(resp.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  if (!mime.startsWith("image/")) {
+    throw new Error(`reference_not_image: ${url}`);
+  }
+  const bytes = new Uint8Array(await resp.arrayBuffer());
+  if (bytes.byteLength === 0) throw new Error(`reference_empty: ${url}`);
+  if (bytes.byteLength > 20 * 1024 * 1024) {
+    throw new Error(`reference_too_large: ${url}`);
+  }
+  return { base64: uint8ToBase64(bytes), mime };
 }
 
 function pickClosestAspectRatio(width: number, height: number): "1:1" | "4:5" | "9:16" | "16:9" {
@@ -240,8 +326,46 @@ function buildVertexPayloads(input: ParsedRequest, aspectRatio: string): Array<{
   ];
 }
 
-function buildVertexEndpoints(projectId: string, location: string) {
+function buildVertexReferencePayload(
+  input: ParsedRequest,
+  aspectRatio: string,
+  refs: Array<{ role: "subject" | "style"; weight: number; lockRealism: boolean; base64: string }>,
+): { kind: string; payload: Record<string, unknown> } {
+  const parameters: Record<string, unknown> = {
+    sampleCount: 1,
+    aspectRatio,
+  };
+  if (input.negativePrompt) parameters.negativePrompt = input.negativePrompt;
+  if (input.seed !== null) parameters.seed = input.seed;
+
+  const instances = [
+    {
+      prompt: input.prompt,
+      referenceImages: refs.map((entry, idx) => ({
+        referenceId: idx + 1,
+        referenceType:
+          entry.role === "subject" ? "REFERENCE_TYPE_SUBJECT" : "REFERENCE_TYPE_STYLE",
+        referenceImage: {
+          bytesBase64Encoded: entry.base64,
+        },
+      })),
+    },
+  ];
+
+  return {
+    kind: "reference_images_capability",
+    payload: {
+      instances,
+      parameters,
+    },
+  };
+}
+
+function buildVertexEndpoints(projectId: string, location: string, withReferences = false) {
   const base = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models`;
+  if (withReferences) {
+    return [`${base}/imagen-3.0-capability-001:predict`];
+  }
   return [
     `${base}/imagen-3.0-generate-001:predict`,
     `${base}/imagen-3.0-fast-generate-001:predict`,
@@ -397,6 +521,7 @@ Deno.serve(async (req: Request) => {
             negativePrompt: input.negativePrompt,
             seed: input.seed,
             aspectRatio,
+            referenceImagesCount: input.referenceImages.length,
           },
         })
         .select("id,created_at")
@@ -428,12 +553,48 @@ Deno.serve(async (req: Request) => {
 
     const token = await getGoogleAccessToken(serviceAccount);
 
-    const endpoints = buildVertexEndpoints(GCP_PROJECT_ID, GCP_LOCATION);
-    const payloads = buildVertexPayloads(input, aspectRatio);
+    const hasReferences = input.referenceImages.length > 0;
+    const endpoints = buildVertexEndpoints(GCP_PROJECT_ID, GCP_LOCATION, hasReferences);
+    const payloads = hasReferences
+      ? [
+          buildVertexReferencePayload(
+            input,
+            aspectRatio,
+            await Promise.all(
+              input.referenceImages.map(async (entry) => {
+                const fetched = await fetchImageAsBase64(entry.url);
+                return {
+                  role: entry.role,
+                  weight: entry.weight,
+                  lockRealism: entry.lockRealism,
+                  base64: fetched.base64,
+                };
+              }),
+            ),
+          ),
+        ]
+      : buildVertexPayloads(input, aspectRatio);
     const vertex = await callVertexWithFallback(token.access_token, endpoints, payloads);
 
     if (!vertex.ok) {
       const details = JSON.stringify(vertex.errors).slice(0, 1200);
+      if (hasReferences) {
+        await updateGenerationError(
+          supabase,
+          generationId,
+          startedAt,
+          `reference_images_not_supported: ${details}`,
+        );
+        return json(
+          {
+            error: "reference_images_not_supported",
+            details:
+              "Provider does not support reference images; switch model or endpoint",
+          },
+          400,
+          headers,
+        );
+      }
       await updateGenerationError(supabase, generationId, startedAt, `vertex_error: ${details}`);
       return json({ error: "vertex_error", details }, 500, headers);
     }
@@ -496,6 +657,7 @@ Deno.serve(async (req: Request) => {
             negativePrompt: input.negativePrompt,
             seed: input.seed,
             aspectRatio,
+            referenceImagesCount: input.referenceImages.length,
             vertexEndpoint: vertex.value.endpoint,
             vertexPayloadKind: vertex.value.payloadKind,
           },
