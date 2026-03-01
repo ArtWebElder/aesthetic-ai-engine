@@ -107,6 +107,38 @@ function clampInt(n: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.round(n)));
 }
 
+const UPLOADS_BUCKET = String(import.meta.env.VITE_SUPABASE_UPLOADS_BUCKET ?? "project-assets").trim() || "project-assets";
+
+function normalizeStorageUrl(input: string | null | undefined): string | null {
+  if (typeof input !== "string") return null;
+  const raw = input.trim();
+  if (!raw || raw.startsWith("data:")) return null;
+  const objectPrefix = "/storage/v1/object/";
+  const objectIdx = raw.indexOf(objectPrefix);
+  if (objectIdx < 0 || !raw.includes(`/${UPLOADS_BUCKET}/`)) return raw;
+
+  const origin = raw.slice(0, objectIdx);
+  const rest = raw.slice(objectIdx + objectPrefix.length);
+  const cleanPath = (value: string) => value.split("?")[0].replace(/^\/+/, "");
+
+  if (rest.startsWith(`public/${UPLOADS_BUCKET}/`)) {
+    return `${origin}${objectPrefix}public/${UPLOADS_BUCKET}/${cleanPath(
+      rest.slice(`public/${UPLOADS_BUCKET}/`.length)
+    )}`;
+  }
+  if (rest.startsWith(`sign/${UPLOADS_BUCKET}/`)) {
+    return `${origin}${objectPrefix}public/${UPLOADS_BUCKET}/${cleanPath(
+      rest.slice(`sign/${UPLOADS_BUCKET}/`.length)
+    )}`;
+  }
+  if (rest.startsWith(`${UPLOADS_BUCKET}/`)) {
+    return `${origin}${objectPrefix}public/${UPLOADS_BUCKET}/${cleanPath(
+      rest.slice(`${UPLOADS_BUCKET}/`.length)
+    )}`;
+  }
+  return raw;
+}
+
 function getSafeDims(spec: ProjectSpec): { w: number; h: number } {
   const rawW = Number(spec.generation?.width) || 1080;
   const rawH = Number(spec.generation?.height) || 1350;
@@ -198,7 +230,7 @@ function normalizeReferenceImages(
   const normalized = (referenceImages ?? [])
     .map((entry) => ({
       id: entry?.id || newId(),
-      url: entry?.url?.trim() || null,
+      url: normalizeStorageUrl(entry?.url) ?? null,
       role: validRoles.includes(entry?.role) ? entry.role : "style",
       weight: clampSize(Number(entry?.weight ?? 70), 0, 100),
       lockRealism: Boolean(entry?.lockRealism),
@@ -206,7 +238,7 @@ function normalizeReferenceImages(
     }))
     .slice(0, 5);
 
-  const legacyUrl = legacyReferenceImageUrl?.trim();
+  const legacyUrl = normalizeStorageUrl(legacyReferenceImageUrl);
   if (normalized.length === 0 && legacyUrl) {
     normalized.push({
       id: newId(),
@@ -279,11 +311,13 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     nextReferenceImages[nextReferenceImages.length - 1] = nextRef;
   };
   if (spec.module === "ecom_banner" && spec.templateId === "ecom_v2_01") {
-    if (spec.subjectImageUrl?.trim()) {
-      upsertReferenceByRole("subject", spec.subjectImageUrl, 90, true);
+    const subjectRef = normalizeStorageUrl(spec.subjectImageUrl);
+    if (subjectRef) {
+      upsertReferenceByRole("subject", subjectRef, 90, true);
     }
-    if (ecomV2.styleRefImageUrl?.trim()) {
-      upsertReferenceByRole("style", ecomV2.styleRefImageUrl, 55, true);
+    const styleRef = normalizeStorageUrl(ecomV2.styleRefImageUrl);
+    if (styleRef) {
+      upsertReferenceByRole("style", styleRef, 55, true);
     }
   }
 
@@ -306,7 +340,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     styleText: spec.styleText ?? "",
     cameraText: spec.cameraText ?? "",
     compositionText: spec.compositionText ?? "",
-    subjectImageUrl: spec.subjectImageUrl ?? null,
+    subjectImageUrl: normalizeStorageUrl(spec.subjectImageUrl) ?? null,
     subjectImagePath: spec.subjectImagePath ?? null,
     contextOpen: Boolean(spec.contextOpen),
     lightingText: spec.lightingText ?? "",
@@ -381,7 +415,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     referenceImages: nextReferenceImages,
     referenceImageUrl: null,
     ecomV2: {
-      styleRefImageUrl: ecomV2.styleRefImageUrl ?? null,
+      styleRefImageUrl: normalizeStorageUrl(ecomV2.styleRefImageUrl) ?? null,
       styleRefImagePath: ecomV2.styleRefImagePath ?? null,
       styleDNA: ecomV2.styleDNA ?? null,
       layoutPreset:
@@ -566,6 +600,8 @@ export default function EditorPage() {
   const [project, setProject] = useState<EditorProject | null>(null);
   const [spec, setSpec] = useState<ProjectSpec | null>(null);
   const [subjectPreviewUrl, setSubjectPreviewUrl] = useState<string | null>(null);
+  const [stylePreviewUrl, setStylePreviewUrl] = useState<string | null>(null);
+  const [referencePreviewUrls, setReferencePreviewUrls] = useState<Record<string, string>>({});
   const [photoshootPreset, setPhotoshootPreset] = useState<PhotoshootPresetId>("studio_product");
   const [isExporting2K, setIsExporting2K] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -613,11 +649,27 @@ export default function EditorPage() {
 
   useEffect(() => {
     return () => {
-      if (subjectPreviewUrl) {
+      if (subjectPreviewUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(subjectPreviewUrl);
       }
     };
   }, [subjectPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (stylePreviewUrl?.startsWith("blob:")) {
+        URL.revokeObjectURL(stylePreviewUrl);
+      }
+    };
+  }, [stylePreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      Object.values(referencePreviewUrls).forEach((url) => {
+        if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+      });
+    };
+  }, [referencePreviewUrls]);
 
   useEffect(() => {
     if (spec?.module !== "photoshoot") return;
@@ -677,8 +729,10 @@ export default function EditorPage() {
   const paletteMode = safeSpec?.brand.paletteMode ?? "mono";
   const showSecondary = paletteMode === "duo" || paletteMode === "tri" || paletteMode === "custom";
   const showAccent2 = paletteMode === "tri" || paletteMode === "custom";
-  const subjectImageUrl = (safeSpec?.subjectImageUrl ?? "").trim();
+  const subjectImageUrl = normalizeStorageUrl((safeSpec?.subjectImageUrl ?? "").trim()) ?? "";
   const subjectPreview = subjectPreviewUrl || subjectImageUrl;
+  const styleRefImageUrl = normalizeStorageUrl(safeSpec?.ecomV2?.styleRefImageUrl ?? "") ?? "";
+  const stylePreview = stylePreviewUrl || styleRefImageUrl;
   const builder = safeSpec?.builder;
   const content = safeSpec?.content ?? { headline: "", subheadline: "", ctaText: "" };
   const visualStyle = builder?.visualStyle ?? [];
@@ -1262,10 +1316,11 @@ export default function EditorPage() {
     const headlineText = (safeSpec.builder.headline || content.headline || "").trim();
     const subheadlineText = (safeSpec.builder.subheadline || content.subheadline || "").trim();
     const ctaText = (safeSpec.builder.cta || content.ctaText || "").trim();
-    const backgroundUrl = safeSpec.builder.backgroundUploads?.[0] || bgUrl || "";
-    const logoUrl = safeSpec.builder.logoUploads?.[0] || "";
-    const productUrl = safeSpec.builder.productUploads?.[0] || "";
-    const premiumOverlayUrl = safeSpec.builder.premiumOverlayUrls?.[0] || "";
+    const backgroundUrl =
+      normalizeStorageUrl(safeSpec.builder.backgroundUploads?.[0]) || bgUrl || "";
+    const logoUrl = normalizeStorageUrl(safeSpec.builder.logoUploads?.[0]) || "";
+    const productUrl = normalizeStorageUrl(safeSpec.builder.productUploads?.[0]) || "";
+    const premiumOverlayUrl = normalizeStorageUrl(safeSpec.builder.premiumOverlayUrls?.[0]) || "";
     const platformPreset = String(safeSpec.builder.platformPreset ?? "").trim().toLowerCase();
     const isVerticalPlatform =
       platformPreset === "instagram_story" || platformPreset === "tiktok_vertical";
@@ -2077,6 +2132,25 @@ export default function EditorPage() {
         );
       })()}
 
+      {import.meta.env.DEV && safeSpec ? (
+        <div className="px-2 md:px-6 py-2 border-b border-border/40 bg-muted/20">
+          <details className="text-xs">
+            <summary className="cursor-pointer text-muted-foreground">Uploads Debug</summary>
+            <div className="mt-2 space-y-1 font-mono break-all">
+              <div>subjectImageUrl: {subjectImageUrl || "(empty)"}</div>
+              <div>subjectImagePath: {safeSpec.subjectImagePath || "(empty)"}</div>
+              <div>styleRefImageUrl: {styleRefImageUrl || "(empty)"}</div>
+              <div>styleRefImagePath: {safeSpec.ecomV2?.styleRefImagePath || "(empty)"}</div>
+              <div>referenceImages.count: {referenceImages.length}</div>
+              <div>
+                referenceImages.firstUrl:{" "}
+                {normalizeStorageUrl(referenceImages[0]?.url) || referenceImages[0]?.url || "(empty)"}
+              </div>
+            </div>
+          </details>
+        </div>
+      ) : null}
+
       {/* 3-COL LAYOUT: Inspector (left) | Canvas (center) | Templates (right) */}
       <div className={[
         "flex-1 min-h-0 grid grid-cols-1 transition-all duration-200",
@@ -2298,11 +2372,12 @@ export default function EditorPage() {
                           WebkitBoxOrient: "vertical" as const,
                           overflow: "hidden",
                         };
-                        const productUrl = safeSpec.builder.productUploads?.[0] || "";
-                        const logoUrl = safeSpec.builder.logoUploads?.[0] || "";
+                        const productUrl = normalizeStorageUrl(safeSpec.builder.productUploads?.[0]) || "";
+                        const logoUrl = normalizeStorageUrl(safeSpec.builder.logoUploads?.[0]) || "";
                         const hasLogo = Boolean(logoUrl);
                         const textTopBumpClass = hasLogo ? "pt-16 md:pt-20" : "";
-                        const bgImage = safeSpec.builder.backgroundUploads?.[0] || bgUrl || "";
+                        const bgImage =
+                          normalizeStorageUrl(safeSpec.builder.backgroundUploads?.[0]) || bgUrl || "";
 
                         return (
                           <div className="relative h-full w-full overflow-hidden rounded-xl">
@@ -2512,9 +2587,9 @@ export default function EditorPage() {
                               </>
                             ) : null}
 
-                            {safeSpec.builder.premiumOverlayUrls?.[0] ? (
+                            {normalizeStorageUrl(safeSpec.builder.premiumOverlayUrls?.[0]) ? (
                               <img
-                                src={safeSpec.builder.premiumOverlayUrls[0]}
+                                src={normalizeStorageUrl(safeSpec.builder.premiumOverlayUrls?.[0]) || ""}
                                 alt=""
                                 className="absolute inset-0 h-full w-full object-cover pointer-events-none"
                               />
@@ -2611,13 +2686,23 @@ export default function EditorPage() {
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
+                        const objectUrl = URL.createObjectURL(file);
+                        setStylePreviewUrl((prev) => {
+                          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                          return objectUrl;
+                        });
                         try {
                           const uploaded = await uploadImageFile(file, "refs/style");
+                          const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                          setStylePreviewUrl((prev) => {
+                            if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                            return nextUrl;
+                          });
                           persistSpec({
                             ...safeSpec,
                             ecomV2: {
                               ...(safeSpec.ecomV2 ?? {}),
-                              styleRefImageUrl: uploaded.url,
+                              styleRefImageUrl: nextUrl,
                               styleRefImagePath: uploaded.path,
                               styleDNA: extractStyleDNAFromFilename(file.name),
                             },
@@ -2632,6 +2717,13 @@ export default function EditorPage() {
                       }}
                     />
                   </label>
+                  {stylePreview ? (
+                    <img
+                      src={stylePreview}
+                      alt="Style reference preview"
+                      className="h-14 w-14 rounded-md border border-border object-cover"
+                    />
+                  ) : null}
                 </div>
 
                 <div className="space-y-1">
@@ -2650,14 +2742,19 @@ export default function EditorPage() {
                         if (!file) return;
                         const objectUrl = URL.createObjectURL(file);
                         setSubjectPreviewUrl((prev) => {
-                          if (prev) URL.revokeObjectURL(prev);
+                          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                           return objectUrl;
                         });
                         try {
                           const uploaded = await uploadImageFile(file, "refs/subject");
+                          const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                          setSubjectPreviewUrl((prev) => {
+                            if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                            return nextUrl;
+                          });
                           persistSpec({
                             ...safeSpec,
-                            subjectImageUrl: uploaded.url,
+                            subjectImageUrl: nextUrl,
                             subjectImagePath: uploaded.path,
                           });
                         } catch (error) {
@@ -2803,14 +2900,19 @@ export default function EditorPage() {
                     if (!file) return;
                     const objectUrl = URL.createObjectURL(file);
                     setSubjectPreviewUrl((prev) => {
-                      if (prev) URL.revokeObjectURL(prev);
+                      if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                       return objectUrl;
                     });
                     try {
                       const uploaded = await uploadImageFile(file, "refs/subject");
+                      const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                      setSubjectPreviewUrl((prev) => {
+                        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                        return nextUrl;
+                      });
                       persistSpec({
                         ...safeSpec,
-                        subjectImageUrl: uploaded.url,
+                        subjectImageUrl: nextUrl,
                         subjectImagePath: uploaded.path,
                       });
                     } catch (error) {
@@ -2838,7 +2940,7 @@ export default function EditorPage() {
                     size="sm"
                     onClick={() => {
                       setSubjectPreviewUrl((prev) => {
-                        if (prev) URL.revokeObjectURL(prev);
+                        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                         return null;
                       });
                       persistSpec({
@@ -2899,9 +3001,9 @@ export default function EditorPage() {
                     <div key={ref.id} className="rounded-md border border-border p-3 space-y-3">
                       <div className="flex items-start gap-3">
                         <div className="h-[72px] w-[72px] rounded-full border border-border overflow-hidden bg-muted shrink-0">
-                          {ref.url ? (
+                          {(referencePreviewUrls[ref.id] || normalizeStorageUrl(ref.url)) ? (
                             <img
-                              src={ref.url}
+                              src={referencePreviewUrls[ref.id] || normalizeStorageUrl(ref.url) || ""}
                               alt=""
                               className="h-full w-full object-cover"
                             />
@@ -2912,7 +3014,7 @@ export default function EditorPage() {
 
                         <div className="flex-1 space-y-2 min-w-0">
                           <Input
-                            value={ref.url ?? ""}
+                            value={normalizeStorageUrl(ref.url) ?? ref.url ?? ""}
                             placeholder={t("editor.references.url_or_upload_placeholder")}
                             onChange={(e) =>
                               persistSpec({
@@ -2938,12 +3040,24 @@ export default function EditorPage() {
                               onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
+                                const objectUrl = URL.createObjectURL(file);
+                                setReferencePreviewUrls((prev) => {
+                                  const old = prev[ref.id];
+                                  if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+                                  return { ...prev, [ref.id]: objectUrl };
+                                });
                                 try {
                                   const uploaded = await uploadImageFile(file, "refs/reference");
+                                  const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                                  setReferencePreviewUrls((prev) => {
+                                    const old = prev[ref.id];
+                                    if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+                                    return { ...prev, [ref.id]: nextUrl };
+                                  });
                                   persistSpec({
                                     ...safeSpec,
                                     referenceImages: referenceImages.map((item) =>
-                                      item.id === ref.id ? { ...item, url: uploaded.url } : item
+                                      item.id === ref.id ? { ...item, url: nextUrl } : item
                                     ),
                                   });
                                 } catch (error) {
@@ -3042,12 +3156,19 @@ export default function EditorPage() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() =>
+                          onClick={() => {
+                            setReferencePreviewUrls((prev) => {
+                              const old = prev[ref.id];
+                              if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+                              const next = { ...prev };
+                              delete next[ref.id];
+                              return next;
+                            });
                             persistSpec({
                               ...safeSpec,
                               referenceImages: referenceImages.filter((item) => item.id !== ref.id),
-                            })
-                          }
+                            });
+                          }}
                         >
                           {t("editor.references.remove")}
                         </Button>
@@ -3436,7 +3557,7 @@ export default function EditorPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => {
+                    onClick={async () => {
                       const lines = [
                         safeSpec.builder.headline || content.headline,
                         safeSpec.builder.subheadline || content.subheadline,
@@ -3448,7 +3569,24 @@ export default function EditorPage() {
                         safeSpec.generation?.width ?? 1080,
                         safeSpec.generation?.height ?? 1080
                       );
-                      persistSocialPostBuilderPatch({ premiumOverlayUrls: [overlay] });
+                      try {
+                        const overlayBlob = await (await fetch(overlay)).blob();
+                        const overlayFile = new File(
+                          [overlayBlob],
+                          `overlay-${Date.now()}.svg`,
+                          { type: "image/svg+xml" }
+                        );
+                        const uploaded = await uploadImageFile(overlayFile, "builder/overlay");
+                        persistSocialPostBuilderPatch({
+                          premiumOverlayUrls: [normalizeStorageUrl(uploaded.url) ?? uploaded.url],
+                        });
+                      } catch (error) {
+                        toast({
+                          title: t("editor.toast.export_failed"),
+                          description: String((error as Error)?.message ?? error),
+                          variant: "destructive",
+                        });
+                      }
                     }}
                 >
                     {t("social.generate_overlay_assets")}
@@ -5094,14 +5232,19 @@ export default function EditorPage() {
                       if (!file) return;
                       const objectUrl = URL.createObjectURL(file);
                       setSubjectPreviewUrl((prev) => {
-                        if (prev) URL.revokeObjectURL(prev);
+                        if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                         return objectUrl;
                       });
                       try {
                         const uploaded = await uploadImageFile(file, "refs/subject");
+                        const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                        setSubjectPreviewUrl((prev) => {
+                          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                          return nextUrl;
+                        });
                         persistSpec({
                           ...safeSpec,
-                          subjectImageUrl: uploaded.url,
+                          subjectImageUrl: nextUrl,
                           subjectImagePath: uploaded.path,
                         });
                       } catch (error) {
@@ -5123,7 +5266,10 @@ export default function EditorPage() {
                       size="sm"
                       className="h-10"
                       onClick={() => {
-                        setSubjectPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+                        setSubjectPreviewUrl((prev) => {
+                          if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                          return null;
+                        });
                         persistSpec({ ...safeSpec, subjectImageUrl: null, subjectImagePath: null });
                       }}
                     >
@@ -5264,13 +5410,23 @@ export default function EditorPage() {
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
+                            const objectUrl = URL.createObjectURL(file);
+                            setStylePreviewUrl((prev) => {
+                              if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                              return objectUrl;
+                            });
                             try {
                               const uploaded = await uploadImageFile(file, "refs/style");
+                              const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                              setStylePreviewUrl((prev) => {
+                                if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                                return nextUrl;
+                              });
                               persistSpec({
                                 ...safeSpec,
                                 ecomV2: {
                                   ...(safeSpec.ecomV2 ?? {}),
-                                  styleRefImageUrl: uploaded.url,
+                                  styleRefImageUrl: nextUrl,
                                   styleRefImagePath: uploaded.path,
                                   styleDNA: extractStyleDNAFromFilename(file.name),
                                 },
@@ -5285,6 +5441,13 @@ export default function EditorPage() {
                           }}
                         />
                       </label>
+                      {stylePreview ? (
+                        <img
+                          src={stylePreview}
+                          alt="Style reference preview"
+                          className="h-14 w-14 rounded-md border border-border object-cover"
+                        />
+                      ) : null}
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs text-muted-foreground font-medium">Step B - Subject/Product (optional)</label>
@@ -5300,14 +5463,19 @@ export default function EditorPage() {
                             if (!file) return;
                             const objectUrl = URL.createObjectURL(file);
                             setSubjectPreviewUrl((prev) => {
-                              if (prev) URL.revokeObjectURL(prev);
+                              if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
                               return objectUrl;
                             });
                             try {
                               const uploaded = await uploadImageFile(file, "refs/subject");
+                              const nextUrl = normalizeStorageUrl(uploaded.url) ?? uploaded.url;
+                              setSubjectPreviewUrl((prev) => {
+                                if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
+                                return nextUrl;
+                              });
                               persistSpec({
                                 ...safeSpec,
-                                subjectImageUrl: uploaded.url,
+                                subjectImageUrl: nextUrl,
                                 subjectImagePath: uploaded.path,
                               });
                             } catch (error) {
