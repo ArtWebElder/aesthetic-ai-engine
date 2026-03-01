@@ -116,6 +116,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     cameraText: "",
     compositionText: "",
     subjectImageUrl: null,
+    subjectImagePath: null,
     contextOpen: false,
     lightingText: "",
     assetsText: "",
@@ -203,6 +204,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
 
     ecomV2: {
       styleRefImageUrl: null,
+      styleRefImagePath: null,
       styleDNA: null,
       layoutPreset: "layout_a",
       textPreset: "premium",

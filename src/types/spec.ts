@@ -140,6 +140,7 @@ export interface EcomStyleDNA {
 
 export interface EcomV2Spec {
   styleRefImageUrl?: string | null;
+  styleRefImagePath?: string | null;
   styleDNA?: EcomStyleDNA | null;
   layoutPreset?: "layout_a" | "layout_b" | "layout_c";
   textPreset?: "impact" | "premium" | "clean";
@@ -229,6 +230,7 @@ export interface ProjectSpec {
   cameraText?: string;
   compositionText?: string;
   subjectImageUrl?: string | null;
+  subjectImagePath?: string | null;
   contextOpen?: boolean;
   /** @deprecated Legacy free-text builder fields (ignored in V1.7) */
   lightingText?: string;

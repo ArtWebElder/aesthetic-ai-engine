@@ -83,6 +83,7 @@ import { Check, ChevronDown, ChevronRight, Upload, SlidersHorizontal, Clock, Dow
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { uploadImageFile } from "@/lib/uploads";
 
 /**
  * Seu Project do /types/spec nÃ£o tem "generations" no tipo.
@@ -306,6 +307,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     cameraText: spec.cameraText ?? "",
     compositionText: spec.compositionText ?? "",
     subjectImageUrl: spec.subjectImageUrl ?? null,
+    subjectImagePath: spec.subjectImagePath ?? null,
     contextOpen: Boolean(spec.contextOpen),
     lightingText: spec.lightingText ?? "",
     assetsText: spec.assetsText ?? "",
@@ -380,6 +382,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     referenceImageUrl: null,
     ecomV2: {
       styleRefImageUrl: ecomV2.styleRefImageUrl ?? null,
+      styleRefImagePath: ecomV2.styleRefImagePath ?? null,
       styleDNA: ecomV2.styleDNA ?? null,
       layoutPreset:
         ecomV2.layoutPreset === "layout_b" || ecomV2.layoutPreset === "layout_c"
@@ -2605,22 +2608,27 @@ export default function EditorPage() {
                       type="file"
                       accept="image/*"
                       className="sr-only"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const result = typeof reader.result === "string" ? reader.result : null;
+                        try {
+                          const uploaded = await uploadImageFile(file, "refs/style");
                           persistSpec({
                             ...safeSpec,
                             ecomV2: {
                               ...(safeSpec.ecomV2 ?? {}),
-                              styleRefImageUrl: result,
+                              styleRefImageUrl: uploaded.url,
+                              styleRefImagePath: uploaded.path,
                               styleDNA: extractStyleDNAFromFilename(file.name),
                             },
                           });
-                        };
-                        reader.readAsDataURL(file);
+                        } catch (error) {
+                          toast({
+                            title: t("editor.toast.export_failed"),
+                            description: String((error as Error)?.message ?? error),
+                            variant: "destructive",
+                          });
+                        }
                       }}
                     />
                   </label>
@@ -2637,7 +2645,7 @@ export default function EditorPage() {
                       type="file"
                       accept="image/*"
                       className="sr-only"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
                         const objectUrl = URL.createObjectURL(file);
@@ -2645,12 +2653,20 @@ export default function EditorPage() {
                           if (prev) URL.revokeObjectURL(prev);
                           return objectUrl;
                         });
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const result = typeof reader.result === "string" ? reader.result : null;
-                          persistSpec({ ...safeSpec, subjectImageUrl: result });
-                        };
-                        reader.readAsDataURL(file);
+                        try {
+                          const uploaded = await uploadImageFile(file, "refs/subject");
+                          persistSpec({
+                            ...safeSpec,
+                            subjectImageUrl: uploaded.url,
+                            subjectImagePath: uploaded.path,
+                          });
+                        } catch (error) {
+                          toast({
+                            title: t("editor.toast.export_failed"),
+                            description: String((error as Error)?.message ?? error),
+                            variant: "destructive",
+                          });
+                        }
                       }}
                     />
                   </label>
@@ -2782,7 +2798,7 @@ export default function EditorPage() {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
                     const objectUrl = URL.createObjectURL(file);
@@ -2790,12 +2806,20 @@ export default function EditorPage() {
                       if (prev) URL.revokeObjectURL(prev);
                       return objectUrl;
                     });
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      const result = typeof reader.result === "string" ? reader.result : null;
-                      persistSpec({ ...safeSpec, subjectImageUrl: result });
-                    };
-                    reader.readAsDataURL(file);
+                    try {
+                      const uploaded = await uploadImageFile(file, "refs/subject");
+                      persistSpec({
+                        ...safeSpec,
+                        subjectImageUrl: uploaded.url,
+                        subjectImagePath: uploaded.path,
+                      });
+                    } catch (error) {
+                      toast({
+                        title: t("editor.toast.export_failed"),
+                        description: String((error as Error)?.message ?? error),
+                        variant: "destructive",
+                      });
+                    }
                   }}
                   className="sr-only"
                 />
@@ -2820,6 +2844,7 @@ export default function EditorPage() {
                       persistSpec({
                         ...safeSpec,
                         subjectImageUrl: null,
+                        subjectImagePath: null,
                       });
                     }}
                   >
@@ -2910,21 +2935,24 @@ export default function EditorPage() {
                               type="file"
                               accept="image/*"
                               className="sr-only"
-                              onChange={(e) => {
+                              onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
-                                const reader = new FileReader();
-                                reader.onload = () => {
-                                  const result =
-                                    typeof reader.result === "string" ? reader.result : null;
+                                try {
+                                  const uploaded = await uploadImageFile(file, "refs/reference");
                                   persistSpec({
                                     ...safeSpec,
                                     referenceImages: referenceImages.map((item) =>
-                                      item.id === ref.id ? { ...item, url: result } : item
+                                      item.id === ref.id ? { ...item, url: uploaded.url } : item
                                     ),
                                   });
-                                };
-                                reader.readAsDataURL(file);
+                                } catch (error) {
+                                  toast({
+                                    title: t("editor.toast.export_failed"),
+                                    description: String((error as Error)?.message ?? error),
+                                    variant: "destructive",
+                                  });
+                                }
                               }}
                             />
                           </label>
@@ -3258,16 +3286,19 @@ export default function EditorPage() {
                       type="file"
                       accept="image/*"
                       className="sr-only"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const url = typeof reader.result === "string" ? reader.result : "";
-                          if (!url) return;
-                          persistSocialPostBuilderPatch({ logoUploads: [url] });
-                        };
-                        reader.readAsDataURL(file);
+                        try {
+                          const uploaded = await uploadImageFile(file, "builder/logo");
+                          persistSocialPostBuilderPatch({ logoUploads: [uploaded.url] });
+                        } catch (error) {
+                          toast({
+                            title: t("editor.toast.export_failed"),
+                            description: String((error as Error)?.message ?? error),
+                            variant: "destructive",
+                          });
+                        }
                       }}
                     />
                   </label>
@@ -3284,16 +3315,19 @@ export default function EditorPage() {
                       type="file"
                       accept="image/*"
                       className="sr-only"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const url = typeof reader.result === "string" ? reader.result : "";
-                          if (!url) return;
-                          persistSocialPostBuilderPatch({ productUploads: [url] });
-                        };
-                        reader.readAsDataURL(file);
+                        try {
+                          const uploaded = await uploadImageFile(file, "builder/product");
+                          persistSocialPostBuilderPatch({ productUploads: [uploaded.url] });
+                        } catch (error) {
+                          toast({
+                            title: t("editor.toast.export_failed"),
+                            description: String((error as Error)?.message ?? error),
+                            variant: "destructive",
+                          });
+                        }
                       }}
                     />
                   </label>
@@ -3312,16 +3346,19 @@ export default function EditorPage() {
                       type="file"
                       accept="image/*"
                       className="sr-only"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
                         if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const url = typeof reader.result === "string" ? reader.result : "";
-                          if (!url) return;
-                          persistSocialPostBuilderPatch({ backgroundUploads: [url] });
-                        };
-                        reader.readAsDataURL(file);
+                        try {
+                          const uploaded = await uploadImageFile(file, "builder/background");
+                          persistSocialPostBuilderPatch({ backgroundUploads: [uploaded.url] });
+                        } catch (error) {
+                          toast({
+                            title: t("editor.toast.export_failed"),
+                            description: String((error as Error)?.message ?? error),
+                            variant: "destructive",
+                          });
+                        }
                       }}
                     />
                   </label>
@@ -5052,7 +5089,7 @@ export default function EditorPage() {
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       const objectUrl = URL.createObjectURL(file);
@@ -5060,12 +5097,20 @@ export default function EditorPage() {
                         if (prev) URL.revokeObjectURL(prev);
                         return objectUrl;
                       });
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const result = typeof reader.result === "string" ? reader.result : null;
-                        persistSpec({ ...safeSpec, subjectImageUrl: result });
-                      };
-                      reader.readAsDataURL(file);
+                      try {
+                        const uploaded = await uploadImageFile(file, "refs/subject");
+                        persistSpec({
+                          ...safeSpec,
+                          subjectImageUrl: uploaded.url,
+                          subjectImagePath: uploaded.path,
+                        });
+                      } catch (error) {
+                        toast({
+                          title: t("editor.toast.export_failed"),
+                          description: String((error as Error)?.message ?? error),
+                          variant: "destructive",
+                        });
+                      }
                     }}
                     className="sr-only"
                   />
@@ -5079,7 +5124,7 @@ export default function EditorPage() {
                       className="h-10"
                       onClick={() => {
                         setSubjectPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
-                        persistSpec({ ...safeSpec, subjectImageUrl: null });
+                        persistSpec({ ...safeSpec, subjectImageUrl: null, subjectImagePath: null });
                       }}
                     >
                       {t("editor.subject.remove")}
@@ -5216,22 +5261,27 @@ export default function EditorPage() {
                           type="file"
                           accept="image/*"
                           className="sr-only"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              const result = typeof reader.result === "string" ? reader.result : null;
+                            try {
+                              const uploaded = await uploadImageFile(file, "refs/style");
                               persistSpec({
                                 ...safeSpec,
                                 ecomV2: {
                                   ...(safeSpec.ecomV2 ?? {}),
-                                  styleRefImageUrl: result,
+                                  styleRefImageUrl: uploaded.url,
+                                  styleRefImagePath: uploaded.path,
                                   styleDNA: extractStyleDNAFromFilename(file.name),
                                 },
                               });
-                            };
-                            reader.readAsDataURL(file);
+                            } catch (error) {
+                              toast({
+                                title: t("editor.toast.export_failed"),
+                                description: String((error as Error)?.message ?? error),
+                                variant: "destructive",
+                              });
+                            }
                           }}
                         />
                       </label>
@@ -5245,7 +5295,7 @@ export default function EditorPage() {
                           type="file"
                           accept="image/*"
                           className="sr-only"
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
                             const objectUrl = URL.createObjectURL(file);
@@ -5253,12 +5303,20 @@ export default function EditorPage() {
                               if (prev) URL.revokeObjectURL(prev);
                               return objectUrl;
                             });
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              const result = typeof reader.result === "string" ? reader.result : null;
-                              persistSpec({ ...safeSpec, subjectImageUrl: result });
-                            };
-                            reader.readAsDataURL(file);
+                            try {
+                              const uploaded = await uploadImageFile(file, "refs/subject");
+                              persistSpec({
+                                ...safeSpec,
+                                subjectImageUrl: uploaded.url,
+                                subjectImagePath: uploaded.path,
+                              });
+                            } catch (error) {
+                              toast({
+                                title: t("editor.toast.export_failed"),
+                                description: String((error as Error)?.message ?? error),
+                                variant: "destructive",
+                              });
+                            }
                           }}
                         />
                       </label>

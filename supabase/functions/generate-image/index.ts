@@ -1,5 +1,5 @@
 /// <reference lib="deno.ns" />
-import { createClient } from "supabase";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {

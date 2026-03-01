@@ -111,7 +111,11 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : `text style: outline=${safeEffects.textOutline}/10 shadow=${safeEffects.shadow}/10 depth=${safeEffects.depth3d}/10 tilt=${safeEffects.tilt}deg`;
   const cleanedContext = contextText?.trim();
   const cleanedSubject = subjectText?.trim();
-  const cleanedSubjectImage = subjectImageUrl?.trim();
+  const cleanedSubjectImageRaw = subjectImageUrl?.trim();
+  const cleanedSubjectImage =
+    cleanedSubjectImageRaw && !cleanedSubjectImageRaw.startsWith("data:")
+      ? cleanedSubjectImageRaw
+      : null;
   const debugEnabled = Boolean(promptDebug);
   const debugCopyLine =
     debugEnabled && (headline?.trim() || subheadline?.trim() || cta?.trim())
@@ -224,7 +228,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? "Hard constraint: preserve exact subject, do not replace category or core product identity."
       : null;
   const normalizedReferences = (referenceImages ?? [])
-    .filter((entry) => Boolean(entry?.url))
+    .filter((entry) => Boolean(entry?.url) && !String(entry?.url).trim().startsWith("data:"))
     .map((entry) => ({
       role: entry.role ?? "style",
       weight:
@@ -488,11 +492,11 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   // A ideia é: a imagem base NÃO precisa “escrever” o texto certo
   // (isso a gente renderiza em HTML/CSS). Aqui só reservamos espaço e estética.
   const prompt = [
+    moduleBase,
+    subjectReferenceHardConstraintLine,
     ...(isExtreme
       ? [weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines, ...baseBlock]
       : [...baseBlock, weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines]),
-    moduleBase,
-    subjectReferenceHardConstraintLine,
     hardSubjectConstraintLine,
     debugEnabled ? builderSubjectLineText : null,
     debugEnabled ? builderLightingLine : null,
@@ -554,12 +558,19 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     isEcomV2Template && userNegativePrompt
       ? `${ecomV2DefaultNegativePrompt}, ${userNegativePrompt}`
       : negativePromptBase;
-  const ecomV2SubjectGuardNegative =
-    "wrong object, wrong category, unrelated product, watch, jewelry";
-  const finalNegativePrompt =
-    isEcomV2Template
-      ? `${negativePrompt}, ${ecomV2SubjectGuardNegative}`
-      : negativePrompt;
+  const ecomV2SubjectGuardNegativeTerms = [
+    "wrong object",
+    "wrong category",
+    "unrelated product",
+    "watch",
+    "jewelry",
+  ];
+  const finalNegativePrompt = isEcomV2Template
+    ? ecomV2SubjectGuardNegativeTerms.reduce((acc, term) => {
+        const lower = acc.toLowerCase();
+        return lower.includes(term.toLowerCase()) ? acc : `${acc}, ${term}`;
+      }, negativePrompt)
+    : negativePrompt;
 
   return {
     prompt,
