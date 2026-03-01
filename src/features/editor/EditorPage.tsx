@@ -822,6 +822,12 @@ export default function EditorPage() {
   ];
 
   const bgUrl = active?.imageUrl ?? null;
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    (window as any).__MI_SPEC__ = safeSpec;
+    (window as any).__MI_PROJECT__ = project;
+  }, [project, safeSpec]);
   const previewBaseSize = useMemo(
     () => ({
       width: safeSpec?.generation?.width ?? 1080,
@@ -1113,6 +1119,10 @@ export default function EditorPage() {
       throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY");
     }
 
+    if (import.meta.env.DEV) {
+      (window as any).__MI_LAST_EDGE_BODY__ = payload;
+    }
+
     const fnUrl = `${supabaseUrl.replace(/\/+$/, "")}/functions/v1/generate-image`;
     const resp = await fetch(fnUrl, {
       method: "POST",
@@ -1133,10 +1143,54 @@ export default function EditorPage() {
     }
 
     if (!resp.ok) {
+      if (import.meta.env.DEV) {
+        (window as any).__MI_LAST_EDGE_RESPONSE__ = {
+          ok: false,
+          status: resp.status,
+          body: parsed ?? text,
+        };
+      }
       throw new Error(parsed?.error ?? parsed?.message ?? (text || `HTTP ${resp.status}`));
     }
     if (!parsed?.signedUrl || !parsed?.generationId) {
+      if (import.meta.env.DEV) {
+        (window as any).__MI_LAST_EDGE_RESPONSE__ = {
+          ok: false,
+          status: resp.status,
+          body: parsed ?? text,
+        };
+      }
       throw new Error("Invalid generate-image response");
+    }
+
+    if (import.meta.env.DEV) {
+      const vertexMeta =
+        parsed?.meta && typeof parsed.meta === "object"
+          ? {
+              referenceImagesCount: (parsed.meta as any)?.referenceImagesCount,
+              vertexEndpoint: (parsed.meta as any)?.vertexEndpoint,
+              vertexPayloadKind: (parsed.meta as any)?.vertexPayloadKind,
+            }
+          : {
+              referenceImagesCount: parsed?.referenceImagesCount,
+              vertexEndpoint: parsed?.vertexEndpoint,
+              vertexPayloadKind: parsed?.vertexPayloadKind,
+            };
+      if (
+        vertexMeta.referenceImagesCount !== undefined ||
+        vertexMeta.vertexEndpoint !== undefined ||
+        vertexMeta.vertexPayloadKind !== undefined
+      ) {
+        (window as any).__MI_LAST_VERTEX_META__ = vertexMeta;
+      }
+    }
+
+    if (import.meta.env.DEV) {
+      (window as any).__MI_LAST_EDGE_RESPONSE__ = {
+        ok: true,
+        status: resp.status,
+        body: parsed,
+      };
     }
 
     return parsed as GenerateImageResponse;
@@ -1186,7 +1240,33 @@ export default function EditorPage() {
         .slice(0, 4);
       const subjectImageForGenerate = normalizeProjectAssetsUrl(safeSpec.subjectImageUrl) ?? undefined;
       const styleRefForGenerate =
-        normalizeProjectAssetsUrl(safeSpec.ecomV2?.styleRefImageUrl) ?? undefined;
+        styleRefImageUrl || normalizeProjectAssetsUrl(safeSpec.ecomV2?.styleRefImageUrl) || undefined;
+      const upsertedByRole = new Map<"subject" | "style", {
+        url: string;
+        role: "subject" | "style";
+        weight: number;
+        lockRealism: boolean;
+      }>();
+      for (const ref of normalizedReferences) {
+        upsertedByRole.set(ref.role, ref);
+      }
+      if (subjectImageForGenerate) {
+        upsertedByRole.set("subject", {
+          url: subjectImageForGenerate,
+          role: "subject",
+          weight: 90,
+          lockRealism: true,
+        });
+      }
+      if (styleRefForGenerate) {
+        upsertedByRole.set("style", {
+          url: styleRefForGenerate,
+          role: "style",
+          weight: 55,
+          lockRealism: true,
+        });
+      }
+      const referencesForGenerate = Array.from(upsertedByRole.values()).slice(0, 4);
       for (let i = 0; i < count; i += 1) {
         const res = await invokeGenerateEdge({
           prompt: compiledNow.prompt,
@@ -1197,7 +1277,7 @@ export default function EditorPage() {
           module: safeSpec.module,
           ...(subjectImageForGenerate ? { subjectImageUrl: subjectImageForGenerate } : {}),
           ...(styleRefForGenerate ? { styleRefImageUrl: styleRefForGenerate } : {}),
-          ...(normalizedReferences.length ? { referenceImages: normalizedReferences } : {}),
+          ...(referencesForGenerate.length ? { referenceImages: referencesForGenerate } : {}),
         });
 
         generated.push({
@@ -3145,8 +3225,7 @@ export default function EditorPage() {
                                         weight: getReferenceRoleDefaultWeight(
                                           normalizeReferenceRoleInput(value)
                                         ),
-                                        lockRealism:
-                                          normalizeReferenceRoleInput(value) === "subject",
+                                        lockRealism: true,
                                       }
                                     : item
                                 ),
@@ -3183,6 +3262,26 @@ export default function EditorPage() {
                                     ? {
                                         ...item,
                                         weight: clampSize(val, 0, 100),
+                                      }
+                                    : item
+                                ),
+                              })
+                            }
+                          />
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={clampSize(Number(ref.weight ?? 70), 0, 100)}
+                            onChange={(e) =>
+                              persistSpec({
+                                ...safeSpec,
+                                referenceImages: referenceImages.map((item) =>
+                                  item.id === ref.id
+                                    ? {
+                                        ...item,
+                                        weight: clampSize(Number(e.target.value || 0), 0, 100),
                                       }
                                     : item
                                 ),

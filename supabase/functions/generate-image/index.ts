@@ -522,6 +522,12 @@ Deno.serve(async (req: Request) => {
             seed: input.seed,
             aspectRatio,
             referenceImagesCount: input.referenceImages.length,
+            referenceImages: input.referenceImages.map((entry) => ({
+              role: entry.role,
+              weight: entry.weight,
+              lockRealism: entry.lockRealism,
+              url: entry.url,
+            })),
           },
         })
         .select("id,created_at")
@@ -579,6 +585,10 @@ Deno.serve(async (req: Request) => {
     if (!vertex.ok) {
       const details = JSON.stringify(vertex.errors).slice(0, 1200);
       if (hasReferences) {
+        const summary = vertex.errors
+          .map((entry) => `${entry.status ?? "err"}:${entry.payloadKind}`)
+          .slice(0, 3)
+          .join(", ");
         await updateGenerationError(
           supabase,
           generationId,
@@ -588,8 +598,7 @@ Deno.serve(async (req: Request) => {
         return json(
           {
             error: "reference_images_not_supported",
-            details:
-              "Provider does not support reference images; switch model or endpoint",
+            details: `Provider does not support reference images; switch model or endpoint (${summary || "no_summary"})`,
           },
           400,
           headers,
@@ -658,6 +667,12 @@ Deno.serve(async (req: Request) => {
             seed: input.seed,
             aspectRatio,
             referenceImagesCount: input.referenceImages.length,
+            referenceImages: input.referenceImages.map((entry) => ({
+              role: entry.role,
+              weight: entry.weight,
+              lockRealism: entry.lockRealism,
+              url: entry.url,
+            })),
             vertexEndpoint: vertex.value.endpoint,
             vertexPayloadKind: vertex.value.payloadKind,
           },
