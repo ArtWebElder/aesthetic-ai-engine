@@ -2,11 +2,41 @@ import React from "react";
 import type { TemplateRenderProps } from "@/features/editor/templates/types";
 
 export default function TEcomV201({ spec, imageUrl, showGrid }: TemplateRenderProps) {
+  const parseHex = (input: string): [number, number, number] | null => {
+    const hex = input.trim().replace(/^#/, "");
+    if (/^[0-9a-fA-F]{3}$/.test(hex)) {
+      const r = parseInt(hex[0] + hex[0], 16);
+      const g = parseInt(hex[1] + hex[1], 16);
+      const b = parseInt(hex[2] + hex[2], 16);
+      return [r, g, b];
+    }
+    if (/^[0-9a-fA-F]{6}$/.test(hex)) {
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      return [r, g, b];
+    }
+    return null;
+  };
+  const darkenHex = (input: string, ratio: number): string => {
+    const source = parseHex(input) ?? [255, 255, 255];
+    const base: [number, number, number] = [0x0b, 0x0f, 0x14];
+    const clampRatio = Math.max(0, Math.min(1, ratio));
+    const mix = source.map((c, i) =>
+      Math.round(base[i] * clampRatio + c * (1 - clampRatio))
+    ) as [number, number, number];
+    return `#${mix.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+  };
   const v2 = spec.ecomV2 ?? {};
   const layout = v2.layoutPreset ?? "layout_a";
   const textPreset = v2.textPreset ?? "premium";
   const intensity = Math.max(0, Math.min(100, Number(v2.intensity ?? 70)));
   const palette = v2.styleDNA?.palette?.length ? v2.styleDNA.palette : ["#F59E0B", "#111827", "#FFFFFF"];
+  const p0 = darkenHex(palette[0], 0.75);
+  const p1 = darkenHex(palette[1], 0.7);
+  const canMix =
+    typeof CSS !== "undefined" &&
+    Boolean(CSS.supports?.("color", "color-mix(in srgb, #000 50%, #fff)"));
   const subject = spec.subjectImageUrl || null;
   const headline = spec.content.headline || "New Collection";
   const subheadline = spec.content.subheadline || "High-converting banner in seconds.";
@@ -18,7 +48,6 @@ export default function TEcomV201({ spec, imageUrl, showGrid }: TemplateRenderPr
           right: "6%",
           bottom: "12%",
           width: "min(42%, 520px)",
-          maxWidth: "52%",
           height: "72%",
         }
       : layout === "layout_c"
@@ -27,14 +56,12 @@ export default function TEcomV201({ spec, imageUrl, showGrid }: TemplateRenderPr
           bottom: "8%",
           transform: "translateX(-50%)",
           width: "min(52%, 560px)",
-          maxWidth: "64%",
           height: "66%",
         }
       : {
           right: "10%",
           bottom: "10%",
           width: "min(40%, 500px)",
-          maxWidth: "52%",
           height: "74%",
         };
 
@@ -104,7 +131,11 @@ export default function TEcomV201({ spec, imageUrl, showGrid }: TemplateRenderPr
         ) : (
           <div
             className="h-full w-full"
-            style={{ background: "linear-gradient(140deg, #111827, #1f2937 68%)" }}
+            style={{
+              background: canMix
+                ? `linear-gradient(140deg, color-mix(in srgb, #0b0f14 70%, ${palette[1]}), color-mix(in srgb, #0b0f14 75%, ${palette[0]}) 68%)`
+                : `linear-gradient(140deg, ${p1}, ${p0} 68%)`,
+            }}
           />
         )}
       </div>

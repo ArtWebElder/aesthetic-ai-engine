@@ -235,6 +235,11 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       notes: entry.notes?.trim() ?? "",
       url: entry.url?.trim() ?? "",
     }));
+  const hasSubjectReference = normalizedReferences.some((entry) => entry.role === "subject");
+  const subjectReferenceHardConstraintLine =
+    isEcomV2Template && hasSubjectReference
+      ? "Subject must remain the same object/category as the subject reference. Do not replace it."
+      : null;
   if (normalizedReferences.length === 0 && cleanedReferenceImage) {
     normalizedReferences.push({
       role: "style",
@@ -486,6 +491,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     ...(isExtreme
       ? [weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines, ...baseBlock]
       : [...baseBlock, weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines]),
+    moduleBase,
+    subjectReferenceHardConstraintLine,
     hardSubjectConstraintLine,
     debugEnabled ? builderSubjectLineText : null,
     debugEnabled ? builderLightingLine : null,
@@ -500,7 +507,6 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     scenePresetLine,
     sceneMoodLine,
     scenePropsLine,
-    moduleBase,
     styleHints,
     `template: ${templateId}`,
     effectsHints,
@@ -548,10 +554,16 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     isEcomV2Template && userNegativePrompt
       ? `${ecomV2DefaultNegativePrompt}, ${userNegativePrompt}`
       : negativePromptBase;
+  const ecomV2SubjectGuardNegative =
+    "wrong object, wrong category, unrelated product, watch, jewelry";
+  const finalNegativePrompt =
+    isEcomV2Template
+      ? `${negativePrompt}, ${ecomV2SubjectGuardNegative}`
+      : negativePrompt;
 
   return {
     prompt,
-    negativePrompt,
+    negativePrompt: finalNegativePrompt,
     meta: {
       stylePreset,
       aspectRatio: generation.aspectRatio,
