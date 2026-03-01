@@ -141,6 +141,8 @@ export interface GenerationParams {
   height: number;
   quality: "standard" | "high";
   realism?: number;
+  seed?: number | null;
+  negativePrompt?: string | null;
 }
 
 export interface ReferenceImage {

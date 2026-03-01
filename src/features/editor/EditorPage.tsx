@@ -353,6 +353,14 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     generation: {
       ...generation,
       realism: clampSize(Number(generation.realism ?? 70), 0, 100),
+      seed:
+        Number.isFinite(Number(generation.seed)) && generation.seed !== null
+          ? clampInt(Number(generation.seed), 0, 2_147_483_647)
+          : null,
+      negativePrompt:
+        typeof generation.negativePrompt === "string"
+          ? generation.negativePrompt
+          : "",
       ...(isSocialPost
         ? socialPlatformToSize((builder.platformPreset ?? "instagram_feed").trim())
         : {}),
@@ -786,6 +794,7 @@ export default function EditorPage() {
     const container = canvasContainerRef.current;
     if (!container) return;
     event.preventDefault();
+    event.currentTarget.focus({ preventScroll: true });
     panSessionRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -941,6 +950,7 @@ export default function EditorPage() {
     negativePrompt?: string;
     width: number;
     height: number;
+    seed?: number;
     module?: string;
   }): Promise<GenerateImageResponse> {
     const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
@@ -985,6 +995,10 @@ export default function EditorPage() {
 
     const { w, h } = getSafeDims(safeSpec);
     const compiledNow = compilePrompt(safeSpec);
+    const normalizedSeed =
+      Number.isFinite(Number(safeSpec.generation.seed)) && safeSpec.generation.seed !== null
+        ? clampInt(Number(safeSpec.generation.seed), 0, 2_147_483_647)
+        : null;
     const count = clampInt(
       Number(
         safeSpec.module === "photoshoot"
@@ -1004,6 +1018,7 @@ export default function EditorPage() {
           negativePrompt: compiledNow.negativePrompt,
           width: w,
           height: h,
+          ...(normalizedSeed !== null ? { seed: normalizedSeed } : {}),
           module: safeSpec.module,
         });
 
@@ -2128,14 +2143,13 @@ export default function EditorPage() {
                 isCanvasPanning ? "cursor-grabbing" : isCanvasSpacePressed ? "cursor-grab" : "cursor-default",
               ].join(" ")}
             >
-              <div className="relative min-h-full min-w-full bg-muted/30">
-                <div
-                  style={{
-                    position: "relative",
-                    width: `${canvasGeometry.innerWidth}px`,
-                    height: `${canvasGeometry.innerHeight}px`,
-                  }}
-                >
+              <div
+                className="relative bg-muted/30"
+                style={{
+                  width: `${canvasGeometry.innerWidth}px`,
+                  height: `${canvasGeometry.innerHeight}px`,
+                }}
+              >
                   {showGridOverlay && (
                     <div
                       className="absolute inset-0 pointer-events-none z-30"
@@ -2436,7 +2450,6 @@ export default function EditorPage() {
                     )}
                     </div>
                   </div>
-                </div>
               </div>
               <div
                 data-canvas-zoom-controls="true"
@@ -3766,6 +3779,50 @@ export default function EditorPage() {
                         </Select>
                       </div>
                     ) : null}
+
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-xs text-muted-foreground">Negative Prompt</label>
+                      <Textarea
+                        rows={3}
+                        placeholder="blurry, low quality, text, watermark, logo, artifacts"
+                        value={safeSpec.generation.negativePrompt ?? ""}
+                        onChange={(e) =>
+                          persistSpec({
+                            ...safeSpec,
+                            generation: {
+                              ...safeSpec.generation,
+                              negativePrompt: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+
+                    <div className="col-span-2 space-y-1">
+                      <label className="text-xs text-muted-foreground">Seed</label>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={2147483647}
+                        step={1}
+                        placeholder="Optional (e.g. 12345)"
+                        value={safeSpec.generation.seed ?? ""}
+                        onChange={(e) => {
+                          const raw = e.target.value.trim();
+                          const nextSeed = raw
+                            ? clampInt(Number(raw), 0, 2_147_483_647)
+                            : null;
+                          persistSpec({
+                            ...safeSpec,
+                            generation: {
+                              ...safeSpec.generation,
+                              seed: Number.isFinite(nextSeed) ? nextSeed : null,
+                            },
+                          });
+                        }}
+                      />
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -4983,6 +5040,50 @@ export default function EditorPage() {
                         : t("editor.actions.create_10_variations")}
                     </Button>
                   )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground font-medium">Negative Prompt</label>
+                  <Textarea
+                    rows={3}
+                    className="text-base"
+                    placeholder="blurry, low quality, text, watermark, logo, artifacts"
+                    value={safeSpec.generation.negativePrompt ?? ""}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        generation: {
+                          ...safeSpec.generation,
+                          negativePrompt: e.target.value,
+                        },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground font-medium">Seed</label>
+                  <Input
+                    type="number"
+                    className="h-12 text-base"
+                    inputMode="numeric"
+                    min={0}
+                    max={2147483647}
+                    step={1}
+                    placeholder="Optional (e.g. 12345)"
+                    value={safeSpec.generation.seed ?? ""}
+                    onChange={(e) => {
+                      const raw = e.target.value.trim();
+                      const nextSeed = raw ? clampInt(Number(raw), 0, 2_147_483_647) : null;
+                      persistSpec({
+                        ...safeSpec,
+                        generation: {
+                          ...safeSpec.generation,
+                          seed: Number.isFinite(nextSeed) ? nextSeed : null,
+                        },
+                      });
+                    }}
+                  />
                 </div>
 
                 {/* Debug prompt */}

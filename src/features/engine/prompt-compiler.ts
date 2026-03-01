@@ -33,6 +33,11 @@ export interface CompiledPrompt {
     stylePreset: string;
     aspectRatio: string;
     size: { w: number; h: number };
+    module: ProjectSpec["module"];
+    format: ProjectSpec["format"];
+    usedNegativePrompt?: boolean;
+    usedSeed?: boolean;
+    defaultNegativePromptWasApplied?: boolean;
   };
 }
 
@@ -65,6 +70,12 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     referenceImageUrl,
   } = spec;
   const { headline, subheadline, ctaText: cta } = content;
+  const userNegativePrompt =
+    typeof generation.negativePrompt === "string" ? generation.negativePrompt.trim() : "";
+  const normalizedSeed =
+    Number.isFinite(Number(generation.seed)) && generation.seed !== null
+      ? Math.max(0, Math.min(2_147_483_647, Math.round(Number(generation.seed))))
+      : null;
 
   // Prompts-base por módulo (bem simples agora)
   const moduleBase =
@@ -499,7 +510,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     .filter(Boolean)
     .join(", ");
 
-  const negativePrompt = [
+  const defaultNegativePrompt = [
     "low quality",
     "blurry",
     "over-saturated",
@@ -511,6 +522,14 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     "logo artifacts",
     "extra fingers",
   ].join(", ");
+  const ecomDefaultNegativePrompt =
+    "blurry, low quality, text, watermark, logo, artifacts, distorted product, bad proportions";
+  const defaultNegativePromptWasApplied = module === "ecom_banner" && !userNegativePrompt;
+  const negativePrompt = userNegativePrompt
+    ? userNegativePrompt
+    : module === "ecom_banner"
+    ? ecomDefaultNegativePrompt
+    : defaultNegativePrompt;
 
   return {
     prompt,
@@ -519,6 +538,11 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       stylePreset,
       aspectRatio: generation.aspectRatio,
       size: { w: generation.width, h: generation.height },
+      module,
+      format: spec.format,
+      usedNegativePrompt: debugEnabled ? Boolean(negativePrompt) : undefined,
+      usedSeed: debugEnabled ? normalizedSeed !== null : undefined,
+      defaultNegativePromptWasApplied: debugEnabled ? defaultNegativePromptWasApplied : undefined,
     },
   };
 }

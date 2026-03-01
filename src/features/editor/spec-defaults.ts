@@ -213,6 +213,8 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       height: size.height,
       quality: "high",
       realism: 70,
+      seed: null,
+      negativePrompt: "",
     },
   };
 }
