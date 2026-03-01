@@ -167,7 +167,7 @@ export interface GenerationParams {
 export interface ReferenceImage {
   id: string;
   url: string | null;
-  role: "style" | "composition" | "product" | "brand" | "other";
+  role: "style" | "composition" | "product" | "brand" | "subject" | "other";
   weight: number;
   lockRealism: boolean;
   notes?: string;

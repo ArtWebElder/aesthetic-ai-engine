@@ -190,6 +190,7 @@ function normalizeReferenceImages(
     "composition",
     "product",
     "brand",
+    "subject",
     "other",
   ];
 
@@ -248,6 +249,42 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     spec.referenceImages,
     spec.referenceImageUrl
   );
+  const nextReferenceImages = [...normalizedReferenceImages];
+  const upsertReferenceByRole = (
+    role: ReferenceImage["role"],
+    url: string,
+    weight: number,
+    lockRealism: boolean
+  ) => {
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) return;
+    const idxByRole = nextReferenceImages.findIndex((entry) => entry.role === role);
+    const nextRef: ReferenceImage = {
+      id: idxByRole >= 0 ? nextReferenceImages[idxByRole].id : newId(),
+      role,
+      url: trimmedUrl,
+      weight: clampSize(weight, 0, 100),
+      lockRealism,
+      notes: idxByRole >= 0 ? nextReferenceImages[idxByRole].notes ?? "" : "",
+    };
+    if (idxByRole >= 0) {
+      nextReferenceImages[idxByRole] = nextRef;
+      return;
+    }
+    if (nextReferenceImages.length < 5) {
+      nextReferenceImages.push(nextRef);
+      return;
+    }
+    nextReferenceImages[nextReferenceImages.length - 1] = nextRef;
+  };
+  if (spec.module === "ecom_banner" && spec.templateId === "ecom_v2_01") {
+    if (spec.subjectImageUrl?.trim()) {
+      upsertReferenceByRole("subject", spec.subjectImageUrl, 90, true);
+    }
+    if (ecomV2.styleRefImageUrl?.trim()) {
+      upsertReferenceByRole("style", ecomV2.styleRefImageUrl, 55, true);
+    }
+  }
 
   return {
     ...spec,
@@ -339,7 +376,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       safeSpace: (builder.safeSpace ?? "").trim(),
       extraDetails: (builder.extraDetails ?? "").slice(0, 140),
     },
-    referenceImages: normalizedReferenceImages,
+    referenceImages: nextReferenceImages,
     referenceImageUrl: null,
     ecomV2: {
       styleRefImageUrl: ecomV2.styleRefImageUrl ?? null,
@@ -979,7 +1016,6 @@ export default function EditorPage() {
     width: number;
     height: number;
     seed?: number;
-    subjectImage?: string;
     module?: string;
   }): Promise<GenerateImageResponse> {
     const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
@@ -1048,9 +1084,6 @@ export default function EditorPage() {
           width: w,
           height: h,
           ...(normalizedSeed !== null ? { seed: normalizedSeed } : {}),
-          ...(isEcomV2Template && safeSpec.subjectImageUrl
-            ? { subjectImage: safeSpec.subjectImageUrl }
-            : {}),
           module: safeSpec.module,
         });
 

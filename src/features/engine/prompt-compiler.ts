@@ -223,10 +223,6 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     isEcomV2Template && cleanedSubjectImage
       ? "Hard constraint: preserve exact subject, do not replace category or core product identity."
       : null;
-  const styleRefLine =
-    isEcomV2Template && spec.ecomV2?.styleRefImageUrl
-      ? `Style-only reference: ${spec.ecomV2.styleRefImageUrl?.startsWith("data:") ? "uploaded (embedded)" : spec.ecomV2.styleRefImageUrl}`
-      : null;
   const normalizedReferences = (referenceImages ?? [])
     .filter((entry) => Boolean(entry?.url))
     .map((entry) => ({
@@ -261,6 +257,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
         ? "use for product fidelity (shape, details, materials)"
         : entry.role === "brand"
         ? "use for brand identity (palette, tone, consistency)"
+        : entry.role === "subject"
+        ? "preserve exact subject identity/category; do not replace or drift"
         : "general reference";
     return `Reference image (${entry.role}, weight=${entry.weight}, lockRealism=${lockRealismFlag}): ${source}; ${roleGuidance}${notesSuffix}`;
   });
@@ -489,7 +487,6 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? [weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines, ...baseBlock]
       : [...baseBlock, weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines]),
     hardSubjectConstraintLine,
-    styleRefLine,
     debugEnabled ? builderSubjectLineText : null,
     debugEnabled ? builderLightingLine : null,
     debugEnabled ? builderStyleLine : null,
