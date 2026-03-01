@@ -91,6 +91,17 @@ export default function EditorPage() {
     );
   }
 
+  // Debug helpers (DEV only)
+useEffect(() => {
+  if (!import.meta.env.DEV) return;
+
+  // expõe o spec atual (o que está na tela)
+  (window as any).__MI_SPEC__ = safeSpec;
+
+  // só pra confirmar no console sem ficar poluindo
+  // console.log("[debug] __MI_SPEC__ updated");
+}, [safeSpec]);
+
   const spec = project.spec;
 
   function generateMock() {
