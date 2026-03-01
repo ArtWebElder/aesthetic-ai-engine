@@ -4561,6 +4561,36 @@ export default function EditorPage() {
                     }
                   />
                 </div>
+
+                {isEcom ? (
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground">Text Style</label>
+                    <div className="text-[11px] text-muted-foreground">
+                      Choose how the headline looks (no design skills needed).
+                    </div>
+                    <Select
+                      value={safeSpec.content.ecomTextPreset ?? "glass_label"}
+                      onValueChange={(value) =>
+                        persistSpec({
+                          ...safeSpec,
+                          content: {
+                            ...safeSpec.content,
+                            ecomTextPreset: value as "clean_bold" | "glass_label" | "distressed_angle",
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="clean_bold">Clean</SelectItem>
+                        <SelectItem value="glass_label">Premium</SelectItem>
+                        <SelectItem value="distressed_angle">Impact</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
               </>
             ) : null}
 
@@ -4881,6 +4911,34 @@ export default function EditorPage() {
                         }}
                       />
                     </div>
+
+                    {isEcom && (
+                      <div className="space-y-2">
+                        <label className="text-xs text-muted-foreground font-medium">Text Style</label>
+                        <div className="text-[11px] text-muted-foreground">
+                          Choose how the headline looks (no design skills needed).
+                        </div>
+                        <Select
+                          value={safeSpec.content.ecomTextPreset ?? "glass_label"}
+                          onValueChange={(value) =>
+                            persistSpec({
+                              ...safeSpec,
+                              content: {
+                                ...safeSpec.content,
+                                ecomTextPreset: value as "clean_bold" | "glass_label" | "distressed_angle",
+                              },
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="clean_bold">Clean</SelectItem>
+                            <SelectItem value="glass_label">Premium</SelectItem>
+                            <SelectItem value="distressed_angle">Impact</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                   </>
                 )}
                 {isSocialPost && (

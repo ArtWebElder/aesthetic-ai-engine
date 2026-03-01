@@ -5,6 +5,13 @@ import { useI18n } from "@/i18n";
 export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProps) {
   const { t } = useI18n();
   const { headline, subheadline, ctaText, price, badgeText } = spec.content;
+  const filterId = React.useId();
+  const textPreset = spec.content.ecomTextPreset ?? "glass_label";
+  const titleText = headline || t("editor.template.ecom_01.default_headline");
+  const subtitleText = subheadline || t("editor.template.ecom_01.default_subheadline");
+  const isCleanBold = textPreset === "clean_bold";
+  const isGlassLabel = textPreset === "glass_label";
+  const isDistressedAngle = textPreset === "distressed_angle";
 
   return (
     <div className="relative w-full h-full overflow-hidden rounded-2xl">
@@ -22,6 +29,15 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
           background: `linear-gradient(90deg, var(--mi-overlay-from), var(--mi-overlay-via), var(--mi-overlay-to))`,
         }}
       />
+      {isCleanBold ? (
+        <div
+          className="absolute inset-y-0 left-0 w-[62%]"
+          style={{
+            background:
+              "linear-gradient(90deg, rgba(0,0,0,0.74) 0%, rgba(0,0,0,0.46) 52%, rgba(0,0,0,0) 100%)",
+          }}
+        />
+      ) : null}
 
       {/* Optional grid */}
       {showGrid ? (
@@ -37,7 +53,22 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
 
       {/* Content */}
       <div className="relative z-10 h-full w-full p-10 flex items-center">
-        <div className="max-w-[56%] space-y-4">
+        <div
+          className="max-w-[56%] space-y-4"
+          style={
+            isGlassLabel
+              ? {
+                  background: "rgba(12, 16, 24, 0.34)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  backdropFilter: "blur(10px)",
+                  borderRadius: 18,
+                  padding: "18px 20px 18px 20px",
+                  transform: "rotate(-1.25deg)",
+                  boxShadow: "0 18px 42px rgba(0,0,0,0.36), inset 0 1px 0 rgba(255,255,255,0.18)",
+                }
+              : undefined
+          }
+        >
           {badgeText ? (
             <span
               className="inline-flex items-center text-[11px] px-2 py-1 rounded-full border backdrop-blur"
@@ -58,10 +89,51 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
               color: "var(--mi-text)",
               fontSize: "var(--mi-h1-size)",
               fontWeight: 800,
-              textShadow: "var(--mi-title-shadow)",
+              textShadow: isCleanBold
+                ? "0 14px 36px rgba(0,0,0,.62), 0 4px 10px rgba(0,0,0,.45)"
+                : isGlassLabel
+                ? "0 12px 28px rgba(0,0,0,.56), 0 2px 6px rgba(0,0,0,.34)"
+                : "var(--mi-title-shadow)",
             }}
           >
-            {headline || t("editor.template.ecom_01.default_headline")}
+            {isDistressedAngle ? (
+              <svg
+                viewBox="0 0 1200 280"
+                className="w-full max-w-[720px] h-auto overflow-visible"
+                style={{ transform: "rotate(-8deg)" }}
+                aria-hidden="true"
+              >
+                <defs>
+                  <filter id={filterId}>
+                    <feTurbulence type="fractalNoise" baseFrequency="0.75" numOctaves={1} seed={7} />
+                    <feColorMatrix type="saturate" values="0" />
+                    <feComponentTransfer>
+                      <feFuncA type="table" tableValues="0 0.18" />
+                    </feComponentTransfer>
+                  </filter>
+                </defs>
+                <text
+                  x="4"
+                  y="198"
+                  fill="rgba(255,255,255,0.96)"
+                  stroke="rgba(12,12,12,0.78)"
+                  strokeWidth="9"
+                  paintOrder="stroke"
+                  filter={`url(#${filterId})`}
+                  style={{
+                    fontFamily: "var(--mi-font-display)",
+                    fontWeight: 900,
+                    fontSize: 170,
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {titleText}
+                </text>
+                <rect x="0" y="0" width="1200" height="280" fill="transparent" />
+              </svg>
+            ) : (
+              titleText
+            )}
           </div>
 
           <div
@@ -72,7 +144,7 @@ export default function TEcom01({ spec, imageUrl, showGrid }: TemplateRenderProp
               maxWidth: 560,
             }}
           >
-            {subheadline || t("editor.template.ecom_01.default_subheadline")}
+            {subtitleText}
           </div>
 
           <div className="flex items-center gap-3 pt-2">

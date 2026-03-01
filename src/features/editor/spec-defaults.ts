@@ -175,6 +175,7 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       ctaText: module === "ecom_banner" ? "Shop now" : "Learn more",
       price: module === "ecom_banner" ? "$49" : undefined,
       badgeText: module === "social_post" ? "NEW" : undefined,
+      ecomTextPreset: module === "ecom_banner" ? "glass_label" : undefined,
     },
 
     brand: {

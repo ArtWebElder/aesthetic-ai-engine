@@ -103,6 +103,7 @@ export interface ContentSpec {
   ctaText: string;
   price?: string;
   badgeText?: string;
+  ecomTextPreset?: "clean_bold" | "glass_label" | "distressed_angle";
 }
 
 export interface BrandSpec {
