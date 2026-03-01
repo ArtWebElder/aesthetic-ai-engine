@@ -26,6 +26,7 @@ export function moduleFromFormat(format: ProjectFormat): ModuleType {
 
   if (
     format === "ecom_desktop_1920x800" ||
+    format === "ecom_ultrawide_1920x800" ||
     format === "ecom_notebook_1366x768" ||
     format === "ecom_mobile_1080x1350" ||
     format === "ecom_custom"
@@ -54,6 +55,7 @@ export function formatToSize(format: ProjectFormat): {
 
     // Ecom
     case "ecom_desktop_1920x800":
+    case "ecom_ultrawide_1920x800":
       return { aspectRatio: "12:5", width: 1920, height: 800 };
     case "ecom_notebook_1366x768":
       return { aspectRatio: "1366:768", width: 1366, height: 768 };
