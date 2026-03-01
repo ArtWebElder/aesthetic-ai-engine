@@ -116,10 +116,6 @@ function getSafeDims(spec: ProjectSpec): { w: number; h: number } {
   };
 }
 
-function buildPicsumUrl(seed: string, w: number, h: number): string {
-  return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
-}
-
 function aspectToSize(aspect: "1:1" | "4:5" | "3:2" | "4:3" | "16:9" | "9:16"): {
   width: number;
   height: number;
@@ -474,6 +470,19 @@ const TEMPLATE_REGISTRY: Array<{
   { id: "photoshoot_clean", nameKey: "editor.template_name.photoshoot_clean", module: "photoshoot", stylePreset: "editorial" },
 ];
 
+type GenerateImageResponse = {
+  generationId: string;
+  provider: string;
+  bucket: string;
+  path: string;
+  signedUrl: string;
+  mime: string;
+  width: number;
+  height: number;
+  creditsUsed: number;
+  createdAt: string;
+};
+
 export default function EditorPage() {
   const { id } = useParams<{ id: string }>();
   const nav = useNavigate();
@@ -484,6 +493,7 @@ export default function EditorPage() {
   const [subjectPreviewUrl, setSubjectPreviewUrl] = useState<string | null>(null);
   const [photoshootPreset, setPhotoshootPreset] = useState<PhotoshootPresetId>("studio_product");
   const [isExporting2K, setIsExporting2K] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isBatchExporting, setIsBatchExporting] = useState(false);
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
@@ -904,8 +914,52 @@ export default function EditorPage() {
     });
   }
 
-  function generateMock() {
+  async function invokeGenerateEdge(payload: {
+    prompt: string;
+    negativePrompt?: string;
+    width: number;
+    height: number;
+    module?: string;
+  }): Promise<GenerateImageResponse> {
+    const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
+    const supabaseAnonKey = String(import.meta.env.VITE_SUPABASE_ANON_KEY ?? "").trim();
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY");
+    }
+
+    const fnUrl = `${supabaseUrl.replace(/\/+$/, "")}/functions/v1/generate-image`;
+    const resp = await fetch(fnUrl, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        apikey: supabaseAnonKey,
+        authorization: `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const text = await resp.text();
+    let parsed: any = null;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch {
+      parsed = null;
+    }
+
+    if (!resp.ok) {
+      throw new Error(parsed?.error ?? parsed?.message ?? (text || `HTTP ${resp.status}`));
+    }
+    if (!parsed?.signedUrl || !parsed?.generationId) {
+      throw new Error("Invalid generate-image response");
+    }
+
+    return parsed as GenerateImageResponse;
+  }
+
+  async function generateMock() {
     if (!project || !safeSpec) return;
+    if (isGenerating) return;
 
     const { w, h } = getSafeDims(safeSpec);
     const compiledNow = compilePrompt(safeSpec);
@@ -918,29 +972,54 @@ export default function EditorPage() {
       1,
       8
     );
-    const baseSeed = Math.floor(Math.random() * 1_000_000_000);
-    const generated: Generation[] = [];
-    for (let i = 0; i < count; i += 1) {
-      const generationId = newId();
-      const seed = `${project.id}-${baseSeed + i}`;
-      generated.push({
-        id: generationId,
-        projectId: project.id,
-        status: "done",
-        createdAt: new Date().toISOString(),
-        imageUrl: buildPicsumUrl(seed, w, h),
-        prompt: compiledNow.prompt,
-        negativePrompt: compiledNow.negativePrompt,
+
+    setIsGenerating(true);
+    try {
+      const generated: Generation[] = [];
+      for (let i = 0; i < count; i += 1) {
+        const res = await invokeGenerateEdge({
+          prompt: compiledNow.prompt,
+          negativePrompt: compiledNow.negativePrompt,
+          width: w,
+          height: h,
+          module: safeSpec.module,
+        });
+
+        generated.push({
+          id: res.generationId,
+          projectId: project.id,
+          status: "done",
+          createdAt: res.createdAt ?? new Date().toISOString(),
+          imageUrl: res.signedUrl,
+          signedUrl: res.signedUrl,
+          bucket: res.bucket,
+          path: res.path,
+          provider: res.provider,
+          mime: res.mime,
+          width: res.width,
+          height: res.height,
+          creditsUsed: res.creditsUsed,
+          prompt: compiledNow.prompt,
+          negativePrompt: compiledNow.negativePrompt,
+        });
+      }
+
+      const nextProject: EditorProject = {
+        ...project,
+        generations: [...generated, ...(project.generations ?? [])],
+        activeGenerationId: generated[0]?.id ?? project.activeGenerationId,
+      };
+
+      persist(nextProject);
+    } catch (error) {
+      toast({
+        title: t("editor.toast.export_failed"),
+        description: String((error as Error)?.message ?? error),
+        variant: "destructive",
       });
+    } finally {
+      setIsGenerating(false);
     }
-
-    const nextProject: EditorProject = {
-      ...project,
-      generations: [...generated, ...(project.generations ?? [])],
-      activeGenerationId: generated[0]?.id ?? project.activeGenerationId,
-    };
-
-    persist(nextProject);
   }
 
   const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
@@ -1012,7 +1091,7 @@ export default function EditorPage() {
 
   async function createVariations() {
     if (!safeSpec || safeSpec.module !== "social_post") {
-      generateMock();
+      await generateMock();
       return;
     }
     setIsBatchExporting(true);
@@ -1830,7 +1909,14 @@ export default function EditorPage() {
               {t("editor.header.back")}
             </Button>
 
-            <Button size="sm" className="hidden md:inline-flex font-medium btn-gradient" onClick={generateMock}>{t("editor.header.generate_base_image")}</Button>
+            <Button
+              size="sm"
+              className="hidden md:inline-flex font-medium btn-gradient"
+              disabled={isGenerating}
+              onClick={() => void generateMock()}
+            >
+              {isGenerating ? t("editor.actions.exporting") : t("editor.header.generate_base_image")}
+            </Button>
           </div>
         </div>
       </div>
@@ -4484,7 +4570,7 @@ export default function EditorPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            disabled={isBatchExporting || isExporting2K}
+            disabled={isBatchExporting || isExporting2K || isGenerating}
             onClick={() => void createVariations()}
           >
             {isBatchExporting
@@ -4496,7 +4582,7 @@ export default function EditorPage() {
           </Button>
           <Button
             variant="outline"
-            disabled={isBatchExporting || isExporting2K}
+            disabled={isBatchExporting || isExporting2K || isGenerating}
             onClick={() => void export2K()}
           >
             {isExporting2K ? t("editor.actions.exporting") : t("editor.actions.export_2k")}
@@ -4521,10 +4607,11 @@ export default function EditorPage() {
           <Button
             size="sm"
             className="flex-1 h-12 text-sm font-semibold btn-gradient"
-            onClick={generateMock}
+            disabled={isGenerating}
+            onClick={() => void generateMock()}
           >
             <Sparkles className="h-4 w-4 mr-1.5" />
-            {t("editor.mobile.generate")}
+            {isGenerating ? t("editor.actions.exporting") : t("editor.mobile.generate")}
           </Button>
           <Button
             variant="outline"
@@ -4854,7 +4941,7 @@ export default function EditorPage() {
                   <Button
                     variant="outline"
                     className="w-full h-12"
-                    disabled={isBatchExporting || isExporting2K}
+                    disabled={isBatchExporting || isExporting2K || isGenerating}
                     onClick={() => void export2K()}
                   >
                     <Download className="h-4 w-4 mr-2" />
@@ -4864,7 +4951,7 @@ export default function EditorPage() {
                     <Button
                       variant="outline"
                       className="w-full h-12"
-                      disabled={isBatchExporting || isExporting2K}
+                      disabled={isBatchExporting || isExporting2K || isGenerating}
                       onClick={() => void createVariations()}
                     >
                       {isBatchExporting

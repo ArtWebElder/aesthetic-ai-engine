@@ -12,7 +12,6 @@ function json(data: unknown, status = 200, extraHeaders: Record<string, string> 
 }
 
 function corsHeaders(origin: string | null) {
-  // DEV aberto; depois você restringe para seu domínio da Vercel
   const allowOrigin = origin ?? "*";
   return {
     "access-control-allow-origin": allowOrigin === "null" ? "*" : allowOrigin,
@@ -20,7 +19,7 @@ function corsHeaders(origin: string | null) {
     "access-control-allow-headers":
       "authorization, x-client-info, apikey, content-type, x-requested-with",
     "access-control-allow-methods": "GET,POST,OPTIONS",
-    "vary": "Origin",
+    vary: "Origin",
   };
 }
 
@@ -70,7 +69,6 @@ async function signJwtRS256(payload: Record<string, unknown>, privateKeyPem: str
 }
 
 async function getGoogleAccessToken(serviceAccount: any) {
-  // OAuth2 JWT flow for service accounts
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: serviceAccount.client_email,
@@ -97,6 +95,7 @@ async function getGoogleAccessToken(serviceAccount: any) {
     const t = await resp.text();
     throw new Error(`oauth_token_error: ${resp.status} ${t}`);
   }
+
   return await resp.json() as { access_token: string; expires_in: number; token_type: string };
 }
 
@@ -106,19 +105,20 @@ type GenerateBody = {
   height?: number;
   seed?: number;
   negativePrompt?: string;
-  // futuramente: stylePreset, etc.
   module?: string;
 };
+
+function looksLikeBucketMissing(message: string) {
+  const m = message.toLowerCase();
+  return m.includes("bucket") && (m.includes("not found") || m.includes("does not exist"));
+}
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("origin");
   const headers = corsHeaders(origin);
 
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
-
-  if (req.method !== "POST") {
-    return json({ error: "method_not_allowed" }, 405, headers);
-  }
+  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405, headers);
 
   try {
     const GCP_PROJECT_ID = Deno.env.get("GCP_PROJECT_ID") ?? "";
@@ -128,9 +128,6 @@ Deno.serve(async (req) => {
     if (!GCP_PROJECT_ID) return json({ error: "missing_secret", key: "GCP_PROJECT_ID" }, 500, headers);
     if (!GCP_SA_KEY_B64) return json({ error: "missing_secret", key: "GCP_SA_KEY_B64" }, 500, headers);
 
-    const rawJson = atob(GCP_SA_KEY_B64);
-    const serviceAccount = JSON.parse(rawJson);
-
     const body = (await req.json()) as GenerateBody;
     const prompt = String(body.prompt ?? "").trim();
     if (!prompt) return json({ error: "missing_prompt" }, 400, headers);
@@ -138,61 +135,74 @@ Deno.serve(async (req) => {
     const width = Number(body.width ?? 1080);
     const height = Number(body.height ?? 1350);
 
-    // --- Supabase client (para logging) ---
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const supabase =
-      (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
-        ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } })
-        : null;
+    const SUPABASE_SERVICE_ROLE_KEY =
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+      Deno.env.get("SUPABASE_SECRET_KEY") ??
+      "";
+    const STORAGE_BUCKET = Deno.env.get("SUPABASE_STORAGE_BUCKET") ?? "generations-private";
+    const SIGNED_URL_TTL_SECONDS = Number(Deno.env.get("SIGNED_URL_TTL_SECONDS") ?? "600");
+
+    if (!SUPABASE_URL) return json({ error: "missing_secret", key: "SUPABASE_URL" }, 500, headers);
+    if (!SUPABASE_SERVICE_ROLE_KEY) {
+      return json(
+        { error: "missing_secret", key: "SUPABASE_SERVICE_ROLE_KEY|SUPABASE_SECRET_KEY" },
+        500,
+        headers,
+      );
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false },
+    });
 
     const startedAt = Date.now();
-    let genId: string | null = null;
+    const provider = "vertex-imagen";
+    let genId = crypto.randomUUID();
+    let createdAt = new Date().toISOString();
 
-    if (supabase) {
+    {
       const { data, error } = await supabase
         .from("generations")
         .insert({
-          module: body.module ?? null,
+          id: genId,
+          user_id: null,
+          provider,
+          bucket: STORAGE_BUCKET,
+          path: null,
+          signed_url: null,
+          prompt,
           width,
           height,
-          prompt,
-          prompt_len: prompt.length,
-          provider: "vertex-imagen",
+          credits_used: 0,
           status: "pending",
           meta: {
+            module: body.module ?? null,
             negativePrompt: body.negativePrompt ?? null,
             seed: body.seed ?? null,
           },
         })
-        .select("id")
+        .select("id,created_at")
         .single();
 
-      if (!error && data?.id) genId = data.id;
+      if (!error) {
+        if (data?.id) genId = String(data.id);
+        if ((data as { created_at?: string } | null)?.created_at) {
+          createdAt = String((data as { created_at: string }).created_at);
+        }
+      }
     }
 
-    // --- OAuth token ---
+    const serviceAccount = JSON.parse(atob(GCP_SA_KEY_B64));
     const token = await getGoogleAccessToken(serviceAccount);
 
-    // --- Vertex AI Imagen endpoint ---
-    // IMPORTANTE: dependendo do modelo disponível, pode precisar ajustar o "model" ou endpoint.
-    // Começamos com um modelo padrão de Imagen via Vertex AI.
     const endpoint =
       `https://${GCP_LOCATION}-aiplatform.googleapis.com/v1/projects/${GCP_PROJECT_ID}/locations/${GCP_LOCATION}/publishers/google/models/imagen-3.0-generate-001:predict`;
 
     const payload: any = {
-      instances: [
-        {
-          prompt,
-          // Alguns modelos aceitam parâmetros direto em instance; outros em parameters.
-        },
-      ],
+      instances: [{ prompt }],
       parameters: {
-        // Aspect ratio é preferível, mas vamos passar size base.
-        // Se o modelo não aceitar, a gente ajusta para "aspectRatio" / "sampleCount" etc.
         sampleCount: 1,
-        // Tentativa de controle de tamanho (pode variar por modelo):
-        // width, height nem sempre aceitos no Imagen; se der erro, ajustamos pro formato certo.
         width,
         height,
       },
@@ -204,7 +214,7 @@ Deno.serve(async (req) => {
     const aiResp = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "authorization": `Bearer ${token.access_token}`,
+        authorization: `Bearer ${token.access_token}`,
         "content-type": "application/json",
       },
       body: JSON.stringify(payload),
@@ -213,27 +223,19 @@ Deno.serve(async (req) => {
     const aiText = await aiResp.text();
 
     if (!aiResp.ok) {
-      if (supabase && genId) {
-        await supabase
-          .from("generations")
-          .update({
-            status: "error",
-            duration_ms: Date.now() - startedAt,
-            error_message: aiText.slice(0, 1200),
-          })
-          .eq("id", genId);
-      }
-      return json(
-        { error: "vertex_error", status: aiResp.status, details: aiText },
-        500,
-        headers,
-      );
+      await supabase
+        .from("generations")
+        .update({
+          status: "error",
+          duration_ms: Date.now() - startedAt,
+          error_message: aiText.slice(0, 1200),
+        })
+        .eq("id", genId);
+
+      return json({ error: "vertex_error", status: aiResp.status, details: aiText }, 500, headers);
     }
 
     const aiJson = JSON.parse(aiText);
-
-    // Imagen geralmente retorna base64 em predictions[0].bytesBase64Encoded (varia)
-    // Vamos tentar alguns caminhos comuns.
     const b64 =
       aiJson?.predictions?.[0]?.bytesBase64Encoded ??
       aiJson?.predictions?.[0]?.image?.bytesBase64Encoded ??
@@ -241,44 +243,108 @@ Deno.serve(async (req) => {
       null;
 
     if (!b64) {
-      if (supabase && genId) {
-        await supabase
-          .from("generations")
-          .update({
-            status: "error",
-            duration_ms: Date.now() - startedAt,
-            error_message: `unexpected_response: ${aiText.slice(0, 1200)}`,
-          })
-          .eq("id", genId);
-      }
-      return json({ error: "unexpected_response", details: aiJson }, 500, headers);
-    }
-
-    if (supabase && genId) {
       await supabase
         .from("generations")
         .update({
-          status: "ok",
+          status: "error",
           duration_ms: Date.now() - startedAt,
-          // opcional: salvar output_url se você subir para storage depois
+          error_message: `unexpected_response: ${aiText.slice(0, 1200)}`,
         })
         .eq("id", genId);
+
+      return json({ error: "unexpected_response", details: aiJson }, 500, headers);
     }
 
-    const dataUrl = `data:image/png;base64,${b64}`;
+    const mime = "image/png";
+    const imageBytes = base64ToUint8(String(b64));
+    const path = `anon/${genId}.png`;
+
+    let { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(path, imageBytes, {
+      contentType: mime,
+      upsert: true,
+      cacheControl: "3600",
+    });
+
+    if (uploadError && looksLikeBucketMissing(uploadError.message)) {
+      await supabase.storage.createBucket(STORAGE_BUCKET, { public: false });
+      const retry = await supabase.storage.from(STORAGE_BUCKET).upload(path, imageBytes, {
+        contentType: mime,
+        upsert: true,
+        cacheControl: "3600",
+      });
+      uploadError = retry.error ?? null;
+    }
+
+    if (uploadError) {
+      await supabase
+        .from("generations")
+        .update({
+          status: "error",
+          duration_ms: Date.now() - startedAt,
+          error_message: `storage_upload_error: ${uploadError.message.slice(0, 1200)}`,
+        })
+        .eq("id", genId);
+
+      return json({ error: "storage_upload_error", details: uploadError.message }, 500, headers);
+    }
+
+    const { data: signedData, error: signedError } = await supabase
+      .storage
+      .from(STORAGE_BUCKET)
+      .createSignedUrl(path, Number.isFinite(SIGNED_URL_TTL_SECONDS) ? SIGNED_URL_TTL_SECONDS : 600);
+
+    if (signedError || !signedData?.signedUrl) {
+      await supabase
+        .from("generations")
+        .update({
+          status: "error",
+          duration_ms: Date.now() - startedAt,
+          error_message: `signed_url_error: ${String(signedError?.message ?? "unknown")}`.slice(0, 1200),
+        })
+        .eq("id", genId);
+
+      return json(
+        { error: "signed_url_error", details: signedError?.message ?? "missing_signed_url" },
+        500,
+        headers,
+      );
+    }
+
+    const creditsUsed = 1;
+
+    await supabase
+      .from("generations")
+      .update({
+        status: "ok",
+        duration_ms: Date.now() - startedAt,
+        provider,
+        bucket: STORAGE_BUCKET,
+        path,
+        signed_url: signedData.signedUrl,
+        mime,
+        width,
+        height,
+        credits_used: creditsUsed,
+      })
+      .eq("id", genId);
 
     return json(
       {
-        ok: true,
-        imageBase64: b64,
-        imageDataUrl: dataUrl,
         generationId: genId,
-        provider: "vertex-imagen",
+        provider,
+        bucket: STORAGE_BUCKET,
+        path,
+        signedUrl: signedData.signedUrl,
+        mime,
+        width,
+        height,
+        creditsUsed,
+        createdAt,
       },
       200,
       headers,
     );
   } catch (e) {
-    return json({ error: "server_error", message: String(e?.message ?? e) }, 500, headers);
+    return json({ error: "server_error", message: String((e as { message?: string })?.message ?? e) }, 500, headers);
   }
 });

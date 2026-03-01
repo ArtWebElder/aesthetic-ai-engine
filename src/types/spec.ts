@@ -231,6 +231,14 @@ export interface Generation {
   projectId: string;
   status: "queued" | "running" | "done" | "error";
   imageUrl?: string;
+  signedUrl?: string;
+  bucket?: string;
+  path?: string;
+  provider?: string;
+  mime?: string;
+  width?: number;
+  height?: number;
+  creditsUsed?: number;
   prompt?: string;
   negativePrompt?: string;
   createdAt: string;
