@@ -487,6 +487,7 @@ export default function EditorPage() {
   const [isBatchExporting, setIsBatchExporting] = useState(false);
   const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+  const [mobileInspectorTab, setMobileInspectorTab] = useState<"subject" | "content" | "style" | "advanced">("content");
   const isMobile = useIsMobile();
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [lastExportError, setLastExportError] = useState<string | null>(null);
@@ -1722,10 +1723,10 @@ export default function EditorPage() {
     : "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30 mb-3";
 
   return (
-    <div className="h-[calc(100vh-56px)] md:h-[calc(100vh-56px)] flex flex-col pb-[60px] md:pb-0 overflow-hidden">
+    <div className="h-[calc(100vh-56px)] md:h-[calc(100vh-56px)] flex flex-col pb-[56px] md:pb-0 overflow-hidden">
       {/* TOP HEADER — compact on mobile */}
-      <div className="px-3 md:px-6 py-2 md:py-2.5 border-b border-border bg-card">
-        <div className="flex items-center justify-between gap-2">
+      <div className="px-2 md:px-6 py-1.5 md:py-2.5 border-b border-border/60 bg-card">
+        <div className="flex items-center justify-between gap-1">
           <div className="min-w-0 flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 lg:hidden" onClick={() => nav("/app/projects")}>
               <ArrowLeft className="h-4 w-4" />
@@ -1956,7 +1957,7 @@ export default function EditorPage() {
               Grid
             </button>
           </div>
-          <div className="flex-1 min-h-0 px-2 md:px-6 pb-2 md:pb-6 overflow-hidden">
+          <div className="flex-1 min-h-0 px-1 md:px-6 pb-1 md:pb-6 overflow-hidden">
             <div
               ref={canvasContainerRef}
               tabIndex={0}
@@ -1967,7 +1968,7 @@ export default function EditorPage() {
               onPointerUp={handleCanvasPointerUp}
               onPointerCancel={handleCanvasPointerUp}
               className={[
-                "relative h-full min-h-0 overflow-auto rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                "relative h-full min-h-0 overflow-auto rounded-lg md:rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 isCanvasPanning ? "cursor-grabbing" : "cursor-grab",
               ].join(" ")}
             >
@@ -4469,38 +4470,30 @@ export default function EditorPage() {
       ) : null}
 
       {/* MOBILE STICKY ACTION BAR */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-md px-3 py-2.5 safe-area-pb">
-        <div className="flex items-center gap-2">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/98 backdrop-blur-lg safe-area-pb">
+        <div className="flex items-center gap-2 px-3 py-2">
           <Button
             size="sm"
-            className="flex-1 h-11 text-xs font-semibold btn-gradient"
+            className="flex-1 h-12 text-sm font-semibold btn-gradient"
             onClick={generateMock}
           >
-            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
-            {t("editor.header.generate_base_image")}
+            <Sparkles className="h-4 w-4 mr-1.5" />
+            {t("editor.mobile.generate")}
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="h-11 w-11 shrink-0 p-0"
+            className="h-12 px-4 text-sm font-medium"
             onClick={() => setMobileInspectorOpen(true)}
           >
-            <SlidersHorizontal className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-11 w-11 shrink-0 p-0"
-            disabled={isBatchExporting || isExporting2K}
-            onClick={() => void export2K()}
-          >
-            <Download className="h-4 w-4" />
+            <SlidersHorizontal className="h-4 w-4 mr-1.5" />
+            {t("editor.mobile.edit")}
           </Button>
           {(project.generations ?? []).length > 0 && (
             <Button
               variant="outline"
               size="sm"
-              className="h-11 w-11 shrink-0 p-0"
+              className="h-12 w-12 shrink-0 p-0"
               onClick={() => setMobileHistoryOpen(true)}
             >
               <Clock className="h-4 w-4" />
@@ -4511,125 +4504,325 @@ export default function EditorPage() {
 
       {/* MOBILE INSPECTOR DRAWER */}
       <Drawer open={mobileInspectorOpen} onOpenChange={setMobileInspectorOpen}>
-        <DrawerContent className="max-h-[85vh]">
+        <DrawerContent className="max-h-[90vh] flex flex-col">
           <DrawerTitle className="sr-only">{t("editor.inspector.title")}</DrawerTitle>
-          <div className="px-4 py-3 overflow-auto flex-1 space-y-5">
-            {/* Render a simplified mobile inspector with the key fields */}
-            <div className="space-y-3">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/30">{t("editor.subject.avatar_photo")}</div>
-              <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer min-h-[56px]">
-                <Upload className="h-5 w-5 text-muted-foreground shrink-0" />
-                <div className="text-xs font-medium">{t("editor.subject.avatar_photo")}</div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const objectUrl = URL.createObjectURL(file);
-                    setSubjectPreviewUrl((prev) => {
-                      if (prev) URL.revokeObjectURL(prev);
-                      return objectUrl;
-                    });
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      const result = typeof reader.result === "string" ? reader.result : null;
-                      persistSpec({ ...safeSpec, subjectImageUrl: result });
-                    };
-                    reader.readAsDataURL(file);
-                  }}
-                  className="sr-only"
-                />
-              </label>
-              {subjectPreview && (
-                <img src={subjectPreview} alt="" className="h-16 w-16 rounded-full border border-border object-cover" />
-              )}
-            </div>
 
-            {/* Content fields */}
-            {!isPhotoshoot && (
-              <div className="space-y-3">
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/30">{t("editor.generic.headline")}</div>
-                <Input
-                  className="h-11"
-                  value={content.headline}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      content: { ...safeSpec.content, headline: e.target.value },
-                    })
-                  }
-                />
-                <Input
-                  className="h-11"
-                  placeholder={t("editor.generic.subheadline")}
-                  value={content.subheadline}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      content: { ...safeSpec.content, subheadline: e.target.value },
-                    })
-                  }
-                />
-                <Input
-                  className="h-11"
-                  placeholder={t("editor.generic.cta")}
-                  value={content.ctaText}
-                  onChange={(e) =>
-                    persistSpec({
-                      ...safeSpec,
-                      content: { ...safeSpec.content, ctaText: e.target.value },
-                    })
-                  }
-                />
+          {/* Tab bar */}
+          <div className="flex border-b border-border/40 px-2 pt-1 shrink-0">
+            {(["subject", "content", "style", "advanced"] as const).map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                className={[
+                  "flex-1 py-3 text-xs font-medium tracking-wide uppercase transition-colors min-h-[44px]",
+                  mobileInspectorTab === tab
+                    ? "text-primary border-b-2 border-primary"
+                    : "text-muted-foreground",
+                ].join(" ")}
+                onClick={() => setMobileInspectorTab(tab)}
+              >
+                {t(`editor.mobile.tab_${tab}`)}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab content — scrollable */}
+          <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
+
+            {/* SUBJECT TAB */}
+            {mobileInspectorTab === "subject" && (
+              <div className="space-y-4">
+                <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer min-h-[56px]">
+                  <Upload className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <div>
+                    <div className="text-sm font-medium">{t("editor.subject.avatar_photo")}</div>
+                    <div className="text-xs text-muted-foreground">Click or drag to upload</div>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const objectUrl = URL.createObjectURL(file);
+                      setSubjectPreviewUrl((prev) => {
+                        if (prev) URL.revokeObjectURL(prev);
+                        return objectUrl;
+                      });
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const result = typeof reader.result === "string" ? reader.result : null;
+                        persistSpec({ ...safeSpec, subjectImageUrl: result });
+                      };
+                      reader.readAsDataURL(file);
+                    }}
+                    className="sr-only"
+                  />
+                </label>
+                {subjectPreview && (
+                  <div className="flex items-center gap-3">
+                    <img src={subjectPreview} alt="" className="h-16 w-16 rounded-full border border-border object-cover" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-10"
+                      onClick={() => {
+                        setSubjectPreviewUrl((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+                        persistSpec({ ...safeSpec, subjectImageUrl: null });
+                      }}
+                    >
+                      {t("editor.subject.remove")}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Scene preset for photoshoot/ecom */}
+                {(isPhotoshoot || isEcom) && (
+                  <div className="space-y-2 pt-2">
+                    <label className="text-xs text-muted-foreground font-medium">{t("editor.scene.preset.label")}</label>
+                    <Select
+                      value={currentScenePreset}
+                      onValueChange={(v) => persistSpec({ ...safeSpec, builder: { ...safeSpec.builder, scenePreset: v as any } })}
+                    >
+                      <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {SCENE_PRESET_OPTIONS.map((slug) => (
+                          <SelectItem key={slug} value={slug}>{t(getScenePresetLabelKey(slug))}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Scene mood */}
+                {(isPhotoshoot || isEcom) && (
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground font-medium">{t("editor.scene.mood.label")}</label>
+                    <Select
+                      value={currentSceneMood}
+                      onValueChange={(v) => persistSpec({ ...safeSpec, builder: { ...safeSpec.builder, sceneMood: normalizeSceneMood(v, scenePresetModuleKey) } })}
+                    >
+                      <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {SCENE_MOOD_OPTIONS.map((slug) => (
+                          <SelectItem key={slug} value={slug}>{t(getSceneMoodLabelKey(slug))}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Realism slider */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-xs text-muted-foreground">{t("editor.generic.realism")}</label>
-                <span className="text-xs text-muted-foreground">
-                  {clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)}%
-                </span>
+            {/* CONTENT TAB */}
+            {mobileInspectorTab === "content" && (
+              <div className="space-y-4">
+                {!isPhotoshoot && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">{t("editor.generic.headline")}</label>
+                      <Input
+                        className="h-12 text-base"
+                        value={isSocialPost ? (safeSpec.builder?.headline || content.headline) : content.headline}
+                        onChange={(e) => {
+                          if (isSocialPost) {
+                            persistSocialPostBuilderPatch({ headline: e.target.value });
+                          } else {
+                            persistSpec({ ...safeSpec, content: { ...safeSpec.content, headline: e.target.value } });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">{t("editor.generic.subheadline")}</label>
+                      <Input
+                        className="h-12 text-base"
+                        value={isSocialPost ? (safeSpec.builder?.subheadline || content.subheadline) : content.subheadline}
+                        onChange={(e) => {
+                          if (isSocialPost) {
+                            persistSocialPostBuilderPatch({ subheadline: e.target.value });
+                          } else {
+                            persistSpec({ ...safeSpec, content: { ...safeSpec.content, subheadline: e.target.value } });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">{t("editor.generic.cta")}</label>
+                      <Input
+                        className="h-12 text-base"
+                        value={isSocialPost ? (safeSpec.builder?.cta || content.ctaText) : content.ctaText}
+                        onChange={(e) => {
+                          if (isSocialPost) {
+                            persistSocialPostBuilderPatch({ cta: e.target.value });
+                          } else {
+                            persistSpec({ ...safeSpec, content: { ...safeSpec.content, ctaText: e.target.value } });
+                          }
+                        }}
+                      />
+                    </div>
+                  </>
+                )}
+                {isSocialPost && (
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground font-medium">{t("brand_name")}</label>
+                    <Input
+                      className="h-12 text-base"
+                      value={safeSpec.builder?.brandName || ""}
+                      onChange={(e) => persistSocialPostBuilderPatch({ brandName: e.target.value })}
+                    />
+                  </div>
+                )}
+                {isPhotoshoot && (
+                  <div className="space-y-2">
+                    <label className="text-xs text-muted-foreground font-medium">{t("photoshoot.subject.details")}</label>
+                    <Textarea
+                      rows={3}
+                      className="text-base"
+                      value={safeSpec.builder?.extraDetails ?? ""}
+                      onChange={(e) => persistPhotoshootBuilderPatch({ extraDetails: e.target.value })}
+                    />
+                  </div>
+                )}
               </div>
-              <Slider
-                min={0}
-                max={100}
-                step={1}
-                value={[clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)]}
-                onValueChange={([val]) =>
-                  persistSpec({
-                    ...safeSpec,
-                    generation: {
-                      ...safeSpec.generation,
-                      realism: clampSize(val, 0, 100),
-                    },
-                  })
-                }
-              />
-            </div>
+            )}
 
-            {/* Scene preset */}
-            {(isPhotoshoot || isEcom) && (
-              <div className="space-y-2">
-                <label className="text-xs text-muted-foreground">{t("editor.scene.preset")}</label>
-                <Select
-                  value={currentScenePreset}
-                  onValueChange={(v) =>
-                    persistSpec({
-                      ...safeSpec,
-                      builder: { ...safeSpec.builder, scenePreset: v as any },
-                    })
-                  }
-                >
-                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {SCENE_PRESET_OPTIONS.map((slug) => (
-                      <SelectItem key={slug} value={slug}>{t(getScenePresetLabelKey(slug))}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            {/* STYLE TAB */}
+            {mobileInspectorTab === "style" && (
+              <div className="space-y-4">
+                {isSocialPost && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">{t("social.platform_preset")}</label>
+                      <Select
+                        value={safeSpec.builder?.platformPreset ?? "instagram_feed"}
+                        onValueChange={(v) => persistSocialPostBuilderPatch({ platformPreset: v })}
+                      >
+                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {socialPlatformOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">{t("social.visual_style")}</label>
+                      <Select
+                        value={safeSpec.builder?.macroStyle ?? "clean_modern"}
+                        onValueChange={(v) => persistSocialPostBuilderPatch({ macroStyle: v })}
+                      >
+                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {socialVisualStyleOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">{t("social.layout_preset")}</label>
+                      <Select
+                        value={safeSpec.builder?.layoutPreset ?? "Hero"}
+                        onValueChange={(v) => persistSocialPostBuilderPatch({ layoutPreset: v })}
+                      >
+                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {socialLayoutOptions.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{t(opt.labelKey)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+
+                {isPhotoshoot && (
+                  <>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">{t("photoshoot.camera_lens.lens")}</label>
+                      <Select value={safeSpec.builder?.lens ?? ""} onValueChange={(v) => persistPhotoshootBuilderPatch({ lens: v })}>
+                        <SelectTrigger className="h-12"><SelectValue placeholder={t("choose")} /></SelectTrigger>
+                        <SelectContent>
+                          {LENS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{(opt.labelKey ? t(opt.labelKey) : opt.label) || opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">{t("photoshoot.light.lighting_setup")}</label>
+                      <Select value={safeSpec.builder?.lightingSetup ?? ""} onValueChange={(v) => persistPhotoshootBuilderPatch({ lightingSetup: v })}>
+                        <SelectTrigger className="h-12"><SelectValue placeholder={t("choose")} /></SelectTrigger>
+                        <SelectContent>
+                          {LIGHTING_SETUP_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>{(opt.labelKey ? t(opt.labelKey) : opt.label) || opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
+
+                {/* Accent color */}
+                <div className="flex items-center gap-3">
+                  <label className="text-xs text-muted-foreground font-medium">{t("accent_color")}</label>
+                  <ColorPicker
+                    value={safeSpec.brand.accent?.startsWith("#") ? safeSpec.brand.accent : "#34d399"}
+                    onChange={(color) => persistSpec({ ...safeSpec, brand: { ...safeSpec.brand, accent: color } })}
+                  />
+                </div>
+
+                {/* Realism slider */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-muted-foreground font-medium">{t("editor.generic.realism")}</label>
+                    <span className="text-xs text-muted-foreground">{clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)}%</span>
+                  </div>
+                  <Slider
+                    min={0} max={100} step={1}
+                    value={[clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)]}
+                    onValueChange={([val]) => persistSpec({ ...safeSpec, generation: { ...safeSpec.generation, realism: clampSize(val, 0, 100) } })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ADVANCED TAB */}
+            {mobileInspectorTab === "advanced" && (
+              <div className="space-y-4">
+                {/* Export actions */}
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full h-12"
+                    disabled={isBatchExporting || isExporting2K}
+                    onClick={() => void export2K()}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {isExporting2K ? t("editor.actions.exporting") : t("editor.actions.export_2k")}
+                  </Button>
+                  {isSocialPost && (
+                    <Button
+                      variant="outline"
+                      className="w-full h-12"
+                      disabled={isBatchExporting || isExporting2K}
+                      onClick={() => void createVariations()}
+                    >
+                      {isBatchExporting
+                        ? t("editor.actions.exporting_10_progress", { current: batchProgress?.current ?? 0, total: batchProgress?.total ?? 10 })
+                        : t("editor.actions.create_10_variations")}
+                    </Button>
+                  )}
+                </div>
+
+                {/* Debug prompt */}
+                <div className="space-y-2 pt-2 border-t border-border/30">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("editor.debug.compiled_title")}</div>
+                  <pre className="text-xs whitespace-pre-wrap text-muted-foreground bg-muted/30 rounded-lg p-3 max-h-[200px] overflow-auto">
+                    {compiled?.prompt}
+                  </pre>
+                </div>
               </div>
             )}
           </div>
@@ -4638,7 +4831,7 @@ export default function EditorPage() {
 
       {/* MOBILE HISTORY DRAWER */}
       <Drawer open={mobileHistoryOpen} onOpenChange={setMobileHistoryOpen}>
-        <DrawerContent className="max-h-[60vh]">
+        <DrawerContent className="max-h-[70vh]">
           <DrawerTitle className="sr-only">{t("editor.generic.history")}</DrawerTitle>
           <div className="px-4 py-3 overflow-auto">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30 mb-3">{t("editor.generic.history")}</div>
