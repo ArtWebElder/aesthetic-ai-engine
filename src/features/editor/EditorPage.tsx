@@ -513,12 +513,14 @@ export default function EditorPage() {
     startScrollLeft: number;
     startScrollTop: number;
   } | null>(null);
+  const isSpacePressedRef = useRef(false);
   const stickToFitRef = useRef(true);
   const mobileFitAppliedRef = useRef(false);
   const [canvasViewport, setCanvasViewport] = useState({ width: 0, height: 0 });
   const [canvasScale, setCanvasScale] = useState(1);
   const [canvasFitScale, setCanvasFitScale] = useState(1);
   const [isCanvasPanning, setIsCanvasPanning] = useState(false);
+  const [isCanvasSpacePressed, setIsCanvasSpacePressed] = useState(false);
 
   // carrega projeto por ID
   useEffect(() => {
@@ -776,11 +778,14 @@ export default function EditorPage() {
     zoomToViewportCenter(1);
   }, [zoomToViewportCenter]);
   const handleCanvasPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 && event.button !== 1) return;
+    const isMiddleButton = event.button === 1;
+    const isSpacePan = event.button === 0 && isSpacePressedRef.current;
+    if (!isMiddleButton && !isSpacePan) return;
     const target = event.target as HTMLElement | null;
     if (target?.closest("[data-canvas-zoom-controls='true']")) return;
     const container = canvasContainerRef.current;
     if (!container) return;
+    event.preventDefault();
     panSessionRef.current = {
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -831,6 +836,14 @@ export default function EditorPage() {
   );
   const handleCanvasKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
+      if (event.key === " ") {
+        if (!isSpacePressedRef.current) {
+          isSpacePressedRef.current = true;
+          setIsCanvasSpacePressed(true);
+        }
+        event.preventDefault();
+        return;
+      }
       if (isCanvasMobileViewport) return;
       if (!event.ctrlKey && !event.metaKey) return;
       if (event.key !== "+" && event.key !== "=" && event.key !== "-" && event.key !== "_") {
@@ -841,6 +854,15 @@ export default function EditorPage() {
     },
     [adjustZoomByStep, isCanvasMobileViewport]
   );
+  const handleCanvasKeyUp = useCallback((event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== " ") return;
+    isSpacePressedRef.current = false;
+    setIsCanvasSpacePressed(false);
+  }, []);
+  const handleCanvasBlur = useCallback(() => {
+    isSpacePressedRef.current = false;
+    setIsCanvasSpacePressed(false);
+  }, []);
 
   function persistPhotoshootBuilderPatch(patch: Partial<ProjectSpec["builder"]>) {
     if (!safeSpec || !isPhotoshoot) return;
@@ -2065,7 +2087,7 @@ export default function EditorPage() {
 
         {/* CENTER: CANVAS — order-2 */}
         <div className={[
-          "min-h-0 flex flex-col order-2",
+          "min-h-0 min-w-0 flex flex-col order-2",
           focusMode ? "bg-muted/30" : "bg-muted/20",
         ].join(" ")}>
           {/* Canvas action bar */}
@@ -2095,13 +2117,15 @@ export default function EditorPage() {
               }}
               onWheel={handleCanvasWheel}
               onKeyDown={handleCanvasKeyDown}
+              onKeyUp={handleCanvasKeyUp}
+              onBlur={handleCanvasBlur}
               onPointerDown={handleCanvasPointerDown}
               onPointerMove={handleCanvasPointerMove}
               onPointerUp={handleCanvasPointerUp}
               onPointerCancel={handleCanvasPointerUp}
               className={[
-                "relative h-full min-h-0 overflow-auto rounded-lg md:rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                isCanvasPanning ? "cursor-grabbing" : "cursor-grab",
+                "relative w-full h-full min-h-0 min-w-0 overflow-auto rounded-lg md:rounded-2xl border border-border/40 shadow-[0_2px_24px_rgba(0,0,0,0.08)] bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                isCanvasPanning ? "cursor-grabbing" : isCanvasSpacePressed ? "cursor-grab" : "cursor-default",
               ].join(" ")}
             >
               <div className="relative min-h-full min-w-full bg-muted/30">
@@ -2125,11 +2149,11 @@ export default function EditorPage() {
                   <div
                     style={{
                       position: "absolute",
-                      left: 0,
-                      top: 0,
+                      left: `${canvasGeometry.originX}px`,
+                      top: `${canvasGeometry.originY}px`,
                       width: `${previewBaseSize.width}px`,
                       height: `${previewBaseSize.height}px`,
-                      transform: `translate(${canvasGeometry.originX}px, ${canvasGeometry.originY}px) scale(${canvasScale})`,
+                      transform: `scale(${canvasScale})`,
                       transformOrigin: "0 0",
                     }}
                   >
