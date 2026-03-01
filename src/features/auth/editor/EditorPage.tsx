@@ -1,3 +1,1 @@
-import EditorPage from "@/features/editor/EditorPage";
-
-export default EditorPage;
+export { default } from "@/features/editor/EditorPage";
