@@ -70,6 +70,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     referenceImageUrl,
   } = spec;
   const { headline, subheadline, ctaText: cta } = content;
+  const isEcomV2Template = module === "ecom_banner" && templateId === "ecom_v2_01";
   const userNegativePrompt =
     typeof generation.negativePrompt === "string" ? generation.negativePrompt.trim() : "";
   const normalizedSeed =
@@ -218,6 +219,14 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? "Subject reference image: uploaded (embedded)"
       : `Subject reference image: ${cleanedSubjectImage}`
     : null;
+  const hardSubjectConstraintLine =
+    isEcomV2Template && cleanedSubjectImage
+      ? "Hard constraint: preserve exact subject, do not replace category or core product identity."
+      : null;
+  const styleRefLine =
+    isEcomV2Template && spec.ecomV2?.styleRefImageUrl
+      ? `Style-only reference: ${spec.ecomV2.styleRefImageUrl?.startsWith("data:") ? "uploaded (embedded)" : spec.ecomV2.styleRefImageUrl}`
+      : null;
   const normalizedReferences = (referenceImages ?? [])
     .filter((entry) => Boolean(entry?.url))
     .map((entry) => ({
@@ -469,6 +478,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       : "ultra sharp, premium, realistic details, no waxy skin, natural colors";
   const photoshootCleanLine =
     module === "photoshoot" ? "no text, no logos, no watermarks" : null;
+  const ecomV2CleanLine = isEcomV2Template ? "no text, no logos, no watermarks" : null;
   const photoshootFinishLine =
     module === "photoshoot" && builderLabels.finish ? `finish=${builderLabels.finish}` : null;
 
@@ -478,6 +488,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     ...(isExtreme
       ? [weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines, ...baseBlock]
       : [...baseBlock, weightedDirectiveLine, intensityDirectiveLine, ...selectedAmplificationLines]),
+    hardSubjectConstraintLine,
+    styleRefLine,
     debugEnabled ? builderSubjectLineText : null,
     debugEnabled ? builderLightingLine : null,
     debugEnabled ? builderStyleLine : null,
@@ -505,6 +517,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     realismValue !== null ? `Realism level: ${realismValue}%` : null,
     photoshootFinishLine,
     photoshootCleanLine,
+    ecomV2CleanLine,
     textureGuardLine,
   ]
     .filter(Boolean)
@@ -524,12 +537,20 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   ].join(", ");
   const ecomDefaultNegativePrompt =
     "blurry, low quality, text, watermark, logo, artifacts, distorted product, bad proportions";
+  const ecomV2DefaultNegativePrompt =
+    "text, watermark, logo, deformed product, wrong category, waxy skin, plastic texture";
   const defaultNegativePromptWasApplied = module === "ecom_banner" && !userNegativePrompt;
-  const negativePrompt = userNegativePrompt
+  const negativePromptBase = userNegativePrompt
     ? userNegativePrompt
+    : isEcomV2Template
+    ? ecomV2DefaultNegativePrompt
     : module === "ecom_banner"
     ? ecomDefaultNegativePrompt
     : defaultNegativePrompt;
+  const negativePrompt =
+    isEcomV2Template && userNegativePrompt
+      ? `${ecomV2DefaultNegativePrompt}, ${userNegativePrompt}`
+      : negativePromptBase;
 
   return {
     prompt,

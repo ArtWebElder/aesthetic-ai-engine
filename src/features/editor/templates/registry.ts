@@ -10,6 +10,7 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
   { id: "photo_03", name: "Gradient Overlay", module: "photoshoot", stylePreset: "glass" },
   { id: "photo_04", name: "Minimal Card", module: "photoshoot", stylePreset: "minimal_clean" },
   { id: "photo_05", name: "Story Impact", module: "photoshoot", stylePreset: "bold_ads" },
+  { id: "ecom_v2_01", name: "Ecom Banner V2", module: "ecom_banner", stylePreset: "minimal_clean" },
 ];
 
 export const DEFAULT_TEMPLATE_ID: TemplateId = "photoshoot_clean";

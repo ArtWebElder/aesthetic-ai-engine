@@ -4,6 +4,7 @@ import type { ProjectSpec, TemplateId } from "@/types/spec";
 import { TEMPLATE_CATALOG } from "@/features/editor/templates/registry";
 import { resolveStyleVars } from "@/features/editor/style-resolver";
 import TEcom01 from "@/features/editor/templates/ecom/ecom_01";
+import TEcomV201 from "@/features/editor/templates/ecom/ecom_v2_01";
 import { useI18n } from "@/i18n";
 
 type Props = {
@@ -92,6 +93,7 @@ const TEMPLATE_COMPONENTS: Partial<Record<TemplateId, Comp>> = {
   photo_04: FallbackTemplate,
   photo_05: FallbackTemplate,
   ecom_01: (props) => <TEcom01 spec={props.spec} imageUrl={props.imageUrl} showGrid={props.showGrid} />,
+  ecom_v2_01: (props) => <TEcomV201 spec={props.spec} imageUrl={props.imageUrl} showGrid={props.showGrid} />,
 };
 
 export default function TemplateRenderer(props: Props) {

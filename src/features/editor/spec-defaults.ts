@@ -197,7 +197,16 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       productImageUrl: undefined,
       extraImageUrl: undefined,
       referenceImageUrl: undefined,
+      logoUrl: null,
       autoRemoveBg: false,
+    },
+
+    ecomV2: {
+      styleRefImageUrl: null,
+      styleDNA: null,
+      layoutPreset: "layout_a",
+      textPreset: "premium",
+      intensity: 70,
     },
 
     effects: {

@@ -233,6 +233,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
   const generation = spec.generation ?? ({} as any);
   const builder = spec.builder ?? ({} as BuilderSpec);
   const content = spec.content ?? ({} as any);
+  const ecomV2 = spec.ecomV2 ?? ({} as NonNullable<ProjectSpec["ecomV2"]>);
   const normalizedPhotoAspect = (spec.photoAspect ?? "3:2") as NonNullable<ProjectSpec["photoAspect"]>;
   const isSocialPost = spec.module === "social_post";
   const isEcom = spec.module === "ecom_banner";
@@ -277,6 +278,7 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
       headline: content.headline ?? "",
       subheadline: content.subheadline ?? "",
       ctaText: content.ctaText ?? "",
+      ecomTextPreset: content.ecomTextPreset ?? "glass_label",
     },
     builder: {
       platformPreset: (builder.platformPreset ?? (isSocialPost ? "instagram_feed" : "")).trim(),
@@ -339,6 +341,19 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     },
     referenceImages: normalizedReferenceImages,
     referenceImageUrl: null,
+    ecomV2: {
+      styleRefImageUrl: ecomV2.styleRefImageUrl ?? null,
+      styleDNA: ecomV2.styleDNA ?? null,
+      layoutPreset:
+        ecomV2.layoutPreset === "layout_b" || ecomV2.layoutPreset === "layout_c"
+          ? ecomV2.layoutPreset
+          : "layout_a",
+      textPreset:
+        ecomV2.textPreset === "impact" || ecomV2.textPreset === "clean"
+          ? ecomV2.textPreset
+          : "premium",
+      intensity: clampSize(Number(ecomV2.intensity ?? 70), 0, 100),
+    },
     brand: {
       ...brand,
       accent: brand.accent ?? "#34d399",
@@ -426,6 +441,17 @@ function buildAbstractSvgDataUrl(seed: string, w: number, h: number): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
+function extractStyleDNAFromFilename(fileName: string): NonNullable<ProjectSpec["ecomV2"]>["styleDNA"] {
+  const lower = fileName.toLowerCase();
+  const foodKeywords = ["food", "burger", "pizza", "drink", "coffee", "meal", "snack", "cake"];
+  const isFood = foodKeywords.some((k) => lower.includes(k));
+  return {
+    vibe: isFood ? "food_promo" : "premium",
+    palette: ["#F59E0B", "#111827", "#FFFFFF"],
+    fx: ["grain", "radial_glow"],
+  };
+}
+
 function TemplateRendererPlaceholder({
   spec,
   imageUrl,
@@ -475,6 +501,7 @@ const TEMPLATE_REGISTRY: Array<{
   { id: "social_post_clean", nameKey: "editor.template_name.social_post_clean", module: "social_post", stylePreset: "clean_modern" },
   { id: "social_01", nameKey: "editor.template_name.social_01", module: "social_post", stylePreset: "bold_ads" },
   { id: "ecom_01", nameKey: "editor.template_name.ecom_01", module: "ecom_banner", stylePreset: "minimal_clean" },
+  { id: "ecom_v2_01", nameKey: "editor.template_name.ecom_v2_01", module: "ecom_banner", stylePreset: "minimal_clean" },
   { id: "photoshoot_clean", nameKey: "editor.template_name.photoshoot_clean", module: "photoshoot", stylePreset: "editorial" },
 ];
 
@@ -621,6 +648,7 @@ export default function EditorPage() {
   const isPhotoshoot = safeSpec?.module === "photoshoot";
   const isSocialPost = safeSpec?.module === "social_post";
   const isEcom = safeSpec?.module === "ecom_banner";
+  const isEcomV2Template = isEcom && safeSpec?.templateId === "ecom_v2_01";
   const scenePresetModuleKey: ModuleType = isPhotoshoot
     ? "photoshoot"
     : isEcom
@@ -951,6 +979,7 @@ export default function EditorPage() {
     width: number;
     height: number;
     seed?: number;
+    subjectImage?: string;
     module?: string;
   }): Promise<GenerateImageResponse> {
     const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL ?? "").trim();
@@ -1019,6 +1048,9 @@ export default function EditorPage() {
           width: w,
           height: h,
           ...(normalizedSeed !== null ? { seed: normalizedSeed } : {}),
+          ...(isEcomV2Template && safeSpec.subjectImageUrl
+            ? { subjectImage: safeSpec.subjectImageUrl }
+            : {}),
           module: safeSpec.module,
         });
 
@@ -1178,7 +1210,7 @@ export default function EditorPage() {
       blurBoost?: number;
     };
   }): Promise<void> {
-    if (!safeSpec || safeSpec.module !== "social_post") {
+    if (!safeSpec || (safeSpec.module !== "social_post" && safeSpec.module !== "ecom_banner")) {
       console.log("activeGenerationId:", project?.activeGenerationId ?? null);
       console.log("generationWidth:", safeSpec?.generation?.width ?? null);
       console.log("generationHeight:", safeSpec?.generation?.height ?? null);
@@ -1792,7 +1824,7 @@ export default function EditorPage() {
   }
 
   async function export2K() {
-    if (!safeSpec || safeSpec.module !== "social_post") {
+    if (!safeSpec || (safeSpec.module !== "social_post" && safeSpec.module !== "ecom_banner")) {
       console.log("activeGenerationId:", project?.activeGenerationId ?? null);
       console.log("generationWidth:", safeSpec?.generation?.width ?? null);
       console.log("generationHeight:", safeSpec?.generation?.height ?? null);
@@ -1802,7 +1834,12 @@ export default function EditorPage() {
     setIsExporting2K(true);
     setLastExportError(null);
     try {
-      await exportSocialPost2K({ fileName: "social-post-2k.png" });
+      await exportSocialPost2K({
+        fileName:
+          safeSpec.module === "ecom_banner" && safeSpec.templateId === "ecom_v2_01"
+            ? "ecom-v2-2k.png"
+            : "social-post-2k.png",
+      });
       toast({ title: t("editor.toast.export_ready") });
     } catch {
       setLastExportError(t("editor.toast.export_failed"));
@@ -2061,6 +2098,10 @@ export default function EditorPage() {
                         ...safeSpec,
                         templateId: tpl.id as any,
                         stylePreset: (tpl.stylePreset ?? safeSpec.stylePreset) as StylePreset,
+                        builder:
+                          tpl.id === "ecom_v2_01"
+                            ? { ...(safeSpec.builder ?? {}), advancedOpen: false }
+                            : safeSpec.builder,
                       });
                     }}
                   >
@@ -2089,6 +2130,10 @@ export default function EditorPage() {
                         ...safeSpec,
                         templateId: tpl.id as any,
                         stylePreset: (tpl.stylePreset ?? safeSpec.stylePreset) as StylePreset,
+                        builder:
+                          tpl.id === "ecom_v2_01"
+                            ? { ...(safeSpec.builder ?? {}), advancedOpen: false }
+                            : safeSpec.builder,
                       });
                     }}
                     title={t(tpl.nameKey)}
@@ -2510,6 +2555,189 @@ export default function EditorPage() {
           </div>
 
           <div className={`px-4 py-3 ${sectionSpacing} overflow-auto flex-1`}>
+            {isEcomV2Template ? (
+              <div className="space-y-3 rounded-lg border border-border/50 bg-card/30 p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Ecom Banner V2
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Step A - Style Reference (optional)</label>
+                  <label className="upload-zone text-xs">
+                    <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <div className="text-xs font-medium text-foreground">Upload style image</div>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const result = typeof reader.result === "string" ? reader.result : null;
+                          persistSpec({
+                            ...safeSpec,
+                            ecomV2: {
+                              ...(safeSpec.ecomV2 ?? {}),
+                              styleRefImageUrl: result,
+                              styleDNA: extractStyleDNAFromFilename(file.name),
+                            },
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Step B - Subject/Product (optional)</label>
+                  <label className="upload-zone text-xs">
+                    <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div>
+                      <div className="text-xs font-medium text-foreground">Upload subject image</div>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const objectUrl = URL.createObjectURL(file);
+                        setSubjectPreviewUrl((prev) => {
+                          if (prev) URL.revokeObjectURL(prev);
+                          return objectUrl;
+                        });
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const result = typeof reader.result === "string" ? reader.result : null;
+                          persistSpec({ ...safeSpec, subjectImageUrl: result });
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Step C - Copy</label>
+                  <Input
+                    value={safeSpec.content.headline}
+                    placeholder={t("editor.generic.headline")}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        content: { ...safeSpec.content, headline: e.target.value },
+                      })
+                    }
+                  />
+                  <Input
+                    value={safeSpec.content.subheadline}
+                    placeholder={t("editor.generic.subheadline")}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        content: { ...safeSpec.content, subheadline: e.target.value },
+                      })
+                    }
+                  />
+                  <Input
+                    value={safeSpec.content.ctaText}
+                    placeholder={t("editor.generic.cta")}
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        content: { ...safeSpec.content, ctaText: e.target.value },
+                      })
+                    }
+                  />
+                  <Input
+                    value={safeSpec.content.price ?? ""}
+                    placeholder="Price"
+                    onChange={(e) =>
+                      persistSpec({
+                        ...safeSpec,
+                        content: { ...safeSpec.content, price: e.target.value },
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Layout</label>
+                    <Select
+                      value={safeSpec.ecomV2?.layoutPreset ?? "layout_a"}
+                      onValueChange={(value) =>
+                        persistSpec({
+                          ...safeSpec,
+                          ecomV2: {
+                            ...(safeSpec.ecomV2 ?? {}),
+                            layoutPreset: value as "layout_a" | "layout_b" | "layout_c",
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="layout_a">A - Center Hero</SelectItem>
+                        <SelectItem value="layout_b">B - Side Focus</SelectItem>
+                        <SelectItem value="layout_c">C - Stack</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-muted-foreground">Text Style</label>
+                    <Select
+                      value={safeSpec.ecomV2?.textPreset ?? "premium"}
+                      onValueChange={(value) =>
+                        persistSpec({
+                          ...safeSpec,
+                          ecomV2: {
+                            ...(safeSpec.ecomV2 ?? {}),
+                            textPreset: value as "impact" | "premium" | "clean",
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="impact">Impact</SelectItem>
+                        <SelectItem value="premium">Premium</SelectItem>
+                        <SelectItem value="clean">Clean</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs text-muted-foreground">Intensity</label>
+                    <span className="text-xs text-muted-foreground">
+                      {clampSize(Number(safeSpec.ecomV2?.intensity ?? 70), 0, 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[clampSize(Number(safeSpec.ecomV2?.intensity ?? 70), 0, 100)]}
+                    onValueChange={([val]) =>
+                      persistSpec({
+                        ...safeSpec,
+                        ecomV2: { ...(safeSpec.ecomV2 ?? {}), intensity: clampSize(val, 0, 100) },
+                      })
+                    }
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {!isEcomV2Template ? (
             <div className={fieldSpacing}>
               <div className={sectionTitle}>{t("editor.subject.avatar_photo")}</div>
               <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer transition-all duration-150 hover:bg-muted/50 hover:border-border group">
@@ -2567,7 +2795,9 @@ export default function EditorPage() {
                 </div>
               ) : null}
             </div>
+            ) : null}
 
+            {!isEcomV2Template ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{t("editor.references.title")}</div>
@@ -2783,6 +3013,7 @@ export default function EditorPage() {
                 </div>
               )}
             </div>
+            ) : null}
 
             {isPhotoshoot ? (
               <div className="pt-1 space-y-2">
@@ -4521,7 +4752,7 @@ export default function EditorPage() {
             ) : null}
 
             {/* CONTENT */}
-            {!isPhotoshoot && !isSocialPost ? (
+            {!isPhotoshoot && !isSocialPost && !isEcomV2Template ? (
               <>
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.generic.headline")}</label>
@@ -4867,7 +5098,7 @@ export default function EditorPage() {
                 <summary className="cursor-pointer select-none text-[11px] font-semibold uppercase tracking-wider text-muted-foreground min-h-[44px] flex items-center">
                   {t("editor.mobile.tab_content")}
                 </summary>
-                {!isPhotoshoot && (
+                {!isPhotoshoot && !isEcomV2Template && (
                   <>
                     <div className="space-y-2">
                       <label className="text-xs text-muted-foreground font-medium">{t("editor.generic.headline")}</label>
@@ -4940,6 +5171,114 @@ export default function EditorPage() {
                       </div>
                     )}
                   </>
+                )}
+                {isEcomV2Template && (
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">Step A - Style Reference (optional)</label>
+                      <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer min-h-[56px]">
+                        <Upload className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div className="text-sm font-medium">Upload style image</div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              const result = typeof reader.result === "string" ? reader.result : null;
+                              persistSpec({
+                                ...safeSpec,
+                                ecomV2: {
+                                  ...(safeSpec.ecomV2 ?? {}),
+                                  styleRefImageUrl: result,
+                                  styleDNA: extractStyleDNAFromFilename(file.name),
+                                },
+                              });
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">Step B - Subject/Product (optional)</label>
+                      <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer min-h-[56px]">
+                        <Upload className="h-5 w-5 text-muted-foreground shrink-0" />
+                        <div className="text-sm font-medium">Upload subject image</div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="sr-only"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const objectUrl = URL.createObjectURL(file);
+                            setSubjectPreviewUrl((prev) => {
+                              if (prev) URL.revokeObjectURL(prev);
+                              return objectUrl;
+                            });
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              const result = typeof reader.result === "string" ? reader.result : null;
+                              persistSpec({ ...safeSpec, subjectImageUrl: result });
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">Step C - Copy</label>
+                      <Input className="h-12 text-base" value={content.headline} onChange={(e) => persistSpec({ ...safeSpec, content: { ...safeSpec.content, headline: e.target.value } })} />
+                      <Input className="h-12 text-base" value={content.subheadline} onChange={(e) => persistSpec({ ...safeSpec, content: { ...safeSpec.content, subheadline: e.target.value } })} />
+                      <Input className="h-12 text-base" value={content.ctaText} onChange={(e) => persistSpec({ ...safeSpec, content: { ...safeSpec.content, ctaText: e.target.value } })} />
+                      <Input className="h-12 text-base" value={content.price ?? ""} placeholder="Price" onChange={(e) => persistSpec({ ...safeSpec, content: { ...safeSpec.content, price: e.target.value } })} />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">Layout</label>
+                      <Select
+                        value={safeSpec.ecomV2?.layoutPreset ?? "layout_a"}
+                        onValueChange={(v) => persistSpec({ ...safeSpec, ecomV2: { ...(safeSpec.ecomV2 ?? {}), layoutPreset: v as "layout_a" | "layout_b" | "layout_c" } })}
+                      >
+                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="layout_a">A - Center Hero</SelectItem>
+                          <SelectItem value="layout_b">B - Side Focus</SelectItem>
+                          <SelectItem value="layout_c">C - Stack</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs text-muted-foreground font-medium">Text Style</label>
+                      <Select
+                        value={safeSpec.ecomV2?.textPreset ?? "premium"}
+                        onValueChange={(v) => persistSpec({ ...safeSpec, ecomV2: { ...(safeSpec.ecomV2 ?? {}), textPreset: v as "impact" | "premium" | "clean" } })}
+                      >
+                        <SelectTrigger className="h-12"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="impact">Impact</SelectItem>
+                          <SelectItem value="premium">Premium</SelectItem>
+                          <SelectItem value="clean">Clean</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-muted-foreground font-medium">Intensity</label>
+                        <span className="text-xs text-muted-foreground">{clampSize(Number(safeSpec.ecomV2?.intensity ?? 70), 0, 100)}%</span>
+                      </div>
+                      <Slider
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={[clampSize(Number(safeSpec.ecomV2?.intensity ?? 70), 0, 100)]}
+                        onValueChange={([val]) => persistSpec({ ...safeSpec, ecomV2: { ...(safeSpec.ecomV2 ?? {}), intensity: clampSize(val, 0, 100) } })}
+                      />
+                    </div>
+                  </div>
                 )}
                 {isSocialPost && (
                   <div className="space-y-2">

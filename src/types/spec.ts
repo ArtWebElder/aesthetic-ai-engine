@@ -47,6 +47,7 @@ export type TemplateId =
   | "social_05"
   | "social_06"
   | "ecom_01"
+  | "ecom_v2_01"
   | "ecom_02"
   | "ecom_03"
   | "ecom_04"
@@ -125,7 +126,24 @@ export interface AssetsSpec {
   productImageUrl?: string;
   extraImageUrl?: string;
   referenceImageUrl?: string;
+  logoUrl?: string | null;
   autoRemoveBg: boolean;
+}
+
+export interface EcomStyleDNA {
+  palette?: string[];
+  vibe?: string;
+  layout?: string;
+  textStyle?: string;
+  fx?: string[];
+}
+
+export interface EcomV2Spec {
+  styleRefImageUrl?: string | null;
+  styleDNA?: EcomStyleDNA | null;
+  layoutPreset?: "layout_a" | "layout_b" | "layout_c";
+  textPreset?: "impact" | "premium" | "clean";
+  intensity?: number;
 }
 
 export interface EffectsSpec {
@@ -224,6 +242,7 @@ export interface ProjectSpec {
   content: ContentSpec;
   brand: BrandSpec;
   assets: AssetsSpec;
+  ecomV2?: EcomV2Spec;
   effects: EffectsSpec;
 
   generation: GenerationParams;
