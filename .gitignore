@@ -27,3 +27,8 @@ buildlog.txt
 
 
 skilful-answer-*.json
+
+# Google Service Account
+*-h8-*.json
+*.service-account.json
+
