@@ -50,12 +50,12 @@ const Projects = () => {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-6 animate-page-fade">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto space-y-4 sm:space-y-6 animate-page-fade">
       <PageHeader
         title={t("projects.title")}
         subtitle={t("projects.count", { count: projects.length })}
         action={
-          <Button onClick={() => setCreateOpen(true)} className="btn-gradient h-10 px-5 text-sm font-semibold">
+          <Button onClick={() => setCreateOpen(true)} className="btn-gradient h-11 sm:h-10 px-5 text-sm font-semibold w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-1.5" />
             {t("projects.new_project")}
           </Button>
@@ -69,7 +69,7 @@ const Projects = () => {
             placeholder={t("projects.search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-11 sm:h-9"
           />
         </div>
 
