@@ -78,21 +78,21 @@ const Dashboard = () => {
       />
 
       {/* Compact stat pills + streak */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
         {[
           { icon: Coins, label: t("dashboard.stat_credits"), value: mockCredits.current },
           { icon: FolderOpen, label: t("dashboard.stat_projects"), value: projects.length },
           { icon: Zap, label: t("dashboard.stat_generations"), value: completedCount },
           { icon: Download, label: t("dashboard.stat_exports"), value: 12 },
         ].map((s, i) => (
-          <div key={s.label} className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1 text-xs animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: `${i * 60}ms` }}>
+          <div key={s.label} className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1.5 sm:py-1 text-xs shrink-0 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: `${i * 60}ms` }}>
             <s.icon className="h-3 w-3 text-primary" />
             <span className="font-medium tabular-nums">{s.value}</span>
             <span className="text-muted-foreground/70 text-[10px]">{s.label}</span>
           </div>
         ))}
         {activeDays > 0 && (
-          <div className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1 text-xs animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '300ms' }}>
+          <div className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1.5 sm:py-1 text-xs shrink-0 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '300ms' }}>
             <Flame className="h-3 w-3 text-orange-500" />
             <span className="text-muted-foreground/70 text-[10px]">{t("dashboard.active_days_this_week", { days: activeDays })}</span>
           </div>
@@ -124,7 +124,7 @@ const Dashboard = () => {
               <button
                 key={item.type}
                 onClick={() => handleQuickCreate(item.type)}
-                className="relative bg-card border border-border/30 rounded-xl p-3.5 text-left transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group animate-fade-in opacity-0 [animation-fill-mode:forwards]"
+                className="relative bg-card border border-border/30 rounded-xl p-4 sm:p-3.5 text-left transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group animate-fade-in opacity-0 [animation-fill-mode:forwards] min-h-[72px] active:scale-[0.98]"
                 style={{ animationDelay: `${i * 80}ms` }}
               >
                 {item.popular && (

@@ -88,7 +88,7 @@ export function ProjectCard({ project, index = 0, onDelete, onDuplicate }: Proje
       </AspectRatio>
 
       {/* Info section */}
-      <div className="p-3.5 space-y-1.5">
+      <div className="p-3.5 sm:p-3.5 space-y-1.5">
         <p className="font-medium text-sm truncate">{project.name}</p>
         <div className="flex items-center justify-between">
           <span className="text-[10px] text-muted-foreground/70">{project.spec?.format}</span>
@@ -99,7 +99,7 @@ export function ProjectCard({ project, index = 0, onDelete, onDuplicate }: Proje
       </div>
 
       {/* Kebab menu — top-right */}
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+      <div className="absolute top-2 right-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-150">
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
             <Button variant="ghost" size="icon" className="h-7 w-7 bg-background/70 backdrop-blur-md hover:bg-background/90 shadow-sm">

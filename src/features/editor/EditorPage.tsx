@@ -79,8 +79,10 @@ import {
 import { toast } from "@/components/ui/use-toast";
 import { STYLE_PRESETS } from "@/types";
 import { useI18n } from "@/i18n";
-import { Check, ChevronDown, ChevronRight, Upload } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Upload, SlidersHorizontal, Clock, Download, Sparkles, ArrowLeft } from "lucide-react";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 /**
  * Seu Project do /types/spec nÃ£o tem "generations" no tipo.
@@ -483,6 +485,9 @@ export default function EditorPage() {
   const [photoshootPreset, setPhotoshootPreset] = useState<PhotoshootPresetId>("studio_product");
   const [isExporting2K, setIsExporting2K] = useState(false);
   const [isBatchExporting, setIsBatchExporting] = useState(false);
+  const [mobileInspectorOpen, setMobileInspectorOpen] = useState(false);
+  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+  const isMobile = useIsMobile();
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [lastExportError, setLastExportError] = useState<string | null>(null);
   const [templatesPanelOpen, setTemplatesPanelOpen] = useState(true);
@@ -1717,30 +1722,33 @@ export default function EditorPage() {
     : "text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30 mb-3";
 
   return (
-    <div className="h-[calc(100vh-56px)] flex flex-col">
-      {/* TOP HEADER */}
-      <div className="px-4 md:px-6 py-2.5 border-b border-border bg-card">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <h1 className="text-lg font-semibold tracking-tight truncate">
+    <div className="h-[calc(100vh-56px)] md:h-[calc(100vh-56px)] flex flex-col pb-[60px] md:pb-0 overflow-hidden">
+      {/* TOP HEADER — compact on mobile */}
+      <div className="px-3 md:px-6 py-2 md:py-2.5 border-b border-border bg-card">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0 flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 lg:hidden" onClick={() => nav("/app/projects")}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-sm md:text-lg font-semibold tracking-tight truncate">
                 {project.name}
               </h1>
-
-              {!focusMode && (
-                <div className="hidden md:flex gap-1.5">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    {safeSpec.module}
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    {safeSpec.format}
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                    {safeSpec.stylePreset}
-                  </span>
-                </div>
-              )}
             </div>
+
+            {!focusMode && (
+              <div className="hidden md:flex gap-1.5">
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {safeSpec.module}
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {safeSpec.format}
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {safeSpec.stylePreset}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
@@ -1776,17 +1784,17 @@ export default function EditorPage() {
 
             <div className="w-px h-5 bg-border/60 mx-1 hidden md:block" />
 
-            <Button variant="outline" size="sm" onClick={() => nav("/app/projects")}>
+            <Button variant="outline" size="sm" className="hidden lg:inline-flex" onClick={() => nav("/app/projects")}>
               {t("editor.header.back")}
             </Button>
 
-            <Button size="sm" className="font-medium btn-gradient" onClick={generateMock}>{t("editor.header.generate_base_image")}</Button>
+            <Button size="sm" className="hidden md:inline-flex font-medium btn-gradient" onClick={generateMock}>{t("editor.header.generate_base_image")}</Button>
           </div>
         </div>
       </div>
 
-      {/* Progress checklist bar */}
-      {!focusMode && (() => {
+      {/* Progress checklist bar — hidden on mobile */}
+      {!focusMode && !isMobile && (() => {
         const hasSubject = !!(subjectImageUrl || safeSpec.subjectText?.trim() || safeSpec.builder?.subjectType);
         const hasStyle = !!(safeSpec.builder?.scenePreset || safeSpec.builder?.sceneMood || (safeSpec.builder?.visualStyle?.length ?? 0) > 0);
         const hasGenerations = (project.generations?.length ?? 0) > 0;
@@ -1933,7 +1941,7 @@ export default function EditorPage() {
           focusMode ? "bg-muted/30" : "bg-muted/20",
         ].join(" ")}>
           {/* Canvas action bar */}
-          <div className="flex items-center justify-end gap-1.5 px-4 py-1.5">
+          <div className="hidden md:flex items-center justify-end gap-1.5 px-4 py-1.5">
             <button
               type="button"
               onClick={() => setShowGridOverlay(!showGridOverlay)}
@@ -1948,7 +1956,7 @@ export default function EditorPage() {
               Grid
             </button>
           </div>
-          <div className="flex-1 min-h-0 px-4 md:px-6 pb-4 md:pb-6 overflow-hidden">
+          <div className="flex-1 min-h-0 px-2 md:px-6 pb-2 md:pb-6 overflow-hidden">
             <div
               ref={canvasContainerRef}
               tabIndex={0}
@@ -4420,8 +4428,8 @@ export default function EditorPage() {
         )}
       </div>
 
-      {/* BOTTOM ACTION BAR */}
-      <div className="px-4 md:px-6 py-2.5 border-t border-border bg-card flex items-center justify-between">
+      {/* BOTTOM ACTION BAR — desktop */}
+      <div className="hidden md:flex px-4 md:px-6 py-2.5 border-t border-border bg-card items-center justify-between">
         <div className="text-xs text-muted-foreground">
           {t("editor.actions.tip_generate_history")}
         </div>
@@ -4457,8 +4465,214 @@ export default function EditorPage() {
         </div>
       ) : null}
       {lastExportError ? (
-        <div className="px-4 md:px-6 pb-2 text-xs text-red-500">{lastExportError}</div>
+        <div className="px-4 md:px-6 pb-2 text-xs text-destructive">{lastExportError}</div>
       ) : null}
+
+      {/* MOBILE STICKY ACTION BAR */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 backdrop-blur-md px-3 py-2.5 safe-area-pb">
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            className="flex-1 h-11 text-xs font-semibold btn-gradient"
+            onClick={generateMock}
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+            {t("editor.header.generate_base_image")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-11 w-11 shrink-0 p-0"
+            onClick={() => setMobileInspectorOpen(true)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-11 w-11 shrink-0 p-0"
+            disabled={isBatchExporting || isExporting2K}
+            onClick={() => void export2K()}
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          {(project.generations ?? []).length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-11 w-11 shrink-0 p-0"
+              onClick={() => setMobileHistoryOpen(true)}
+            >
+              <Clock className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* MOBILE INSPECTOR DRAWER */}
+      <Drawer open={mobileInspectorOpen} onOpenChange={setMobileInspectorOpen}>
+        <DrawerContent className="max-h-[85vh]">
+          <DrawerTitle className="sr-only">{t("editor.inspector.title")}</DrawerTitle>
+          <div className="px-4 py-3 overflow-auto flex-1 space-y-5">
+            {/* Render a simplified mobile inspector with the key fields */}
+            <div className="space-y-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/30">{t("editor.subject.avatar_photo")}</div>
+              <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer min-h-[56px]">
+                <Upload className="h-5 w-5 text-muted-foreground shrink-0" />
+                <div className="text-xs font-medium">{t("editor.subject.avatar_photo")}</div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const objectUrl = URL.createObjectURL(file);
+                    setSubjectPreviewUrl((prev) => {
+                      if (prev) URL.revokeObjectURL(prev);
+                      return objectUrl;
+                    });
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      const result = typeof reader.result === "string" ? reader.result : null;
+                      persistSpec({ ...safeSpec, subjectImageUrl: result });
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="sr-only"
+                />
+              </label>
+              {subjectPreview && (
+                <img src={subjectPreview} alt="" className="h-16 w-16 rounded-full border border-border object-cover" />
+              )}
+            </div>
+
+            {/* Content fields */}
+            {!isPhotoshoot && (
+              <div className="space-y-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1 border-b border-border/30">{t("editor.generic.headline")}</div>
+                <Input
+                  className="h-11"
+                  value={content.headline}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      content: { ...safeSpec.content, headline: e.target.value },
+                    })
+                  }
+                />
+                <Input
+                  className="h-11"
+                  placeholder={t("editor.generic.subheadline")}
+                  value={content.subheadline}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      content: { ...safeSpec.content, subheadline: e.target.value },
+                    })
+                  }
+                />
+                <Input
+                  className="h-11"
+                  placeholder={t("editor.generic.cta")}
+                  value={content.ctaText}
+                  onChange={(e) =>
+                    persistSpec({
+                      ...safeSpec,
+                      content: { ...safeSpec.content, ctaText: e.target.value },
+                    })
+                  }
+                />
+              </div>
+            )}
+
+            {/* Realism slider */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-muted-foreground">{t("editor.generic.realism")}</label>
+                <span className="text-xs text-muted-foreground">
+                  {clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)}%
+                </span>
+              </div>
+              <Slider
+                min={0}
+                max={100}
+                step={1}
+                value={[clampSize(Number(safeSpec.generation.realism ?? 70), 0, 100)]}
+                onValueChange={([val]) =>
+                  persistSpec({
+                    ...safeSpec,
+                    generation: {
+                      ...safeSpec.generation,
+                      realism: clampSize(val, 0, 100),
+                    },
+                  })
+                }
+              />
+            </div>
+
+            {/* Scene preset */}
+            {(isPhotoshoot || isEcom) && (
+              <div className="space-y-2">
+                <label className="text-xs text-muted-foreground">{t("editor.scene.preset")}</label>
+                <Select
+                  value={currentScenePreset}
+                  onValueChange={(v) =>
+                    persistSpec({
+                      ...safeSpec,
+                      builder: { ...safeSpec.builder, scenePreset: v as any },
+                    })
+                  }
+                >
+                  <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {SCENE_PRESET_OPTIONS.map((slug) => (
+                      <SelectItem key={slug} value={slug}>{t(getScenePresetLabelKey(slug))}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      {/* MOBILE HISTORY DRAWER */}
+      <Drawer open={mobileHistoryOpen} onOpenChange={setMobileHistoryOpen}>
+        <DrawerContent className="max-h-[60vh]">
+          <DrawerTitle className="sr-only">{t("editor.generic.history")}</DrawerTitle>
+          <div className="px-4 py-3 overflow-auto">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30 mb-3">{t("editor.generic.history")}</div>
+            {(project.generations ?? []).length === 0 ? (
+              <div className="text-xs text-muted-foreground py-4 text-center">
+                {t("editor.generic.no_generations_yet")}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2">
+                {(project.generations ?? []).slice(0, 12).map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    className={[
+                      "aspect-square rounded-lg overflow-hidden border-2 min-h-[72px]",
+                      g.id === project.activeGenerationId ? "border-primary" : "border-border hover:border-border/80",
+                    ].join(" ")}
+                    onClick={() => {
+                      persist({ ...project, activeGenerationId: g.id });
+                      setMobileHistoryOpen(false);
+                    }}
+                  >
+                    {g.imageUrl ? (
+                      <img src={g.imageUrl} className="w-full h-full object-cover" alt="" />
+                    ) : (
+                      <div className="w-full h-full bg-muted" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }
