@@ -243,7 +243,7 @@ function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { o
   };
 }
 
-async function fetchImageAsBase64(url: string): Promise<{ base64: string; mime: string }> {
+async function fetchImageAsBase64(url: string): Promise<{ base64: string; mime: string; byteLength: number }> {
   const resp = await fetch(url, { method: "GET" });
   if (!resp.ok) {
     throw new Error(`reference_fetch_failed: ${resp.status} ${url}`);
@@ -257,7 +257,7 @@ async function fetchImageAsBase64(url: string): Promise<{ base64: string; mime: 
   if (bytes.byteLength > 20 * 1024 * 1024) {
     throw new Error(`reference_too_large: ${url}`);
   }
-  return { base64: uint8ToBase64(bytes), mime };
+  return { base64: uint8ToBase64(bytes), mime, byteLength: bytes.byteLength };
 }
 
 function pickClosestAspectRatio(width: number, height: number): "1:1" | "4:5" | "9:16" | "16:9" {
@@ -331,6 +331,9 @@ function buildVertexReferencePayload(
   aspectRatio: string,
   refs: Array<{ role: "subject" | "style"; weight: number; lockRealism: boolean; base64: string }>,
 ): { kind: string; payload: Record<string, unknown> } {
+  if (!refs.length) {
+    throw new Error("reference_payload_invalid: empty_reference_images");
+  }
   const parameters: Record<string, unknown> = {
     sampleCount: 1,
     aspectRatio,
@@ -351,6 +354,16 @@ function buildVertexReferencePayload(
       })),
     },
   ];
+  const firstInstance = instances[0] as { referenceImages?: Array<{ referenceImage?: { bytesBase64Encoded?: string } }> };
+  if (!Array.isArray(firstInstance.referenceImages) || firstInstance.referenceImages.length === 0) {
+    throw new Error("reference_payload_invalid: missing_reference_images");
+  }
+  for (const entry of firstInstance.referenceImages) {
+    const bytes = entry?.referenceImage?.bytesBase64Encoded;
+    if (typeof bytes !== "string" || !bytes.trim()) {
+      throw new Error("reference_payload_invalid: missing_reference_image_bytes");
+    }
+  }
 
   return {
     kind: "reference_images_capability",
@@ -420,6 +433,10 @@ async function callVertexWithFallback(
   }
 
   return { ok: false, errors };
+}
+
+function isCapabilityEndpoint(endpoint: string) {
+  return endpoint.includes("/imagen-3.0-capability-001:predict");
 }
 
 function looksLikeBucketMissing(message: string) {
@@ -561,25 +578,54 @@ Deno.serve(async (req: Request) => {
 
     const hasReferences = input.referenceImages.length > 0;
     const endpoints = buildVertexEndpoints(GCP_PROJECT_ID, GCP_LOCATION, hasReferences);
-    const payloads = hasReferences
-      ? [
-          buildVertexReferencePayload(
-            input,
-            aspectRatio,
-            await Promise.all(
-              input.referenceImages.map(async (entry) => {
-                const fetched = await fetchImageAsBase64(entry.url);
-                return {
-                  role: entry.role,
-                  weight: entry.weight,
-                  lockRealism: entry.lockRealism,
-                  base64: fetched.base64,
-                };
+    const endpointTried = endpoints[0] ?? null;
+    let payloads: Array<{ kind: string; payload: Record<string, unknown> }>;
+
+    if (hasReferences) {
+      try {
+        const refsWithBase64 = await Promise.all(
+          input.referenceImages.map(async (entry) => {
+            const fetched = await fetchImageAsBase64(entry.url);
+            console.log(
+              JSON.stringify({
+                msg: "reference_image_loaded",
+                role: entry.role,
+                weight: entry.weight,
+                lockRealism: entry.lockRealism,
+                originalUrl: entry.url,
+                base64SizeBytes: fetched.byteLength,
               }),
-            ),
-          ),
-        ]
-      : buildVertexPayloads(input, aspectRatio);
+            );
+            return {
+              role: entry.role,
+              weight: entry.weight,
+              lockRealism: entry.lockRealism,
+              base64: fetched.base64,
+            };
+          }),
+        );
+        payloads = [buildVertexReferencePayload(input, aspectRatio, refsWithBase64)];
+      } catch (e) {
+        const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
+        await updateGenerationError(
+          supabase,
+          generationId,
+          startedAt,
+          `reference_images_not_supported: ${details}`,
+        );
+        return json(
+          {
+            error: "reference_images_not_supported",
+            details,
+            debug: { endpointTried, referenceImagesCount: input.referenceImages.length },
+          },
+          400,
+          headers,
+        );
+      }
+    } else {
+      payloads = buildVertexPayloads(input, aspectRatio);
+    }
     const vertex = await callVertexWithFallback(token.access_token, endpoints, payloads);
 
     if (!vertex.ok) {
@@ -599,6 +645,7 @@ Deno.serve(async (req: Request) => {
           {
             error: "reference_images_not_supported",
             details: `Provider does not support reference images; switch model or endpoint (${summary || "no_summary"})`,
+            debug: { endpointTried, referenceImagesCount: input.referenceImages.length },
           },
           400,
           headers,
@@ -606,6 +653,40 @@ Deno.serve(async (req: Request) => {
       }
       await updateGenerationError(supabase, generationId, startedAt, `vertex_error: ${details}`);
       return json({ error: "vertex_error", details }, 500, headers);
+    }
+    if (hasReferences && !isCapabilityEndpoint(vertex.value.endpoint)) {
+      await updateGenerationError(
+        supabase,
+        generationId,
+        startedAt,
+        `reference_images_not_supported: non_capability_endpoint_used (${vertex.value.endpoint})`,
+      );
+      return json(
+        {
+          error: "reference_images_not_supported",
+          details: "Reference images exist but capability endpoint was not used.",
+          debug: { endpointTried, referenceImagesCount: input.referenceImages.length },
+        },
+        400,
+        headers,
+      );
+    }
+    if (hasReferences && vertex.value.payloadKind !== "reference_images_capability") {
+      await updateGenerationError(
+        supabase,
+        generationId,
+        startedAt,
+        `reference_images_not_supported: non_capability_payload_used (${vertex.value.payloadKind})`,
+      );
+      return json(
+        {
+          error: "reference_images_not_supported",
+          details: "Reference images exist but capability payload was not used.",
+          debug: { endpointTried, referenceImagesCount: input.referenceImages.length },
+        },
+        400,
+        headers,
+      );
     }
 
     const mime = "image/png";
@@ -675,6 +756,7 @@ Deno.serve(async (req: Request) => {
             })),
             vertexEndpoint: vertex.value.endpoint,
             vertexPayloadKind: vertex.value.payloadKind,
+            usedCapability: hasReferences,
           },
         })
         .eq("id", generationId);
@@ -696,6 +778,12 @@ Deno.serve(async (req: Request) => {
         height: input.height,
         creditsUsed,
         createdAt,
+        meta: {
+          referenceImagesCount: input.referenceImages.length,
+          vertexEndpoint: vertex.value.endpoint,
+          vertexPayloadKind: vertex.value.payloadKind,
+          usedCapability: hasReferences,
+        },
       },
       200,
       headers,

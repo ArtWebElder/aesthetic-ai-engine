@@ -205,6 +205,10 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     ecomV2: {
       styleRefImageUrl: null,
       styleRefImagePath: null,
+      subjectWeight: 90,
+      styleWeight: 55,
+      subjectLockRealism: true,
+      styleLockRealism: true,
       styleDNA: null,
       layoutPreset: "layout_a",
       textPreset: "premium",

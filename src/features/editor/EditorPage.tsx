@@ -440,6 +440,10 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
     ecomV2: {
       styleRefImageUrl: normalizeProjectAssetsUrl(ecomV2.styleRefImageUrl) ?? null,
       styleRefImagePath: ecomV2.styleRefImagePath ?? null,
+      subjectWeight: clampSize(Number(ecomV2.subjectWeight ?? 90), 0, 100),
+      styleWeight: clampSize(Number(ecomV2.styleWeight ?? 55), 0, 100),
+      subjectLockRealism: ecomV2.subjectLockRealism ?? true,
+      styleLockRealism: ecomV2.styleLockRealism ?? true,
       styleDNA: ecomV2.styleDNA ?? null,
       layoutPreset:
         ecomV2.layoutPreset === "layout_b" || ecomV2.layoutPreset === "layout_c"
@@ -635,6 +639,8 @@ export default function EditorPage() {
   const isMobile = useIsMobile();
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null);
   const [lastExportError, setLastExportError] = useState<string | null>(null);
+  const [debugEdgeBody, setDebugEdgeBody] = useState<unknown>(null);
+  const [debugEdgeResponse, setDebugEdgeResponse] = useState<unknown>(null);
   const [templatesPanelOpen, setTemplatesPanelOpen] = useState(true);
   const [focusMode, setFocusMode] = useState(false);
   const [compactMode, setCompactMode] = useState(false);
@@ -1121,6 +1127,7 @@ export default function EditorPage() {
 
     if (import.meta.env.DEV) {
       (window as any).__MI_LAST_EDGE_BODY__ = payload;
+      setDebugEdgeBody(payload);
     }
 
     const fnUrl = `${supabaseUrl.replace(/\/+$/, "")}/functions/v1/generate-image`;
@@ -1144,21 +1151,25 @@ export default function EditorPage() {
 
     if (!resp.ok) {
       if (import.meta.env.DEV) {
-        (window as any).__MI_LAST_EDGE_RESPONSE__ = {
+        const debugPayload = {
           ok: false,
           status: resp.status,
           body: parsed ?? text,
         };
+        (window as any).__MI_LAST_EDGE_RESPONSE__ = debugPayload;
+        setDebugEdgeResponse(debugPayload);
       }
       throw new Error(parsed?.error ?? parsed?.message ?? (text || `HTTP ${resp.status}`));
     }
     if (!parsed?.signedUrl || !parsed?.generationId) {
       if (import.meta.env.DEV) {
-        (window as any).__MI_LAST_EDGE_RESPONSE__ = {
+        const debugPayload = {
           ok: false,
           status: resp.status,
           body: parsed ?? text,
         };
+        (window as any).__MI_LAST_EDGE_RESPONSE__ = debugPayload;
+        setDebugEdgeResponse(debugPayload);
       }
       throw new Error("Invalid generate-image response");
     }
@@ -1186,11 +1197,13 @@ export default function EditorPage() {
     }
 
     if (import.meta.env.DEV) {
-      (window as any).__MI_LAST_EDGE_RESPONSE__ = {
+      const debugPayload = {
         ok: true,
         status: resp.status,
         body: parsed,
       };
+      (window as any).__MI_LAST_EDGE_RESPONSE__ = debugPayload;
+      setDebugEdgeResponse(debugPayload);
     }
 
     return parsed as GenerateImageResponse;
@@ -1219,54 +1232,51 @@ export default function EditorPage() {
     setIsGenerating(true);
     try {
       const generated: Generation[] = [];
-      const normalizedReferences = (safeSpec.referenceImages ?? [])
-        .map((ref) => ({
-          url: normalizeProjectAssetsUrl(ref.url),
-          role: normalizeReferenceRole(ref.role),
-          weight: clampSize(
-            Number(ref.weight ?? getReferenceRoleDefaultWeight(normalizeReferenceRole(ref.role))),
-            0,
-            100
-          ),
-          lockRealism: Boolean(ref.lockRealism),
-        }))
-        .filter((ref) => Boolean(ref.url))
-        .map((ref) => ({
-          url: ref.url as string,
-          role: ref.role,
-          weight: ref.weight,
-          lockRealism: ref.lockRealism,
-        }))
-        .slice(0, 4);
       const subjectImageForGenerate = normalizeProjectAssetsUrl(safeSpec.subjectImageUrl) ?? undefined;
       const styleRefForGenerate =
         styleRefImageUrl || normalizeProjectAssetsUrl(safeSpec.ecomV2?.styleRefImageUrl) || undefined;
-      const upsertedByRole = new Map<"subject" | "style", {
-        url: string;
-        role: "subject" | "style";
-        weight: number;
-        lockRealism: boolean;
-      }>();
-      for (const ref of normalizedReferences) {
-        upsertedByRole.set(ref.role, ref);
-      }
-      if (subjectImageForGenerate) {
-        upsertedByRole.set("subject", {
-          url: subjectImageForGenerate,
-          role: "subject",
-          weight: 90,
-          lockRealism: true,
-        });
-      }
-      if (styleRefForGenerate) {
-        upsertedByRole.set("style", {
-          url: styleRefForGenerate,
-          role: "style",
-          weight: 55,
-          lockRealism: true,
-        });
-      }
-      const referencesForGenerate = Array.from(upsertedByRole.values()).slice(0, 4);
+      const referencesForGenerate = isEcomV2Template
+        ? [
+            ...(subjectImageForGenerate
+              ? [
+                  {
+                    url: subjectImageForGenerate,
+                    role: "subject" as const,
+                    weight: clampSize(Number(safeSpec.ecomV2?.subjectWeight ?? 90), 0, 100),
+                    lockRealism: Boolean(safeSpec.ecomV2?.subjectLockRealism ?? true),
+                  },
+                ]
+              : []),
+            ...(styleRefForGenerate
+              ? [
+                  {
+                    url: styleRefForGenerate,
+                    role: "style" as const,
+                    weight: clampSize(Number(safeSpec.ecomV2?.styleWeight ?? 55), 0, 100),
+                    lockRealism: Boolean(safeSpec.ecomV2?.styleLockRealism ?? true),
+                  },
+                ]
+              : []),
+          ].slice(0, 2)
+        : (safeSpec.referenceImages ?? [])
+            .map((ref) => ({
+              url: normalizeProjectAssetsUrl(ref.url),
+              role: normalizeReferenceRole(ref.role),
+              weight: clampSize(
+                Number(ref.weight ?? getReferenceRoleDefaultWeight(normalizeReferenceRole(ref.role))),
+                0,
+                100
+              ),
+              lockRealism: Boolean(ref.lockRealism),
+            }))
+            .filter((ref) => Boolean(ref.url))
+            .map((ref) => ({
+              url: ref.url as string,
+              role: ref.role,
+              weight: ref.weight,
+              lockRealism: ref.lockRealism,
+            }))
+            .slice(0, 4);
       for (let i = 0; i < count; i += 1) {
         const res = await invokeGenerateEdge({
           prompt: compiledNow.prompt,
@@ -2282,6 +2292,18 @@ export default function EditorPage() {
                 referenceImages.firstUrl:{" "}
                 {normalizeProjectAssetsUrl(referenceImages[0]?.url) || referenceImages[0]?.url || "(empty)"}
               </div>
+              <div className="pt-2 border-t border-border/40 mt-2">
+                <div className="text-[11px] text-muted-foreground">lastEdgeBody</div>
+                <pre className="mt-1 whitespace-pre-wrap max-h-40 overflow-auto">
+                  {debugEdgeBody ? JSON.stringify(debugEdgeBody, null, 2) : "(empty)"}
+                </pre>
+              </div>
+              <div className="pt-2 border-t border-border/40 mt-2">
+                <div className="text-[11px] text-muted-foreground">lastEdgeResponse</div>
+                <pre className="mt-1 whitespace-pre-wrap max-h-40 overflow-auto">
+                  {debugEdgeResponse ? JSON.stringify(debugEdgeResponse, null, 2) : "(empty)"}
+                </pre>
+              </div>
             </div>
           </details>
         </div>
@@ -2860,6 +2882,42 @@ export default function EditorPage() {
                       className="h-14 w-14 rounded-md border border-border object-cover"
                     />
                   ) : null}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Style Weight</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={clampSize(Number(safeSpec.ecomV2?.styleWeight ?? 55), 0, 100)}
+                        onChange={(e) =>
+                          persistSpec({
+                            ...safeSpec,
+                            ecomV2: {
+                              ...(safeSpec.ecomV2 ?? {}),
+                              styleWeight: clampSize(Number(e.target.value || 0), 0, 100),
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground pt-6">
+                      <Checkbox
+                        checked={Boolean(safeSpec.ecomV2?.styleLockRealism ?? true)}
+                        onCheckedChange={(checked) =>
+                          persistSpec({
+                            ...safeSpec,
+                            ecomV2: {
+                              ...(safeSpec.ecomV2 ?? {}),
+                              styleLockRealism: Boolean(checked),
+                            },
+                          })
+                        }
+                      />
+                      Lock realism
+                    </label>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -2903,6 +2961,42 @@ export default function EditorPage() {
                       }}
                     />
                   </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs text-muted-foreground">Subject Weight</label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={clampSize(Number(safeSpec.ecomV2?.subjectWeight ?? 90), 0, 100)}
+                        onChange={(e) =>
+                          persistSpec({
+                            ...safeSpec,
+                            ecomV2: {
+                              ...(safeSpec.ecomV2 ?? {}),
+                              subjectWeight: clampSize(Number(e.target.value || 0), 0, 100),
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-xs text-muted-foreground pt-6">
+                      <Checkbox
+                        checked={Boolean(safeSpec.ecomV2?.subjectLockRealism ?? true)}
+                        onCheckedChange={(checked) =>
+                          persistSpec({
+                            ...safeSpec,
+                            ecomV2: {
+                              ...(safeSpec.ecomV2 ?? {}),
+                              subjectLockRealism: Boolean(checked),
+                            },
+                          })
+                        }
+                      />
+                      Lock realism
+                    </label>
+                  </div>
                 </div>
 
                 <div className="space-y-1">
@@ -5605,6 +5699,43 @@ export default function EditorPage() {
                           className="h-14 w-14 rounded-md border border-border object-cover"
                         />
                       ) : null}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground font-medium">Style Weight</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="h-11 text-sm"
+                            value={clampSize(Number(safeSpec.ecomV2?.styleWeight ?? 55), 0, 100)}
+                            onChange={(e) =>
+                              persistSpec({
+                                ...safeSpec,
+                                ecomV2: {
+                                  ...(safeSpec.ecomV2 ?? {}),
+                                  styleWeight: clampSize(Number(e.target.value || 0), 0, 100),
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 text-xs text-muted-foreground pt-7">
+                          <Checkbox
+                            checked={Boolean(safeSpec.ecomV2?.styleLockRealism ?? true)}
+                            onCheckedChange={(checked) =>
+                              persistSpec({
+                                ...safeSpec,
+                                ecomV2: {
+                                  ...(safeSpec.ecomV2 ?? {}),
+                                  styleLockRealism: Boolean(checked),
+                                },
+                              })
+                            }
+                          />
+                          Lock realism
+                        </label>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs text-muted-foreground font-medium">Step B - Subject/Product (optional)</label>
@@ -5645,6 +5776,43 @@ export default function EditorPage() {
                           }}
                         />
                       </label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-xs text-muted-foreground font-medium">Subject Weight</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            max={100}
+                            step={1}
+                            className="h-11 text-sm"
+                            value={clampSize(Number(safeSpec.ecomV2?.subjectWeight ?? 90), 0, 100)}
+                            onChange={(e) =>
+                              persistSpec({
+                                ...safeSpec,
+                                ecomV2: {
+                                  ...(safeSpec.ecomV2 ?? {}),
+                                  subjectWeight: clampSize(Number(e.target.value || 0), 0, 100),
+                                },
+                              })
+                            }
+                          />
+                        </div>
+                        <label className="flex items-center gap-2 text-xs text-muted-foreground pt-7">
+                          <Checkbox
+                            checked={Boolean(safeSpec.ecomV2?.subjectLockRealism ?? true)}
+                            onCheckedChange={(checked) =>
+                              persistSpec({
+                                ...safeSpec,
+                                ecomV2: {
+                                  ...(safeSpec.ecomV2 ?? {}),
+                                  subjectLockRealism: Boolean(checked),
+                                },
+                              })
+                            }
+                          />
+                          Lock realism
+                        </label>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs text-muted-foreground font-medium">Step C - Copy</label>

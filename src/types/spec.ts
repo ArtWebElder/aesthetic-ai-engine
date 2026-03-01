@@ -141,6 +141,10 @@ export interface EcomStyleDNA {
 export interface EcomV2Spec {
   styleRefImageUrl?: string | null;
   styleRefImagePath?: string | null;
+  subjectWeight?: number;
+  styleWeight?: number;
+  subjectLockRealism?: boolean;
+  styleLockRealism?: boolean;
   styleDNA?: EcomStyleDNA | null;
   layoutPreset?: "layout_a" | "layout_b" | "layout_c";
   textPreset?: "impact" | "premium" | "clean";
