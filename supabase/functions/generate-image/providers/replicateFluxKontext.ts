@@ -15,8 +15,7 @@ type ReplicateStrictResult = {
     providerName: string;
     payloadKind: "replicate_kontext";
     endpoint: "replicate:v1:predictions";
-    model: string;
-    version: string | null;
+    version: string;
   };
 };
 
@@ -47,13 +46,17 @@ function pickOutputUrl(output: unknown): string | null {
 export class ReplicateFluxKontextProvider {
   readonly name = "replicate-flux-kontext-pro" as const;
   private readonly token: string;
-  private readonly model: string;
-  private readonly version: string | null;
+  private readonly version: string;
 
-  constructor(input: { token: string; model?: string; version?: string }) {
+  constructor(input: { token: string; version?: string }) {
     this.token = input.token;
-    this.model = input.model ?? "black-forest-labs/flux-kontext-pro";
-    this.version = input.version?.trim() || null;
+    this.version =
+      input.version?.trim() ||
+      String(Deno.env.get("REPLICATE_FLUX_KONTEXT_PRO_VERSION") ?? "").trim();
+
+    if (!this.version) {
+      throw new Error("replicate_missing_version");
+    }
   }
 
   async generateImageToImageStrict(input: ReplicateStrictInput): Promise<ReplicateStrictResult> {
@@ -62,21 +65,13 @@ export class ReplicateFluxKontextProvider {
       .filter(Boolean)
       .join("\n");
 
-    const payload = this.version
-      ? {
-          version: this.version,
-          input: {
-            prompt,
-            input_image: initImage,
-          },
-        }
-      : {
-          model: this.model,
-          input: {
-            prompt,
-            input_image: initImage,
-          },
-        };
+    const payload = {
+      version: this.version,
+      input: {
+        prompt,
+        input_image: initImage,
+      },
+    };
 
     const createResp = await fetch("https://api.replicate.com/v1/predictions", {
       method: "POST",
@@ -88,10 +83,23 @@ export class ReplicateFluxKontextProvider {
     });
 
     const createText = await createResp.text();
-    const createJson = createText ? JSON.parse(createText) : null;
+    const createJson = (() => {
+      try {
+        return createText ? JSON.parse(createText) : null;
+      } catch {
+        return null;
+      }
+    })();
 
     if (!createResp.ok) {
-      throw new Error(`replicate_create_failed:${createResp.status}:${(createText || "").slice(0, 300)}`);
+      const retryAfter = createResp.headers.get("retry-after");
+      let bodySnippet = (createText || "").slice(0, 300);
+      if (createResp.status === 429 && retryAfter) {
+        bodySnippet = bodySnippet
+          ? `${bodySnippet} retry_after=${retryAfter}`
+          : `retry_after=${retryAfter}`;
+      }
+      throw new Error(`replicate_create_failed:${createResp.status}:${bodySnippet}`);
     }
 
     const pollUrl = String(createJson?.urls?.get ?? "").trim();
@@ -154,7 +162,6 @@ export class ReplicateFluxKontextProvider {
         providerName: this.name,
         payloadKind: "replicate_kontext",
         endpoint: "replicate:v1:predictions",
-        model: this.model,
         version: this.version,
       },
     };
