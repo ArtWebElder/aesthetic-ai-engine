@@ -477,6 +477,12 @@ function ensureSpecDefaults(spec: ProjectSpec): ProjectSpec {
         typeof generation.negativePrompt === "string"
           ? generation.negativePrompt
           : "",
+      strictIdentity:
+        typeof generation.strictIdentity === "boolean"
+          ? generation.strictIdentity
+          : true,
+      identityStrength: clampSize(Number(generation.identityStrength ?? 90), 0, 100),
+      styleStrength: clampSize(Number(generation.styleStrength ?? 45), 0, 100),
       ...(isSocialPost
         ? socialPlatformToSize((builder.platformPreset ?? "instagram_feed").trim())
         : {}),
@@ -1110,6 +1116,9 @@ export default function EditorPage() {
     height: number;
     seed?: number;
     module?: string;
+    strictIdentity?: boolean;
+    identityStrength?: number;
+    styleStrength?: number;
     subjectImageUrl?: string;
     styleRefImageUrl?: string;
     referenceImages?: Array<{
@@ -1217,9 +1226,23 @@ export default function EditorPage() {
     const { w, h } = getSafeDims(safeSpec);
     const compiledNow = compilePrompt(safeSpec);
     const normalizedSeed =
-      Number.isFinite(Number(safeSpec.generation.seed)) && safeSpec.generation.seed !== null
-        ? clampInt(Number(safeSpec.generation.seed), 0, 2_147_483_647)
-        : null;
+  Number.isFinite(Number(safeSpec.generation.seed)) && safeSpec.generation.seed !== null
+    ? clampInt(Number(safeSpec.generation.seed), 0, 2_147_483_647)
+    : null;
+
+const strictIdentity = safeSpec.generation.strictIdentity ?? true;
+
+const identityStrength = clampSize(
+  Number(safeSpec.generation.identityStrength ?? 90),
+  0,
+  100,
+);
+
+const styleStrength = clampSize(
+  Number(safeSpec.generation.styleStrength ?? 45),
+  0,
+  100,
+);
     const count = clampInt(
       Number(
         safeSpec.module === "photoshoot"
@@ -1286,6 +1309,9 @@ export default function EditorPage() {
           height: h,
           ...(normalizedSeed !== null ? { seed: normalizedSeed } : {}),
           module: safeSpec.module,
+          strictIdentity,
+          identityStrength,
+          styleStrength,
           ...(subjectImageForGenerate ? { subjectImageUrl: subjectImageForGenerate } : {}),
           ...(styleRefForGenerate ? { styleRefImageUrl: styleRefForGenerate } : {}),
           ...(referencesForGenerate.length ? { referenceImages: referencesForGenerate } : {}),

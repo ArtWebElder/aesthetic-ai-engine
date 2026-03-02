@@ -167,6 +167,9 @@ export interface GenerationParams {
   realism?: number;
   seed?: number | null;
   negativePrompt?: string | null;
+  strictIdentity?: boolean;
+  identityStrength?: number;
+  styleStrength?: number;
 }
 
 export interface ReferenceImage {

@@ -1,5 +1,7 @@
 /// <reference lib="deno.ns" />
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { selectProvider } from "./providers/registry.ts";
+import { preprocessSubjectImage } from "./preprocess/subject.ts";
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {
@@ -98,6 +100,9 @@ type GenerateBody = {
   seed?: number;
   negativePrompt?: string;
   module?: string;
+  strictIdentity?: boolean;
+  identityStrength?: number;
+  styleStrength?: number;
   subjectImageUrl?: string;
   styleRefImageUrl?: string;
   referenceImages?: Array<{
@@ -122,6 +127,10 @@ type ParsedRequest = {
   height: number;
   seed: number | null;
   module: string | null;
+  strictIdentity: boolean;
+  identityStrength: number | null;
+  styleStrength: number | null;
+  subjectImageUrl: string | null;
   referenceImages: ParsedReferenceImage[];
 };
 
@@ -227,6 +236,17 @@ function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { o
   const seed = Number.isFinite(Number(seedRaw)) ? clampInt(Number(seedRaw), 0, 2_147_483_647) : null;
 
   const module = typeof body.module === "string" && body.module.trim() ? body.module.trim().slice(0, 80) : null;
+  const strictIdentity = body.strictIdentity === true;
+  const identityStrength = Number.isFinite(Number(body.identityStrength))
+    ? clampInt(Number(body.identityStrength), 0, 100)
+    : null;
+  const styleStrength = Number.isFinite(Number(body.styleStrength))
+    ? clampInt(Number(body.styleStrength), 0, 100)
+    : null;
+  const subjectImageUrl =
+    typeof body.subjectImageUrl === "string" && /^https?:\/\//i.test(body.subjectImageUrl.trim())
+      ? body.subjectImageUrl.trim()
+      : null;
   const referenceImages = parseReferenceImages(body);
 
   return {
@@ -238,6 +258,10 @@ function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { o
       height,
       seed,
       module,
+      strictIdentity,
+      identityStrength,
+      styleStrength,
+      subjectImageUrl,
       referenceImages,
     },
   };
@@ -491,10 +515,87 @@ Deno.serve(async (req: Request) => {
 
     const input = parsed.data;
     const aspectRatio = pickClosestAspectRatio(input.width, input.height);
+    const selectedProvider = selectProvider({ strictIdentity: input.strictIdentity });
+    const modeUsed = input.strictIdentity ? "strict_identity" : "legacy";
 
     const GCP_PROJECT_ID = Deno.env.get("GCP_PROJECT_ID") ?? "";
     const GCP_LOCATION = Deno.env.get("GCP_LOCATION") ?? "us-central1";
     const GCP_SA_KEY_B64 = Deno.env.get("GCP_SA_KEY_B64") ?? "";
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
+    const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN") ?? "";
+
+    if (input.strictIdentity) {
+      if (!input.subjectImageUrl) {
+        return json(
+          {
+            error: "strict_identity_requires_subject",
+            details: "strictIdentity=true requires subjectImageUrl.",
+            meta: {
+              providerName: selectedProvider.name,
+              modeUsed,
+              strictIdentity: input.strictIdentity,
+              identityStrength: input.identityStrength,
+              styleStrength: input.styleStrength,
+              payloadKind: "strict_provider_stub",
+            },
+          },
+          400,
+          headers,
+        );
+      }
+
+      let preprocessedSubject:
+        | Awaited<ReturnType<typeof preprocessSubjectImage>>
+        | null = null;
+      try {
+        preprocessedSubject = await preprocessSubjectImage(input.subjectImageUrl);
+      } catch (e) {
+        return json(
+          {
+            error: "strict_identity_preprocess_failed",
+            details: String((e as { message?: string })?.message ?? e),
+            meta: {
+              providerName: selectedProvider.name,
+              modeUsed,
+              strictIdentity: input.strictIdentity,
+              identityStrength: input.identityStrength,
+              styleStrength: input.styleStrength,
+              payloadKind: "strict_provider_stub",
+            },
+          },
+          400,
+          headers,
+        );
+      }
+
+      return json(
+        {
+          error: "strict_identity_not_implemented_yet",
+          details: "Strict identity provider routing is prepared but not implemented yet.",
+          meta: {
+            providerName: selectedProvider.name,
+            modeUsed,
+            strictIdentity: input.strictIdentity,
+            identityStrength: input.identityStrength,
+            styleStrength: input.styleStrength,
+            payloadKind: "strict_provider_stub",
+            envReady: {
+              geminiApiKey: Boolean(GEMINI_API_KEY),
+              replicateApiToken: Boolean(REPLICATE_API_TOKEN),
+            },
+            preprocess: {
+              width: preprocessedSubject.width,
+              height: preprocessedSubject.height,
+              mime: preprocessedSubject.mime,
+              flags: preprocessedSubject.flags,
+              hash: preprocessedSubject.hash,
+            },
+          },
+        },
+        400,
+        headers,
+      );
+    }
 
     if (!GCP_PROJECT_ID) return json({ error: "missing_secret", details: "GCP_PROJECT_ID is required." }, 500, headers);
     if (!GCP_SA_KEY_B64) return json({ error: "missing_secret", details: "GCP_SA_KEY_B64 is required." }, 500, headers);
@@ -513,7 +614,7 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
     const startedAt = Date.now();
-    const provider = "vertex-imagen";
+    const provider = selectedProvider.name;
     let generationId = crypto.randomUUID();
     let createdAt = new Date().toISOString();
 
@@ -537,6 +638,11 @@ Deno.serve(async (req: Request) => {
             module: input.module,
             negativePrompt: input.negativePrompt,
             seed: input.seed,
+            strictIdentity: input.strictIdentity,
+            identityStrength: input.identityStrength,
+            styleStrength: input.styleStrength,
+            modeUsed,
+            providerName: selectedProvider.name,
             aspectRatio,
             referenceImagesCount: input.referenceImages.length,
             referenceImages: input.referenceImages.map((entry) => ({
@@ -746,6 +852,11 @@ Deno.serve(async (req: Request) => {
             module: input.module,
             negativePrompt: input.negativePrompt,
             seed: input.seed,
+            strictIdentity: input.strictIdentity,
+            identityStrength: input.identityStrength,
+            styleStrength: input.styleStrength,
+            modeUsed,
+            providerName: selectedProvider.name,
             aspectRatio,
             referenceImagesCount: input.referenceImages.length,
             referenceImages: input.referenceImages.map((entry) => ({
@@ -757,6 +868,7 @@ Deno.serve(async (req: Request) => {
             vertexEndpoint: vertex.value.endpoint,
             vertexPayloadKind: vertex.value.payloadKind,
             usedCapability: hasReferences,
+            payloadKind: hasReferences ? "vertex_reference_guidance" : "vertex_text_to_image",
           },
         })
         .eq("id", generationId);
@@ -779,10 +891,16 @@ Deno.serve(async (req: Request) => {
         creditsUsed,
         createdAt,
         meta: {
+          providerName: selectedProvider.name,
+          modeUsed,
+          strictIdentity: input.strictIdentity,
+          identityStrength: input.identityStrength,
+          styleStrength: input.styleStrength,
           referenceImagesCount: input.referenceImages.length,
           vertexEndpoint: vertex.value.endpoint,
           vertexPayloadKind: vertex.value.payloadKind,
           usedCapability: hasReferences,
+          payloadKind: hasReferences ? "vertex_reference_guidance" : "vertex_text_to_image",
         },
       },
       200,

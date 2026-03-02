@@ -231,6 +231,9 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
       realism: 70,
       seed: null,
       negativePrompt: "",
+      strictIdentity: true,
+      identityStrength: 90,
+      styleStrength: 45,
     },
   };
 }
