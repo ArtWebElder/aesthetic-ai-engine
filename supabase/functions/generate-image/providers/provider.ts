@@ -9,6 +9,20 @@ export type ProviderGenerateInput = {
   identityStrength: number | null;
   styleStrength: number | null;
   referenceImagesCount: number;
+  subjectImage: {
+    base64: string;
+    mime: string;
+    dataUrl: string;
+    width: number;
+    height: number;
+    hash: string;
+  };
+  styleReferences?: Array<{
+    base64: string;
+    mime: string;
+    weight: number;
+    url: string;
+  }>;
 };
 
 export type ProviderGenerateResult = {

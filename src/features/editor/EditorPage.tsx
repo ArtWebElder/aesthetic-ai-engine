@@ -802,6 +802,10 @@ export default function EditorPage() {
     safeSpec?.builder?.sceneProps,
     scenePresetModuleKey
   );
+  const debugEdgeMeta =
+    debugEdgeResponse && typeof debugEdgeResponse === "object"
+      ? ((debugEdgeResponse as { body?: { meta?: Record<string, unknown> } }).body?.meta ?? null)
+      : null;
   const photoshootSubjectTypeOptions = [
     { value: "person", label: "Person", labelKey: "photoshoot.subject_type.person" },
     { value: "product", label: "Product", labelKey: "photoshoot.subject_type.product" },
@@ -1226,23 +1230,13 @@ export default function EditorPage() {
     const { w, h } = getSafeDims(safeSpec);
     const compiledNow = compilePrompt(safeSpec);
     const normalizedSeed =
-  Number.isFinite(Number(safeSpec.generation.seed)) && safeSpec.generation.seed !== null
-    ? clampInt(Number(safeSpec.generation.seed), 0, 2_147_483_647)
-    : null;
+      Number.isFinite(Number(safeSpec.generation.seed)) && safeSpec.generation.seed !== null
+        ? clampInt(Number(safeSpec.generation.seed), 0, 2_147_483_647)
+        : null;
 
-const strictIdentity = safeSpec.generation.strictIdentity ?? true;
-
-const identityStrength = clampSize(
-  Number(safeSpec.generation.identityStrength ?? 90),
-  0,
-  100,
-);
-
-const styleStrength = clampSize(
-  Number(safeSpec.generation.styleStrength ?? 45),
-  0,
-  100,
-);
+    const strictIdentity = safeSpec.generation.strictIdentity ?? true;
+    const identityStrength = clampSize(Number(safeSpec.generation.identityStrength ?? 90), 0, 100);
+    const styleStrength = clampSize(Number(safeSpec.generation.styleStrength ?? 45), 0, 100);
     const count = clampInt(
       Number(
         safeSpec.module === "photoshoot"
@@ -2330,6 +2324,15 @@ const styleStrength = clampSize(
                 <pre className="mt-1 whitespace-pre-wrap max-h-40 overflow-auto">
                   {debugEdgeResponse ? JSON.stringify(debugEdgeResponse, null, 2) : "(empty)"}
                 </pre>
+              </div>
+              <div className="pt-2 border-t border-border/40 mt-2">
+                <div className="text-[11px] text-muted-foreground">meta.summary</div>
+                <div>providerName: {String((debugEdgeMeta as any)?.providerName ?? "(empty)")}</div>
+                <div>modeUsed: {String((debugEdgeMeta as any)?.modeUsed ?? "(empty)")}</div>
+                <div>payloadKind: {String((debugEdgeMeta as any)?.payloadKind ?? "(empty)")}</div>
+                <div>fallbackUsed: {String((debugEdgeMeta as any)?.gemini_failed_then_replicate ?? "(empty)")}</div>
+                <div>preprocess.flags: {JSON.stringify((debugEdgeMeta as any)?.preprocess?.flags ?? null)}</div>
+                <div>preprocess.hash: {String((debugEdgeMeta as any)?.preprocess?.hash ?? "(empty)")}</div>
               </div>
             </div>
           </details>

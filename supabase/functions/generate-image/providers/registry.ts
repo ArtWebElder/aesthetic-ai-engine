@@ -1,29 +1,7 @@
 import type { Provider } from "./provider.ts";
+import { geminiImageProvider } from "./gemini-image.ts";
+import { replicateFluxProvider } from "./replicate-flux.ts";
 import { vertexImagenProvider } from "./vertex-imagen.ts";
-
-const geminiNanoBananaProProvider: Provider = {
-  name: "gemini-nano-banana-pro",
-  supportsStrictIdentity: true,
-  supportsStyleReference: true,
-  async generateTextToImage() {
-    throw new Error("not_implemented");
-  },
-  async generateImageToImageStrict() {
-    throw new Error("not_implemented");
-  },
-};
-
-const replicateFluxKontextProProvider: Provider = {
-  name: "replicate-flux-kontext-pro",
-  supportsStrictIdentity: true,
-  supportsStyleReference: true,
-  async generateTextToImage() {
-    throw new Error("not_implemented");
-  },
-  async generateImageToImageStrict() {
-    throw new Error("not_implemented");
-  },
-};
 
 export type ProviderKind =
   | "gemini-nano-banana-pro"
@@ -31,8 +9,8 @@ export type ProviderKind =
   | "vertex-imagen";
 
 const providerRegistry: Record<ProviderKind, Provider> = {
-  "gemini-nano-banana-pro": geminiNanoBananaProProvider,
-  "replicate-flux-kontext-pro": replicateFluxKontextProProvider,
+  "gemini-nano-banana-pro": geminiImageProvider,
+  "replicate-flux-kontext-pro": replicateFluxProvider,
   "vertex-imagen": vertexImagenProvider,
 };
 

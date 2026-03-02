@@ -1,6 +1,6 @@
 /// <reference lib="deno.ns" />
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { selectProvider } from "./providers/registry.ts";
+import { getProvider, selectProvider } from "./providers/registry.ts";
 import { preprocessSubjectImage } from "./preprocess/subject.ts";
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
@@ -521,84 +521,6 @@ Deno.serve(async (req: Request) => {
     const GCP_PROJECT_ID = Deno.env.get("GCP_PROJECT_ID") ?? "";
     const GCP_LOCATION = Deno.env.get("GCP_LOCATION") ?? "us-central1";
     const GCP_SA_KEY_B64 = Deno.env.get("GCP_SA_KEY_B64") ?? "";
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
-    const REPLICATE_API_TOKEN = Deno.env.get("REPLICATE_API_TOKEN") ?? "";
-
-    if (input.strictIdentity) {
-      if (!input.subjectImageUrl) {
-        return json(
-          {
-            error: "strict_identity_requires_subject",
-            details: "strictIdentity=true requires subjectImageUrl.",
-            meta: {
-              providerName: selectedProvider.name,
-              modeUsed,
-              strictIdentity: input.strictIdentity,
-              identityStrength: input.identityStrength,
-              styleStrength: input.styleStrength,
-              payloadKind: "strict_provider_stub",
-            },
-          },
-          400,
-          headers,
-        );
-      }
-
-      let preprocessedSubject:
-        | Awaited<ReturnType<typeof preprocessSubjectImage>>
-        | null = null;
-      try {
-        preprocessedSubject = await preprocessSubjectImage(input.subjectImageUrl);
-      } catch (e) {
-        return json(
-          {
-            error: "strict_identity_preprocess_failed",
-            details: String((e as { message?: string })?.message ?? e),
-            meta: {
-              providerName: selectedProvider.name,
-              modeUsed,
-              strictIdentity: input.strictIdentity,
-              identityStrength: input.identityStrength,
-              styleStrength: input.styleStrength,
-              payloadKind: "strict_provider_stub",
-            },
-          },
-          400,
-          headers,
-        );
-      }
-
-      return json(
-        {
-          error: "strict_identity_not_implemented_yet",
-          details: "Strict identity provider routing is prepared but not implemented yet.",
-          meta: {
-            providerName: selectedProvider.name,
-            modeUsed,
-            strictIdentity: input.strictIdentity,
-            identityStrength: input.identityStrength,
-            styleStrength: input.styleStrength,
-            payloadKind: "strict_provider_stub",
-            envReady: {
-              geminiApiKey: Boolean(GEMINI_API_KEY),
-              replicateApiToken: Boolean(REPLICATE_API_TOKEN),
-            },
-            preprocess: {
-              width: preprocessedSubject.width,
-              height: preprocessedSubject.height,
-              mime: preprocessedSubject.mime,
-              flags: preprocessedSubject.flags,
-              hash: preprocessedSubject.hash,
-            },
-          },
-        },
-        400,
-        headers,
-      );
-    }
-
-    if (!GCP_PROJECT_ID) return json({ error: "missing_secret", details: "GCP_PROJECT_ID is required." }, 500, headers);
-    if (!GCP_SA_KEY_B64) return json({ error: "missing_secret", details: "GCP_SA_KEY_B64 is required." }, 500, headers);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
@@ -671,6 +593,281 @@ Deno.serve(async (req: Request) => {
       await updateGenerationError(supabase, generationId, startedAt, `bucket_error: ${bucketError}`);
       return json({ error: "storage_bucket_error", details: bucketError }, 500, headers);
     }
+
+    if (input.strictIdentity) {
+      if (!input.subjectImageUrl) {
+        const details = "strictIdentity=true requires subjectImageUrl.";
+        await updateGenerationError(supabase, generationId, startedAt, details);
+        return json(
+          {
+            error: "strict_identity_requires_subject",
+            details,
+            meta: {
+              providerName: selectedProvider.name,
+              modeUsed,
+              strictIdentity: input.strictIdentity,
+              identityStrength: input.identityStrength,
+              styleStrength: input.styleStrength,
+              payloadKind: "strict_identity_missing_subject",
+            },
+          },
+          400,
+          headers,
+        );
+      }
+
+      let preprocessedSubject: Awaited<ReturnType<typeof preprocessSubjectImage>>;
+      try {
+        preprocessedSubject = await preprocessSubjectImage(input.subjectImageUrl);
+      } catch (e) {
+        const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
+        await updateGenerationError(supabase, generationId, startedAt, `strict_preprocess_error: ${details}`);
+        return json(
+          {
+            error: "strict_identity_preprocess_failed",
+            details,
+            meta: {
+              providerName: selectedProvider.name,
+              modeUsed,
+              strictIdentity: input.strictIdentity,
+              identityStrength: input.identityStrength,
+              styleStrength: input.styleStrength,
+              payloadKind: "strict_preprocess_failed",
+            },
+          },
+          400,
+          headers,
+        );
+      }
+
+      const strictStyleReferences = await Promise.all(
+        input.referenceImages
+          .filter((entry) => entry.role === "style" && Boolean(entry.url))
+          .slice(0, 2)
+          .map(async (entry) => {
+            const fetched = await fetchImageAsBase64(entry.url);
+            return {
+              base64: fetched.base64,
+              mime: fetched.mime,
+              weight: entry.weight,
+              url: entry.url,
+            };
+          }),
+      );
+
+      const strictProviderErrors: Array<{ providerName: string; details: string }> = [];
+      const fallbackProvider = getProvider("replicate-flux-kontext-pro");
+      let strictProviderUsed = selectedProvider;
+      let strictPayloadKind = "strict_unknown";
+      let strictRaw: unknown = null;
+      let strictBase64 = "";
+      let fallbackUsed = false;
+
+      try {
+        const result = await selectedProvider.generateImageToImageStrict({
+          prompt: input.prompt,
+          negativePrompt: input.negativePrompt,
+          width: input.width,
+          height: input.height,
+          seed: input.seed,
+          module: input.module,
+          strictIdentity: input.strictIdentity,
+          identityStrength: input.identityStrength,
+          styleStrength: input.styleStrength,
+          referenceImagesCount: input.referenceImages.length,
+          subjectImage: {
+            base64: preprocessedSubject.base64,
+            mime: preprocessedSubject.mime,
+            dataUrl: preprocessedSubject.dataUrl,
+            width: preprocessedSubject.width,
+            height: preprocessedSubject.height,
+            hash: preprocessedSubject.hash,
+          },
+          styleReferences: strictStyleReferences,
+        });
+        strictBase64 = result.base64;
+        strictPayloadKind = result.payloadKind;
+        strictRaw = result.raw ?? null;
+      } catch (primaryError) {
+        strictProviderErrors.push({
+          providerName: selectedProvider.name,
+          details: String((primaryError as { message?: string })?.message ?? primaryError).slice(0, 1200),
+        });
+        fallbackUsed = true;
+        strictProviderUsed = fallbackProvider;
+        try {
+          const fallbackResult = await fallbackProvider.generateImageToImageStrict({
+            prompt: input.prompt,
+            negativePrompt: input.negativePrompt,
+            width: input.width,
+            height: input.height,
+            seed: input.seed,
+            module: input.module,
+            strictIdentity: input.strictIdentity,
+            identityStrength: input.identityStrength,
+            styleStrength: input.styleStrength,
+            referenceImagesCount: input.referenceImages.length,
+            subjectImage: {
+              base64: preprocessedSubject.base64,
+              mime: preprocessedSubject.mime,
+              dataUrl: preprocessedSubject.dataUrl,
+              width: preprocessedSubject.width,
+              height: preprocessedSubject.height,
+              hash: preprocessedSubject.hash,
+            },
+            styleReferences: strictStyleReferences,
+          });
+          strictBase64 = fallbackResult.base64;
+          strictPayloadKind = fallbackResult.payloadKind;
+          strictRaw = fallbackResult.raw ?? null;
+        } catch (fallbackError) {
+          strictProviderErrors.push({
+            providerName: fallbackProvider.name,
+            details: String((fallbackError as { message?: string })?.message ?? fallbackError).slice(0, 1200),
+          });
+          const strictDetails = JSON.stringify(strictProviderErrors).slice(0, 1200);
+          await updateGenerationError(supabase, generationId, startedAt, `strict_provider_unavailable: ${strictDetails}`);
+          return json(
+            {
+              error: "strict_identity_provider_unavailable",
+              details: strictDetails,
+              meta: {
+                providerName: fallbackProvider.name,
+                modeUsed: "strict_identity",
+                strictIdentity: true,
+                identityStrength: input.identityStrength,
+                styleStrength: input.styleStrength,
+                payloadKind: "strict_both_failed",
+                gemini_failed_then_replicate: true,
+                preprocess: {
+                  flags: preprocessedSubject.flags,
+                  hash: preprocessedSubject.hash,
+                  width: preprocessedSubject.width,
+                  height: preprocessedSubject.height,
+                },
+              },
+            },
+            500,
+            headers,
+          );
+        }
+      }
+
+      const strictMime = "image/png";
+      const strictBytes = base64ToUint8(strictBase64);
+      const strictPath = `anon/${generationId}.png`;
+
+      let { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(strictPath, strictBytes, {
+        contentType: strictMime,
+        upsert: true,
+        cacheControl: "3600",
+      });
+
+      if (uploadError && looksLikeBucketMissing(uploadError.message)) {
+        const ensureError = await ensurePrivateBucket(supabase, STORAGE_BUCKET);
+        if (!ensureError) {
+          const retry = await supabase.storage.from(STORAGE_BUCKET).upload(strictPath, strictBytes, {
+            contentType: strictMime,
+            upsert: true,
+            cacheControl: "3600",
+          });
+          uploadError = retry.error ?? null;
+        }
+      }
+
+      if (uploadError) {
+        await updateGenerationError(supabase, generationId, startedAt, `storage_upload_error: ${uploadError.message}`);
+        return json({ error: "storage_upload_error", details: uploadError.message }, 500, headers);
+      }
+
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .createSignedUrl(strictPath, signedUrlTtl);
+
+      if (signedError || !signedData?.signedUrl) {
+        await updateGenerationError(supabase, generationId, startedAt, `signed_url_error: ${String(signedError?.message ?? "missing_signed_url")}`);
+        return json({ error: "signed_url_error", details: signedError?.message ?? "missing_signed_url" }, 500, headers);
+      }
+
+      const creditsUsed = 1;
+      {
+        const { error } = await supabase
+          .from("generations")
+          .update({
+            status: "ok",
+            duration_ms: Date.now() - startedAt,
+            provider: strictProviderUsed.name,
+            bucket: STORAGE_BUCKET,
+            path: strictPath,
+            signed_url: signedData.signedUrl,
+            mime: strictMime,
+            width: input.width,
+            height: input.height,
+            prompt: input.prompt,
+            credits_used: creditsUsed,
+            meta: {
+              module: input.module,
+              negativePrompt: input.negativePrompt,
+              seed: input.seed,
+              strictIdentity: true,
+              identityStrength: input.identityStrength,
+              styleStrength: input.styleStrength,
+              modeUsed: "strict_identity",
+              providerName: strictProviderUsed.name,
+              referenceImagesCount: input.referenceImages.length,
+              payloadKind: strictPayloadKind,
+              gemini_failed_then_replicate: fallbackUsed,
+              preprocess: {
+                flags: preprocessedSubject.flags,
+                hash: preprocessedSubject.hash,
+                width: preprocessedSubject.width,
+                height: preprocessedSubject.height,
+              },
+              strictProviderRaw: strictRaw,
+            },
+          })
+          .eq("id", generationId);
+
+        if (error) {
+          return json({ error: "db_error", details: error.message }, 500, headers);
+        }
+      }
+
+      return json(
+        {
+          generationId,
+          provider: strictProviderUsed.name,
+          bucket: STORAGE_BUCKET,
+          path: strictPath,
+          signedUrl: signedData.signedUrl,
+          mime: strictMime,
+          width: input.width,
+          height: input.height,
+          creditsUsed,
+          createdAt,
+          meta: {
+            providerName: strictProviderUsed.name,
+            modeUsed: "strict_identity",
+            strictIdentity: true,
+            identityStrength: input.identityStrength,
+            styleStrength: input.styleStrength,
+            payloadKind: strictPayloadKind,
+            gemini_failed_then_replicate: fallbackUsed,
+            preprocess: {
+              flags: preprocessedSubject.flags,
+              hash: preprocessedSubject.hash,
+              width: preprocessedSubject.width,
+              height: preprocessedSubject.height,
+            },
+          },
+        },
+        200,
+        headers,
+      );
+    }
+
+    if (!GCP_PROJECT_ID) return json({ error: "missing_secret", details: "GCP_PROJECT_ID is required." }, 500, headers);
+    if (!GCP_SA_KEY_B64) return json({ error: "missing_secret", details: "GCP_SA_KEY_B64 is required." }, 500, headers);
 
     let serviceAccount: { client_email: string; private_key: string };
     try {
