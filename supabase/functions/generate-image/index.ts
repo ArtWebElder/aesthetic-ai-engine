@@ -473,7 +473,11 @@ function normalizeStrictPayloadKind(providerName: string, payloadKind: string) {
 
 function emptyPreprocessMeta() {
   return {
-    flags: null,
+    flags: {
+      alphaComposited: false,
+      upscaled: false,
+      padded: false,
+    },
     hash: null,
     width: null,
     height: null,
@@ -631,13 +635,16 @@ Deno.serve(async (req: Request) => {
           {
             error: "strict_identity_requires_subject",
             details,
+            provider: selectedProvider.name,
             meta: {
               providerName: selectedProvider.name,
-              modeUsed,
+              modeUsed: "strict_identity",
               strictIdentity: input.strictIdentity,
               identityStrength: input.identityStrength,
               styleStrength: input.styleStrength,
               payloadKind: "strict_identity_missing_subject",
+              gemini_failed_then_replicate: false,
+              preprocess: emptyPreprocessMeta(),
             },
           },
           400,
@@ -655,13 +662,16 @@ Deno.serve(async (req: Request) => {
           {
             error: "strict_identity_preprocess_failed",
             details,
+            provider: selectedProvider.name,
             meta: {
               providerName: selectedProvider.name,
-              modeUsed,
+              modeUsed: "strict_identity",
               strictIdentity: input.strictIdentity,
               identityStrength: input.identityStrength,
               styleStrength: input.styleStrength,
               payloadKind: "strict_preprocess_failed",
+              gemini_failed_then_replicate: false,
+              preprocess: emptyPreprocessMeta(),
             },
           },
           400,
@@ -677,7 +687,8 @@ Deno.serve(async (req: Request) => {
       let strictPayloadKind = "strict_unknown";
       let strictRaw: unknown = null;
       let strictBase64 = "";
-      let fallbackUsed = false;
+      let fallbackAttempted = false;
+      let lastProviderName = selectedProvider.name;
 
       try {
         const result = await selectedProvider.generateImageToImageStrict({
@@ -704,16 +715,16 @@ Deno.serve(async (req: Request) => {
         if (!strictBase64.trim()) {
           throw new Error("strict_provider_empty_base64");
         }
-        strictPayloadKind = result.payloadKind;
+        strictPayloadKind = result.payloadKind || "strict_unknown";
         strictRaw = result.raw ?? null;
       } catch (primaryError) {
         strictProviderErrors.push({
           providerName: selectedProvider.name,
           details: String((primaryError as { message?: string })?.message ?? primaryError).slice(0, 1200),
         });
-        fallbackUsed = true;
-
         if (fallbackProvider) {
+          fallbackAttempted = true;
+          lastProviderName = fallbackProvider.name;
           strictProviderName = fallbackProvider.name;
           try {
             const fallbackResult = await fallbackProvider.generateImageToImageStrict({
@@ -746,15 +757,15 @@ Deno.serve(async (req: Request) => {
             {
               error: "strict_identity_provider_unavailable",
               details: strictDetails,
-              provider: fallbackProvider?.name ?? selectedProvider.name,
+              provider: lastProviderName,
               meta: {
-                providerName: fallbackProvider?.name ?? selectedProvider.name,
+                providerName: lastProviderName,
                 modeUsed: "strict_identity",
                 strictIdentity: true,
                 identityStrength: input.identityStrength,
                 styleStrength: input.styleStrength,
                 payloadKind: "strict_both_failed",
-                gemini_failed_then_replicate: fallbackUsed,
+                gemini_failed_then_replicate: fallbackAttempted,
                 preprocess: {
                   flags: preprocessedSubject.flags,
                   hash: preprocessedSubject.hash,
@@ -793,7 +804,30 @@ Deno.serve(async (req: Request) => {
 
       if (uploadError) {
         await updateGenerationError(supabase, generationId, startedAt, `storage_upload_error: ${uploadError.message}`, input.prompt.length, input.negativePrompt ?? null);
-        return json({ error: "storage_upload_error", details: uploadError.message }, 500, headers);
+        return json(
+          {
+            error: "storage_upload_error",
+            details: uploadError.message,
+            provider: strictProviderName,
+            meta: {
+              providerName: strictProviderName,
+              modeUsed: "strict_identity",
+              strictIdentity: true,
+              identityStrength: input.identityStrength,
+              styleStrength: input.styleStrength,
+              payloadKind: strictPayloadKind || "strict_unknown",
+              gemini_failed_then_replicate: fallbackAttempted,
+              preprocess: {
+                flags: preprocessedSubject.flags,
+                hash: preprocessedSubject.hash,
+                width: preprocessedSubject.width,
+                height: preprocessedSubject.height,
+              },
+            },
+          },
+          500,
+          headers,
+        );
       }
 
       const { data: signedData, error: signedError } = await supabase.storage
@@ -802,7 +836,30 @@ Deno.serve(async (req: Request) => {
 
       if (signedError || !signedData?.signedUrl) {
         await updateGenerationError(supabase, generationId, startedAt, `signed_url_error: ${String(signedError?.message ?? "missing_signed_url")}`, input.prompt.length, input.negativePrompt ?? null);
-        return json({ error: "signed_url_error", details: signedError?.message ?? "missing_signed_url" }, 500, headers);
+        return json(
+          {
+            error: "signed_url_error",
+            details: signedError?.message ?? "missing_signed_url",
+            provider: strictProviderName,
+            meta: {
+              providerName: strictProviderName,
+              modeUsed: "strict_identity",
+              strictIdentity: true,
+              identityStrength: input.identityStrength,
+              styleStrength: input.styleStrength,
+              payloadKind: strictPayloadKind || "strict_unknown",
+              gemini_failed_then_replicate: fallbackAttempted,
+              preprocess: {
+                flags: preprocessedSubject.flags,
+                hash: preprocessedSubject.hash,
+                width: preprocessedSubject.width,
+                height: preprocessedSubject.height,
+              },
+            },
+          },
+          500,
+          headers,
+        );
       }
 
       const creditsUsed = 1;
@@ -833,8 +890,8 @@ Deno.serve(async (req: Request) => {
               modeUsed: "strict_identity",
               providerName: strictProviderName,
               referenceImagesCount: input.referenceImages.length,
-              payloadKind: strictPayloadKind,
-              gemini_failed_then_replicate: fallbackUsed,
+              payloadKind: strictPayloadKind || "strict_unknown",
+              gemini_failed_then_replicate: fallbackAttempted,
               preprocess: {
                 flags: preprocessedSubject.flags,
                 hash: preprocessedSubject.hash,
@@ -847,7 +904,30 @@ Deno.serve(async (req: Request) => {
           .eq("id", generationId);
 
         if (error) {
-          return json({ error: "db_error", details: error.message }, 500, headers);
+          return json(
+            {
+              error: "db_error",
+              details: error.message,
+              provider: strictProviderName,
+              meta: {
+                providerName: strictProviderName,
+                modeUsed: "strict_identity",
+                strictIdentity: true,
+                identityStrength: input.identityStrength,
+                styleStrength: input.styleStrength,
+                payloadKind: strictPayloadKind || "strict_unknown",
+                gemini_failed_then_replicate: fallbackAttempted,
+                preprocess: {
+                  flags: preprocessedSubject.flags,
+                  hash: preprocessedSubject.hash,
+                  width: preprocessedSubject.width,
+                  height: preprocessedSubject.height,
+                },
+              },
+            },
+            500,
+            headers,
+          );
         }
       }
 
@@ -869,8 +949,8 @@ Deno.serve(async (req: Request) => {
             strictIdentity: true,
             identityStrength: input.identityStrength,
             styleStrength: input.styleStrength,
-            payloadKind: strictPayloadKind,
-            gemini_failed_then_replicate: fallbackUsed,
+            payloadKind: strictPayloadKind || "strict_unknown",
+            gemini_failed_then_replicate: fallbackAttempted,
             preprocess: {
               flags: preprocessedSubject.flags,
               hash: preprocessedSubject.hash,
@@ -1080,7 +1160,7 @@ Deno.serve(async (req: Request) => {
             strictIdentity: input.strictIdentity,
             identityStrength: input.identityStrength,
             styleStrength: input.styleStrength,
-            modeUsed,
+            modeUsed: "legacy",
             providerName: provider,
             aspectRatio,
             referenceImagesCount: input.referenceImages.length,
@@ -1119,7 +1199,7 @@ Deno.serve(async (req: Request) => {
         createdAt,
         meta: {
           providerName: provider,
-          modeUsed,
+          modeUsed: "legacy",
           strictIdentity: input.strictIdentity,
           identityStrength: input.identityStrength,
           styleStrength: input.styleStrength,
