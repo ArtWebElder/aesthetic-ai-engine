@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import type { Provider } from "./provider.ts";
 
 const GEMINI_MODEL = "gemini-3-pro-image-preview";

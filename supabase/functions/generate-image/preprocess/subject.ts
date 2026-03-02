@@ -1,3 +1,4 @@
+/// <reference lib="deno.ns" />
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 type PreprocessFlags = {
@@ -205,7 +206,11 @@ function parseHexColorToRGBA(color: string): number {
 }
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
+  const digestInput =
+    bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength
+      ? bytes.buffer
+      : bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", digestInput);
   return toHex(new Uint8Array(hashBuffer));
 }
 
@@ -272,8 +277,15 @@ export async function preprocessSubjectImage(
     if (!DECODE_ENABLED) {
       throw new Error("preprocess_decode_disabled");
     }
-    const { Image } = await import("https://esm.sh/imagescript@1.3.0?target=deno&no-dts");
-    const decoded = await (Image as any).decode(bytes);
+    const mod = await import("https://esm.sh/imagescript@1.3.0?target=deno&no-dts");
+    const Img =
+      (mod as any).Image ??
+      (mod as any).default?.Image ??
+      (mod as any).default;
+    if (!Img || typeof Img.decode !== "function") {
+      throw new Error("imagescript_import_invalid");
+    }
+    const decoded = await Img.decode(bytes);
     let working: any = decoded;
     let currentWidth = Number(decoded?.width) || intrinsicWidth;
     let currentHeight = Number(decoded?.height) || intrinsicHeight;
@@ -299,7 +311,7 @@ export async function preprocessSubjectImage(
       if (needsBackgroundComposite || needsPad) {
         const canvasWidth = currentWidth + padPx * 2;
         const canvasHeight = currentHeight + padPx * 2;
-        const canvas = new (Image as any)(canvasWidth, canvasHeight);
+        const canvas = new Img(canvasWidth, canvasHeight);
         if (typeof canvas.fill === "function") {
           canvas.fill(bg);
         }
@@ -322,7 +334,10 @@ export async function preprocessSubjectImage(
         outHeight = currentHeight;
       }
     }
-  } catch {
+  } catch (err) {
+    if (DECODE_ENABLED) {
+      console.error("preprocess_decode_failed", String((err as { message?: string })?.message ?? err));
+    }
     // Fallback path intentionally keeps original bytes/mime.
   }
 
@@ -334,9 +349,13 @@ export async function preprocessSubjectImage(
     dataUrl,
     base64,
     mime: outMime,
-    width: outWidth,
-    height: outHeight,
-    flags,
+    width: Number.isFinite(outWidth) ? outWidth : 0,
+    height: Number.isFinite(outHeight) ? outHeight : 0,
+    flags: {
+      alphaComposited: Boolean(flags.alphaComposited),
+      upscaled: Boolean(flags.upscaled),
+      padded: Boolean(flags.padded),
+    },
     hash,
   };
 }
