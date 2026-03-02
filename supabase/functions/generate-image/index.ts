@@ -1,7 +1,8 @@
 /// <reference lib="deno.ns" />
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getProvider, selectProvider } from "./providers/registry.ts";
+import { selectProvider } from "./providers/registry.ts";
 import { preprocessSubjectImage } from "./preprocess/subject.ts";
+import { ReplicateFluxKontextProvider } from "./providers/replicateFluxKontext.ts";
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {
@@ -484,13 +485,22 @@ async function ensurePrivateBucket(supabase: any, bucket: string): Promise<strin
   return null;
 }
 
-async function updateGenerationError(supabase: any, generationId: string, startedAt: number, details: string) {
+async function updateGenerationError(
+  supabase: any,
+  generationId: string,
+  startedAt: number,
+  details: string,
+  promptLen: number,
+  negativePrompt: string | null,
+) {
   await supabase
     .from("generations")
     .update({
       status: "error",
       duration_ms: Date.now() - startedAt,
       error_message: details.slice(0, 1200),
+      prompt_len: promptLen,
+      negative_prompt: negativePrompt,
     })
     .eq("id", generationId);
 }
@@ -521,6 +531,7 @@ Deno.serve(async (req: Request) => {
     const GCP_PROJECT_ID = Deno.env.get("GCP_PROJECT_ID") ?? "";
     const GCP_LOCATION = Deno.env.get("GCP_LOCATION") ?? "us-central1";
     const GCP_SA_KEY_B64 = Deno.env.get("GCP_SA_KEY_B64") ?? "";
+    const REPLICATE_API_TOKEN = String(Deno.env.get("REPLICATE_API_TOKEN") ?? "").trim();
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? Deno.env.get("SUPABASE_SECRET_KEY") ?? "";
@@ -536,7 +547,7 @@ Deno.serve(async (req: Request) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
 
     const startedAt = Date.now();
-    const provider = selectedProvider.name;
+    const provider = input.strictIdentity ? selectedProvider.name : "vertex-imagen";
     let generationId = crypto.randomUUID();
     let createdAt = new Date().toISOString();
 
@@ -552,6 +563,8 @@ Deno.serve(async (req: Request) => {
           signed_url: null,
           mime: null,
           prompt: input.prompt,
+          prompt_len: input.prompt.length,
+          negative_prompt: input.negativePrompt ?? null,
           width: input.width,
           height: input.height,
           credits_used: 0,
@@ -590,14 +603,14 @@ Deno.serve(async (req: Request) => {
 
     const bucketError = await ensurePrivateBucket(supabase, STORAGE_BUCKET);
     if (bucketError) {
-      await updateGenerationError(supabase, generationId, startedAt, `bucket_error: ${bucketError}`);
+      await updateGenerationError(supabase, generationId, startedAt, `bucket_error: ${bucketError}`, input.prompt.length, input.negativePrompt ?? null);
       return json({ error: "storage_bucket_error", details: bucketError }, 500, headers);
     }
 
     if (input.strictIdentity) {
       if (!input.subjectImageUrl) {
         const details = "strictIdentity=true requires subjectImageUrl.";
-        await updateGenerationError(supabase, generationId, startedAt, details);
+        await updateGenerationError(supabase, generationId, startedAt, details, input.prompt.length, input.negativePrompt ?? null);
         return json(
           {
             error: "strict_identity_requires_subject",
@@ -621,7 +634,7 @@ Deno.serve(async (req: Request) => {
         preprocessedSubject = await preprocessSubjectImage(input.subjectImageUrl);
       } catch (e) {
         const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
-        await updateGenerationError(supabase, generationId, startedAt, `strict_preprocess_error: ${details}`);
+        await updateGenerationError(supabase, generationId, startedAt, `strict_preprocess_error: ${details}`, input.prompt.length, input.negativePrompt ?? null);
         return json(
           {
             error: "strict_identity_preprocess_failed",
@@ -640,24 +653,11 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      const strictStyleReferences = await Promise.all(
-        input.referenceImages
-          .filter((entry) => entry.role === "style" && Boolean(entry.url))
-          .slice(0, 2)
-          .map(async (entry) => {
-            const fetched = await fetchImageAsBase64(entry.url);
-            return {
-              base64: fetched.base64,
-              mime: fetched.mime,
-              weight: entry.weight,
-              url: entry.url,
-            };
-          }),
-      );
-
       const strictProviderErrors: Array<{ providerName: string; details: string }> = [];
-      const fallbackProvider = getProvider("replicate-flux-kontext-pro");
-      let strictProviderUsed = selectedProvider;
+      const fallbackProvider = REPLICATE_API_TOKEN
+        ? new ReplicateFluxKontextProvider({ token: REPLICATE_API_TOKEN })
+        : null;
+      let strictProviderName = selectedProvider.name;
       let strictPayloadKind = "strict_unknown";
       let strictRaw: unknown = null;
       let strictBase64 = "";
@@ -683,9 +683,11 @@ Deno.serve(async (req: Request) => {
             height: preprocessedSubject.height,
             hash: preprocessedSubject.hash,
           },
-          styleReferences: strictStyleReferences,
         });
         strictBase64 = result.base64;
+        if (!strictBase64.trim()) {
+          throw new Error("strict_provider_empty_base64");
+        }
         strictPayloadKind = result.payloadKind;
         strictRaw = result.raw ?? null;
       } catch (primaryError) {
@@ -694,51 +696,42 @@ Deno.serve(async (req: Request) => {
           details: String((primaryError as { message?: string })?.message ?? primaryError).slice(0, 1200),
         });
         fallbackUsed = true;
-        strictProviderUsed = fallbackProvider;
-        try {
-          const fallbackResult = await fallbackProvider.generateImageToImageStrict({
-            prompt: input.prompt,
-            negativePrompt: input.negativePrompt,
-            width: input.width,
-            height: input.height,
-            seed: input.seed,
-            module: input.module,
-            strictIdentity: input.strictIdentity,
-            identityStrength: input.identityStrength,
-            styleStrength: input.styleStrength,
-            referenceImagesCount: input.referenceImages.length,
-            subjectImage: {
-              base64: preprocessedSubject.base64,
-              mime: preprocessedSubject.mime,
-              dataUrl: preprocessedSubject.dataUrl,
-              width: preprocessedSubject.width,
-              height: preprocessedSubject.height,
-              hash: preprocessedSubject.hash,
-            },
-            styleReferences: strictStyleReferences,
-          });
-          strictBase64 = fallbackResult.base64;
-          strictPayloadKind = fallbackResult.payloadKind;
-          strictRaw = fallbackResult.raw ?? null;
-        } catch (fallbackError) {
-          strictProviderErrors.push({
-            providerName: fallbackProvider.name,
-            details: String((fallbackError as { message?: string })?.message ?? fallbackError).slice(0, 1200),
-          });
+
+        if (fallbackProvider) {
+          strictProviderName = fallbackProvider.name;
+          try {
+            const fallbackResult = await fallbackProvider.generateImageToImageStrict({
+              prompt: input.prompt,
+              subjectImageBase64: preprocessedSubject.base64,
+              subjectImageMime: preprocessedSubject.mime,
+              identityStrength: input.identityStrength ?? 90,
+            });
+            strictBase64 = fallbackResult.imageBase64;
+            strictPayloadKind = fallbackResult.meta.payloadKind;
+            strictRaw = fallbackResult.meta;
+          } catch (fallbackError) {
+            strictProviderErrors.push({
+              providerName: fallbackProvider.name,
+              details: String((fallbackError as { message?: string })?.message ?? fallbackError).slice(0, 1200),
+            });
+          }
+        }
+
+        if (!strictBase64) {
           const strictDetails = JSON.stringify(strictProviderErrors).slice(0, 1200);
-          await updateGenerationError(supabase, generationId, startedAt, `strict_provider_unavailable: ${strictDetails}`);
+          await updateGenerationError(supabase, generationId, startedAt, `strict_provider_unavailable: ${strictDetails}`, input.prompt.length, input.negativePrompt ?? null);
           return json(
             {
               error: "strict_identity_provider_unavailable",
               details: strictDetails,
               meta: {
-                providerName: fallbackProvider.name,
+                providerName: fallbackProvider?.name ?? selectedProvider.name,
                 modeUsed: "strict_identity",
                 strictIdentity: true,
                 identityStrength: input.identityStrength,
                 styleStrength: input.styleStrength,
                 payloadKind: "strict_both_failed",
-                gemini_failed_then_replicate: true,
+                gemini_failed_then_replicate: fallbackUsed,
                 preprocess: {
                   flags: preprocessedSubject.flags,
                   hash: preprocessedSubject.hash,
@@ -747,7 +740,7 @@ Deno.serve(async (req: Request) => {
                 },
               },
             },
-            500,
+            503,
             headers,
           );
         }
@@ -776,7 +769,7 @@ Deno.serve(async (req: Request) => {
       }
 
       if (uploadError) {
-        await updateGenerationError(supabase, generationId, startedAt, `storage_upload_error: ${uploadError.message}`);
+        await updateGenerationError(supabase, generationId, startedAt, `storage_upload_error: ${uploadError.message}`, input.prompt.length, input.negativePrompt ?? null);
         return json({ error: "storage_upload_error", details: uploadError.message }, 500, headers);
       }
 
@@ -785,7 +778,7 @@ Deno.serve(async (req: Request) => {
         .createSignedUrl(strictPath, signedUrlTtl);
 
       if (signedError || !signedData?.signedUrl) {
-        await updateGenerationError(supabase, generationId, startedAt, `signed_url_error: ${String(signedError?.message ?? "missing_signed_url")}`);
+        await updateGenerationError(supabase, generationId, startedAt, `signed_url_error: ${String(signedError?.message ?? "missing_signed_url")}`, input.prompt.length, input.negativePrompt ?? null);
         return json({ error: "signed_url_error", details: signedError?.message ?? "missing_signed_url" }, 500, headers);
       }
 
@@ -796,7 +789,7 @@ Deno.serve(async (req: Request) => {
           .update({
             status: "ok",
             duration_ms: Date.now() - startedAt,
-            provider: strictProviderUsed.name,
+            provider: strictProviderName,
             bucket: STORAGE_BUCKET,
             path: strictPath,
             signed_url: signedData.signedUrl,
@@ -804,6 +797,8 @@ Deno.serve(async (req: Request) => {
             width: input.width,
             height: input.height,
             prompt: input.prompt,
+            prompt_len: input.prompt.length,
+            negative_prompt: input.negativePrompt ?? null,
             credits_used: creditsUsed,
             meta: {
               module: input.module,
@@ -813,7 +808,7 @@ Deno.serve(async (req: Request) => {
               identityStrength: input.identityStrength,
               styleStrength: input.styleStrength,
               modeUsed: "strict_identity",
-              providerName: strictProviderUsed.name,
+              providerName: strictProviderName,
               referenceImagesCount: input.referenceImages.length,
               payloadKind: strictPayloadKind,
               gemini_failed_then_replicate: fallbackUsed,
@@ -836,7 +831,7 @@ Deno.serve(async (req: Request) => {
       return json(
         {
           generationId,
-          provider: strictProviderUsed.name,
+          provider: strictProviderName,
           bucket: STORAGE_BUCKET,
           path: strictPath,
           signedUrl: signedData.signedUrl,
@@ -846,7 +841,7 @@ Deno.serve(async (req: Request) => {
           creditsUsed,
           createdAt,
           meta: {
-            providerName: strictProviderUsed.name,
+            providerName: strictProviderName,
             modeUsed: "strict_identity",
             strictIdentity: true,
             identityStrength: input.identityStrength,
@@ -873,7 +868,7 @@ Deno.serve(async (req: Request) => {
     try {
       serviceAccount = JSON.parse(atob(GCP_SA_KEY_B64));
     } catch {
-      await updateGenerationError(supabase, generationId, startedAt, "invalid_service_account_json");
+      await updateGenerationError(supabase, generationId, startedAt, "invalid_service_account_json", input.prompt.length, input.negativePrompt ?? null);
       return json({ error: "auth_error", details: "Invalid GCP_SA_KEY_B64 payload." }, 500, headers);
     }
 
@@ -915,6 +910,8 @@ Deno.serve(async (req: Request) => {
           generationId,
           startedAt,
           `reference_images_not_supported: ${details}`,
+          input.prompt.length,
+          input.negativePrompt ?? null,
         );
         return json(
           {
@@ -943,6 +940,8 @@ Deno.serve(async (req: Request) => {
           generationId,
           startedAt,
           `reference_images_not_supported: ${details}`,
+          input.prompt.length,
+          input.negativePrompt ?? null,
         );
         return json(
           {
@@ -954,7 +953,7 @@ Deno.serve(async (req: Request) => {
           headers,
         );
       }
-      await updateGenerationError(supabase, generationId, startedAt, `vertex_error: ${details}`);
+      await updateGenerationError(supabase, generationId, startedAt, `vertex_error: ${details}`, input.prompt.length, input.negativePrompt ?? null);
       return json({ error: "vertex_error", details }, 500, headers);
     }
     if (hasReferences && !isCapabilityEndpoint(vertex.value.endpoint)) {
@@ -963,6 +962,8 @@ Deno.serve(async (req: Request) => {
         generationId,
         startedAt,
         `reference_images_not_supported: non_capability_endpoint_used (${vertex.value.endpoint})`,
+        input.prompt.length,
+        input.negativePrompt ?? null,
       );
       return json(
         {
@@ -980,6 +981,8 @@ Deno.serve(async (req: Request) => {
         generationId,
         startedAt,
         `reference_images_not_supported: non_capability_payload_used (${vertex.value.payloadKind})`,
+        input.prompt.length,
+        input.negativePrompt ?? null,
       );
       return json(
         {
@@ -1015,7 +1018,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (uploadError) {
-      await updateGenerationError(supabase, generationId, startedAt, `storage_upload_error: ${uploadError.message}`);
+      await updateGenerationError(supabase, generationId, startedAt, `storage_upload_error: ${uploadError.message}`, input.prompt.length, input.negativePrompt ?? null);
       return json({ error: "storage_upload_error", details: uploadError.message }, 500, headers);
     }
 
@@ -1024,7 +1027,7 @@ Deno.serve(async (req: Request) => {
       .createSignedUrl(path, signedUrlTtl);
 
     if (signedError || !signedData?.signedUrl) {
-      await updateGenerationError(supabase, generationId, startedAt, `signed_url_error: ${String(signedError?.message ?? "missing_signed_url")}`);
+      await updateGenerationError(supabase, generationId, startedAt, `signed_url_error: ${String(signedError?.message ?? "missing_signed_url")}`, input.prompt.length, input.negativePrompt ?? null);
       return json({ error: "signed_url_error", details: signedError?.message ?? "missing_signed_url" }, 500, headers);
     }
 
@@ -1044,6 +1047,8 @@ Deno.serve(async (req: Request) => {
           width: input.width,
           height: input.height,
           prompt: input.prompt,
+          prompt_len: input.prompt.length,
+          negative_prompt: input.negativePrompt ?? null,
           credits_used: creditsUsed,
           meta: {
             module: input.module,
@@ -1053,7 +1058,7 @@ Deno.serve(async (req: Request) => {
             identityStrength: input.identityStrength,
             styleStrength: input.styleStrength,
             modeUsed,
-            providerName: selectedProvider.name,
+            providerName: provider,
             aspectRatio,
             referenceImagesCount: input.referenceImages.length,
             referenceImages: input.referenceImages.map((entry) => ({
@@ -1088,7 +1093,7 @@ Deno.serve(async (req: Request) => {
         creditsUsed,
         createdAt,
         meta: {
-          providerName: selectedProvider.name,
+          providerName: provider,
           modeUsed,
           strictIdentity: input.strictIdentity,
           identityStrength: input.identityStrength,

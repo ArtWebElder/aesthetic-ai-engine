@@ -23,9 +23,18 @@ function toHex(bytes: Uint8Array) {
 }
 
 function normalizeMime(headerValue: string | null) {
-  const mime = String(headerValue ?? "image/png").split(";")[0].trim().toLowerCase();
-  if (!mime) return "image/png";
+  const mime = String(headerValue ?? "image/jpeg").split(";")[0].trim().toLowerCase();
+  if (!mime) return "image/jpeg";
   return mime;
+}
+
+function isAllowedImageMime(mime: string) {
+  return (
+    mime === "image/jpeg" ||
+    mime === "image/jpg" ||
+    mime === "image/png" ||
+    mime === "image/webp"
+  );
 }
 
 export async function preprocessSubjectImage(url: string): Promise<PreprocessedSubject> {
@@ -35,8 +44,18 @@ export async function preprocessSubjectImage(url: string): Promise<PreprocessedS
   }
 
   const mime = normalizeMime(resp.headers.get("content-type"));
+  if (!isAllowedImageMime(mime)) {
+    throw new Error(`subject_unsupported_mime:${mime}`);
+  }
+
   const bytes = new Uint8Array(await resp.arrayBuffer());
   if (!bytes.byteLength) throw new Error("subject_empty");
+
+  // hard limit pra evitar WORKER_LIMIT
+  const MAX_BYTES = 1_500_000; // ~1.5MB
+  if (bytes.byteLength > MAX_BYTES) {
+    throw new Error(`subject_too_large:${bytes.byteLength}`);
+  }
 
   const hashBuffer = await crypto.subtle.digest("SHA-256", bytes);
   const hash = toHex(new Uint8Array(hashBuffer));
@@ -44,7 +63,7 @@ export async function preprocessSubjectImage(url: string): Promise<PreprocessedS
   const base64 = encodeBase64(bytes);
   const dataUrl = `data:${mime};base64,${base64}`;
 
-  // NOTE: sem decode por enquanto (pra não quebrar bundle). Voltamos depois com resize/padding real.
+  // Sem decode/resize: leve e não estoura worker
   return {
     dataUrl,
     base64,
