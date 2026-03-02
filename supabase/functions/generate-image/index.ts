@@ -464,6 +464,22 @@ function isCapabilityEndpoint(endpoint: string) {
   return endpoint.includes("/imagen-3.0-capability-001:predict");
 }
 
+function normalizeStrictPayloadKind(providerName: string, payloadKind: string) {
+  if (providerName === "replicate-flux-kontext-pro") {
+    return payloadKind === "replicate_kontext" ? payloadKind : "replicate_kontext";
+  }
+  return payloadKind;
+}
+
+function emptyPreprocessMeta() {
+  return {
+    flags: null,
+    hash: null,
+    width: null,
+    height: null,
+  };
+}
+
 function looksLikeBucketMissing(message: string) {
   const m = message.toLowerCase();
   return m.includes("bucket") && (m.includes("not found") || m.includes("does not exist"));
@@ -707,7 +723,13 @@ Deno.serve(async (req: Request) => {
               identityStrength: input.identityStrength ?? 90,
             });
             strictBase64 = fallbackResult.imageBase64;
-            strictPayloadKind = fallbackResult.meta.payloadKind;
+            if (!strictBase64.trim()) {
+              throw new Error("strict_fallback_empty_base64");
+            }
+            strictPayloadKind = normalizeStrictPayloadKind(
+              fallbackProvider.name,
+              fallbackResult.meta.payloadKind,
+            );
             strictRaw = fallbackResult.meta;
           } catch (fallbackError) {
             strictProviderErrors.push({
@@ -717,13 +739,14 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        if (!strictBase64) {
+        if (!strictBase64.trim()) {
           const strictDetails = JSON.stringify(strictProviderErrors).slice(0, 1200);
           await updateGenerationError(supabase, generationId, startedAt, `strict_provider_unavailable: ${strictDetails}`, input.prompt.length, input.negativePrompt ?? null);
           return json(
             {
               error: "strict_identity_provider_unavailable",
               details: strictDetails,
+              provider: fallbackProvider?.name ?? selectedProvider.name,
               meta: {
                 providerName: fallbackProvider?.name ?? selectedProvider.name,
                 modeUsed: "strict_identity",
@@ -1071,6 +1094,8 @@ Deno.serve(async (req: Request) => {
             vertexPayloadKind: vertex.value.payloadKind,
             usedCapability: hasReferences,
             payloadKind: hasReferences ? "vertex_reference_guidance" : "vertex_text_to_image",
+            gemini_failed_then_replicate: false,
+            preprocess: emptyPreprocessMeta(),
           },
         })
         .eq("id", generationId);
@@ -1103,6 +1128,8 @@ Deno.serve(async (req: Request) => {
           vertexPayloadKind: vertex.value.payloadKind,
           usedCapability: hasReferences,
           payloadKind: hasReferences ? "vertex_reference_guidance" : "vertex_text_to_image",
+          gemini_failed_then_replicate: false,
+          preprocess: emptyPreprocessMeta(),
         },
       },
       200,
