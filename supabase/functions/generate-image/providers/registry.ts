@@ -22,5 +22,6 @@ export function selectProvider(input: { strictIdentity: boolean }): Provider {
   if (input.strictIdentity) {
     return providerRegistry["gemini-nano-banana-pro"];
   }
-  return providerRegistry["vertex-imagen"];
+  // Non-strict: use Replicate Flux for text-to-image (Vertex stub is not implemented)
+  return providerRegistry["replicate-flux-kontext-pro"];
 }

@@ -663,8 +663,8 @@ export default function EditorPage() {
   const stickToFitRef = useRef(true);
   const mobileFitAppliedRef = useRef(false);
   const [canvasViewport, setCanvasViewport] = useState({ width: 0, height: 0 });
-  const [canvasScale, setCanvasScale] = useState(1);
-  const [canvasFitScale, setCanvasFitScale] = useState(1);
+  const [canvasScale, setCanvasScale] = useState(0.5);
+  const [canvasFitScale, setCanvasFitScale] = useState(0.5);
   const [isCanvasPanning, setIsCanvasPanning] = useState(false);
   const [isCanvasSpacePressed, setIsCanvasSpacePressed] = useState(false);
 
@@ -944,8 +944,8 @@ export default function EditorPage() {
     (direction: 1 | -1) => {
       const next =
         direction === 1
-          ? zoomClamp(canvasScale * 1.1)
-          : zoomClamp(canvasScale / 1.1);
+          ? zoomClamp(canvasScale * 1.25)
+          : zoomClamp(canvasScale / 1.25);
       zoomToViewportCenter(next);
     },
     [canvasScale, zoomClamp, zoomToViewportCenter]
@@ -1234,7 +1234,7 @@ export default function EditorPage() {
         ? clampInt(Number(safeSpec.generation.seed), 0, 2_147_483_647)
         : null;
 
-    const strictIdentity = safeSpec.generation.strictIdentity ?? true;
+    const strictIdentityPref = safeSpec.generation.strictIdentity ?? true;
     const identityStrength = clampSize(Number(safeSpec.generation.identityStrength ?? 90), 0, 100);
     const styleStrength = clampSize(Number(safeSpec.generation.styleStrength ?? 45), 0, 100);
     const count = clampInt(
@@ -1251,6 +1251,8 @@ export default function EditorPage() {
     try {
       const generated: Generation[] = [];
       const subjectImageForGenerate = normalizeProjectAssetsUrl(safeSpec.subjectImageUrl) ?? undefined;
+      // Strict identity requires a subject image; fall back to text-to-image mode when none is uploaded
+      const strictIdentity = strictIdentityPref && Boolean(subjectImageForGenerate);
       const styleRefForGenerate =
         styleRefImageUrl || normalizeProjectAssetsUrl(safeSpec.ecomV2?.styleRefImageUrl) || undefined;
       const referencesForGenerate = isEcomV2Template
@@ -2515,7 +2517,14 @@ export default function EditorPage() {
                     }}
                   >
                     <div className="w-full h-full">
-                    {isSocialPost ? (
+                    {bgUrl ? (
+                      <img
+                        src={bgUrl}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover rounded-xl"
+                        draggable={false}
+                      />
+                    ) : isSocialPost ? (
                       (() => {
                         const layoutRaw = (safeSpec.builder.layoutPreset ?? "").trim().toLowerCase();
                         const layoutPreset =
@@ -5377,7 +5386,7 @@ export default function EditorPage() {
               )}
             </div>
 
-            {/* DEBUG */}
+            {import.meta.env.DEV && (
             <div className="pt-8 space-y-2">
               <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.debug.compiled_title")}</div>
               <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
@@ -5387,6 +5396,7 @@ export default function EditorPage() {
                 {t("editor.debug.negative_prefix")} {compiled?.negativePrompt}
               </pre>
             </div>
+            )}
           </div>
         </div>
         )}

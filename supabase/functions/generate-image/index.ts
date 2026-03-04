@@ -680,9 +680,14 @@ Deno.serve(async (req: Request) => {
       }
 
       const strictProviderErrors: Array<{ providerName: string; details: string }> = [];
-      const fallbackProvider = REPLICATE_API_TOKEN
-        ? new ReplicateFluxKontextProvider({ token: REPLICATE_API_TOKEN })
-        : null;
+      let fallbackProvider: ReplicateFluxKontextProvider | null = null;
+      if (REPLICATE_API_TOKEN) {
+        try {
+          fallbackProvider = new ReplicateFluxKontextProvider({ token: REPLICATE_API_TOKEN });
+        } catch {
+          // REPLICATE_FLUX_KONTEXT_PRO_VERSION not set; fallback provider unavailable
+        }
+      }
       let strictProviderName = selectedProvider.name;
       let strictPayloadKind = "strict_unknown";
       let strictRaw: unknown = null;
@@ -964,142 +969,39 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!GCP_PROJECT_ID) return json({ error: "missing_secret", details: "GCP_PROJECT_ID is required." }, 500, headers);
-    if (!GCP_SA_KEY_B64) return json({ error: "missing_secret", details: "GCP_SA_KEY_B64 is required." }, 500, headers);
+    // Non-strict mode: text-to-image via Replicate Flux Kontext Pro
+    let t2iBase64 = "";
+    let t2iPayloadKind = "replicate_t2i_unknown";
+    const t2iProviderName = selectedProvider.name;
 
-    let serviceAccount: { client_email: string; private_key: string };
     try {
-      serviceAccount = JSON.parse(atob(GCP_SA_KEY_B64));
-    } catch {
-      await updateGenerationError(supabase, generationId, startedAt, "invalid_service_account_json", input.prompt.length, input.negativePrompt ?? null);
-      return json({ error: "auth_error", details: "Invalid GCP_SA_KEY_B64 payload." }, 500, headers);
+      const result = await selectedProvider.generateTextToImage({
+        prompt: input.prompt,
+        negativePrompt: input.negativePrompt,
+        width: input.width,
+        height: input.height,
+        seed: input.seed,
+        module: input.module,
+        strictIdentity: false,
+        identityStrength: null,
+        styleStrength: null,
+        referenceImagesCount: input.referenceImages.length,
+      });
+      t2iBase64 = result.base64;
+      t2iPayloadKind = result.payloadKind || "replicate_t2i";
+    } catch (e) {
+      const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
+      await updateGenerationError(supabase, generationId, startedAt, `t2i_error: ${details}`, input.prompt.length, input.negativePrompt ?? null);
+      return json({ error: "t2i_provider_failed", details, provider: t2iProviderName }, 500, headers);
     }
 
-    const token = await getGoogleAccessToken(serviceAccount);
-
-    const hasReferences = input.referenceImages.length > 0;
-    const endpoints = buildVertexEndpoints(GCP_PROJECT_ID, GCP_LOCATION, hasReferences);
-    const endpointTried = endpoints[0] ?? null;
-    let payloads: Array<{ kind: string; payload: Record<string, unknown> }>;
-
-    if (hasReferences) {
-      try {
-        const refsWithBase64 = await Promise.all(
-          input.referenceImages.map(async (entry) => {
-            const fetched = await fetchImageAsBase64(entry.url);
-            console.log(
-              JSON.stringify({
-                msg: "reference_image_loaded",
-                role: entry.role,
-                weight: entry.weight,
-                lockRealism: entry.lockRealism,
-                originalUrl: entry.url,
-                base64SizeBytes: fetched.byteLength,
-              }),
-            );
-            return {
-              role: entry.role,
-              weight: entry.weight,
-              lockRealism: entry.lockRealism,
-              base64: fetched.base64,
-            };
-          }),
-        );
-        payloads = [buildVertexReferencePayload(input, aspectRatio, refsWithBase64)];
-      } catch (e) {
-        const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
-        await updateGenerationError(
-          supabase,
-          generationId,
-          startedAt,
-          `reference_images_not_supported: ${details}`,
-          input.prompt.length,
-          input.negativePrompt ?? null,
-        );
-        return json(
-          {
-            error: "reference_images_not_supported",
-            details,
-            debug: { endpointTried, referenceImagesCount: input.referenceImages.length },
-          },
-          400,
-          headers,
-        );
-      }
-    } else {
-      payloads = buildVertexPayloads(input, aspectRatio);
-    }
-    const vertex = await callVertexWithFallback(token.access_token, endpoints, payloads);
-
-    if (!vertex.ok) {
-      const details = JSON.stringify(vertex.errors).slice(0, 1200);
-      if (hasReferences) {
-        const summary = vertex.errors
-          .map((entry) => `${entry.status ?? "err"}:${entry.payloadKind}`)
-          .slice(0, 3)
-          .join(", ");
-        await updateGenerationError(
-          supabase,
-          generationId,
-          startedAt,
-          `reference_images_not_supported: ${details}`,
-          input.prompt.length,
-          input.negativePrompt ?? null,
-        );
-        return json(
-          {
-            error: "reference_images_not_supported",
-            details: `Provider does not support reference images; switch model or endpoint (${summary || "no_summary"})`,
-            debug: { endpointTried, referenceImagesCount: input.referenceImages.length },
-          },
-          400,
-          headers,
-        );
-      }
-      await updateGenerationError(supabase, generationId, startedAt, `vertex_error: ${details}`, input.prompt.length, input.negativePrompt ?? null);
-      return json({ error: "vertex_error", details }, 500, headers);
-    }
-    if (hasReferences && !isCapabilityEndpoint(vertex.value.endpoint)) {
-      await updateGenerationError(
-        supabase,
-        generationId,
-        startedAt,
-        `reference_images_not_supported: non_capability_endpoint_used (${vertex.value.endpoint})`,
-        input.prompt.length,
-        input.negativePrompt ?? null,
-      );
-      return json(
-        {
-          error: "reference_images_not_supported",
-          details: "Reference images exist but capability endpoint was not used.",
-          debug: { endpointTried, referenceImagesCount: input.referenceImages.length },
-        },
-        400,
-        headers,
-      );
-    }
-    if (hasReferences && vertex.value.payloadKind !== "reference_images_capability") {
-      await updateGenerationError(
-        supabase,
-        generationId,
-        startedAt,
-        `reference_images_not_supported: non_capability_payload_used (${vertex.value.payloadKind})`,
-        input.prompt.length,
-        input.negativePrompt ?? null,
-      );
-      return json(
-        {
-          error: "reference_images_not_supported",
-          details: "Reference images exist but capability payload was not used.",
-          debug: { endpointTried, referenceImagesCount: input.referenceImages.length },
-        },
-        400,
-        headers,
-      );
+    if (!t2iBase64.trim()) {
+      await updateGenerationError(supabase, generationId, startedAt, "t2i_empty_base64", input.prompt.length, input.negativePrompt ?? null);
+      return json({ error: "t2i_empty_response", provider: t2iProviderName }, 500, headers);
     }
 
     const mime = "image/png";
-    const imageBytes = base64ToUint8(vertex.value.base64);
+    const imageBytes = base64ToUint8(t2iBase64);
     const path: string = `anon/${generationId}.png`;
 
     let { error: uploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(path, imageBytes, {
@@ -1142,7 +1044,7 @@ Deno.serve(async (req: Request) => {
         .update({
           status: "ok",
           duration_ms: Date.now() - startedAt,
-          provider,
+          provider: t2iProviderName,
           bucket: STORAGE_BUCKET,
           path,
           signed_url: signedData.signedUrl,
@@ -1155,26 +1057,11 @@ Deno.serve(async (req: Request) => {
           credits_used: creditsUsed,
           meta: {
             module: input.module,
-            negativePrompt: input.negativePrompt,
-            seed: input.seed,
-            strictIdentity: input.strictIdentity,
-            identityStrength: input.identityStrength,
-            styleStrength: input.styleStrength,
-            modeUsed: "legacy",
-            providerName: provider,
+            modeUsed: "text_to_image",
+            providerName: t2iProviderName,
+            payloadKind: t2iPayloadKind,
             aspectRatio,
             referenceImagesCount: input.referenceImages.length,
-            referenceImages: input.referenceImages.map((entry) => ({
-              role: entry.role,
-              weight: entry.weight,
-              lockRealism: entry.lockRealism,
-              url: entry.url,
-            })),
-            vertexEndpoint: vertex.value.endpoint,
-            vertexPayloadKind: vertex.value.payloadKind,
-            usedCapability: hasReferences,
-            payloadKind: hasReferences ? "vertex_reference_guidance" : "vertex_text_to_image",
-            gemini_failed_then_replicate: false,
             preprocess: emptyPreprocessMeta(),
           },
         })
@@ -1188,7 +1075,7 @@ Deno.serve(async (req: Request) => {
     return json(
       {
         generationId,
-        provider,
+        provider: t2iProviderName,
         bucket: STORAGE_BUCKET,
         path,
         signedUrl: signedData.signedUrl,
@@ -1198,17 +1085,11 @@ Deno.serve(async (req: Request) => {
         creditsUsed,
         createdAt,
         meta: {
-          providerName: provider,
-          modeUsed: "legacy",
-          strictIdentity: input.strictIdentity,
-          identityStrength: input.identityStrength,
-          styleStrength: input.styleStrength,
+          providerName: t2iProviderName,
+          modeUsed: "text_to_image",
+          payloadKind: t2iPayloadKind,
+          aspectRatio,
           referenceImagesCount: input.referenceImages.length,
-          vertexEndpoint: vertex.value.endpoint,
-          vertexPayloadKind: vertex.value.payloadKind,
-          usedCapability: hasReferences,
-          payloadKind: hasReferences ? "vertex_reference_guidance" : "vertex_text_to_image",
-          gemini_failed_then_replicate: false,
           preprocess: emptyPreprocessMeta(),
         },
       },
