@@ -1,7 +1,7 @@
 /// <reference lib="deno.ns" />
 import type { Provider } from "./provider.ts";
 
-const GEMINI_MODEL = "gemini-3-pro-image-preview";
+const GEMINI_MODEL = "gemini-2.0-flash-preview-image-generation";
 const GEMINI_TIMEOUT_MS = 60_000;
 
 function clamp01(value: number) {
@@ -16,14 +16,21 @@ function buildGeminiInstruction(input: Parameters<Provider["generateImageToImage
   const variationLevel = Number((1 - clamp01(identityStrength / 100) * 0.85).toFixed(2));
   const styleInfluence = Number(clamp01(styleStrength / 100).toFixed(2));
 
+  const identityDirective =
+    identityStrength >= 90
+      ? "Preserve the exact subject identity with maximum fidelity. The subject must be instantly recognizable as the same person/product. Do not reimagine, stylize, or alter the subject's core features."
+      : identityStrength >= 70
+      ? "Preserve the subject identity closely. Keep core features intact while allowing stylistic adaptation."
+      : "Use the subject as a reference while allowing creative reinterpretation.";
+
   const lines = [
-    "Create a photoreal image variation preserving the exact subject identity.",
-    `Identity lock: ${identityStrength}/100. Variation level: ${variationLevel}.`,
-    `Style influence: ${styleStrength}/100 (${styleInfluence}).`,
-    `Prompt: ${input.prompt}`,
+    `Generate a high-quality photorealistic marketing image based on the reference subject. ${identityDirective}`,
+    `Identity preservation level: ${identityStrength}/100 (visual deviation budget: ${variationLevel}). Style influence: ${styleStrength}/100 (weight: ${styleInfluence}).`,
+    "",
+    input.prompt,
   ];
   if (input.negativePrompt) {
-    lines.push(`Avoid: ${input.negativePrompt}`);
+    lines.push("", `Avoid in the output: ${input.negativePrompt}`);
   }
   return lines.join("\n");
 }

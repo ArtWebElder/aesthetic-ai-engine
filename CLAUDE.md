@@ -2,6 +2,7 @@
 
 > Leia este arquivo inteiro antes de qualquer tarefa e confirme o estágio atual.
 > Não implemente nada sem antes declarar: "Estamos no STAGE X. O próximo diff é Y."
+> Para tasks de geração/prompt/engine, leia também: **CREATYNG_VISUAL_SPEC.md**
 
 ---
 
@@ -26,7 +27,7 @@ Essas são as únicas features que importam agora. Nada mais deve ser implementa
 
 ### 2. Social Post
 - Posts para redes sociais (Instagram, TikTok, Facebook)
-- Headline + subheadline + CTA renderizados com HTML/CSS sobre base gerada pela IA
+- Headline + subheadline + CTA **integrados na imagem pela IA** (não HTML/CSS overlay)
 - Presets de estilo pré-moldados (usuário escolhe, não digita prompt)
 
 ### 3. Photoshoot
@@ -42,7 +43,7 @@ Essas são as únicas features que importam agora. Nada mais deve ser implementa
 - **Frontend:** React + TypeScript + Tailwind CSS + shadcn-ui (Vite)
 - **Backend:** Supabase (Postgres + Storage + Edge Functions em Deno)
 - **IA Engine:** Pipeline multi-modelo com roteamento inteligente
-- **Render:** HTML/CSS server-side (Headless Chromium) para tipografia final — **PENDENTE (STAGE 3)**
+- **Render:** ~~HTML/CSS server-side (Headless Chromium)~~ — **SUSPENSO** (ver decisão abaixo)
 
 ### Pipeline de geração (como deve ser)
 ```
@@ -54,16 +55,18 @@ Prompt Engine (compila spec → prompt interno)
   ↓
 AI Generation (modelo escolhido automaticamente)
   ↓
-Image Base (gerado pela IA — fundo + ambientação + efeitos visuais integrados)
+AI Generation (modelo escolhido automaticamente)
   ↓
-HTML/CSS Render (texto + logo + CTA por cima, com fontes reais) ← PENDENTE
+Imagem final completa (fundo + subject + texto + efeitos — tudo gerado pela IA)
   ↓
 Export 2K / 4K
 ```
 
-**Regra crítica:** texto nunca é gerado pela IA. A IA gera o fundo/ambientação/produto. O texto é renderizado com HTML/CSS por cima, com fontes reais, stroke, shadow, blend-mode.
+**Regra crítica (ATUALIZADA):** A IA gera o criativo COMPLETO — fundo, ambientação, subject, tipografia integrada e efeitos visuais. O texto é instruído via `[TYPOGRAPHY_BLOCK]` no prompt e faz parte da imagem, com textura e blend ambientados. Não há renderização HTML/CSS por cima.
 
 **Regra crítica 2:** efeitos visuais (bokeh, vidro, névoa, neon) são DESCRITOS NO PROMPT para a IA gerar como parte da imagem. Não são CSS compostos por cima.
+
+**Decisão arquitetural (2026-03):** Stage 3 (HTML/CSS renderer) está **SUSPENSO**. A abordagem IA-first produz resultados muito superiores para criativos ambientados. Overlays CSS produziam camadas desconexas sem integração visual.
 
 ### Arquivos principais (fonte única de verdade)
 - `src/features/editor/EditorPage.tsx` — editor principal
@@ -188,20 +191,26 @@ Toda feature nova: primeiro cria a estrutura interna → depois aplica i18n → 
 STAGE 0 — Mapping         ✅ CONCLUÍDO  (CLAUDE.md criado, arquitetura mapeada)
 STAGE 1 — Strict Providers ✅ CONCLUÍDO  (Gemini IMG2IMG + Replicate Kontext Pro + fallback)
 STAGE 2 — Preprocess       ✅ CONCLUÍDO  (alpha, upscale 1024px, padding 12%, SHA-256 hash)
-STAGE 3 — Renderer         ❌ PENDENTE   (HTML/CSS server-side para texto final)
+STAGE 3 — Renderer         ⏸ SUSPENSO   (HTML/CSS overlay substituído por IA-first — ver decisão em CREATYNG_VISUAL_SPEC.md)
 STAGE 4 — Editor UX        🔧 EM CURSO   (canvas limpo, bugs ativos — ver seção abaixo)
+STAGE 4b — Engine Quality  🔧 EM CURSO   (prompt 5-block, moods detalhados, modelo Gemini correto)
 STAGE 5 — MVP Polish       ❌ PENDENTE   (landing page, billing, testes)
 ```
 
-### 🐛 BUGS ATIVOS NO STAGE 4 (a corrigir antes de avançar para STAGE 3)
+### 🐛 BUGS ATIVOS NO STAGE 4 (pendentes)
 
-1. **Canvas pré-poluído** — `spec-defaults.ts` define `headline`, `subheadline`, `ctaText`, `price` com valores default ("New Collection", "Shop now" etc). O canvas exibe esses textos mesmo antes de qualquer imagem ser gerada. **Fix:** zerar os defaults de content.
+1. **Canvas pré-poluído** — `spec-defaults.ts` pode ainda ter defaults de content. **Fix:** zerar os defaults de content (headline: "", subheadline: "", ctaText: "").
 
-2. **Scene props com defaults ativos** — `scene-props.ts` define `SCENE_PROP_DEFAULTS` com `["floating_elements", "bokeh_lights"]` para social_post. Esses overlays CSS aparecem no canvas mesmo sem imagem, sem contexto. **Fix:** zerar defaults; usuário escolhe ativamente.
+2. **Scene props com defaults ativos** — `scene-props.ts` pode ter `SCENE_PROP_DEFAULTS` não-vazios. **Fix:** zerar defaults; usuário escolhe ativamente.
 
-3. **Overlays CSS compostos sobre a imagem (abordagem errada)** — `overlay-library.tsx` e `renderSceneOverlays()` em `EditorPage.tsx` renderizam divs CSS (vidro, bokeh, névoa) por cima da imagem gerada. Isso cria camadas desconexas sem ambientação. **Fix:** remover a composição CSS; os scene props devem apenas influenciar o prompt para que a IA gere esses efeitos nativamente.
+3. **Overlays CSS compostos sobre a imagem** — `EditorPage.tsx` pode ainda renderizar divs CSS (vidro, bokeh, névoa) por cima. **Fix:** remover CSS overlays; scene props influenciam apenas o prompt.
 
-4. **`compositeAwareLine` no prompt-compiler** — instrui a IA a "preparar o fundo para overlays post-composite". Com a correção acima, esse conceito deixa de existir. **Fix:** remover o bloco `COMPOSITE_OVERLAY_PROPS` e `compositeAwareLine`.
+### ✅ CORREÇÕES APLICADAS NO STAGE 4b (Engine Quality)
+
+1. **Gemini model ID corrigido** — era `gemini-3-pro-image-preview` (inexistente), agora `gemini-2.0-flash-preview-image-generation`.
+2. **Prompt compiler reescrito** — 5 blocos de linguagem natural (STYLE / SUBJECT / SCENE / TYPOGRAPHY / QUALITY) em vez de sopa de labels CSV.
+3. **Scene mood descriptions expandidas** — de 3 palavras para instruções fotográficas completas com iluminação, partículas, atmosfera.
+4. **Decisão IA-first** — tipografia integrada pela IA na cena; Stage 3 HTML/CSS suspenso.
 
 ---
 

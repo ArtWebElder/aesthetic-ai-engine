@@ -607,5 +607,6 @@
   "editor.mobile.tab_style": "Style",
   "editor.mobile.tab_advanced": "Advanced",
   "editor.mobile.edit": "Edit",
-  "editor.mobile.generate": "Generate"
+  "editor.mobile.generate": "Generate",
+  "editor.canvas.placeholder": "Generates your result image"
 }
