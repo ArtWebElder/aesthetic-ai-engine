@@ -386,3 +386,203 @@ export function renderSceneOverlays(
 }
 
 export { OVERLAY_DEFINITIONS };
+
+// ─── Canvas 2D draw functions (para export 2K) ────────────────────────────────
+// Espelham os overlays CSS/SVG acima usando apenas a Canvas 2D API.
+// Usadas em exportSocialPost2K para que o PNG baixado inclua os mesmos efeitos.
+
+function drawFloatingGlass(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.save();
+  // Shards escalados proporcionalmente ao canvas (viewBox original 400×600)
+  const sx = w / 400;
+  const sy = h / 600;
+
+  const shards: [number, number][][] = [
+    [[60, 95], [140, 70], [165, 145], [80, 165]],
+    [[275, 45], [340, 30], [360, 95], [298, 108]],
+    [[330, 240], [375, 225], [385, 275], [342, 285]],
+    [[40, 340], [72, 325], [80, 362], [50, 375]],
+    [[200, 480], [255, 460], [268, 510], [215, 525]],
+  ];
+
+  for (const pts of shards) {
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0] * sx, pts[0][1] * sy);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0] * sx, pts[i][1] * sy);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.38)";
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+  }
+
+  // Linhas especulares
+  ctx.strokeStyle = "rgba(255,255,255,0.6)";
+  ctx.lineWidth = 0.5;
+  ctx.beginPath(); ctx.moveTo(140 * sx, 70 * sy); ctx.lineTo(165 * sx, 145 * sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(340 * sx, 30 * sy); ctx.lineTo(360 * sx, 95 * sy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(72 * sx, 325 * sy); ctx.lineTo(80 * sx, 362 * sy); ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawBokehOrbs(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  const orbs: [number, number, number, string][] = [
+    [w * 0.08 + w * 0.14, h * 0.05 + h * 0.14, w * 0.14, "rgba(255,215,100,0.42)"],
+    [w * 0.78 + w * 0.11, h * 0.03 + h * 0.11, w * 0.11, "rgba(180,210,255,0.38)"],
+    [w * 0.6 + w * 0.07, h * 0.45 + h * 0.07, w * 0.07, "rgba(200,160,255,0.32)"],
+    [w * 0.2 + w * 0.06, h * 0.75 + h * 0.06, w * 0.06, "rgba(130,200,255,0.38)"],
+    [w * 0.55 + w * 0.035, h * 0.3 + h * 0.035, w * 0.035, "rgba(255,255,255,0.45)"],
+  ];
+
+  for (const [cx, cy, r, color] of orbs) {
+    const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    g.addColorStop(0, color);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
+function drawSmokeFog(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+
+  // Camada base — gradiente ascendente
+  const base = ctx.createLinearGradient(0, h, 0, h * 0.4);
+  base.addColorStop(0, "rgba(210,215,230,0.18)");
+  base.addColorStop(1, "rgba(210,215,230,0)");
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, w, h);
+
+  // Elipse esquerda
+  const left = ctx.createRadialGradient(w * 0.3, h * 0.85, 0, w * 0.3, h * 0.85, w * 0.35);
+  left.addColorStop(0, "rgba(220,225,240,0.22)");
+  left.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = left;
+  ctx.fillRect(0, 0, w, h);
+
+  // Elipse direita
+  const right = ctx.createRadialGradient(w * 0.75, h * 0.9, 0, w * 0.75, h * 0.9, w * 0.3);
+  right.addColorStop(0, "rgba(215,220,235,0.18)");
+  right.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = right;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.restore();
+}
+
+function drawNeonGlow(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  ctx.globalAlpha = 0.65;
+
+  // Glow principal — arco-íris na base
+  const main = ctx.createRadialGradient(w * 0.5, h * 1.2, 0, w * 0.5, h * 1.2, h * 0.9);
+  main.addColorStop(0, "rgba(0,210,255,0.28)");
+  main.addColorStop(0.35, "rgba(120,0,255,0.14)");
+  main.addColorStop(0.65, "rgba(255,0,140,0.08)");
+  main.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = main;
+  ctx.fillRect(0, 0, w, h);
+
+  // Linha topo — cyan
+  ctx.globalAlpha = 0.65;
+  const top = ctx.createLinearGradient(w * 0.1, 0, w * 0.9, 0);
+  top.addColorStop(0, "rgba(0,0,0,0)");
+  top.addColorStop(0.35, "rgba(0,210,255,0.7)");
+  top.addColorStop(0.65, "rgba(120,0,255,0.5)");
+  top.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = top;
+  ctx.fillRect(w * 0.1, 0, w * 0.8, 3);
+
+  // Reflexo lateral esquerdo — magenta
+  const left = ctx.createRadialGradient(0, h * 0.4, 0, 0, h * 0.4, w * 0.25);
+  left.addColorStop(0, "rgba(255,0,140,0.18)");
+  left.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = left;
+  ctx.fillRect(0, 0, w, h);
+
+  ctx.restore();
+}
+
+function drawReflection(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.save();
+  ctx.globalAlpha = 0.5;
+
+  // Gradiente de reflexo — parte inferior
+  const grad = ctx.createLinearGradient(0, h * 0.68, 0, h);
+  grad.addColorStop(0, "rgba(255,255,255,0)");
+  grad.addColorStop(0.5, "rgba(255,255,255,0.04)");
+  grad.addColorStop(1, "rgba(255,255,255,0.1)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, h * 0.68, w, h * 0.32);
+
+  // Linha de separação chão/reflexo
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.05, h * 0.69);
+  ctx.lineTo(w * 0.95, h * 0.69);
+  ctx.stroke();
+
+  // Shimmer central
+  const shimmer = ctx.createRadialGradient(w * 0.5, h, 0, w * 0.5, h, w * 0.35);
+  shimmer.addColorStop(0, "rgba(255,255,255,0.12)");
+  shimmer.addColorStop(1, "rgba(0,0,0,0)");
+  ctx.fillStyle = shimmer;
+  ctx.fillRect(0, h * 0.75, w, h * 0.25);
+
+  ctx.restore();
+}
+
+function drawSoftShadow(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  ctx.save();
+  ctx.globalAlpha = 0.6;
+
+  const cx = w * 0.5;
+  const cy = h * 0.92;
+  const rx = w * 0.28;
+  const ry = h * 0.07;
+
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(rx, ry));
+  g.addColorStop(0, "rgba(0,0,0,0.35)");
+  g.addColorStop(1, "rgba(0,0,0,0)");
+
+  ctx.scale(1, ry / rx); // achatar em elipse
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy * (rx / ry), rx, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/**
+ * Aplica os overlays de scene props diretamente no CanvasRenderingContext2D.
+ * Chamada no exportSocialPost2K para que o PNG exportado inclua os mesmos efeitos
+ * que aparecem no preview HTML.
+ */
+export function drawOverlaysOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  sceneProps: string[]
+): void {
+  for (const prop of sceneProps) {
+    if (prop === "floating_elements") drawFloatingGlass(ctx, w, h);
+    if (prop === "bokeh_lights")      drawBokehOrbs(ctx, w, h);
+    if (prop === "smoke_haze")        drawSmokeFog(ctx, w, h);
+    if (prop === "neon_glow")         drawNeonGlow(ctx, w, h);
+    if (prop === "reflection_surface") drawReflection(ctx, w, h);
+    if (prop === "soft_shadow")       drawSoftShadow(ctx, w, h);
+  }
+}

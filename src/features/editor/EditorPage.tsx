@@ -64,7 +64,7 @@ import {
 } from "@/features/editor/scene-props";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 import { summarizeSpec } from "@/features/engine/prompt-summarizer";
-import { renderSceneOverlays } from "@/features/editor/overlay-library";
+import { renderSceneOverlays, drawOverlaysOnCanvas, OVERLAY_DEFINITIONS } from "@/features/editor/overlay-library";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2084,6 +2084,12 @@ export default function EditorPage() {
         ctx.drawImage(overlay, 0, 0, canvasWidth, canvasHeight);
       }
 
+      // Scene prop overlays — compostos em cima da imagem gerada (espelha o preview HTML)
+      const exportSceneProps = safeSpec.builder?.sceneProps ?? [];
+      if (exportSceneProps.length > 0) {
+        drawOverlaysOnCanvas(ctx, canvasWidth, canvasHeight, exportSceneProps);
+      }
+
       downloadCanvas(canvas);
     } catch (err) {
       console.warn("2K export fallback due to image/CORS issue:", err);
@@ -3675,30 +3681,45 @@ export default function EditorPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="rounded-md border border-border p-2 space-y-2">
-                    <div className="text-[11px] text-muted-foreground">
-                      {t("editor.scene.props.placeholder")}
-                    </div>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {SCENE_PROP_OPTIONS.map((option) => {
                       const checked = currentSceneProps.includes(option);
+                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
                       return (
-                        <label
+                        <button
                           key={option}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                          type="button"
+                          onClick={() => {
+                            const nextValues = checked
+                              ? currentSceneProps.filter((item) => item !== option)
+                              : [...currentSceneProps, option];
+                            persistSocialPostBuilderPatch({
+                              sceneProps: normalizeSceneProps(nextValues, "social_post"),
+                            });
+                          }}
+                          className={[
+                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                            checked
+                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                          ].join(" ")}
                         >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => {
-                              const nextValues = checked
-                                ? currentSceneProps.filter((item) => item !== option)
-                                : [...currentSceneProps, option];
-                              persistSocialPostBuilderPatch({
-                                sceneProps: normalizeSceneProps(nextValues, "social_post"),
-                              });
-                            }}
-                          />
-                          {t(getScenePropLabelKey(option))}
-                        </label>
+                          {overlayDef && (
+                            <div className="absolute inset-0 pointer-events-none opacity-60">
+                              {overlayDef.render(overlayDef.defaultOpacity)}
+                            </div>
+                          )}
+                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                              {t(getScenePropLabelKey(option))}
+                            </span>
+                            {checked && (
+                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                <Check className="h-2 w-2 text-primary-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -4232,30 +4253,45 @@ export default function EditorPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="rounded-md border border-border p-2 space-y-2">
-                    <div className="text-[11px] text-muted-foreground">
-                      {t("editor.scene.props.placeholder")}
-                    </div>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {SCENE_PROP_OPTIONS.map((option) => {
                       const checked = currentSceneProps.includes(option);
+                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
                       return (
-                        <label
+                        <button
                           key={option}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                          type="button"
+                          onClick={() => {
+                            const nextValues = checked
+                              ? currentSceneProps.filter((item) => item !== option)
+                              : [...currentSceneProps, option];
+                            persistPhotoshootBuilderPatch({
+                              sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
+                            });
+                          }}
+                          className={[
+                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                            checked
+                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                          ].join(" ")}
                         >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => {
-                              const nextValues = checked
-                                ? currentSceneProps.filter((item) => item !== option)
-                                : [...currentSceneProps, option];
-                              persistPhotoshootBuilderPatch({
-                                sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
-                              });
-                            }}
-                          />
-                          {t(getScenePropLabelKey(option))}
-                        </label>
+                          {overlayDef && (
+                            <div className="absolute inset-0 pointer-events-none opacity-60">
+                              {overlayDef.render(overlayDef.defaultOpacity)}
+                            </div>
+                          )}
+                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                              {t(getScenePropLabelKey(option))}
+                            </span>
+                            {checked && (
+                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                <Check className="h-2 w-2 text-primary-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -4402,30 +4438,45 @@ export default function EditorPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="rounded-md border border-border p-2 space-y-2">
-                    <div className="text-[11px] text-muted-foreground">
-                      {t("editor.scene.props.placeholder")}
-                    </div>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {SCENE_PROP_OPTIONS.map((option) => {
                       const checked = currentSceneProps.includes(option);
+                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
                       return (
-                        <label
+                        <button
                           key={option}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                          type="button"
+                          onClick={() => {
+                            const nextValues = checked
+                              ? currentSceneProps.filter((item) => item !== option)
+                              : [...currentSceneProps, option];
+                            persistEcomBuilderPatch({
+                              sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
+                            });
+                          }}
+                          className={[
+                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                            checked
+                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                          ].join(" ")}
                         >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => {
-                              const nextValues = checked
-                                ? currentSceneProps.filter((item) => item !== option)
-                                : [...currentSceneProps, option];
-                              persistEcomBuilderPatch({
-                                sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
-                              });
-                            }}
-                          />
-                          {t(getScenePropLabelKey(option))}
-                        </label>
+                          {overlayDef && (
+                            <div className="absolute inset-0 pointer-events-none opacity-60">
+                              {overlayDef.render(overlayDef.defaultOpacity)}
+                            </div>
+                          )}
+                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                              {t(getScenePropLabelKey(option))}
+                            </span>
+                            {checked && (
+                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                <Check className="h-2 w-2 text-primary-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
