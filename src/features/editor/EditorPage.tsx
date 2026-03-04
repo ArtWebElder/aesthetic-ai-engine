@@ -663,8 +663,8 @@ export default function EditorPage() {
   const stickToFitRef = useRef(true);
   const mobileFitAppliedRef = useRef(false);
   const [canvasViewport, setCanvasViewport] = useState({ width: 0, height: 0 });
-  const [canvasScale, setCanvasScale] = useState(1);
-  const [canvasFitScale, setCanvasFitScale] = useState(1);
+  const [canvasScale, setCanvasScale] = useState(0.5);
+  const [canvasFitScale, setCanvasFitScale] = useState(0.5);
   const [isCanvasPanning, setIsCanvasPanning] = useState(false);
   const [isCanvasSpacePressed, setIsCanvasSpacePressed] = useState(false);
 
@@ -944,8 +944,8 @@ export default function EditorPage() {
     (direction: 1 | -1) => {
       const next =
         direction === 1
-          ? zoomClamp(canvasScale * 1.1)
-          : zoomClamp(canvasScale / 1.1);
+          ? zoomClamp(canvasScale * 1.25)
+          : zoomClamp(canvasScale / 1.25);
       zoomToViewportCenter(next);
     },
     [canvasScale, zoomClamp, zoomToViewportCenter]
@@ -2517,7 +2517,14 @@ export default function EditorPage() {
                     }}
                   >
                     <div className="w-full h-full">
-                    {isSocialPost ? (
+                    {bgUrl ? (
+                      <img
+                        src={bgUrl}
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover rounded-xl"
+                        draggable={false}
+                      />
+                    ) : isSocialPost ? (
                       (() => {
                         const layoutRaw = (safeSpec.builder.layoutPreset ?? "").trim().toLowerCase();
                         const layoutPreset =
@@ -5379,7 +5386,7 @@ export default function EditorPage() {
               )}
             </div>
 
-            {/* DEBUG */}
+            {import.meta.env.DEV && (
             <div className="pt-8 space-y-2">
               <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.debug.compiled_title")}</div>
               <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
@@ -5389,6 +5396,7 @@ export default function EditorPage() {
                 {t("editor.debug.negative_prefix")} {compiled?.negativePrompt}
               </pre>
             </div>
+            )}
           </div>
         </div>
         )}
