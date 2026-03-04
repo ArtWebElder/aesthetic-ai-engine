@@ -16,9 +16,9 @@ export const SCENE_PROP_OPTIONS: readonly ScenePropSlug[] = [
 const SCENE_PROP_SET = new Set<string>(SCENE_PROP_OPTIONS);
 
 const SCENE_PROP_DEFAULTS: Record<ModuleType, ScenePropSlug[]> = {
-  social_post: ["floating_elements", "bokeh_lights"],
-  ecom_banner: ["soft_shadow", "reflection_surface"],
-  photoshoot: ["soft_shadow"],
+  social_post: [],
+  ecom_banner: [],
+  photoshoot: [],
 };
 
 const SCENE_PROP_DESCRIPTIONS: Record<ScenePropSlug, string> = {

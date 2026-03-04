@@ -64,7 +64,7 @@ import {
 } from "@/features/editor/scene-props";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 import { summarizeSpec } from "@/features/engine/prompt-summarizer";
-import { renderSceneOverlays, drawOverlaysOnCanvas, OVERLAY_DEFINITIONS } from "@/features/editor/overlay-library";
+import { OVERLAY_DEFINITIONS } from "@/features/editor/overlay-library";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -2084,12 +2084,6 @@ export default function EditorPage() {
         ctx.drawImage(overlay, 0, 0, canvasWidth, canvasHeight);
       }
 
-      // Scene prop overlays — compostos em cima da imagem gerada (espelha o preview HTML)
-      const exportSceneProps = safeSpec.builder?.sceneProps ?? [];
-      if (exportSceneProps.length > 0) {
-        drawOverlaysOnCanvas(ctx, canvasWidth, canvasHeight, exportSceneProps);
-      }
-
       downloadCanvas(canvas);
     } catch (err) {
       console.warn("2K export fallback due to image/CORS issue:", err);
@@ -2816,11 +2810,6 @@ export default function EditorPage() {
                       />
                     )}
                     {/* Scene prop overlays — compostos sobre a imagem gerada pela IA */}
-                    {(safeSpec.builder?.sceneProps?.length ?? 0) > 0 && (
-                      <div className="absolute inset-0 pointer-events-none z-10">
-                        {renderSceneOverlays(safeSpec.builder?.sceneProps ?? [])}
-                      </div>
-                    )}
                     </div>
                   </div>
               </div>

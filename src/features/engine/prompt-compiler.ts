@@ -170,18 +170,6 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? `Scene props: ${scenePropsDescriptions.join(", ")}`
       : null;
 
-  // Props que recebem overlays compostos em cima pelo browser — informa a IA para preparar o fundo
-  const COMPOSITE_OVERLAY_PROPS: Record<string, string> = {
-    floating_elements: "glass shards overlay composited on top (keep upper background areas open and uncluttered)",
-    bokeh_lights: "bokeh light orbs composited in screen mode (background needs dark negative space to receive them)",
-    smoke_haze: "atmospheric fog composited as overlay (generate with strong subject-background separation)",
-    neon_glow: "neon color bloom composited in screen mode (generate dark background areas to receive the glow)",
-  };
-  const compositeProps = cleanedBuilder.sceneProps.filter((p) => p in COMPOSITE_OVERLAY_PROPS);
-  const compositeAwareLine =
-    compositeProps.length > 0
-      ? `POST-COMPOSITE LAYERS: ${compositeProps.map((p) => COMPOSITE_OVERLAY_PROPS[p]).join("; ")}`
-      : null;
   const isLow = intensity <= 40;
   const isHigh = intensity >= 76;
   const isExtreme = intensity >= 85;
@@ -524,7 +512,6 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     scenePresetLine,
     sceneMoodLine,
     scenePropsLine,
-    compositeAwareLine,
     styleHints,
     `template: ${templateId}`,
     effectsHints,

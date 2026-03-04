@@ -168,14 +168,11 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
     referenceImageUrl: null,
 
     content: {
-      headline: module === "ecom_banner" ? "New Collection" : "Your Next Big Win",
-      subheadline:
-        module === "photoshoot"
-          ? "Ultra-clean, studio-grade outputs."
-          : "High-performing creatives in minutes.",
-      ctaText: module === "ecom_banner" ? "Shop now" : "Learn more",
-      price: module === "ecom_banner" ? "$49" : undefined,
-      badgeText: module === "social_post" ? "NEW" : undefined,
+      headline: "",
+      subheadline: "",
+      ctaText: "",
+      price: undefined,
+      badgeText: undefined,
       ecomTextPreset: module === "ecom_banner" ? "glass_label" : undefined,
     },
 
