@@ -2804,6 +2804,15 @@ export default function EditorPage() {
                     </div>
                   </div>
               </div>
+              {/* LOADING OVERLAY */}
+              {isGenerating && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-[2px] rounded-lg md:rounded-2xl pointer-events-none">
+                  <div className="w-9 h-9 rounded-full border-2 border-border border-t-primary animate-spin" />
+                  <div className="text-sm font-medium text-foreground">Gerando imagem...</div>
+                  <div className="text-xs text-muted-foreground">Aguarde alguns segundos</div>
+                </div>
+              )}
+
               <div
                 data-canvas-zoom-controls="true"
                 className="absolute bottom-3 right-3 z-40 flex items-center gap-1 rounded-md border border-border/60 bg-background/90 p-1 text-[11px] backdrop-blur-sm"
@@ -2852,6 +2861,33 @@ export default function EditorPage() {
               </div>
             </div>
           </div>
+
+          {/* GENERATION HISTORY STRIP */}
+          {(project?.generations?.length ?? 0) > 0 && (
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 border-t border-border/30 overflow-x-auto shrink-0">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider shrink-0 pr-1">Histórico</span>
+              {(project.generations ?? []).map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => persist({ ...project, activeGenerationId: g.id })}
+                  title={new Date(g.createdAt).toLocaleString()}
+                  className={[
+                    "flex-none w-12 h-12 rounded-md overflow-hidden border-2 transition-all duration-150 shrink-0",
+                    g.id === project.activeGenerationId
+                      ? "border-primary shadow-sm"
+                      : "border-transparent hover:border-border opacity-70 hover:opacity-100",
+                  ].join(" ")}
+                >
+                  {g.imageUrl ? (
+                    <img src={g.imageUrl} className="w-full h-full object-cover" alt="" draggable={false} />
+                  ) : (
+                    <div className="w-full h-full bg-muted animate-pulse" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* LEFT: INSPECTOR — order-1 to visually appear first */}
@@ -3154,6 +3190,18 @@ export default function EditorPage() {
 
             {!isEcomV2Template ? (
             <div className={fieldSpacing}>
+              {/* STEP 1 */}
+              <div className="flex items-center gap-2 mb-1">
+                <div className={[
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                  safeSpec?.subjectImageUrl ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                ].join(" ")}>
+                  {safeSpec?.subjectImageUrl ? (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : "1"}
+                </div>
+                <span className="text-xs font-semibold text-foreground">Produto / Sujeito</span>
+              </div>
               <div className={sectionTitle}>{t("editor.subject.avatar_photo")}</div>
               <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer transition-all duration-150 hover:bg-muted/50 hover:border-border group">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -3486,6 +3534,23 @@ export default function EditorPage() {
               )}
             </div>
             ) : null}
+
+            {/* STEP 2 */}
+            {!isEcomV2Template && (
+              <div className="flex items-center gap-2 mt-5 mb-1">
+                <div className={[
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                  (safeSpec?.builder?.scenePreset || (safeSpec?.builder?.visualStyle?.length ?? 0) > 0)
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                ].join(" ")}>
+                  {(safeSpec?.builder?.scenePreset || (safeSpec?.builder?.visualStyle?.length ?? 0) > 0) ? (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : "2"}
+                </div>
+                <span className="text-xs font-semibold text-foreground">Cena &amp; Estilo</span>
+              </div>
+            )}
 
             {isPhotoshoot ? (
               <div className="pt-1 space-y-2">
@@ -5347,8 +5412,25 @@ export default function EditorPage() {
               />
             </div>
 
+            {/* STEP 3 */}
+            {!isEcomV2Template && (
+              <div className="flex items-center gap-2 mt-5 mb-1">
+                <div className={[
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                  (project?.generations?.length ?? 0) > 0
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                ].join(" ")}>
+                  {(project?.generations?.length ?? 0) > 0 ? (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : "3"}
+                </div>
+                <span className="text-xs font-semibold text-foreground">Gerar</span>
+              </div>
+            )}
+
             {/* HISTORY */}
-            <div className="pt-8 space-y-2">
+            <div className="pt-4 space-y-2">
               <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.generic.history")}</div>
 
               {(project.generations ?? []).length === 0 ? (
