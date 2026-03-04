@@ -63,6 +63,8 @@ import {
   normalizeSceneProps,
 } from "@/features/editor/scene-props";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
+import { summarizeSpec } from "@/features/engine/prompt-summarizer";
+import { renderSceneOverlays, drawOverlaysOnCanvas, OVERLAY_DEFINITIONS } from "@/features/editor/overlay-library";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -766,6 +768,12 @@ export default function EditorPage() {
   const compiled = useMemo(() => {
     if (!safeSpec) return null;
     return compilePrompt(safeSpec);
+  }, [safeSpec]);
+
+  // resumo legível para o usuário
+  const promptSummary = useMemo(() => {
+    if (!safeSpec) return null;
+    return summarizeSpec(safeSpec);
   }, [safeSpec]);
 
   const paletteMode = safeSpec?.brand.paletteMode ?? "mono";
@@ -2076,6 +2084,12 @@ export default function EditorPage() {
         ctx.drawImage(overlay, 0, 0, canvasWidth, canvasHeight);
       }
 
+      // Scene prop overlays — compostos em cima da imagem gerada (espelha o preview HTML)
+      const exportSceneProps = safeSpec.builder?.sceneProps ?? [];
+      if (exportSceneProps.length > 0) {
+        drawOverlaysOnCanvas(ctx, canvasWidth, canvasHeight, exportSceneProps);
+      }
+
       downloadCanvas(canvas);
     } catch (err) {
       console.warn("2K export fallback due to image/CORS issue:", err);
@@ -2801,9 +2815,24 @@ export default function EditorPage() {
                         showGrid={false}
                       />
                     )}
+                    {/* Scene prop overlays — compostos sobre a imagem gerada pela IA */}
+                    {(safeSpec.builder?.sceneProps?.length ?? 0) > 0 && (
+                      <div className="absolute inset-0 pointer-events-none z-10">
+                        {renderSceneOverlays(safeSpec.builder?.sceneProps ?? [])}
+                      </div>
+                    )}
                     </div>
                   </div>
               </div>
+              {/* LOADING OVERLAY */}
+              {isGenerating && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-[2px] rounded-lg md:rounded-2xl pointer-events-none">
+                  <div className="w-9 h-9 rounded-full border-2 border-border border-t-primary animate-spin" />
+                  <div className="text-sm font-medium text-foreground">Gerando imagem...</div>
+                  <div className="text-xs text-muted-foreground">Aguarde alguns segundos</div>
+                </div>
+              )}
+
               <div
                 data-canvas-zoom-controls="true"
                 className="absolute bottom-3 right-3 z-40 flex items-center gap-1 rounded-md border border-border/60 bg-background/90 p-1 text-[11px] backdrop-blur-sm"
@@ -2852,6 +2881,33 @@ export default function EditorPage() {
               </div>
             </div>
           </div>
+
+          {/* GENERATION HISTORY STRIP */}
+          {(project?.generations?.length ?? 0) > 0 && (
+            <div className="hidden md:flex items-center gap-2 px-4 py-2 border-t border-border/30 overflow-x-auto shrink-0">
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider shrink-0 pr-1">Histórico</span>
+              {(project.generations ?? []).map((g) => (
+                <button
+                  key={g.id}
+                  type="button"
+                  onClick={() => persist({ ...project, activeGenerationId: g.id })}
+                  title={new Date(g.createdAt).toLocaleString()}
+                  className={[
+                    "flex-none w-12 h-12 rounded-md overflow-hidden border-2 transition-all duration-150 shrink-0",
+                    g.id === project.activeGenerationId
+                      ? "border-primary shadow-sm"
+                      : "border-transparent hover:border-border opacity-70 hover:opacity-100",
+                  ].join(" ")}
+                >
+                  {g.imageUrl ? (
+                    <img src={g.imageUrl} className="w-full h-full object-cover" alt="" draggable={false} />
+                  ) : (
+                    <div className="w-full h-full bg-muted animate-pulse" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* LEFT: INSPECTOR — order-1 to visually appear first */}
@@ -3154,6 +3210,18 @@ export default function EditorPage() {
 
             {!isEcomV2Template ? (
             <div className={fieldSpacing}>
+              {/* STEP 1 */}
+              <div className="flex items-center gap-2 mb-1">
+                <div className={[
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                  safeSpec?.subjectImageUrl ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                ].join(" ")}>
+                  {safeSpec?.subjectImageUrl ? (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : "1"}
+                </div>
+                <span className="text-xs font-semibold text-foreground">Produto / Sujeito</span>
+              </div>
               <div className={sectionTitle}>{t("editor.subject.avatar_photo")}</div>
               <label className="w-full rounded-xl border border-dashed border-border/60 bg-muted/30 p-4 flex items-center gap-3 cursor-pointer transition-all duration-150 hover:bg-muted/50 hover:border-border group">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground shrink-0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -3487,6 +3555,23 @@ export default function EditorPage() {
             </div>
             ) : null}
 
+            {/* STEP 2 */}
+            {!isEcomV2Template && (
+              <div className="flex items-center gap-2 mt-5 mb-1">
+                <div className={[
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                  (safeSpec?.builder?.scenePreset || (safeSpec?.builder?.visualStyle?.length ?? 0) > 0)
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                ].join(" ")}>
+                  {(safeSpec?.builder?.scenePreset || (safeSpec?.builder?.visualStyle?.length ?? 0) > 0) ? (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : "2"}
+                </div>
+                <span className="text-xs font-semibold text-foreground">Cena &amp; Estilo</span>
+              </div>
+            )}
+
             {isPhotoshoot ? (
               <div className="pt-1 space-y-2">
                 <label className="text-xs text-muted-foreground">{t("photoshoot.shoot_type.label")}</label>
@@ -3596,30 +3681,45 @@ export default function EditorPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="rounded-md border border-border p-2 space-y-2">
-                    <div className="text-[11px] text-muted-foreground">
-                      {t("editor.scene.props.placeholder")}
-                    </div>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {SCENE_PROP_OPTIONS.map((option) => {
                       const checked = currentSceneProps.includes(option);
+                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
                       return (
-                        <label
+                        <button
                           key={option}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                          type="button"
+                          onClick={() => {
+                            const nextValues = checked
+                              ? currentSceneProps.filter((item) => item !== option)
+                              : [...currentSceneProps, option];
+                            persistSocialPostBuilderPatch({
+                              sceneProps: normalizeSceneProps(nextValues, "social_post"),
+                            });
+                          }}
+                          className={[
+                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                            checked
+                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                          ].join(" ")}
                         >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => {
-                              const nextValues = checked
-                                ? currentSceneProps.filter((item) => item !== option)
-                                : [...currentSceneProps, option];
-                              persistSocialPostBuilderPatch({
-                                sceneProps: normalizeSceneProps(nextValues, "social_post"),
-                              });
-                            }}
-                          />
-                          {t(getScenePropLabelKey(option))}
-                        </label>
+                          {overlayDef && (
+                            <div className="absolute inset-0 pointer-events-none opacity-60">
+                              {overlayDef.render(overlayDef.defaultOpacity)}
+                            </div>
+                          )}
+                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                              {t(getScenePropLabelKey(option))}
+                            </span>
+                            {checked && (
+                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                <Check className="h-2 w-2 text-primary-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -4153,30 +4253,45 @@ export default function EditorPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="rounded-md border border-border p-2 space-y-2">
-                    <div className="text-[11px] text-muted-foreground">
-                      {t("editor.scene.props.placeholder")}
-                    </div>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {SCENE_PROP_OPTIONS.map((option) => {
                       const checked = currentSceneProps.includes(option);
+                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
                       return (
-                        <label
+                        <button
                           key={option}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                          type="button"
+                          onClick={() => {
+                            const nextValues = checked
+                              ? currentSceneProps.filter((item) => item !== option)
+                              : [...currentSceneProps, option];
+                            persistPhotoshootBuilderPatch({
+                              sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
+                            });
+                          }}
+                          className={[
+                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                            checked
+                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                          ].join(" ")}
                         >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => {
-                              const nextValues = checked
-                                ? currentSceneProps.filter((item) => item !== option)
-                                : [...currentSceneProps, option];
-                              persistPhotoshootBuilderPatch({
-                                sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
-                              });
-                            }}
-                          />
-                          {t(getScenePropLabelKey(option))}
-                        </label>
+                          {overlayDef && (
+                            <div className="absolute inset-0 pointer-events-none opacity-60">
+                              {overlayDef.render(overlayDef.defaultOpacity)}
+                            </div>
+                          )}
+                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                              {t(getScenePropLabelKey(option))}
+                            </span>
+                            {checked && (
+                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                <Check className="h-2 w-2 text-primary-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -4323,30 +4438,45 @@ export default function EditorPage() {
 
                 <div className="space-y-1">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="rounded-md border border-border p-2 space-y-2">
-                    <div className="text-[11px] text-muted-foreground">
-                      {t("editor.scene.props.placeholder")}
-                    </div>
+                  <div className="grid grid-cols-2 gap-1.5">
                     {SCENE_PROP_OPTIONS.map((option) => {
                       const checked = currentSceneProps.includes(option);
+                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
                       return (
-                        <label
+                        <button
                           key={option}
-                          className="flex items-center gap-2 text-xs text-muted-foreground"
+                          type="button"
+                          onClick={() => {
+                            const nextValues = checked
+                              ? currentSceneProps.filter((item) => item !== option)
+                              : [...currentSceneProps, option];
+                            persistEcomBuilderPatch({
+                              sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
+                            });
+                          }}
+                          className={[
+                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                            checked
+                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                          ].join(" ")}
                         >
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => {
-                              const nextValues = checked
-                                ? currentSceneProps.filter((item) => item !== option)
-                                : [...currentSceneProps, option];
-                              persistEcomBuilderPatch({
-                                sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
-                              });
-                            }}
-                          />
-                          {t(getScenePropLabelKey(option))}
-                        </label>
+                          {overlayDef && (
+                            <div className="absolute inset-0 pointer-events-none opacity-60">
+                              {overlayDef.render(overlayDef.defaultOpacity)}
+                            </div>
+                          )}
+                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                              {t(getScenePropLabelKey(option))}
+                            </span>
+                            {checked && (
+                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                <Check className="h-2 w-2 text-primary-foreground" />
+                              </div>
+                            )}
+                          </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -5347,8 +5477,25 @@ export default function EditorPage() {
               />
             </div>
 
+            {/* STEP 3 */}
+            {!isEcomV2Template && (
+              <div className="flex items-center gap-2 mt-5 mb-1">
+                <div className={[
+                  "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
+                  (project?.generations?.length ?? 0) > 0
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground",
+                ].join(" ")}>
+                  {(project?.generations?.length ?? 0) > 0 ? (
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  ) : "3"}
+                </div>
+                <span className="text-xs font-semibold text-foreground">Gerar</span>
+              </div>
+            )}
+
             {/* HISTORY */}
-            <div className="pt-8 space-y-2">
+            <div className="pt-4 space-y-2">
               <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.generic.history")}</div>
 
               {(project.generations ?? []).length === 0 ? (
@@ -5386,15 +5533,69 @@ export default function EditorPage() {
               )}
             </div>
 
+            {/* Card de resumo legível — sempre visível */}
+            {promptSummary && (
+              <div className="pt-6 space-y-2">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">
+                  O que será gerado
+                </div>
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2 text-xs">
+                  {/* Cena principal */}
+                  <p className="text-foreground/80 leading-relaxed">{promptSummary.scene}</p>
+
+                  {/* Iluminação */}
+                  {promptSummary.lighting && (
+                    <p className="text-muted-foreground">{promptSummary.lighting}</p>
+                  )}
+
+                  {/* Efeitos/overlays ativos */}
+                  {promptSummary.effects.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {promptSummary.effects.map((ef) => (
+                        <span
+                          key={ef}
+                          className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium"
+                        >
+                          {ef}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Textos */}
+                  {promptSummary.textLayer && (
+                    <p className="text-muted-foreground/70 italic">{promptSummary.textLayer}</p>
+                  )}
+
+                  {/* Assets */}
+                  {promptSummary.assets.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {promptSummary.assets.map((a) => (
+                        <span
+                          key={a}
+                          className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted border border-border/50 text-muted-foreground text-[10px]"
+                        >
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Debug prompt — apenas em desenvolvimento */}
             {import.meta.env.DEV && (
-            <div className="pt-8 space-y-2">
-              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.debug.compiled_title")}</div>
-              <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
-                {compiled?.prompt}
-              </pre>
-              <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
-                {t("editor.debug.negative_prefix")} {compiled?.negativePrompt}
-              </pre>
+            <div className="pt-4 space-y-2">
+              <details>
+                <summary className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground cursor-pointer">{t("editor.debug.compiled_title")}</summary>
+                <pre className="mt-2 text-xs whitespace-pre-wrap text-muted-foreground">
+                  {compiled?.prompt}
+                </pre>
+                <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
+                  {t("editor.debug.negative_prefix")} {compiled?.negativePrompt}
+                </pre>
+              </details>
             </div>
             )}
           </div>
@@ -6107,13 +6308,47 @@ export default function EditorPage() {
                   />
                 </div>
 
-                {/* Debug prompt */}
+                {/* Resumo legível — mobile */}
+                {promptSummary && (
+                  <div className="space-y-2 pt-2 border-t border-border/30">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      O que será gerado
+                    </div>
+                    <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2 text-xs">
+                      <p className="text-foreground/80 leading-relaxed">{promptSummary.scene}</p>
+                      {promptSummary.lighting && (
+                        <p className="text-muted-foreground">{promptSummary.lighting}</p>
+                      )}
+                      {promptSummary.effects.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {promptSummary.effects.map((ef) => (
+                            <span
+                              key={ef}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium"
+                            >
+                              {ef}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {promptSummary.textLayer && (
+                        <p className="text-muted-foreground/70 italic">{promptSummary.textLayer}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Debug prompt — apenas em desenvolvimento */}
+                {import.meta.env.DEV && (
                 <div className="space-y-2 pt-2 border-t border-border/30">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("editor.debug.compiled_title")}</div>
-                  <pre className="text-xs whitespace-pre-wrap text-muted-foreground bg-muted/30 rounded-lg p-3 max-h-[200px] overflow-auto">
-                    {compiled?.prompt}
-                  </pre>
+                  <details>
+                    <summary className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer">{t("editor.debug.compiled_title")}</summary>
+                    <pre className="mt-2 text-xs whitespace-pre-wrap text-muted-foreground bg-muted/30 rounded-lg p-3 max-h-[200px] overflow-auto">
+                      {compiled?.prompt}
+                    </pre>
+                  </details>
                 </div>
+                )}
               </details>
             )}
           </div>

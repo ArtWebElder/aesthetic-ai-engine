@@ -22,16 +22,16 @@ const SCENE_PRESET_DEFAULTS: Record<"social_post" | "ecom_banner" | "photoshoot"
 };
 
 const SCENE_PRESET_DESCRIPTIONS: Record<ScenePresetSlug, string> = {
-  studio_white: "clean seamless white studio background, soft shadows",
-  studio_dark: "dark matte studio backdrop, rim light, high contrast",
-  studio_gradient: "soft gradient studio backdrop, smooth falloff",
-  lifestyle_home: "modern home interior, natural window light",
-  luxury_interior: "high-end interior, marble/wood, warm cinematic light",
-  urban_day: "modern city environment, natural daylight",
-  urban_night: "city night scene, neon accents, cinematic",
-  nature_outdoor: "outdoor natural environment, soft sunlight",
-  minimal_texture: "neutral textured background, subtle material",
-  editorial_backdrop: "editorial photo backdrop, fashion magazine style",
+  studio_white: "seamless white cyc studio, softbox at 45° overhead, clean catch light, infinite floor, product hero framing",
+  studio_dark: "dark charcoal seamless backdrop, single rim light at 70° behind subject, high contrast pools of shadow",
+  studio_gradient: "smooth warm-to-cool gradient backdrop, soft falloff from top center, vignette edges",
+  lifestyle_home: "bright modern living room, floor-to-ceiling windows, natural diffused light at f/2.8, shallow depth of field",
+  luxury_interior: "high-end penthouse interior, Carrara marble floor, brass fixtures, warm ambient at 2800K, volumetric ray from window",
+  urban_day: "glass-and-steel city backdrop, midday natural light, lens flare at frame edge, environmental depth",
+  urban_night: "city nightscape, wet streets reflecting neon signs, teal-orange cinematic grade, 35mm look",
+  nature_outdoor: "lush golden-hour outdoor environment, backlit foliage, soft natural fill, textural ground detail",
+  minimal_texture: "neutral off-white linen texture, ultra soft shadows, near-flat lighting, Scandinavian editorial feel",
+  editorial_backdrop: "fashion-editorial paper backdrop with color treatment, dramatic directional light, high fashion context",
 };
 
 function normalizeModuleForScenePreset(
