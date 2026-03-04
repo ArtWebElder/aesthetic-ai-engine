@@ -1234,7 +1234,7 @@ export default function EditorPage() {
         ? clampInt(Number(safeSpec.generation.seed), 0, 2_147_483_647)
         : null;
 
-    const strictIdentity = safeSpec.generation.strictIdentity ?? true;
+    const strictIdentityPref = safeSpec.generation.strictIdentity ?? true;
     const identityStrength = clampSize(Number(safeSpec.generation.identityStrength ?? 90), 0, 100);
     const styleStrength = clampSize(Number(safeSpec.generation.styleStrength ?? 45), 0, 100);
     const count = clampInt(
@@ -1251,6 +1251,8 @@ export default function EditorPage() {
     try {
       const generated: Generation[] = [];
       const subjectImageForGenerate = normalizeProjectAssetsUrl(safeSpec.subjectImageUrl) ?? undefined;
+      // Strict identity requires a subject image; fall back to text-to-image mode when none is uploaded
+      const strictIdentity = strictIdentityPref && Boolean(subjectImageForGenerate);
       const styleRefForGenerate =
         styleRefImageUrl || normalizeProjectAssetsUrl(safeSpec.ecomV2?.styleRefImageUrl) || undefined;
       const referencesForGenerate = isEcomV2Template

@@ -29,8 +29,92 @@ export const replicateFluxProvider: Provider = {
   supportsStrictIdentity: true,
   supportsStyleReference: true,
 
-  async generateTextToImage() {
-    throw new Error("not_implemented");
+  async generateTextToImage(input) {
+    const token = String(Deno.env.get("REPLICATE_API_TOKEN") ?? "").trim();
+    if (!token) {
+      throw new Error("replicate_missing_api_token");
+    }
+
+    const promptLines = [String(input.prompt ?? "").trim()].filter(Boolean);
+    if (input.negativePrompt) promptLines.push(`Avoid: ${input.negativePrompt}`);
+
+    const createUrl = `https://api.replicate.com/v1/models/${encodeURIComponent(
+      REPLICATE_OWNER,
+    )}/${encodeURIComponent(REPLICATE_NAME)}/predictions`;
+
+    const createResp = await fetch(createUrl, {
+      method: "POST",
+      headers: {
+        authorization: `Token ${token}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        input: {
+          prompt: promptLines.join("\n"),
+        },
+      }),
+    });
+
+    const createText = await createResp.text();
+    const createParsed = createText ? JSON.parse(createText) : null;
+
+    if (!createResp.ok) {
+      throw new Error(
+        `replicate_http_${createResp.status}:${(createText || "request_failed").slice(0, 280)}`,
+      );
+    }
+
+    const pollUrl = String(createParsed?.urls?.get ?? "").trim();
+    if (!pollUrl) {
+      throw new Error("replicate_invalid_response:missing_poll_url");
+    }
+
+    const startedAt = Date.now();
+    let last: any = createParsed;
+
+    while (Date.now() - startedAt < REPLICATE_TIMEOUT_MS) {
+      const status = String(last?.status ?? "");
+      if (status === "succeeded") break;
+      if (status === "failed" || status === "canceled") {
+        throw new Error(
+          `replicate_${status}:${String(last?.error ?? "no_error").slice(0, 280)}`,
+        );
+      }
+
+      await sleep(REPLICATE_POLL_MS);
+
+      const pollResp = await fetch(pollUrl, {
+        method: "GET",
+        headers: { authorization: `Token ${token}` },
+      });
+      const pollText = await pollResp.text();
+      if (!pollResp.ok) {
+        throw new Error(
+          `replicate_poll_http_${pollResp.status}:${(pollText || "poll_failed").slice(0, 280)}`,
+        );
+      }
+      last = pollText ? JSON.parse(pollText) : null;
+    }
+
+    if (String(last?.status ?? "") !== "succeeded") {
+      throw new Error("replicate_timeout");
+    }
+
+    const outputUrl = pickOutputUrl(last);
+    if (!outputUrl) {
+      throw new Error("replicate_invalid_response:missing_output_url");
+    }
+
+    const output = await fetchUrlAsBase64(outputUrl);
+
+    return {
+      base64: output.base64,
+      payloadKind: "replicate_flux_kontext_pro_text_to_image",
+      raw: {
+        status: last?.status,
+        model: `${REPLICATE_OWNER}/${REPLICATE_NAME}`,
+      },
+    };
   },
 
   async generateImageToImageStrict(input) {

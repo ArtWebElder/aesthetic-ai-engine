@@ -9,7 +9,7 @@ export type ProviderGenerateInput = {
   identityStrength: number | null;
   styleStrength: number | null;
   referenceImagesCount: number;
-  subjectImage: {
+  subjectImage?: {
     base64: string;
     mime: string;
     dataUrl: string;
