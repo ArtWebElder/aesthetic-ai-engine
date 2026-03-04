@@ -38,15 +38,6 @@ function getMoodTier(mood: string): MoodTier {
   return "neutral";
 }
 
-function getTypographyStyle(tier: MoodTier): string {
-  if (tier === "drama_impact")
-    return "bold display font with grunge metallic or street-art texture, dramatic letterforms, strong weight, rough edges";
-  if (tier === "clean_premium")
-    return "clean sans-serif bold, high contrast black or white, minimal elegant weight, professional hierarchy";
-  if (tier === "dark_cinematic")
-    return "gothic or heavy serif typeface, white or gold color, cinematic title card feel, dramatic weight";
-  return "bold commercial typography, strong weight, high contrast, legible at any size";
-}
 
 function getTextPosition(module: string): string {
   if (module === "ecom_banner") return "left third or lower third of the frame";
@@ -233,37 +224,13 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
 
   const sceneBlock = sceneParts.length > 1 ? sceneParts.join(" ") : null;
 
-  // ── [TYPOGRAPHY_BLOCK] ────────────────────────────────────────────────────
-  const hasHeadline = Boolean(headline?.trim());
-  const hasSubheadline = Boolean(subheadline?.trim());
-  const hasCta = Boolean(cta?.trim());
-  const hasTypography = (hasHeadline || hasSubheadline) && module !== "photoshoot";
-
-  let typographyBlock: string | null = null;
-  if (hasTypography) {
-    const typoStyle = getTypographyStyle(moodTier);
-    const textPos = getTextPosition(module);
-    const typoParts: string[] = [
-      "TYPOGRAPHY (visually integrated into the scene — part of the image, NOT pasted on top, ambient lighting from the scene must affect the text):",
-    ];
-    if (hasHeadline) {
-      typoParts.push(
-        `Headline text: "${headline!.trim()}" — ${typoStyle}. Occupies 30–40% of image width.`
-      );
-    }
-    if (hasSubheadline) {
-      typoParts.push(
-        `Subheadline: "${subheadline!.trim()}" — smaller, supporting role, same typeface family.`
-      );
-    }
-    if (hasCta) {
-      typoParts.push(`CTA text: "${cta!.trim()}" — compact, strong contrast, clearly readable.`);
-    }
-    typoParts.push(
-      `Text positioned at ${textPos}. Text has depth and texture matching scene mood. All letters must be correctly spelled — no garbled, invented, or distorted characters.`
-    );
-    typographyBlock = typoParts.join(" ");
-  }
+  // ── [SAFE AREA BLOCK] ─────────────────────────────────────────────────────
+  // The AI must NOT render any text in the image. Typography is applied
+  // exclusively by the Canvas 2D renderer (exportSocialPost2K) after generation.
+  const textSafeAreaBlock =
+    module !== "photoshoot"
+      ? `TEXT SAFE AREA: Do NOT render any text, letters, words, numbers, or typographic elements anywhere in the image. The image must be completely free of text. Leave intentional compositional breathing room at ${getTextPosition(module)} — this area will be used for external text overlay and must have sufficient contrast and visual space.`
+      : null;
 
   // ── [QUALITY_BLOCK] ───────────────────────────────────────────────────────
   const qualityParts: string[] = [
@@ -271,29 +238,27 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     "Consistent lighting — the light direction on the subject must match the scene light source. No contradictory dual lighting.",
     "No white halo or edge fringe around the subject. No JPEG artifacts. No pixelation. No over-compression.",
     "No watermarks. No logos from other tools.",
-    module === "photoshoot" ? "No text, no graphic design overlays in the image." : null,
-    hasTypography
-      ? "Typography must be correctly spelled, legible at full size, visually integrated as part of the scene."
-      : null,
+    "No text, no letters, no words, no numbers anywhere in the image.",
     "Print-ready quality. The result must be directly usable in a paid advertising campaign without any additional editing.",
   ];
 
   const qualityBlock = qualityParts.filter(Boolean).join(" ");
 
   // ── Assemble full prompt ──────────────────────────────────────────────────
-  const prompt = [styleBlock, subjectBlock, sceneBlock, typographyBlock, qualityBlock]
+  const prompt = [styleBlock, subjectBlock, sceneBlock, textSafeAreaBlock, qualityBlock]
     .filter(Boolean)
     .join("\n\n");
 
   // ── Negative prompt ───────────────────────────────────────────────────────
   const coreNegative = [
     "plastic skin, waxy face, dead eyes, distorted hands, extra fingers, wrong anatomy, disfigured body",
-    "blurry text, garbled letters, invented words, misspelled text, text floating detached from scene",
     "stock photo generic background, inconsistent lighting, two suns, dual contradictory light sources",
     "white halo around subject, edge fringe, cutout artifact, JPEG noise, pixelated, over-compressed",
     "watermark, tool logo, brand logo overlay, copyright stamp",
+    module !== "photoshoot"
+      ? "text, letters, words, numbers, typography, headline, label, caption, subtitle, watermark text, any written characters"
+      : "text overlay, graphic design element, logo, watermark",
     module === "ecom_banner" ? "wrong product category, unrelated object, replaced product" : null,
-    module === "photoshoot" ? "text overlay, graphic design element, logo, watermark" : null,
   ]
     .filter(Boolean)
     .join(", ");
