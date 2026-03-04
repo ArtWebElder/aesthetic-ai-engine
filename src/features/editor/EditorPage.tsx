@@ -63,6 +63,8 @@ import {
   normalizeSceneProps,
 } from "@/features/editor/scene-props";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
+import { summarizeSpec } from "@/features/engine/prompt-summarizer";
+import { renderSceneOverlays } from "@/features/editor/overlay-library";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -766,6 +768,12 @@ export default function EditorPage() {
   const compiled = useMemo(() => {
     if (!safeSpec) return null;
     return compilePrompt(safeSpec);
+  }, [safeSpec]);
+
+  // resumo legível para o usuário
+  const promptSummary = useMemo(() => {
+    if (!safeSpec) return null;
+    return summarizeSpec(safeSpec);
   }, [safeSpec]);
 
   const paletteMode = safeSpec?.brand.paletteMode ?? "mono";
@@ -2800,6 +2808,12 @@ export default function EditorPage() {
                         imageUrl={bgUrl}
                         showGrid={false}
                       />
+                    )}
+                    {/* Scene prop overlays — compostos sobre a imagem gerada pela IA */}
+                    {(safeSpec.builder?.sceneProps?.length ?? 0) > 0 && (
+                      <div className="absolute inset-0 pointer-events-none z-10">
+                        {renderSceneOverlays(safeSpec.builder?.sceneProps ?? [])}
+                      </div>
                     )}
                     </div>
                   </div>
@@ -5468,15 +5482,69 @@ export default function EditorPage() {
               )}
             </div>
 
+            {/* Card de resumo legível — sempre visível */}
+            {promptSummary && (
+              <div className="pt-6 space-y-2">
+                <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">
+                  O que será gerado
+                </div>
+                <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2 text-xs">
+                  {/* Cena principal */}
+                  <p className="text-foreground/80 leading-relaxed">{promptSummary.scene}</p>
+
+                  {/* Iluminação */}
+                  {promptSummary.lighting && (
+                    <p className="text-muted-foreground">{promptSummary.lighting}</p>
+                  )}
+
+                  {/* Efeitos/overlays ativos */}
+                  {promptSummary.effects.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {promptSummary.effects.map((ef) => (
+                        <span
+                          key={ef}
+                          className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium"
+                        >
+                          {ef}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Textos */}
+                  {promptSummary.textLayer && (
+                    <p className="text-muted-foreground/70 italic">{promptSummary.textLayer}</p>
+                  )}
+
+                  {/* Assets */}
+                  {promptSummary.assets.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {promptSummary.assets.map((a) => (
+                        <span
+                          key={a}
+                          className="inline-flex items-center px-2 py-0.5 rounded-full bg-muted border border-border/50 text-muted-foreground text-[10px]"
+                        >
+                          {a}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Debug prompt — apenas em desenvolvimento */}
             {import.meta.env.DEV && (
-            <div className="pt-8 space-y-2">
-              <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.debug.compiled_title")}</div>
-              <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
-                {compiled?.prompt}
-              </pre>
-              <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
-                {t("editor.debug.negative_prefix")} {compiled?.negativePrompt}
-              </pre>
+            <div className="pt-4 space-y-2">
+              <details>
+                <summary className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground cursor-pointer">{t("editor.debug.compiled_title")}</summary>
+                <pre className="mt-2 text-xs whitespace-pre-wrap text-muted-foreground">
+                  {compiled?.prompt}
+                </pre>
+                <pre className="text-xs whitespace-pre-wrap text-muted-foreground">
+                  {t("editor.debug.negative_prefix")} {compiled?.negativePrompt}
+                </pre>
+              </details>
             </div>
             )}
           </div>
@@ -6189,13 +6257,47 @@ export default function EditorPage() {
                   />
                 </div>
 
-                {/* Debug prompt */}
+                {/* Resumo legível — mobile */}
+                {promptSummary && (
+                  <div className="space-y-2 pt-2 border-t border-border/30">
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      O que será gerado
+                    </div>
+                    <div className="rounded-lg border border-border/50 bg-muted/30 p-3 space-y-2 text-xs">
+                      <p className="text-foreground/80 leading-relaxed">{promptSummary.scene}</p>
+                      {promptSummary.lighting && (
+                        <p className="text-muted-foreground">{promptSummary.lighting}</p>
+                      )}
+                      {promptSummary.effects.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {promptSummary.effects.map((ef) => (
+                            <span
+                              key={ef}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium"
+                            >
+                              {ef}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {promptSummary.textLayer && (
+                        <p className="text-muted-foreground/70 italic">{promptSummary.textLayer}</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Debug prompt — apenas em desenvolvimento */}
+                {import.meta.env.DEV && (
                 <div className="space-y-2 pt-2 border-t border-border/30">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">{t("editor.debug.compiled_title")}</div>
-                  <pre className="text-xs whitespace-pre-wrap text-muted-foreground bg-muted/30 rounded-lg p-3 max-h-[200px] overflow-auto">
-                    {compiled?.prompt}
-                  </pre>
+                  <details>
+                    <summary className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground cursor-pointer">{t("editor.debug.compiled_title")}</summary>
+                    <pre className="mt-2 text-xs whitespace-pre-wrap text-muted-foreground bg-muted/30 rounded-lg p-3 max-h-[200px] overflow-auto">
+                      {compiled?.prompt}
+                    </pre>
+                  </details>
                 </div>
+                )}
               </details>
             )}
           </div>
