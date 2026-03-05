@@ -63,6 +63,7 @@ import {
   getScenePropLabelKey,
   normalizeSceneProps,
 } from "@/features/editor/scene-props";
+import { FONT_OPTIONS, buildGoogleFontsUrl, getFontOption } from "@/features/editor/font-presets";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 import { summarizeSpec } from "@/features/engine/prompt-summarizer";
 import { OVERLAY_DEFINITIONS } from "@/features/editor/overlay-library";
@@ -672,6 +673,18 @@ export default function EditorPage() {
   const [isCanvasSpacePressed, setIsCanvasSpacePressed] = useState(false);
 
   // carrega projeto por ID
+  // Inject Google Fonts once on mount
+  useEffect(() => {
+    const linkId = "creatyng-google-fonts";
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      link.href = buildGoogleFontsUrl();
+      document.head.appendChild(link);
+    }
+  }, []);
+
   useEffect(() => {
     if (!id) return;
     const p = getProject(id) as EditorProject | undefined;
@@ -4908,25 +4921,47 @@ export default function EditorPage() {
                 <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.typography.title")}</div>
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.typography.font_preset")}</label>
-                  <Select
-                    value={safeSpec.brand.fontPreset}
-                    onValueChange={(v) =>
-                      persistSpec({
-                        ...safeSpec,
-                        brand: { ...safeSpec.brand, fontPreset: v as any },
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("editor.typography.choose_font")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="space_grotesk">{t("editor.typography.font_space_grotesk")}</SelectItem>
-                      <SelectItem value="plus_jakarta">{t("editor.typography.font_plus_jakarta")}</SelectItem>
-                      <SelectItem value="inter">{t("editor.typography.font_inter")}</SelectItem>
-                      <SelectItem value="satoshi">{t("editor.typography.font_satoshi")}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {FONT_OPTIONS.map((font) => {
+                      const isSelected = safeSpec.brand.fontPreset === font.value;
+                      return (
+                        <button
+                          key={font.value}
+                          type="button"
+                          onClick={() =>
+                            persistSpec({
+                              ...safeSpec,
+                              brand: { ...safeSpec.brand, fontPreset: font.value },
+                            })
+                          }
+                          className={[
+                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150 px-2.5 py-2 flex flex-col justify-between",
+                            isSelected
+                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                          ].join(" ")}
+                        >
+                          <span
+                            className="text-[11px] font-semibold text-foreground/90 leading-tight"
+                            style={{ fontFamily: `"${font.googleFamily}", system-ui, sans-serif` }}
+                          >
+                            {font.label}
+                          </span>
+                          <span
+                            className="text-[10px] text-foreground/50 leading-tight truncate"
+                            style={{ fontFamily: `"${font.googleFamily}", system-ui, sans-serif` }}
+                          >
+                            EU QUERIA SER FORTE
+                          </span>
+                          {isSelected && (
+                            <div className="absolute top-1.5 right-1.5 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="h-2 w-2 text-primary-foreground" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             ) : null}
