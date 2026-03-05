@@ -8,6 +8,16 @@ function clamp01(value: number) {
   return Math.max(0, Math.min(1, value));
 }
 
+/** Maps width/height to the closest Gemini-supported aspect ratio string. */
+function pickGeminiAspectRatio(w: number, h: number): string {
+  const r = w / h;
+  if (r >= 1.7)  return "16:9";
+  if (r >= 1.2)  return "4:3";
+  if (r >= 0.9)  return "1:1";
+  if (r >= 0.65) return "3:4";
+  return "9:16";
+}
+
 function buildGeminiInstruction(input: Parameters<Provider["generateImageToImageStrict"]>[0]): string {
   const identityStrength = Math.max(0, Math.min(100, Number(input.identityStrength ?? 90)));
   const styleStrength = Math.max(0, Math.min(100, Number(input.styleStrength ?? 45)));
@@ -99,6 +109,7 @@ export const geminiImageProvider: Provider = {
           contents: [{ role: "user", parts }],
           generationConfig: {
             responseModalities: ["IMAGE"],
+            aspectRatio: pickGeminiAspectRatio(input.width, input.height),
           },
         }),
         signal: controller.signal,

@@ -58,10 +58,12 @@ import {
   normalizeSceneMood,
 } from "@/features/editor/scene-moods";
 import {
-  SCENE_PROP_OPTIONS,
+  SCENE_PROP_GROUPS,
+  applyScenePropToggle,
   getScenePropLabelKey,
   normalizeSceneProps,
 } from "@/features/editor/scene-props";
+import { FONT_OPTIONS, buildGoogleFontsUrl, getFontOption } from "@/features/editor/font-presets";
 import { compilePrompt } from "@/features/engine/prompt-compiler";
 import { summarizeSpec } from "@/features/engine/prompt-summarizer";
 import { OVERLAY_DEFINITIONS } from "@/features/editor/overlay-library";
@@ -671,6 +673,18 @@ export default function EditorPage() {
   const [isCanvasSpacePressed, setIsCanvasSpacePressed] = useState(false);
 
   // carrega projeto por ID
+  // Inject Google Fonts once on mount
+  useEffect(() => {
+    const linkId = "creatyng-google-fonts";
+    if (!document.getElementById(linkId)) {
+      const link = document.createElement("link");
+      link.id = linkId;
+      link.rel = "stylesheet";
+      link.href = buildGoogleFontsUrl();
+      document.head.appendChild(link);
+    }
+  }, []);
+
   useEffect(() => {
     if (!id) return;
     const p = getProject(id) as EditorProject | undefined;
@@ -2092,29 +2106,35 @@ export default function EditorPage() {
   }
 
   async function export2K() {
-    if (!safeSpec || (safeSpec.module !== "social_post" && safeSpec.module !== "ecom_banner")) {
-      console.log("activeGenerationId:", project?.activeGenerationId ?? null);
-      console.log("generationWidth:", safeSpec?.generation?.width ?? null);
-      console.log("generationHeight:", safeSpec?.generation?.height ?? null);
-      return;
-    }
+    if (!bgUrl) return;
+
+    const moduleSlug =
+      safeSpec?.module === "ecom_banner"
+        ? "ecom-banner"
+        : safeSpec?.module === "photoshoot"
+        ? "photoshoot"
+        : "social-post";
+    const fileName = `${moduleSlug}-2k.png`;
 
     setIsExporting2K(true);
     setLastExportError(null);
     try {
-      await exportSocialPost2K({
-        fileName:
-          safeSpec.module === "ecom_banner" && safeSpec.templateId === "ecom_v2_01"
-            ? "ecom-v2-2k.png"
-            : "social-post-2k.png",
-      });
+      // Download the AI-generated image directly — no canvas re-rendering.
+      const response = await fetch(bgUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast({ title: t("editor.toast.export_ready") });
     } catch {
       setLastExportError(t("editor.toast.export_failed"));
-      toast({
-        title: t("editor.toast.export_failed"),
-        variant: "destructive",
-      });
+      toast({ title: t("editor.toast.export_failed"), variant: "destructive" });
     } finally {
       setIsExporting2K(false);
     }
@@ -2547,8 +2567,8 @@ export default function EditorPage() {
               {isGenerating && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-[2px] rounded-lg md:rounded-2xl pointer-events-none">
                   <div className="w-9 h-9 rounded-full border-2 border-border border-t-primary animate-spin" />
-                  <div className="text-sm font-medium text-foreground">Gerando imagem...</div>
-                  <div className="text-xs text-muted-foreground">Aguarde alguns segundos</div>
+                  <div className="text-sm font-medium text-foreground">{t("editor.canvas.generating")}</div>
+                  <div className="text-xs text-muted-foreground">{t("editor.canvas.generating_wait")}</div>
                 </div>
               )}
 
@@ -2594,8 +2614,9 @@ export default function EditorPage() {
                       ? "bg-primary/10 text-primary"
                       : "text-foreground hover:bg-muted",
                   ].join(" ")}
+                  aria-label={t("editor.canvas.zoom_fit_aria")}
                 >
-                  Fit
+                  {t("editor.canvas.zoom_fit")}
                 </button>
               </div>
             </div>
@@ -3398,50 +3419,53 @@ export default function EditorPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {SCENE_PROP_OPTIONS.map((option) => {
-                      const checked = currentSceneProps.includes(option);
-                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            const nextValues = checked
-                              ? currentSceneProps.filter((item) => item !== option)
-                              : [...currentSceneProps, option];
-                            persistSocialPostBuilderPatch({
-                              sceneProps: normalizeSceneProps(nextValues, "social_post"),
-                            });
-                          }}
-                          className={[
-                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
-                            checked
-                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
-                          ].join(" ")}
-                        >
-                          {overlayDef && (
-                            <div className="absolute inset-0 pointer-events-none opacity-60">
-                              {overlayDef.render(overlayDef.defaultOpacity)}
-                            </div>
-                          )}
-                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
-                              {t(getScenePropLabelKey(option))}
-                            </span>
-                            {checked && (
-                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
-                                <Check className="h-2 w-2 text-primary-foreground" />
+                  {SCENE_PROP_GROUPS.map((group) => (
+                    <div key={group.id} className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wide">{t(group.labelKey)}</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {group.slugs.map((option) => {
+                          const checked = currentSceneProps.includes(option);
+                          const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => {
+                                const nextValues = applyScenePropToggle(currentSceneProps, option);
+                                persistSocialPostBuilderPatch({
+                                  sceneProps: normalizeSceneProps(nextValues, "social_post"),
+                                });
+                              }}
+                              className={[
+                                "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                                checked
+                                  ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                                  : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                              ].join(" ")}
+                            >
+                              {overlayDef && (
+                                <div className="absolute inset-0 pointer-events-none opacity-60">
+                                  {overlayDef.render(overlayDef.defaultOpacity)}
+                                </div>
+                              )}
+                              <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                                  {t(getScenePropLabelKey(option))}
+                                </span>
+                                {checked && (
+                                  <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                    <Check className="h-2 w-2 text-primary-foreground" />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : null}
@@ -3970,50 +3994,53 @@ export default function EditorPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {SCENE_PROP_OPTIONS.map((option) => {
-                      const checked = currentSceneProps.includes(option);
-                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            const nextValues = checked
-                              ? currentSceneProps.filter((item) => item !== option)
-                              : [...currentSceneProps, option];
-                            persistPhotoshootBuilderPatch({
-                              sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
-                            });
-                          }}
-                          className={[
-                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
-                            checked
-                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
-                          ].join(" ")}
-                        >
-                          {overlayDef && (
-                            <div className="absolute inset-0 pointer-events-none opacity-60">
-                              {overlayDef.render(overlayDef.defaultOpacity)}
-                            </div>
-                          )}
-                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
-                              {t(getScenePropLabelKey(option))}
-                            </span>
-                            {checked && (
-                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
-                                <Check className="h-2 w-2 text-primary-foreground" />
+                  {SCENE_PROP_GROUPS.map((group) => (
+                    <div key={group.id} className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wide">{t(group.labelKey)}</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {group.slugs.map((option) => {
+                          const checked = currentSceneProps.includes(option);
+                          const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => {
+                                const nextValues = applyScenePropToggle(currentSceneProps, option);
+                                persistPhotoshootBuilderPatch({
+                                  sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
+                                });
+                              }}
+                              className={[
+                                "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                                checked
+                                  ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                                  : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                              ].join(" ")}
+                            >
+                              {overlayDef && (
+                                <div className="absolute inset-0 pointer-events-none opacity-60">
+                                  {overlayDef.render(overlayDef.defaultOpacity)}
+                                </div>
+                              )}
+                              <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                                  {t(getScenePropLabelKey(option))}
+                                </span>
+                                {checked && (
+                                  <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                    <Check className="h-2 w-2 text-primary-foreground" />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-1">
@@ -4155,50 +4182,53 @@ export default function EditorPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {SCENE_PROP_OPTIONS.map((option) => {
-                      const checked = currentSceneProps.includes(option);
-                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            const nextValues = checked
-                              ? currentSceneProps.filter((item) => item !== option)
-                              : [...currentSceneProps, option];
-                            persistEcomBuilderPatch({
-                              sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
-                            });
-                          }}
-                          className={[
-                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
-                            checked
-                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
-                          ].join(" ")}
-                        >
-                          {overlayDef && (
-                            <div className="absolute inset-0 pointer-events-none opacity-60">
-                              {overlayDef.render(overlayDef.defaultOpacity)}
-                            </div>
-                          )}
-                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
-                              {t(getScenePropLabelKey(option))}
-                            </span>
-                            {checked && (
-                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
-                                <Check className="h-2 w-2 text-primary-foreground" />
+                  {SCENE_PROP_GROUPS.map((group) => (
+                    <div key={group.id} className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wide">{t(group.labelKey)}</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {group.slugs.map((option) => {
+                          const checked = currentSceneProps.includes(option);
+                          const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => {
+                                const nextValues = applyScenePropToggle(currentSceneProps, option);
+                                persistEcomBuilderPatch({
+                                  sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
+                                });
+                              }}
+                              className={[
+                                "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                                checked
+                                  ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                                  : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                              ].join(" ")}
+                            >
+                              {overlayDef && (
+                                <div className="absolute inset-0 pointer-events-none opacity-60">
+                                  {overlayDef.render(overlayDef.defaultOpacity)}
+                                </div>
+                              )}
+                              <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                                  {t(getScenePropLabelKey(option))}
+                                </span>
+                                {checked && (
+                                  <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                    <Check className="h-2 w-2 text-primary-foreground" />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : null}
@@ -4785,6 +4815,7 @@ export default function EditorPage() {
                 <label className="text-xs text-muted-foreground">{t("editor.builder.extra_details")}</label>
                 <Input
                   maxLength={140}
+                  placeholder={t("editor.builder.extra_details_placeholder")}
                   value={builder?.extraDetails ?? ""}
                   onChange={(e) =>
                     persistSpec({
@@ -4898,25 +4929,47 @@ export default function EditorPage() {
                 <div className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground pb-1.5 border-b border-border/30">{t("editor.typography.title")}</div>
                 <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.typography.font_preset")}</label>
-                  <Select
-                    value={safeSpec.brand.fontPreset}
-                    onValueChange={(v) =>
-                      persistSpec({
-                        ...safeSpec,
-                        brand: { ...safeSpec.brand, fontPreset: v as any },
-                      })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t("editor.typography.choose_font")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="space_grotesk">{t("editor.typography.font_space_grotesk")}</SelectItem>
-                      <SelectItem value="plus_jakarta">{t("editor.typography.font_plus_jakarta")}</SelectItem>
-                      <SelectItem value="inter">{t("editor.typography.font_inter")}</SelectItem>
-                      <SelectItem value="satoshi">{t("editor.typography.font_satoshi")}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {FONT_OPTIONS.map((font) => {
+                      const isSelected = safeSpec.brand.fontPreset === font.value;
+                      return (
+                        <button
+                          key={font.value}
+                          type="button"
+                          onClick={() =>
+                            persistSpec({
+                              ...safeSpec,
+                              brand: { ...safeSpec.brand, fontPreset: font.value },
+                            })
+                          }
+                          className={[
+                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150 px-2.5 py-2 flex flex-col justify-between",
+                            isSelected
+                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                          ].join(" ")}
+                        >
+                          <span
+                            className="text-[11px] font-semibold text-foreground/90 leading-tight"
+                            style={{ fontFamily: `"${font.googleFamily}", system-ui, sans-serif` }}
+                          >
+                            {font.label}
+                          </span>
+                          <span
+                            className="text-[10px] text-foreground/50 leading-tight truncate"
+                            style={{ fontFamily: `"${font.googleFamily}", system-ui, sans-serif` }}
+                          >
+                            EU QUERIA SER FORTE
+                          </span>
+                          {isSelected && (
+                            <div className="absolute top-1.5 right-1.5 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center">
+                              <Check className="h-2 w-2 text-primary-foreground" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             ) : null}

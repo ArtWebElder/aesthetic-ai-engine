@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { selectProvider } from "./providers/registry.ts";
 import { preprocessSubjectImage } from "./preprocess/subject.ts";
 import { ReplicateFluxKontextProvider } from "./providers/replicateFluxKontext.ts";
+import { fetchUrlAsBase64 } from "./utils/base64.ts";
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {
@@ -679,6 +680,22 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      // Fetch style reference images as real base64 (non-fatal — skip on error)
+      type StyleRef = { base64: string; mime: string; weight: number; url: string };
+      const styleRefEntries = input.referenceImages.filter((r) => r.role === "style" && r.url);
+      const styleReferences: StyleRef[] = (
+        await Promise.all(
+          styleRefEntries.map(async (ref): Promise<StyleRef | null> => {
+            try {
+              const fetched = await fetchUrlAsBase64(ref.url);
+              return { base64: fetched.base64, mime: fetched.mime, weight: ref.weight, url: ref.url };
+            } catch {
+              return null;
+            }
+          }),
+        )
+      ).filter((r): r is StyleRef => r !== null);
+
       const strictProviderErrors: Array<{ providerName: string; details: string }> = [];
       let fallbackProvider: ReplicateFluxKontextProvider | null = null;
       if (REPLICATE_API_TOKEN) {
@@ -715,6 +732,7 @@ Deno.serve(async (req: Request) => {
             height: preprocessedSubject.height,
             hash: preprocessedSubject.hash,
           },
+          styleReferences: styleReferences.length > 0 ? styleReferences : undefined,
         });
         strictBase64 = result.base64;
         if (!strictBase64.trim()) {
@@ -737,6 +755,7 @@ Deno.serve(async (req: Request) => {
               subjectImageBase64: preprocessedSubject.base64,
               subjectImageMime: preprocessedSubject.mime,
               identityStrength: input.identityStrength ?? 90,
+              aspectRatio,
             });
             strictBase64 = fallbackResult.imageBase64;
             if (!strictBase64.trim()) {

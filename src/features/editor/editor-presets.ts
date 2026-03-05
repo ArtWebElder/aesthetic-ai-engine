@@ -267,5 +267,5 @@ export const SAFE_SPACE_OPTIONS: EditorPresetOption[] = [
   { value: "bottom", label: "Bottom", labelKey: "editor.preset.safe_space.bottom" },
   { value: "left", label: "Left", labelKey: "editor.preset.safe_space.left" },
   { value: "right", label: "Right", labelKey: "editor.preset.safe_space.right" },
-  { value: "center", label: "Center", labelKey: "editor.preset.safe_space.center" },
+  { value: "over", label: "Over subject", labelKey: "editor.preset.safe_space.over" },
 ];
