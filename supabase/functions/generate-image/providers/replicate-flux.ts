@@ -13,6 +13,19 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Maps width/height to the closest FLUX Kontext Pro-supported aspect ratio string. */
+function pickReplicateAspectRatio(w: number, h: number): string {
+  const r = w / h;
+  if (r >= 1.7)  return "16:9";
+  if (r >= 1.4)  return "3:2";
+  if (r >= 1.1)  return "4:3";
+  if (r >= 0.9)  return "1:1";
+  if (r >= 0.78) return "4:5";
+  if (r >= 0.65) return "3:4";
+  if (r >= 0.5)  return "2:3";
+  return "9:16";
+}
+
 function pickOutputUrl(raw: any): string | null {
   const output = raw?.output;
   if (typeof output === "string" && output.trim()) return output.trim();
@@ -51,6 +64,7 @@ export const replicateFluxProvider: Provider = {
       body: JSON.stringify({
         input: {
           prompt: promptLines.join("\n"),
+          aspect_ratio: pickReplicateAspectRatio(input.width, input.height),
         },
       }),
     });
@@ -147,6 +161,7 @@ export const replicateFluxProvider: Provider = {
         input: {
           prompt: promptLines.join("\n"),
           input_image: input.subjectImage.dataUrl,
+          aspect_ratio: pickReplicateAspectRatio(input.width, input.height),
           ...(styleRef
             ? { style_image: `data:${styleRef.mime};base64,${styleRef.base64}` }
             : {}),

@@ -6,6 +6,7 @@ type ReplicateStrictInput = {
   subjectImageBase64: string;
   subjectImageMime: string;
   identityStrength: number;
+  aspectRatio?: string;
 };
 
 type ReplicateStrictResult = {
@@ -70,6 +71,7 @@ export class ReplicateFluxKontextProvider {
       input: {
         prompt,
         input_image: initImage,
+        ...(input.aspectRatio ? { aspect_ratio: input.aspectRatio } : {}),
       },
     };
 
