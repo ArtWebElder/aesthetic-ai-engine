@@ -427,7 +427,7 @@
   "editor.preset.safe_space.bottom": "Inferior",
   "editor.preset.safe_space.left": "Izquierda",
   "editor.preset.safe_space.right": "Derecha",
-  "editor.preset.safe_space.center": "Centro",
+  "editor.preset.safe_space.over": "Sobre el subject",
   "editor.preset.material_feel.matte": "Mate",
   "editor.preset.material_feel.glossy": "Brillante",
   "editor.preset.material_feel.metallic": "Metálico",

@@ -39,10 +39,24 @@ function getMoodTier(mood: string): MoodTier {
 }
 
 
-function getTextPosition(module: string): string {
-  if (module === "ecom_banner") return "left third or lower third of the frame";
-  if (module === "photoshoot") return "upper area and lower area of the frame";
-  return "lower third of the frame";
+const TEXT_POSITION_INSTRUCTIONS: Record<string, string> = {
+  top:    "Keep upper 35% of frame dark and visually clean for text overlay. Subject must be placed in lower 2/3 of the frame.",
+  bottom: "Keep lower 35% of frame dark and visually clean for text overlay. Subject must be placed in upper 2/3 of the frame.",
+  left:   "Keep left 45% of frame dark and visually clean for text overlay. Subject must be right-aligned in the frame.",
+  right:  "Keep right 45% of frame dark and visually clean for text overlay. Subject must be left-aligned in the frame.",
+  over:   "Subject centered. Ensure the subject area has contrast variation — dark and light zones — so text can be readable over it.",
+};
+
+/** Returns composition instruction for text safe area.
+ *  Uses builder.safeSpace if set, falls back to per-module default. */
+function resolveTextPosition(safeSpace: string | undefined, module: string): string {
+  const key = safeSpace?.trim().toLowerCase();
+  if (key && TEXT_POSITION_INSTRUCTIONS[key]) {
+    return TEXT_POSITION_INSTRUCTIONS[key];
+  }
+  // Per-module defaults
+  if (module === "ecom_banner") return TEXT_POSITION_INSTRUCTIONS["bottom"];
+  return TEXT_POSITION_INSTRUCTIONS["bottom"];
 }
 
 function toLabel(value: string, options: Array<{ value: string; label: string }>): string {
@@ -90,6 +104,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const lensVal = builder?.lens?.trim() ?? "";
   const angleVal = builder?.angle?.trim() ?? "";
   const extraDetails = builder?.extraDetails?.trim() ?? "";
+  const safeSpace = builder?.safeSpace?.trim() ?? "";
 
   // Convert enum values to readable labels
   const subjectTypeLabel = subjectTypeVal
@@ -229,7 +244,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   // exclusively by the Canvas 2D renderer (exportSocialPost2K) after generation.
   const textSafeAreaBlock =
     module !== "photoshoot"
-      ? `TEXT SAFE AREA: Do NOT render any text, letters, words, numbers, or typographic elements anywhere in the image. The image must be completely free of text. Leave intentional compositional breathing room at ${getTextPosition(module)} — this area will be used for external text overlay and must have sufficient contrast and visual space.`
+      ? `TEXT SAFE AREA: Do NOT render any text, letters, words, numbers, or typographic elements anywhere in the image. The image must be completely free of text. ${resolveTextPosition(safeSpace, module)} This area will be used for external text overlay.`
       : null;
 
   // ── [QUALITY_BLOCK] ───────────────────────────────────────────────────────
