@@ -31,6 +31,45 @@ export interface CompiledPrompt {
 
 type MoodTier = "drama_impact" | "clean_premium" | "dark_cinematic" | "neutral";
 
+type PaletteMode = "mono" | "duo" | "tri" | "custom";
+
+/** Builds a natural-language color-palette instruction for the scene block.
+ *  Respects paletteMode: mono uses only primary, duo adds accent, tri adds secondary, custom uses all provided. */
+function buildColorPaletteInstruction(
+  brand: ProjectSpec["brand"],
+  module: string
+): string {
+  if (module === "photoshoot") return "";
+
+  const mode: PaletteMode = (brand.paletteMode as PaletteMode) ?? "duo";
+  const parts: string[] = [];
+
+  const isValid = (v?: string) => v && /^#[0-9a-fA-F]{3,8}$/.test(v.trim());
+
+  // Always anchor on primary (dominant background / main surface)
+  if (isValid(brand.primary)) {
+    parts.push(`primary ${brand.primary} (dominant background and main surfaces)`);
+  }
+
+  // duo, tri, custom: include accent
+  if (mode !== "mono" && isValid(brand.accent)) {
+    parts.push(`accent ${brand.accent} (highlights, focal points, and key details)`);
+  }
+
+  // tri and custom: include secondary
+  if ((mode === "tri" || mode === "custom") && isValid(brand.secondary)) {
+    parts.push(`secondary ${brand.secondary} (supporting fills and mid-tone elements)`);
+  }
+
+  // custom: include neutral bg if set
+  if (mode === "custom" && isValid(brand.neutralBg)) {
+    parts.push(`neutral background ${brand.neutralBg}`);
+  }
+
+  if (parts.length === 0) return "";
+  return `Color palette — ${parts.join(". ")}. Apply this palette consistently across the scene.`;
+}
+
 function getMoodTier(mood: string): MoodTier {
   if (mood === "cinematic_moody" || mood === "energetic_pop") return "drama_impact";
   if (mood === "luxury_premium" || mood === "clean_bright") return "clean_premium";
@@ -217,10 +256,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   if (cleanedContext) sceneParts.push(`Context: ${cleanedContext}.`);
   if (extraDetails) sceneParts.push(`Additional detail: ${extraDetails}.`);
 
-  const primaryColor = brand.accent || brand.primary;
-  if (primaryColor && module !== "photoshoot") {
-    sceneParts.push(`Dominant accent color in the scene: ${primaryColor}.`);
-  }
+  const colorInstruction = buildColorPaletteInstruction(brand, module);
+  if (colorInstruction) sceneParts.push(colorInstruction);
 
   if (normalizedReferences.length > 0) {
     const ref = normalizedReferences[0];
