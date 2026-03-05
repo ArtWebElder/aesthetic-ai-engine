@@ -1195,7 +1195,9 @@ export default function EditorPage() {
         (window as any).__MI_LAST_EDGE_RESPONSE__ = debugPayload;
         setDebugEdgeResponse(debugPayload);
       }
-      throw new Error(parsed?.error ?? parsed?.message ?? (text || `HTTP ${resp.status}`));
+      const errCode = parsed?.error ?? parsed?.message ?? (text || `HTTP ${resp.status}`);
+      const errDetails = parsed?.details ? ` — ${String(parsed.details).slice(0, 400)}` : "";
+      throw new Error(`${errCode}${errDetails}`);
     }
     if (!parsed?.signedUrl || !parsed?.generationId) {
       if (import.meta.env.DEV) {
