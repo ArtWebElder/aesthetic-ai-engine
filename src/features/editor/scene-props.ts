@@ -67,3 +67,60 @@ export function getScenePropDescription(sceneProp: string | null | undefined): s
   if (!isScenePropSlug(normalized)) return null;
   return SCENE_PROP_DESCRIPTIONS[normalized];
 }
+
+// ─── Grupos mutuamente exclusivos ─────────────────────────────────────────────
+// Dentro de cada grupo, o usuário escolhe no máximo 1 opção (comportamento radio).
+// Grupos diferentes podem ser combinados (máx. 1 por grupo = máx. 3 ativos total).
+
+export type ScenePropGroupId = "surface" | "atmosphere" | "depth";
+
+export const SCENE_PROP_GROUPS: ReadonlyArray<{
+  id: ScenePropGroupId;
+  labelKey: string;
+  slugs: readonly ScenePropSlug[];
+}> = [
+  {
+    id: "surface",
+    labelKey: "editor.scene.props.group.surface",
+    slugs: ["marble_stone", "wood_warm", "plants_greenery", "paper_texture"],
+  },
+  {
+    id: "atmosphere",
+    labelKey: "editor.scene.props.group.atmosphere",
+    slugs: ["smoke_haze", "floating_elements", "bokeh_lights", "neon_glow"],
+  },
+  {
+    id: "depth",
+    labelKey: "editor.scene.props.group.depth",
+    slugs: ["soft_shadow", "reflection_surface"],
+  },
+] as const;
+
+/** Retorna o grupo ao qual o slug pertence, ou null se não estiver em nenhum grupo. */
+export function getScenePropGroupId(slug: ScenePropSlug): ScenePropGroupId | null {
+  for (const group of SCENE_PROP_GROUPS) {
+    if ((group.slugs as readonly string[]).includes(slug)) return group.id;
+  }
+  return null;
+}
+
+/**
+ * Aplica toggle com constraint de radio dentro de cada grupo.
+ * - Se já ativo → desativa (toggle off)
+ * - Se inativo + tem grupo → remove outros do mesmo grupo, adiciona este
+ * - Se inativo + sem grupo → adiciona normalmente
+ */
+export function applyScenePropToggle(
+  current: ScenePropSlug[],
+  selected: ScenePropSlug,
+): ScenePropSlug[] {
+  const isActive = current.includes(selected);
+  if (isActive) return current.filter((s) => s !== selected);
+
+  const groupId = getScenePropGroupId(selected);
+  if (!groupId) return [...current, selected];
+
+  const group = SCENE_PROP_GROUPS.find((g) => g.id === groupId)!;
+  const withoutGroup = current.filter((s) => !(group.slugs as readonly string[]).includes(s));
+  return [...withoutGroup, selected];
+}

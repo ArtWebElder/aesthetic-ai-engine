@@ -58,7 +58,8 @@ import {
   normalizeSceneMood,
 } from "@/features/editor/scene-moods";
 import {
-  SCENE_PROP_OPTIONS,
+  SCENE_PROP_GROUPS,
+  applyScenePropToggle,
   getScenePropLabelKey,
   normalizeSceneProps,
 } from "@/features/editor/scene-props";
@@ -3398,50 +3399,53 @@ export default function EditorPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {SCENE_PROP_OPTIONS.map((option) => {
-                      const checked = currentSceneProps.includes(option);
-                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            const nextValues = checked
-                              ? currentSceneProps.filter((item) => item !== option)
-                              : [...currentSceneProps, option];
-                            persistSocialPostBuilderPatch({
-                              sceneProps: normalizeSceneProps(nextValues, "social_post"),
-                            });
-                          }}
-                          className={[
-                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
-                            checked
-                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
-                          ].join(" ")}
-                        >
-                          {overlayDef && (
-                            <div className="absolute inset-0 pointer-events-none opacity-60">
-                              {overlayDef.render(overlayDef.defaultOpacity)}
-                            </div>
-                          )}
-                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
-                              {t(getScenePropLabelKey(option))}
-                            </span>
-                            {checked && (
-                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
-                                <Check className="h-2 w-2 text-primary-foreground" />
+                  {SCENE_PROP_GROUPS.map((group) => (
+                    <div key={group.id} className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wide">{t(group.labelKey)}</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {group.slugs.map((option) => {
+                          const checked = currentSceneProps.includes(option);
+                          const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => {
+                                const nextValues = applyScenePropToggle(currentSceneProps, option);
+                                persistSocialPostBuilderPatch({
+                                  sceneProps: normalizeSceneProps(nextValues, "social_post"),
+                                });
+                              }}
+                              className={[
+                                "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                                checked
+                                  ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                                  : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                              ].join(" ")}
+                            >
+                              {overlayDef && (
+                                <div className="absolute inset-0 pointer-events-none opacity-60">
+                                  {overlayDef.render(overlayDef.defaultOpacity)}
+                                </div>
+                              )}
+                              <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                                  {t(getScenePropLabelKey(option))}
+                                </span>
+                                {checked && (
+                                  <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                    <Check className="h-2 w-2 text-primary-foreground" />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : null}
@@ -3970,50 +3974,53 @@ export default function EditorPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {SCENE_PROP_OPTIONS.map((option) => {
-                      const checked = currentSceneProps.includes(option);
-                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            const nextValues = checked
-                              ? currentSceneProps.filter((item) => item !== option)
-                              : [...currentSceneProps, option];
-                            persistPhotoshootBuilderPatch({
-                              sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
-                            });
-                          }}
-                          className={[
-                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
-                            checked
-                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
-                          ].join(" ")}
-                        >
-                          {overlayDef && (
-                            <div className="absolute inset-0 pointer-events-none opacity-60">
-                              {overlayDef.render(overlayDef.defaultOpacity)}
-                            </div>
-                          )}
-                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
-                              {t(getScenePropLabelKey(option))}
-                            </span>
-                            {checked && (
-                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
-                                <Check className="h-2 w-2 text-primary-foreground" />
+                  {SCENE_PROP_GROUPS.map((group) => (
+                    <div key={group.id} className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wide">{t(group.labelKey)}</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {group.slugs.map((option) => {
+                          const checked = currentSceneProps.includes(option);
+                          const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => {
+                                const nextValues = applyScenePropToggle(currentSceneProps, option);
+                                persistPhotoshootBuilderPatch({
+                                  sceneProps: normalizeSceneProps(nextValues, "photoshoot"),
+                                });
+                              }}
+                              className={[
+                                "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                                checked
+                                  ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                                  : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                              ].join(" ")}
+                            >
+                              {overlayDef && (
+                                <div className="absolute inset-0 pointer-events-none opacity-60">
+                                  {overlayDef.render(overlayDef.defaultOpacity)}
+                                </div>
+                              )}
+                              <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                                  {t(getScenePropLabelKey(option))}
+                                </span>
+                                {checked && (
+                                  <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                    <Check className="h-2 w-2 text-primary-foreground" />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-1">
@@ -4155,50 +4162,53 @@ export default function EditorPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <label className="text-xs text-muted-foreground">{t("editor.scene.props.label")}</label>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {SCENE_PROP_OPTIONS.map((option) => {
-                      const checked = currentSceneProps.includes(option);
-                      const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => {
-                            const nextValues = checked
-                              ? currentSceneProps.filter((item) => item !== option)
-                              : [...currentSceneProps, option];
-                            persistEcomBuilderPatch({
-                              sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
-                            });
-                          }}
-                          className={[
-                            "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
-                            checked
-                              ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
-                              : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
-                          ].join(" ")}
-                        >
-                          {overlayDef && (
-                            <div className="absolute inset-0 pointer-events-none opacity-60">
-                              {overlayDef.render(overlayDef.defaultOpacity)}
-                            </div>
-                          )}
-                          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
-                            <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
-                              {t(getScenePropLabelKey(option))}
-                            </span>
-                            {checked && (
-                              <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
-                                <Check className="h-2 w-2 text-primary-foreground" />
+                  {SCENE_PROP_GROUPS.map((group) => (
+                    <div key={group.id} className="space-y-1">
+                      <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-wide">{t(group.labelKey)}</span>
+                      <div className="grid grid-cols-2 gap-1.5">
+                        {group.slugs.map((option) => {
+                          const checked = currentSceneProps.includes(option);
+                          const overlayDef = OVERLAY_DEFINITIONS.find((o) => o.scenePropId === option);
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() => {
+                                const nextValues = applyScenePropToggle(currentSceneProps, option);
+                                persistEcomBuilderPatch({
+                                  sceneProps: normalizeSceneProps(nextValues, "ecom_banner"),
+                                });
+                              }}
+                              className={[
+                                "relative h-16 rounded-lg border overflow-hidden text-left transition-all duration-150",
+                                checked
+                                  ? "border-primary/60 bg-primary/5 ring-1 ring-primary/30"
+                                  : "border-border/50 bg-muted/20 hover:border-border hover:bg-muted/40",
+                              ].join(" ")}
+                            >
+                              {overlayDef && (
+                                <div className="absolute inset-0 pointer-events-none opacity-60">
+                                  {overlayDef.render(overlayDef.defaultOpacity)}
+                                </div>
+                              )}
+                              <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+                                <span className="text-[10px] font-medium text-foreground/90 leading-tight drop-shadow-sm">
+                                  {t(getScenePropLabelKey(option))}
+                                </span>
+                                {checked && (
+                                  <div className="h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center shrink-0 ml-1">
+                                    <Check className="h-2 w-2 text-primary-foreground" />
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : null}
