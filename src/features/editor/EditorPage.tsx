@@ -4808,6 +4808,7 @@ export default function EditorPage() {
                 <label className="text-xs text-muted-foreground">{t("editor.builder.extra_details")}</label>
                 <Input
                   maxLength={140}
+                  placeholder={t("editor.builder.extra_details_placeholder")}
                   value={builder?.extraDetails ?? ""}
                   onChange={(e) =>
                     persistSpec({

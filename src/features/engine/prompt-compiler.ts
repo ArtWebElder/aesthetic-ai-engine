@@ -253,8 +253,14 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   if (scenePropsDescriptions.length > 0) {
     sceneParts.push(scenePropsDescriptions.join(". ") + ".");
   }
-  if (cleanedContext) sceneParts.push(`Context: ${cleanedContext}.`);
-  if (extraDetails) sceneParts.push(`Additional detail: ${extraDetails}.`);
+  if (cleanedContext)
+    sceneParts.push(
+      `CAMPAIGN INTENT: ${cleanedContext}. Adapt the mood, atmosphere, props, and scene composition to reflect this intent.`
+    );
+  if (extraDetails)
+    sceneParts.push(
+      `VISUAL DIRECTIVES: ${extraDetails}. These are specific visual requirements — include them exactly.`
+    );
 
   const colorInstruction = buildColorPaletteInstruction(brand, module);
   if (colorInstruction) sceneParts.push(colorInstruction);
