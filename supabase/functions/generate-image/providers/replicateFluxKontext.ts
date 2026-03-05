@@ -1,12 +1,20 @@
 /// <reference lib="deno.ns" />
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
+type StyleRef = {
+  base64: string;
+  mime: string;
+  weight: number;
+  url: string;
+};
+
 type ReplicateStrictInput = {
   prompt: string;
   subjectImageBase64: string;
   subjectImageMime: string;
   identityStrength: number;
   aspectRatio?: string;
+  styleReferences?: StyleRef[];
 };
 
 type ReplicateStrictResult = {
@@ -62,7 +70,18 @@ export class ReplicateFluxKontextProvider {
 
   async generateImageToImageStrict(input: ReplicateStrictInput): Promise<ReplicateStrictResult> {
     const initImage = `data:${input.subjectImageMime};base64,${input.subjectImageBase64}`;
-    const prompt = [buildIdentityDirective(input.identityStrength), input.prompt]
+
+    // Pick the highest-weight style reference (if any)
+    const styleRef = (input.styleReferences ?? []).sort((a, b) => b.weight - a.weight)[0];
+    const styleRefDataUrl = styleRef
+      ? `data:${styleRef.mime};base64,${styleRef.base64}`
+      : null;
+
+    const styleRefInstruction = styleRef
+      ? `STYLE REFERENCE IMAGE (second image provided): Extract from this reference: lighting direction and color, color grading, atmospheric mood, depth of field style, background composition, particle effects, and overall visual quality level. Apply this exact visual style to the new scene. Do NOT copy people or specific objects from the reference. Style weight: ${styleRef.weight}/100 — this reference defines the aesthetic of the output.`
+      : null;
+
+    const prompt = [buildIdentityDirective(input.identityStrength), styleRefInstruction, input.prompt]
       .filter(Boolean)
       .join("\n");
 
@@ -71,6 +90,7 @@ export class ReplicateFluxKontextProvider {
       input: {
         prompt,
         input_image: initImage,
+        ...(styleRefDataUrl ? { style_image: styleRefDataUrl } : {}),
         ...(input.aspectRatio ? { aspect_ratio: input.aspectRatio } : {}),
       },
     };
