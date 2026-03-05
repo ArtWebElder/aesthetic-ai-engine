@@ -2106,29 +2106,35 @@ export default function EditorPage() {
   }
 
   async function export2K() {
-    if (!safeSpec || (safeSpec.module !== "social_post" && safeSpec.module !== "ecom_banner")) {
-      console.log("activeGenerationId:", project?.activeGenerationId ?? null);
-      console.log("generationWidth:", safeSpec?.generation?.width ?? null);
-      console.log("generationHeight:", safeSpec?.generation?.height ?? null);
-      return;
-    }
+    if (!bgUrl) return;
+
+    const moduleSlug =
+      safeSpec?.module === "ecom_banner"
+        ? "ecom-banner"
+        : safeSpec?.module === "photoshoot"
+        ? "photoshoot"
+        : "social-post";
+    const fileName = `${moduleSlug}-2k.png`;
 
     setIsExporting2K(true);
     setLastExportError(null);
     try {
-      await exportSocialPost2K({
-        fileName:
-          safeSpec.module === "ecom_banner" && safeSpec.templateId === "ecom_v2_01"
-            ? "ecom-v2-2k.png"
-            : "social-post-2k.png",
-      });
+      // Download the AI-generated image directly — no canvas re-rendering.
+      const response = await fetch(bgUrl);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
       toast({ title: t("editor.toast.export_ready") });
     } catch {
       setLastExportError(t("editor.toast.export_failed"));
-      toast({
-        title: t("editor.toast.export_failed"),
-        variant: "destructive",
-      });
+      toast({ title: t("editor.toast.export_failed"), variant: "destructive" });
     } finally {
       setIsExporting2K(false);
     }
