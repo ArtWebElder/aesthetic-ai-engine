@@ -2796,6 +2796,13 @@ export default function EditorPage() {
                       }}
                     />
                   </label>
+                  {subjectPreviewUrl ? (
+                    <img
+                      src={subjectPreviewUrl}
+                      alt="Subject preview"
+                      className="h-14 w-14 rounded-md border border-border object-cover"
+                    />
+                  ) : null}
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <label className="text-xs text-muted-foreground">Subject Weight</label>

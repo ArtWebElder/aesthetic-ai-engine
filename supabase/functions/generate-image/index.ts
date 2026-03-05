@@ -756,6 +756,7 @@ Deno.serve(async (req: Request) => {
               subjectImageMime: preprocessedSubject.mime,
               identityStrength: input.identityStrength ?? 90,
               aspectRatio,
+              styleReferences: styleReferences.length > 0 ? styleReferences : undefined,
             });
             strictBase64 = fallbackResult.imageBase64;
             if (!strictBase64.trim()) {

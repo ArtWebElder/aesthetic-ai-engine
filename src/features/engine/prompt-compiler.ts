@@ -33,8 +33,8 @@ type MoodTier = "drama_impact" | "clean_premium" | "dark_cinematic" | "neutral";
 
 type PaletteMode = "mono" | "duo" | "tri" | "custom";
 
-/** Builds a natural-language color-palette instruction for the scene block.
- *  Respects paletteMode: mono uses only primary, duo adds accent, tri adds secondary, custom uses all provided. */
+/** Builds a mandatory color-palette block to be placed at the START of the prompt.
+ *  Uses imperative language so the model cannot ignore the palette. */
 function buildColorPaletteInstruction(
   brand: ProjectSpec["brand"],
   module: string
@@ -46,28 +46,30 @@ function buildColorPaletteInstruction(
 
   const isValid = (v?: string) => v && /^#[0-9a-fA-F]{3,8}$/.test(v.trim());
 
-  // Always anchor on primary (dominant background / main surface)
   if (isValid(brand.primary)) {
-    parts.push(`primary ${brand.primary} (dominant background and main surfaces)`);
+    parts.push(
+      `Primary color: ${brand.primary} — MUST be used for dominant background, main surfaces, and overall atmosphere.`
+    );
   }
 
-  // duo, tri, custom: include accent
   if (mode !== "mono" && isValid(brand.accent)) {
-    parts.push(`accent ${brand.accent} (highlights, focal points, and key details)`);
+    parts.push(
+      `Accent color: ${brand.accent} — MUST be used for rim lighting, neon glow, particle effects, energy sources, and focal highlights.`
+    );
   }
 
-  // tri and custom: include secondary
   if ((mode === "tri" || mode === "custom") && isValid(brand.secondary)) {
-    parts.push(`secondary ${brand.secondary} (supporting fills and mid-tone elements)`);
+    parts.push(
+      `Secondary color: ${brand.secondary} — use for supporting fills, shadow mid-tones, and secondary surfaces.`
+    );
   }
 
-  // custom: include neutral bg if set
   if (mode === "custom" && isValid(brand.neutralBg)) {
-    parts.push(`neutral background ${brand.neutralBg}`);
+    parts.push(`Neutral background: ${brand.neutralBg} — use for background depth and ambient fills.`);
   }
 
   if (parts.length === 0) return "";
-  return `Color palette — ${parts.join(". ")}. Apply this palette consistently across the scene.`;
+  return `COLOR PALETTE (MANDATORY — non-negotiable): ${parts.join(" ")} The dominant visual atmosphere of the entire image MUST reflect these colors. This is a hard requirement.`;
 }
 
 function getMoodTier(mood: string): MoodTier {
@@ -262,9 +264,6 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       `VISUAL DIRECTIVES: ${extraDetails}. These are specific visual requirements — include them exactly.`
     );
 
-  const colorInstruction = buildColorPaletteInstruction(brand, module);
-  if (colorInstruction) sceneParts.push(colorInstruction);
-
   if (normalizedReferences.length > 0) {
     const ref = normalizedReferences[0];
     const roleGuidance =
@@ -282,13 +281,33 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
 
   const sceneBlock = sceneParts.length > 1 ? sceneParts.join(" ") : null;
 
-  // ── [SAFE AREA BLOCK] ─────────────────────────────────────────────────────
-  // The AI must NOT render any text in the image. Typography is applied
-  // exclusively by the Canvas 2D renderer (exportSocialPost2K) after generation.
-  const textSafeAreaBlock =
-    module !== "photoshoot"
-      ? `TEXT SAFE AREA: Do NOT render any text, letters, words, numbers, or typographic elements anywhere in the image. The image must be completely free of text. ${resolveTextPosition(safeSpace, module)} This area will be used for external text overlay.`
-      : null;
+  // ── [TYPOGRAPHY_BLOCK] ────────────────────────────────────────────────────
+  // When text content is provided, the AI integrates it into the image (Stage 4b IA-first).
+  // When no text: reserve a clean safe area for the empty composition.
+  const hasText = Boolean(headline?.trim() || subheadline?.trim() || cta?.trim());
+
+  const typographyBlock = (() => {
+    if (module === "photoshoot") return null;
+
+    if (hasText) {
+      const textPosition = resolveTextPosition(safeSpace, module);
+      const lines: string[] = [
+        "TYPOGRAPHY (integrated into the image — part of the scene, not an overlay):",
+      ];
+      if (headline?.trim()) lines.push(`Headline: "${headline.trim()}" — large, bold, dominant typeface, high contrast against background.`);
+      if (subheadline?.trim()) lines.push(`Subheadline: "${subheadline.trim()}" — medium weight, legible, secondary hierarchy.`);
+      if (cta?.trim()) lines.push(`CTA: "${cta.trim()}" — button-style or strong callout treatment.`);
+      lines.push(
+        `Text placement: ${textPosition}`,
+        "Render the text with texture, ambient lighting blend, and depth consistent with the scene. The typography must feel painted into the scene — not floating on top.",
+        "Letterforms must be sharp, correctly spelled, and readable."
+      );
+      return lines.join(" ");
+    }
+
+    // No text — reserve compositional space
+    return `TEXT SAFE AREA: No text in the image. ${resolveTextPosition(safeSpace, module)} Keep this zone visually clean with low complexity for future text overlay.`;
+  })();
 
   // ── [QUALITY_BLOCK] ───────────────────────────────────────────────────────
   const qualityParts: string[] = [
@@ -296,14 +315,15 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     "Consistent lighting — the light direction on the subject must match the scene light source. No contradictory dual lighting.",
     "No white halo or edge fringe around the subject. No JPEG artifacts. No pixelation. No over-compression.",
     "No watermarks. No logos from other tools.",
-    "No text, no letters, no words, no numbers anywhere in the image.",
+    !hasText ? "No text, no letters, no words, no numbers anywhere in the image." : null,
     "Print-ready quality. The result must be directly usable in a paid advertising campaign without any additional editing.",
   ];
 
   const qualityBlock = qualityParts.filter(Boolean).join(" ");
 
   // ── Assemble full prompt ──────────────────────────────────────────────────
-  const prompt = [styleBlock, subjectBlock, sceneBlock, textSafeAreaBlock, qualityBlock]
+  const colorBlock = buildColorPaletteInstruction(brand, module) || null;
+  const prompt = [colorBlock, styleBlock, subjectBlock, sceneBlock, typographyBlock, qualityBlock]
     .filter(Boolean)
     .join("\n\n");
 
@@ -313,9 +333,9 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     "stock photo generic background, inconsistent lighting, two suns, dual contradictory light sources",
     "white halo around subject, edge fringe, cutout artifact, JPEG noise, pixelated, over-compressed",
     "watermark, tool logo, brand logo overlay, copyright stamp",
-    module !== "photoshoot"
+    module !== "photoshoot" && !hasText
       ? "text, letters, words, numbers, typography, headline, label, caption, subtitle, watermark text, any written characters"
-      : "text overlay, graphic design element, logo, watermark",
+      : "watermark, tool logo overlay, copyright stamp, unintended random text artifacts",
     module === "ecom_banner" ? "wrong product category, unrelated object, replaced product" : null,
   ]
     .filter(Boolean)
