@@ -2561,8 +2561,8 @@ export default function EditorPage() {
               {isGenerating && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/70 backdrop-blur-[2px] rounded-lg md:rounded-2xl pointer-events-none">
                   <div className="w-9 h-9 rounded-full border-2 border-border border-t-primary animate-spin" />
-                  <div className="text-sm font-medium text-foreground">Gerando imagem...</div>
-                  <div className="text-xs text-muted-foreground">Aguarde alguns segundos</div>
+                  <div className="text-sm font-medium text-foreground">{t("editor.canvas.generating")}</div>
+                  <div className="text-xs text-muted-foreground">{t("editor.canvas.generating_wait")}</div>
                 </div>
               )}
 
@@ -2608,8 +2608,9 @@ export default function EditorPage() {
                       ? "bg-primary/10 text-primary"
                       : "text-foreground hover:bg-muted",
                   ].join(" ")}
+                  aria-label={t("editor.canvas.zoom_fit_aria")}
                 >
-                  Fit
+                  {t("editor.canvas.zoom_fit")}
                 </button>
               </div>
             </div>
