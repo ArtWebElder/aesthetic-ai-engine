@@ -66,7 +66,7 @@ export class ReplicateFluxKontextProvider {
     if (!this.version) {
       throw new Error("replicate_missing_version");
     }
-  } f
+  }
 
   async generateImageToImageStrict(input: ReplicateStrictInput): Promise<ReplicateStrictResult> {
     const initImage = `data:${input.subjectImageMime};base64,${input.subjectImageBase64}`;
