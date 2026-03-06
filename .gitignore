@@ -32,3 +32,4 @@ skilful-answer-*.json
 *-h8-*.json
 *.service-account.json
 
+supabase/.temp/
