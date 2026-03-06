@@ -137,7 +137,7 @@ Export 2K / 4K
 ## 🤖 PIPELINE DE IA (PROVIDERS) — STATUS ATUAL
 
 ### Strict Identity ON (padrão para Ecom Banner e Photoshoot)
-1. **Primário:** Gemini (`gemini-3-pro-image-preview`) via Gemini API — modo IMG2IMG ✅ **IMPLEMENTADO**
+1. **Primário:** Gemini (`gemini-2.0-flash-preview-image-generation`) via Gemini API — modo IMG2IMG ✅ **IMPLEMENTADO**
 2. **Fallback:** FLUX.1 Kontext Pro via Replicate (`replicateFluxKontext.ts`) ✅ **IMPLEMENTADO**
 3. **Erro se ambos falharem:** `strict_identity_provider_unavailable` ✅ **IMPLEMENTADO**
 
@@ -181,9 +181,9 @@ Export 2K / 4K
 {
   "generationId": "...",
   "signedUrl": "...",
-  "provider": "gemini-nano-banana-pro",
+  "provider": "gemini-2.0-flash-preview-image-generation",
   "meta": {
-    "providerName": "gemini-nano-banana-pro | replicate-flux-kontext-pro",
+    "providerName": "gemini-2.0-flash-preview-image-generation | replicate-flux-kontext-pro",
     "modeUsed": "strict_identity | text_to_image",
     "strictIdentity": true,
     "identityStrength": 90,
@@ -286,7 +286,52 @@ STAGE 5 — MVP Polish       ❌ PENDENTE   (landing page, billing, testes)
 
 ---
 
+<<<<<<< HEAD
 >>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
+=======
+## ✅ FASE 1 — MASTER SPEC DIFF — CONCLUÍDA (2026-03)
+
+Todos os 13 diffs da FASE 1 (PS.0 → TR.7) foram executados com sucesso. Ver `CREATYNG_EXECUTION_LOG.md` para status detalhado de cada diff.
+
+### Arquivos criados na FASE 1
+| Arquivo | Diff | Descrição |
+|---|---|---|
+| `src/types/preset.ts` | PS.0 | Tipos universais: CreatygnPreset, WizardState, TextPresetConfig, ColorConfig, etc. |
+| `src/data/systemPresets.ts` | PS.0 | 5 presets de imagem + 8 presets de texto + PRESET_AFFINITY |
+| `src/lib/presetUtils.ts` | PS.0 | getPresetById, applyPresetOverride, buildActiveConfig |
+| `supabase/migrations/001_preset_system.sql` | PS.0 | Schema SQL: presets, generation_feedback, user_saved_presets |
+| `src/stores/useWizardStore.ts` | 9.1 | Zustand store — estado global do wizard |
+| `src/features/editor/wizard/WizardLayout.tsx` | 9.1 | Stepper 3 passos + keyboard nav + quick/advanced toggle |
+| `src/features/editor/wizard/WizardStep1Subject.tsx` | 9.1/9.5 | Upload subject + framing + angle + auto-preset suggestion |
+| `src/features/editor/wizard/WizardStep2Style.tsx` | 9.1/9.2 | PresetGrid + atmosfera + iluminação + color pickers |
+| `src/features/editor/wizard/WizardStep3Text.tsx` | 9.1/9.3 | Headline + CTA + subheadline + TextStylePicker + FontSelector |
+| `src/features/editor/wizard/PreviewCanvas.tsx` | 9.4 | Canvas de preview com position controls |
+| `src/features/editor/wizard/index.ts` | 9.1 | Barrel exports |
+| `public/textures/grunge-metal.png` | TR.1 | Textura metálica 256×256 gerada programaticamente |
+| `public/textures/spray-paint.png` | TR.1 | Textura spray 256×256 |
+| `public/textures/noise-subtle.png` | TR.1 | Textura de ruído sutil 256×256 |
+| `src/features/editor/engine/textureLoader.ts` | TR.1 | Cache de texturas com Map + preloadTextures() |
+| `src/features/editor/engine/cssVarsInjector.ts` | TR.2 | injectPresetCSSVars — CSS custom properties do tema |
+| `src/components/PresetCard.tsx` | 9.2 | Card de preset com thumbnail/emoji + tooltip |
+| `src/components/PresetGrid.tsx` | 9.2 | Grid configurável com seleção exclusiva por grupo |
+| `src/components/TextStylePicker.tsx` | TR.3 | 8 mini-canvas com preview ao vivo por preset |
+| `src/components/FontSelector.tsx` | 9.3 | Selector de fonte com override via Google Fonts |
+| `src/features/editor/engine/accentWord.ts` | TR.4 | detectAccentWord + parseManualAccent + getAccentParts |
+| `src/features/editor/engine/textRenderer.ts` | TR.5 | renderTextOnCanvas — motor principal Canvas 2D |
+| `src/features/editor/engine/overlayIntegration.ts` | TR.6 | Overlay adaptativo por luminosidade (ITU-R BT.709) |
+| `src/lib/presetSuggestion.ts` | 9.5 | suggestPresetForSubject(profile) |
+| `src/features/editor/engine/exportComposed.ts` | TR.7 | exportComposed — composição final + 6 EXPORT_FORMATS |
+| `CREATYNG_EXECUTION_LOG.md` | — | Log de execução de todos os diffs |
+
+### Decisões técnicas tomadas na FASE 1
+- **zustand** adicionado como dependência (`npm install zustand`)
+- **SubjectProfile/VisualDNA** duplicados no frontend (tsconfig exclui supabase/functions/)
+- **Canvas 2D gradient preview**: mini-canvas usa cores sólidas + shadow; textura real apenas no export final
+- **Stage 3 SUSPENSO**: tipografia IA-first substituiu HTML/CSS overlay
+
+---
+
+>>>>>>> origin/claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
 ## 📏 REGRAS DE EXECUÇÃO PARA O CLAUDE CODE
 
 ### Tamanho das tasks (CRÍTICO)
