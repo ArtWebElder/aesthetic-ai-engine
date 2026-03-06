@@ -1,11 +1,25 @@
 // src/features/editor/wizard/WizardStep3Text.tsx
-// CREATYNG — MASTER SPEC DIFF TR.3 (TextStylePicker integrado)
+// CREATYNG — MASTER SPEC DIFF 9.3 (FontSelector integrado)
 
 import { useDeferredValue } from "react";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { TextStylePicker } from "@/components/TextStylePicker";
+import { FontSelector } from "@/components/FontSelector";
 import type { CreatygnPreset, ColorConfig } from "@/types/preset";
 import { DEFAULT_COLORS } from "@/features/editor/engine/cssVarsInjector";
+import { getPresetById } from "@/lib/presetUtils";
+
+// Fontes sugeridas por preset de texto
+const SUGGESTED_FONTS: Record<string, string[]> = {
+  "sys-txt-impact":  ["Anton", "Bebas Neue", "Oswald", "Black Han Sans"],
+  "sys-txt-clean":   ["Bebas Neue", "Oswald", "Barlow Condensed", "Teko"],
+  "sys-txt-dark":    ["Cinzel Decorative", "Cinzel", "Cormorant Garamond"],
+  "sys-txt-neon":    ["Rajdhani", "Orbitron", "Exo 2", "Share Tech Mono"],
+  "sys-txt-street":  ["Black Han Sans", "Anton", "Oswald"],
+  "sys-txt-luxury":  ["Cormorant Garamond", "Cinzel", "Montserrat"],
+  "sys-txt-sport":   ["Teko", "Barlow Condensed", "Oswald", "Rajdhani"],
+  "sys-txt-minimal": ["Inter", "Space Grotesk", "DM Sans", "Plus Jakarta Sans"],
+};
 
 export function WizardStep3Text() {
   const {
@@ -19,6 +33,7 @@ export function WizardStep3Text() {
     selectedTextPresetId,
     selectTextPreset,
     activePresetConfig,
+    setPresetOverride,
   } = useWizardStore();
 
   // Debounce do texto para não redesenhar 8 mini-canvas a cada keystroke
@@ -87,11 +102,15 @@ export function WizardStep3Text() {
         onSelect={handleSelectTextPreset}
       />
 
-      {/* FontSelector placeholder — preenchido no DIFF 9.3 */}
+      {/* FontSelector — override da fonte do preset ativo */}
       {mode === "advanced" && (
-        <div className="p-3 rounded-lg border border-dashed border-border text-center text-xs text-muted-foreground">
-          Seletor de fonte (override) — DIFF 9.3
-        </div>
+        <FontSelector
+          value={activePresetConfig.text?.headlineFont ?? "Anton"}
+          previewText={headline}
+          suggestedFonts={SUGGESTED_FONTS[selectedTextPresetId ?? ""] ?? ["Anton", "Bebas Neue"]}
+          onChange={(font) => setPresetOverride("text.headlineFont", font)}
+          label="Fonte principal (override)"
+        />
       )}
     </div>
   );
