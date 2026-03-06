@@ -29,7 +29,7 @@ export interface CompiledPrompt {
   };
 }
 
-export type MoodTier = "drama_impact" | "clean_premium" | "dark_cinematic" | "neutral";
+type MoodTier = "drama_impact" | "clean_premium" | "dark_cinematic" | "neutral";
 
 type PaletteMode = "mono" | "duo" | "tri" | "custom";
 
@@ -72,37 +72,11 @@ function buildColorPaletteInstruction(
   return `COLOR PALETTE (MANDATORY — non-negotiable): ${parts.join(" ")} The dominant visual atmosphere of the entire image MUST reflect these colors. This is a hard requirement.`;
 }
 
-export function getMoodTier(mood: string): MoodTier {
+function getMoodTier(mood: string): MoodTier {
   if (mood === "cinematic_moody" || mood === "energetic_pop") return "drama_impact";
   if (mood === "luxury_premium" || mood === "clean_bright") return "clean_premium";
   if (mood === "night_neon" || mood === "cool_modern") return "dark_cinematic";
   return "neutral";
-}
-
-function getTierStyleRecipe(tier: MoodTier): string {
-  if (tier === "drama_impact") {
-    return "Style: DRAMA / IMPACT — 3-point lighting: soft frontal key light, intense purple/magenta rim light from behind creating a glowing halo around the subject, dark fill side with deep shadows. Aggressive background bokeh at f/1.4. Airborne particles (sparks, glowing embers, light dust). High contrast, deep blacks, saturated highlights, cinematic color grading.";
-  }
-  if (tier === "clean_premium") {
-    return "Style: CLEAN / PREMIUM — soft diffused natural window light, even flat illumination, near-white or cool gray neutral background, near-zero harsh shadows, high-end architectural studio aesthetic. Intentional negative space. Refined, editorial, minimal elegance.";
-  }
-  if (tier === "dark_cinematic") {
-    return "Style: DARK / CINEMATIC — cold frontal key light with cyan/blue color cast, intense rim light from behind, deep black background suggesting a tunnel or corridor with receding depth. Volumetric fog, god rays cutting through darkness. Floating 3D glass prisms and crystal fragments refracting light. Monochromatic cyan-black palette. Extreme subject sharpness against dark cinematic background.";
-  }
-  return "Style: COMMERCIAL — professional balanced lighting, clean direct composition, sharp details.";
-}
-
-function getTierTypographyStyle(tier: MoodTier): string {
-  if (tier === "drama_impact") {
-    return "bold display typeface with metallic grunge texture, highlight key word in vibrant accent color (purple #7B2FFF, orange #FF5500, or cyan #00E5FF), positioned at lower third of frame, letterforms interact with scene rim lighting and particles";
-  }
-  if (tier === "clean_premium") {
-    return "bold sans-serif, pure black or white, left-aligned two-level hierarchy (large headline + smaller subheadline), CTA rendered as a clean outline button, no decorative texture, premium minimal treatment";
-  }
-  if (tier === "dark_cinematic") {
-    return "gothic/blackletter or heavy serif typeface, pure white or gold/silver metallic, title anchored at top of frame with CTA at base, subtle neon glow or metallic sheen matching the scene atmosphere";
-  }
-  return "large bold, high contrast against background, clean legible letterforms";
 }
 
 
@@ -235,7 +209,16 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? "strong visual impact, high-quality commercial feel"
       : "clean and refined, subtle and professional";
 
-  const styleBlock = `Photorealistic cinematic ${moduleLabel}. Professional marketing creative, agency quality. Ultra-detailed, 8K resolution equivalent. Visual intensity: ${intensityLabel}. ${getTierStyleRecipe(moodTier)}`;
+  const tierLabel =
+    moodTier === "drama_impact"
+      ? "DRAMA / IMPACT — high contrast, dramatic atmosphere, bold visual energy"
+      : moodTier === "clean_premium"
+      ? "CLEAN / PREMIUM — refined editorial, minimal elegance, professional clarity"
+      : moodTier === "dark_cinematic"
+      ? "DARK / CINEMATIC — moody, immersive depth, cinematic atmosphere"
+      : "professional commercial — sharp, clean, direct";
+
+  const styleBlock = `Photorealistic cinematic ${moduleLabel}. Professional marketing creative, agency quality. Ultra-detailed, 8K resolution equivalent. Visual intensity: ${intensityLabel}. Style direction: ${tierLabel}.`;
 
   // ── [SUBJECT_BLOCK] ───────────────────────────────────────────────────────
   const subjectDescParts: string[] = [];
@@ -299,18 +282,31 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const sceneBlock = sceneParts.length > 1 ? sceneParts.join(" ") : null;
 
   // ── [TYPOGRAPHY_BLOCK] ────────────────────────────────────────────────────
-  // RULE: The AI NEVER generates text. Typography is applied by Canvas 2D
-  // renderer (exportCanvasWithText) after generation. The AI only prepares
-  // compositional space in the correct zone.
+  // When text content is provided, the AI integrates it into the image (Stage 4b IA-first).
+  // When no text: reserve a clean safe area for the empty composition.
   const hasText = Boolean(headline?.trim() || subheadline?.trim() || cta?.trim());
 
   const typographyBlock = (() => {
     if (module === "photoshoot") return null;
-    const textZone = resolveTextPosition(safeSpace, module);
+
     if (hasText) {
-      return `TEXT COMPOSITION ZONE: ${textZone} This area will receive real typography in post-processing — keep it visually atmospheric and lower-contrast: no busy textures, no competing details, no hard edges in this zone. The background should feel like it was designed to receive text. Do NOT generate any text, letters, words, numbers, or typographic elements anywhere in the image — zero exceptions.`;
+      const textPosition = resolveTextPosition(safeSpace, module);
+      const lines: string[] = [
+        "TYPOGRAPHY (integrated into the image — part of the scene, not an overlay):",
+      ];
+      if (headline?.trim()) lines.push(`Headline: "${headline.trim()}" — large, bold, dominant typeface, high contrast against background.`);
+      if (subheadline?.trim()) lines.push(`Subheadline: "${subheadline.trim()}" — medium weight, legible, secondary hierarchy.`);
+      if (cta?.trim()) lines.push(`CTA: "${cta.trim()}" — button-style or strong callout treatment.`);
+      lines.push(
+        `Text placement: ${textPosition}`,
+        "Render the text with texture, ambient lighting blend, and depth consistent with the scene. The typography must feel painted into the scene — not floating on top.",
+        "Letterforms must be sharp, correctly spelled, and readable."
+      );
+      return lines.join(" ");
     }
-    return `TEXT SAFE AREA: No text in the image. ${textZone} Keep this zone clean and minimal.`;
+
+    // No text — reserve compositional space
+    return `TEXT SAFE AREA: No text in the image. ${resolveTextPosition(safeSpace, module)} Keep this zone visually clean with low complexity for future text overlay.`;
   })();
 
   // ── [QUALITY_BLOCK] ───────────────────────────────────────────────────────
@@ -319,7 +315,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     "Consistent lighting — the light direction on the subject must match the scene light source. No contradictory dual lighting.",
     "No white halo or edge fringe around the subject. No JPEG artifacts. No pixelation. No over-compression.",
     "No watermarks. No logos from other tools.",
-    "No text, no letters, no words, no numbers, no typography anywhere in the image.",
+    !hasText ? "No text, no letters, no words, no numbers anywhere in the image." : null,
     "Print-ready quality. The result must be directly usable in a paid advertising campaign without any additional editing.",
   ];
 
@@ -337,8 +333,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     "stock photo generic background, inconsistent lighting, two suns, dual contradictory light sources",
     "white halo around subject, edge fringe, cutout artifact, JPEG noise, pixelated, over-compressed",
     "watermark, tool logo, brand logo overlay, copyright stamp",
-    module !== "photoshoot"
-      ? "text, letters, words, numbers, typography, headline, label, caption, subtitle, watermark text, any written characters, fonts rendered in scene"
+    module !== "photoshoot" && !hasText
+      ? "text, letters, words, numbers, typography, headline, label, caption, subtitle, watermark text, any written characters"
       : "watermark, tool logo overlay, copyright stamp, unintended random text artifacts",
     module === "ecom_banner" ? "wrong product category, unrelated object, replaced product" : null,
   ]

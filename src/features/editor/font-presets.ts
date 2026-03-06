@@ -43,41 +43,13 @@ export const FONT_OPTIONS: readonly FontOption[] = [
     googleFamily: "Inter",
     group: "clean",
   },
-  // ── Drama / Impact ─────────────────────────────────────────────────────────
-  {
-    value: "anton",
-    label: "Anton",
-    googleFamily: "Anton",
-    group: "drama",
-  },
-  {
-    value: "bebas_neue",
-    label: "Bebas Neue",
-    googleFamily: "Bebas Neue",
-    group: "drama",
-  },
-  // ── Dark / Cinematic ───────────────────────────────────────────────────────
-  {
-    value: "oswald",
-    label: "Oswald",
-    googleFamily: "Oswald",
-    group: "dark",
-  },
 ] as const;
-
-/** Pesos disponíveis por fonte (Google Fonts não aceita pesos inexistentes) */
-const FONT_WEIGHTS: Partial<Record<FontPreset, string>> = {
-  anton: "400",           // Anton só tem 400
-  bebas_neue: "400",      // Bebas Neue só tem 400
-  oswald: "300;400;500;600;700",
-};
 
 /** URL do Google Fonts para carregar todas as fontes disponíveis */
 export function buildGoogleFontsUrl(): string {
-  const families = FONT_OPTIONS.map((f) => {
-    const weights = FONT_WEIGHTS[f.value] ?? "400;600;700;800";
-    return `family=${encodeURIComponent(f.googleFamily)}:wght@${weights}`;
-  }).join("&");
+  const families = FONT_OPTIONS.map(
+    (f) => `family=${encodeURIComponent(f.googleFamily)}:wght@400;600;700;800`,
+  ).join("&");
   return `https://fonts.googleapis.com/css2?${families}&display=swap`;
 }
 

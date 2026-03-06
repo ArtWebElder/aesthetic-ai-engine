@@ -95,7 +95,7 @@ export type ScenePropSlug =
    BRAND / TOKENS
 ========================= */
 
-export type FontPreset = "inter" | "space_grotesk" | "dm_sans" | "plus_jakarta" | "anton" | "bebas_neue" | "oswald";
+export type FontPreset = "inter" | "space_grotesk" | "dm_sans" | "plus_jakarta";
 export type AccentMode = "solid" | "gradient";
 
 export interface ContentSpec {

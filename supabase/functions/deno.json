@@ -2,5 +2,8 @@
   "compilerOptions": {
     "lib": ["deno.ns", "dom", "es2022"],
     "strict": true
+  },
+  "imports": {
+    "imagescript": "npm:imagescript@1.3.0"
   }
 }

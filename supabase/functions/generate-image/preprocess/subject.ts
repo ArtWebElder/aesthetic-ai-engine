@@ -1,6 +1,14 @@
 /// <reference lib="deno.ns" />
 import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
+// Cache global: se o runtime nao suportar o decoder (imagescript),
+// nao tenta de novo em cada request (evita log spam + custo).
+let DECODE_RUNTIME_SUPPORTED: boolean | null = null;
+
+function markDecodeUnsupported() {
+  DECODE_RUNTIME_SUPPORTED = false;
+}
+
 type PreprocessFlags = {
   alphaComposited: boolean;
   upscaled: boolean;
@@ -233,10 +241,28 @@ export async function preprocessSubjectImage(
     throw new Error(`subject_unsupported_mime:${mime}`);
   }
 
+  if (DECODE_ENABLED) {
+    let urlHost = "unknown";
+    try {
+      urlHost = new URL(url).host || "unknown";
+    } catch {
+      urlHost = "unknown";
+    }
+    console.log(
+      JSON.stringify({
+        msg: "preprocess_decode_enabled",
+        urlHost,
+        mime,
+        byteLength: bytes.byteLength,
+      }),
+    );
+  }
+
+
   const intrinsic = getImageInfo(bytes, mime);
   const intrinsicWidth = intrinsic?.width ?? 0;
   const intrinsicHeight = intrinsic?.height ?? 0;
-  const hasAlpha = intrinsic?.hasAlpha ?? mime === "image/png";
+  const hasAlpha = intrinsic?.hasAlpha ?? (mime === "image/png");
 
   if (bytes.byteLength > MAX_BYTES) {
     const hash = await sha256Hex(bytes);
@@ -271,13 +297,39 @@ export async function preprocessSubjectImage(
     padded: false,
   };
 
+  // Se ja detectamos que o runtime nao suporta decode, nao tenta.
+  if (DECODE_RUNTIME_SUPPORTED === false) {
+    const base64 = encodeBase64(outBytes);
+    return {
+      base64,
+      mime: outMime,
+      dataUrl: `data:${outMime};base64,${base64}`,
+      width: outWidth,
+      height: outHeight,
+      hash: await sha256Hex(outBytes),
+      flags,
+    };
+  }
+
   // Real processing path. If decode/transform is unavailable in Edge runtime,
   // we keep deterministic fallback output with computed dimensions and hash.
   try {
     if (!DECODE_ENABLED) {
       throw new Error("preprocess_decode_disabled");
     }
-    const mod = await import("https://esm.sh/imagescript@1.3.0?target=deno&no-dts");
+    let mod: any;
+    try {
+      mod = await import("npm:imagescript@1.3.0");
+      // Se chegou aqui, o runtime suportou o import.
+      DECODE_RUNTIME_SUPPORTED = true;
+    } catch (e) {
+      // Isso acontece em runtimes sem suporte ao pacote nativo.
+      markDecodeUnsupported();
+      if (DECODE_ENABLED) {
+        console.error("preprocess_decode_failed", String((e as { message?: string })?.message ?? e));
+      }
+      throw e;
+    }
     const Img =
       (mod as any).Image ??
       (mod as any).default?.Image ??
@@ -289,56 +341,90 @@ export async function preprocessSubjectImage(
     let working: any = decoded;
     let currentWidth = Number(decoded?.width) || intrinsicWidth;
     let currentHeight = Number(decoded?.height) || intrinsicHeight;
+    // --- Defaults (garante que minSide não zere por acidente) ---
+    // Se você já tem esses defaults declarados acima no arquivo, mantém os seus,
+    // mas garante que minSide fique >= 1 quando decode está ON.
+    const minSide = Math.max(1, Number((globalThis as any).__KM_MIN_SIDE__ ?? 1024));
+    const paddingPct = Number((globalThis as any).__KM_PADDING_PCT__ ?? 0.12);
+    const padPx = Math.max(0, Math.round(minSide * Math.max(0, paddingPct)));
 
-    if (currentWidth > 0 && currentHeight > 0) {
-      const currentMin = Math.min(currentWidth, currentHeight);
-      if (currentMin < minSide) {
-        const scale = minSide / currentMin;
-        const targetWidth = Math.max(1, Math.round(currentWidth * scale));
-        const targetHeight = Math.max(1, Math.round(currentHeight * scale));
-        if (typeof working.resize === "function") {
-          working = working.resize(targetWidth, targetHeight);
-          currentWidth = targetWidth;
-          currentHeight = targetHeight;
-          flags.upscaled = true;
-        }
+    const minCurrent = Math.max(1, Math.min(currentWidth || 1, currentHeight || 1));
+
+    // --- UPSCALE: se menor que minSide, escala > 1 (NÃO capar em 1) ---
+    if (minSide > 0 && minCurrent < minSide && typeof working.resize === "function") {
+      const scale = minSide / minCurrent;
+      const targetWidth = Math.max(1, Math.round(currentWidth * scale));
+      const targetHeight = Math.max(1, Math.round(currentHeight * scale));
+      working = await working.resize(targetWidth, targetHeight);
+      currentWidth = targetWidth;
+      currentHeight = targetHeight;
+      flags.upscaled = true;
+    }
+
+    // --- PAD + ALPHA COMPOSITE (se PNG com alpha ou se padding > 0) ---
+    const needsBackgroundComposite = Boolean(hasAlpha);
+    const needsPad = padPx > 0;
+    if ((needsBackgroundComposite || needsPad) && typeof Img === "function") {
+      const canvasWidth = currentWidth + padPx * 2;
+      const canvasHeight = currentHeight + padPx * 2;
+      const canvas = new Img(canvasWidth, canvasHeight);
+      // bg branco
+      if (typeof canvas.fill === "function") canvas.fill(0xffffffff);
+      if (typeof canvas.composite === "function") {
+        await canvas.composite(working, padPx, padPx);
       }
+      working = canvas;
+      currentWidth = canvasWidth;
+      currentHeight = canvasHeight;
+      flags.padded = needsPad;
+      flags.alphaComposited = needsBackgroundComposite;
+    }
 
-      const padPx = Math.max(0, Math.round(Math.min(currentWidth, currentHeight) * paddingPct));
-      const needsBackgroundComposite = hasAlpha;
-      const needsPad = padPx > 0;
+    // --- Encode final ---
+    // imagescript normalmente tem encode() ou encodePNG()
+    let encoded: Uint8Array | null = null;
+    if (typeof working.encode === "function") {
+      const r = await working.encode();
+      encoded = r instanceof Uint8Array ? r : new Uint8Array(r);
+    } else if (typeof working.encodePNG === "function") {
+      const r = await working.encodePNG();
+      encoded = r instanceof Uint8Array ? r : new Uint8Array(r);
+    }
+    if (!encoded || encoded.byteLength === 0) {
+      throw new Error("imagescript_encode_failed");
+    }
 
-      if (needsBackgroundComposite || needsPad) {
-        const canvasWidth = currentWidth + padPx * 2;
-        const canvasHeight = currentHeight + padPx * 2;
-        const canvas = new Img(canvasWidth, canvasHeight);
-        if (typeof canvas.fill === "function") {
-          canvas.fill(bg);
-        }
-        if (typeof canvas.composite === "function") {
-          canvas.composite(working, padPx, padPx);
-        }
-        working = canvas;
-        flags.alphaComposited = needsBackgroundComposite;
-        flags.padded = needsPad;
-        currentWidth = canvasWidth;
-        currentHeight = canvasHeight;
-      }
+    outBytes = encoded;
+    outMime = "image/png";
+    outWidth = currentWidth;
+    outHeight = currentHeight;
 
-      const encoded = typeof working.encode === "function" ? await working.encode() : null;
-      const encodedBytes = encoded instanceof Uint8Array ? encoded : encoded ? new Uint8Array(encoded) : null;
-      if (encodedBytes && encodedBytes.byteLength > 0) {
-        outBytes = encodedBytes;
-        outMime = "image/png";
-        outWidth = currentWidth;
-        outHeight = currentHeight;
-      }
+    if (DECODE_ENABLED) {
+      console.log(
+        JSON.stringify({
+          msg: "preprocess_decode_success",
+          in: { w: intrinsicWidth, h: intrinsicHeight },
+          out: { w: outWidth, h: outHeight },
+          flags,
+        }),
+      );
     }
   } catch (err) {
     if (DECODE_ENABLED) {
-      console.error("preprocess_decode_failed", String((err as { message?: string })?.message ?? err));
+      const msg = String((err as { message?: string })?.message ?? err);
+      // Se for claramente "unsupported", marcamos e paramos de tentar nas proximas.
+      if (msg.toLowerCase().includes("unsupported arch/platform")) {
+        markDecodeUnsupported();
+      }
+      console.error("preprocess_decode_failed", msg);
     }
-    // Fallback path intentionally keeps original bytes/mime.
+    outBytes = bytes;
+    outMime = mime;
+    outWidth = intrinsicWidth;
+    outHeight = intrinsicHeight;
+    flags.alphaComposited = false;
+    flags.upscaled = false;
+    flags.padded = false;
   }
 
   const hash = await sha256Hex(outBytes);
