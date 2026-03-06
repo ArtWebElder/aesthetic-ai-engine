@@ -1,8 +1,10 @@
 // src/features/editor/wizard/WizardStep1Subject.tsx
 // CREATYNG — MASTER SPEC DIFF 9.5 (quick/advanced completo + sugestão automática)
+// DIFF 16.5: opção "Usar Avatar" se usuário tem avatar criado
 
 import { useEffect } from "react";
 import { useWizardStore } from "@/stores/useWizardStore";
+import { useBrandKitStore } from "@/stores/useBrandKitStore";
 import { suggestPresetForSubject } from "@/lib/presetSuggestion";
 
 const FRAMING_OPTIONS = [
@@ -22,12 +24,24 @@ export function WizardStep1Subject() {
   const { mode, subjectThumbnail, subjectProfile, setSubject, framing, cameraAngle, selectImagePreset } =
     useWizardStore();
 
+  // DIFF 16.5: avatar do brand kit ativo
+  const { getActiveKit } = useBrandKitStore();
+  const activeKit = getActiveKit();
+  const avatar = activeKit?.avatar;
+
   // Sugestão automática de preset quando o subjectProfile estiver disponível
   useEffect(() => {
     if (!subjectProfile) return;
     const suggestedId = suggestPresetForSubject(subjectProfile);
     selectImagePreset(suggestedId);
   }, [subjectProfile]);
+
+  // DIFF 16.5: usar avatar como subject
+  function handleUseAvatar() {
+    if (!avatar?.bestReference) return;
+    setSubject(avatar.bestReference, avatar.bestReference);
+    // Strict Identity ON automático — já é o padrão no pipeline
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -50,6 +64,33 @@ export function WizardStep1Subject() {
             : "Envie a foto e configure enquadramento e ângulo."}
         </p>
       </div>
+
+      {/* DIFF 16.5 — Opção de usar Avatar se disponível */}
+      {avatar?.bestReference && (
+        <div className="flex items-center gap-3 p-3 rounded-xl border border-purple-800 bg-purple-950/30">
+          <img
+            src={avatar.bestReference}
+            alt={avatar.name}
+            className="w-12 h-12 rounded-lg object-cover border-2 border-purple-600"
+          />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-white">Usar meu Avatar</p>
+            <p className="text-xs text-zinc-400">{avatar.name}</p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleUseAvatar}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                subjectThumbnail === avatar.bestReference
+                  ? "bg-purple-600 text-white"
+                  : "border border-purple-700 text-purple-400 hover:bg-purple-600 hover:text-white"
+              }`}
+            >
+              {subjectThumbnail === avatar.bestReference ? "✓ Usando" : "Usar"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Upload */}
       <label className="flex flex-col items-center justify-center w-full aspect-square max-h-72 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary transition-colors overflow-hidden relative bg-muted/30">
