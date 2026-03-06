@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import EditorPage from "@/features/editor/EditorPage";
+import { WizardPage } from "@/features/editor/wizard/WizardPage";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="projects" element={<Projects />} />
                 <Route path="projects/:id" element={<EditorPage />} />
+                <Route path="create" element={<WizardPage />} />
                 <Route path="billing" element={<Billing />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="help" element={<Help />} />
