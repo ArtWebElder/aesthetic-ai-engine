@@ -1,11 +1,12 @@
 // src/stores/useBrandKitStore.ts
-// CREATYNG — MASTER SPEC DIFF 16.2
-// Store Zustand para Brand Kits. CRUD via Supabase (quando disponível).
-// Fallback: localStorage para sessão offline.
+// CREATYNG — MASTER SPEC DIFF 16.2 + PRE.2
+// Store Zustand para Brand Kits.
+// Storage via camada de abstração em src/lib/brandKitStorage.ts
+// Para migrar para Supabase: trocar `brandKitStorage` por `supabaseBrandKitStorage`.
 
 import { create } from "zustand";
 import type { BrandKit, BrandKitDraft } from "@/types/brandKit";
-import { DEFAULT_BRAND_KIT_DRAFT } from "@/types/brandKit";
+import { brandKitStorage } from "@/lib/brandKitStorage";
 
 interface BrandKitStore {
   kits: BrandKit[];
@@ -25,105 +26,43 @@ interface BrandKitStore {
   getActiveKit: () => BrandKit | undefined;
 }
 
-// ─── CHAVE DE STORAGE LOCAL ───────────────────────────────────────────────────
-
-const LS_KEY = "creatyng_brand_kits";
-
-function loadFromLS(): BrandKit[] {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) return JSON.parse(raw) as BrandKit[];
-  } catch { /* */ }
-  return [];
-}
-
-function saveToLS(kits: BrandKit[]): void {
-  try {
-    localStorage.setItem(LS_KEY, JSON.stringify(kits));
-  } catch { /* */ }
-}
-
-function generateId(): string {
-  return crypto.randomUUID();
-}
-
-// ─── STORE ────────────────────────────────────────────────────────────────────
-
 export const useBrandKitStore = create<BrandKitStore>((set, get) => ({
   kits: [],
   loading: false,
 
-  // ── Carregar kits ─────────────────────────────────────────────────────────────
-
   loadKits: async () => {
     set({ loading: true, error: undefined });
     try {
-      // TODO: substituir por Supabase quando configurado
-      // const { data, error } = await supabase.from('brand_kits').select('*').order('created_at')
-      // if (error) throw error
-      // const kits = data.map(brandKitFromRow)
-      const kits = loadFromLS();
+      const kits = await brandKitStorage.load();
       set({ kits, loading: false });
     } catch (err) {
       set({ loading: false, error: String(err) });
     }
   },
 
-  // ── Criar kit ────────────────────────────────────────────────────────────────
-
   createKit: async (draft) => {
-    const now = new Date().toISOString();
-    const kit: BrandKit = {
-      ...draft,
-      id: generateId(),
-      userId: "local",              // substituir por auth.user.id
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    // TODO: Supabase insert
-    const kits = [...get().kits, kit];
-    saveToLS(kits);
-    set({ kits });
+    const kit = await brandKitStorage.create(draft);
+    set({ kits: [...get().kits, kit] });
     return kit;
   },
 
-  // ── Atualizar kit ────────────────────────────────────────────────────────────
-
   updateKit: async (id, patch) => {
-    const kits = get().kits.map((k) =>
-      k.id === id
-        ? { ...k, ...patch, updatedAt: new Date().toISOString() }
-        : k
-    );
-    // TODO: Supabase update
-    saveToLS(kits);
-    set({ kits });
+    const updated = await brandKitStorage.update(id, patch);
+    set({ kits: get().kits.map((k) => (k.id === id ? updated : k)) });
   },
-
-  // ── Deletar kit ──────────────────────────────────────────────────────────────
 
   deleteKit: async (id) => {
-    const kits = get().kits.filter((k) => k.id !== id);
-    // TODO: Supabase delete
-    saveToLS(kits);
-    set({ kits, activeKitId: get().activeKitId === id ? undefined : get().activeKitId });
+    await brandKitStorage.remove(id);
+    set({
+      kits: get().kits.filter((k) => k.id !== id),
+      activeKitId: get().activeKitId === id ? undefined : get().activeKitId,
+    });
   },
-
-  // ── Definir como default ─────────────────────────────────────────────────────
 
   setDefault: async (id) => {
-    const kits = get().kits.map((k) => ({
-      ...k,
-      isDefault: k.id === id,
-      updatedAt: k.id === id ? new Date().toISOString() : k.updatedAt,
-    }));
-    // TODO: Supabase update (enforce_single_default_kit trigger faz isso no banco)
-    saveToLS(kits);
+    const kits = await brandKitStorage.setDefault(id);
     set({ kits });
   },
-
-  // ── Seleção ativa ─────────────────────────────────────────────────────────────
 
   setActiveKit: (id) => set({ activeKitId: id }),
 
