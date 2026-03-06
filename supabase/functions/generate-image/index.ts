@@ -563,6 +563,17 @@ Deno.serve(async (req: Request) => {
     const selectedProvider = selectProvider({ strictIdentity: input.strictIdentity });
     const modeUsed = input.strictIdentity ? "strict_identity" : "legacy";
 
+    // ── DEBUG LOG TEMPORÁRIO ──────────────────────────────────────────────────
+    console.log("[DEBUG] provider_selected:", selectedProvider.name);
+    console.log("[DEBUG] strictIdentity:", input.strictIdentity);
+    console.log("[DEBUG] subjectImageUrl:", input.subjectImageUrl ?? "null");
+    console.log("[DEBUG] subjectBase64_present:", input.subjectBase64 ? `YES (${input.subjectBase64.length} chars)` : "null");
+    console.log("[DEBUG] referenceImages_count:", input.referenceImages.length);
+    console.log("[DEBUG] negativePrompt:", input.negativePrompt ?? "null");
+    console.log("[DEBUG] prompt_length:", input.prompt.length);
+    console.log("[DEBUG] prompt_full:\n---\n" + input.prompt + "\n---");
+    // ─────────────────────────────────────────────────────────────────────────
+
     const GCP_PROJECT_ID = Deno.env.get("GCP_PROJECT_ID") ?? "";
     const GCP_LOCATION = Deno.env.get("GCP_LOCATION") ?? "us-central1";
     const GCP_SA_KEY_B64 = Deno.env.get("GCP_SA_KEY_B64") ?? "";
