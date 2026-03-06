@@ -79,6 +79,32 @@ function getMoodTier(mood: string): MoodTier {
   return "neutral";
 }
 
+function getTierStyleRecipe(tier: MoodTier): string {
+  if (tier === "drama_impact") {
+    return "Style: DRAMA / IMPACT — 3-point lighting: soft frontal key light, intense purple/magenta rim light from behind creating a glowing halo around the subject, dark fill side with deep shadows. Aggressive background bokeh at f/1.4. Airborne particles (sparks, glowing embers, light dust). High contrast, deep blacks, saturated highlights, cinematic color grading.";
+  }
+  if (tier === "clean_premium") {
+    return "Style: CLEAN / PREMIUM — soft diffused natural window light, even flat illumination, near-white or cool gray neutral background, near-zero harsh shadows, high-end architectural studio aesthetic. Intentional negative space. Refined, editorial, minimal elegance.";
+  }
+  if (tier === "dark_cinematic") {
+    return "Style: DARK / CINEMATIC — cold frontal key light with cyan/blue color cast, intense rim light from behind, deep black background suggesting a tunnel or corridor with receding depth. Volumetric fog, god rays cutting through darkness. Floating 3D glass prisms and crystal fragments refracting light. Monochromatic cyan-black palette. Extreme subject sharpness against dark cinematic background.";
+  }
+  return "Style: COMMERCIAL — professional balanced lighting, clean direct composition, sharp details.";
+}
+
+function getTierTypographyStyle(tier: MoodTier): string {
+  if (tier === "drama_impact") {
+    return "bold display typeface with metallic grunge texture, highlight key word in vibrant accent color (purple #7B2FFF, orange #FF5500, or cyan #00E5FF), positioned at lower third of frame, letterforms interact with scene rim lighting and particles";
+  }
+  if (tier === "clean_premium") {
+    return "bold sans-serif, pure black or white, left-aligned two-level hierarchy (large headline + smaller subheadline), CTA rendered as a clean outline button, no decorative texture, premium minimal treatment";
+  }
+  if (tier === "dark_cinematic") {
+    return "gothic/blackletter or heavy serif typeface, pure white or gold/silver metallic, title anchored at top of frame with CTA at base, subtle neon glow or metallic sheen matching the scene atmosphere";
+  }
+  return "large bold, high contrast against background, clean legible letterforms";
+}
+
 
 const TEXT_POSITION_INSTRUCTIONS: Record<string, string> = {
   top:    "Keep upper 35% of frame dark and visually clean for text overlay. Subject must be placed in lower 2/3 of the frame.",
@@ -209,16 +235,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       ? "strong visual impact, high-quality commercial feel"
       : "clean and refined, subtle and professional";
 
-  const tierLabel =
-    moodTier === "drama_impact"
-      ? "DRAMA / IMPACT — high contrast, dramatic atmosphere, bold visual energy"
-      : moodTier === "clean_premium"
-      ? "CLEAN / PREMIUM — refined editorial, minimal elegance, professional clarity"
-      : moodTier === "dark_cinematic"
-      ? "DARK / CINEMATIC — moody, immersive depth, cinematic atmosphere"
-      : "professional commercial — sharp, clean, direct";
-
-  const styleBlock = `Photorealistic cinematic ${moduleLabel}. Professional marketing creative, agency quality. Ultra-detailed, 8K resolution equivalent. Visual intensity: ${intensityLabel}. Style direction: ${tierLabel}.`;
+  const styleBlock = `Photorealistic cinematic ${moduleLabel}. Professional marketing creative, agency quality. Ultra-detailed, 8K resolution equivalent. Visual intensity: ${intensityLabel}. ${getTierStyleRecipe(moodTier)}`;
 
   // ── [SUBJECT_BLOCK] ───────────────────────────────────────────────────────
   const subjectDescParts: string[] = [];
@@ -294,9 +311,10 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
       const lines: string[] = [
         "TYPOGRAPHY (integrated into the image — part of the scene, not an overlay):",
       ];
-      if (headline?.trim()) lines.push(`Headline: "${headline.trim()}" — large, bold, dominant typeface, high contrast against background.`);
-      if (subheadline?.trim()) lines.push(`Subheadline: "${subheadline.trim()}" — medium weight, legible, secondary hierarchy.`);
-      if (cta?.trim()) lines.push(`CTA: "${cta.trim()}" — button-style or strong callout treatment.`);
+      const typographyStyle = getTierTypographyStyle(moodTier);
+      if (headline?.trim()) lines.push(`Headline: "${headline.trim()}" — ${typographyStyle}.`);
+      if (subheadline?.trim()) lines.push(`Subheadline: "${subheadline.trim()}" — medium weight, legible, secondary hierarchy consistent with the headline style.`);
+      if (cta?.trim()) lines.push(`CTA: "${cta.trim()}" — strong callout treatment, visually distinct from headline.`);
       lines.push(
         `Text placement: ${textPosition}`,
         "Render the text with texture, ambient lighting blend, and depth consistent with the scene. The typography must feel painted into the scene — not floating on top.",
