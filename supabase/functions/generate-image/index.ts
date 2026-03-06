@@ -553,13 +553,12 @@ Deno.serve(async (req: Request) => {
 
     const input = parsed.data;
 
-    // DEBUG TEMPORÁRIO — remover após diagnóstico
-    console.log("[DEBUG] payload recebido:", JSON.stringify({
-      strictIdentity: input.strictIdentity,
-      subjectImageUrl: input.subjectImageUrl,
-      subjectBase64: input.subjectBase64 ? "[presente]" : null,
-      rawSubjectImageUrl: (bodyRaw as Record<string, unknown>)?.subjectImageUrl ?? "(ausente)",
-    }));
+    // Se strictIdentity=true chegou sem subject image/base64, faz fallback silencioso para false
+    // em vez de retornar erro 400. Isso torna o backend tolerante a estados inconsistentes do frontend.
+    if (input.strictIdentity && !input.subjectImageUrl && !input.subjectBase64) {
+      (input as { strictIdentity: boolean }).strictIdentity = false;
+    }
+
     const aspectRatio = pickClosestAspectRatio(input.width, input.height);
     const selectedProvider = selectProvider({ strictIdentity: input.strictIdentity });
     const modeUsed = input.strictIdentity ? "strict_identity" : "legacy";
