@@ -3091,19 +3091,45 @@ export default function EditorPage() {
                 <div className="space-y-3">
                   {referenceImages.map((ref) => (
                     <div key={ref.id} className="rounded-md border border-border p-3 space-y-3">
-                      <div className="flex items-start gap-3">
-                        <div className="h-[72px] w-[72px] rounded-full border border-border overflow-hidden bg-muted shrink-0">
-                          {(referencePreviewUrls[ref.id] || normalizeProjectAssetsUrl(ref.url)) ? (
+                      {/* Preview da imagem de referência — mostra quando há URL salva */}
+                      {(() => {
+                        const previewSrc = referencePreviewUrls[ref.id] || normalizeProjectAssetsUrl(ref.url);
+                        return previewSrc ? (
+                          <div className="relative w-full rounded-md overflow-hidden bg-muted" style={{ aspectRatio: "16/9" }}>
                             <img
-                              src={referencePreviewUrls[ref.id] || normalizeProjectAssetsUrl(ref.url) || ""}
-                              alt=""
-                              className="h-full w-full object-cover"
+                              src={previewSrc}
+                              alt="reference preview"
+                              className="h-full w-full object-contain"
                             />
-                          ) : (
-                            <div className="h-full w-full bg-muted" />
-                          )}
-                        </div>
+                            <button
+                              type="button"
+                              className="absolute top-1 right-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                              onClick={() => {
+                                setReferencePreviewUrls((prev) => {
+                                  const next = { ...prev };
+                                  const old = next[ref.id];
+                                  if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+                                  delete next[ref.id];
+                                  return next;
+                                });
+                                persistSpec({
+                                  ...safeSpec,
+                                  referenceImages: referenceImages.map((item) =>
+                                    item.id === ref.id ? { ...item, url: null } : item
+                                  ),
+                                });
+                              }}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                            <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
+                              ✓ Imagem carregada
+                            </span>
+                          </div>
+                        ) : null;
+                      })()}
 
+                      <div className="flex items-start gap-3">
                         <div className="flex-1 space-y-2 min-w-0">
                           <Input
                             value={normalizeProjectAssetsUrl(ref.url) ?? ref.url ?? ""}
@@ -3123,7 +3149,11 @@ export default function EditorPage() {
                             <Upload className="h-4 w-4 text-muted-foreground shrink-0" />
                             <div>
                               <div className="text-xs font-medium text-foreground">Upload image</div>
-                              <div className="text-[10px] text-muted-foreground">Click to replace</div>
+                              <div className="text-[10px] text-muted-foreground">
+                                {(referencePreviewUrls[ref.id] || normalizeProjectAssetsUrl(ref.url))
+                                  ? "Click to replace"
+                                  : "Click to upload"}
+                              </div>
                             </div>
                             <input
                               type="file"
@@ -3153,6 +3183,13 @@ export default function EditorPage() {
                                     ),
                                   });
                                 } catch (error) {
+                                  setReferencePreviewUrls((prev) => {
+                                    const next = { ...prev };
+                                    const old = next[ref.id];
+                                    if (old?.startsWith("blob:")) URL.revokeObjectURL(old);
+                                    delete next[ref.id];
+                                    return next;
+                                  });
                                   toast({
                                     title: t("editor.toast.export_failed"),
                                     description: String((error as Error)?.message ?? error),
