@@ -552,6 +552,14 @@ Deno.serve(async (req: Request) => {
     if (!parsed.ok) return json({ error: parsed.error, details: parsed.details }, 400, headers);
 
     const input = parsed.data;
+
+    // DEBUG TEMPORÁRIO — remover após diagnóstico
+    console.log("[DEBUG] payload recebido:", JSON.stringify({
+      strictIdentity: input.strictIdentity,
+      subjectImageUrl: input.subjectImageUrl,
+      subjectBase64: input.subjectBase64 ? "[presente]" : null,
+      rawSubjectImageUrl: (bodyRaw as Record<string, unknown>)?.subjectImageUrl ?? "(ausente)",
+    }));
     const aspectRatio = pickClosestAspectRatio(input.width, input.height);
     const selectedProvider = selectProvider({ strictIdentity: input.strictIdentity });
     const modeUsed = input.strictIdentity ? "strict_identity" : "legacy";
