@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { useBrandKitStore } from "@/stores/useBrandKitStore";
 import { suggestPresetForSubject } from "@/lib/presetSuggestion";
+import { FEATURES } from "@/lib/featureFlags";
 
 const FRAMING_OPTIONS = [
   { value: "face" as const, label: "Rosto" },
@@ -65,8 +66,8 @@ export function WizardStep1Subject() {
         </p>
       </div>
 
-      {/* DIFF 16.5 — Opção de usar Avatar se disponível */}
-      {avatar?.bestReference && (
+      {/* DIFF 16.5 — Opção de usar Avatar se disponível (feature flag VITE_FEATURE_AVATAR) */}
+      {FEATURES.AVATAR && avatar?.bestReference && (
         <div className="flex items-center gap-3 p-3 rounded-xl border border-purple-800 bg-purple-950/30">
           <img
             src={avatar.bestReference}

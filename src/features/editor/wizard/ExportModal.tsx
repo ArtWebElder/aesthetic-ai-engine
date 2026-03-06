@@ -106,6 +106,8 @@ export function ExportModal({
   // Export progress
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
+  const [exportStatus, setExportStatus] = useState<{ current: string; step: number; total: number } | null>(null);
+  const [exportDone, setExportDone] = useState(false);
 
   // Gerar preview para todos os formatos selecionados quando mudam
   const previewAbortRef = useRef<AbortController | null>(null);
@@ -184,9 +186,12 @@ export function ExportModal({
   async function handleExport() {
     if (selected.size === 0) return;
     setExporting(true);
+    setExportDone(false);
     setExportProgress(0);
+    setExportStatus(null);
 
     const formatIds = Array.from(selected);
+    const total = formatIds.length;
     const date = formatDate();
     const mime = outputFormat === "jpg" ? "image/jpeg" : "image/png";
     const ext = outputFormat === "jpg" ? "jpg" : "png";
@@ -196,6 +201,8 @@ export function ExportModal({
       const fmt = EXPORT_FORMATS.find((f) => f.id === id);
       if (!fmt) continue;
 
+      setExportStatus({ current: fmt.label, step: i + 1, total });
+
       try {
         const result = await recomposeForFormat(
           imageBase64, texts, presetConfig, colors, composition, fmt,
@@ -204,19 +211,26 @@ export function ExportModal({
         const filename = `creatyng_${fmt.id}_${date}.${ext}`;
         triggerDownload(result, filename, mime);
 
-        // Delay entre downloads para não bloquear o browser
+        // Delay entre downloads para o browser processar cada arquivo
         if (i < formatIds.length - 1) {
-          await new Promise((r) => setTimeout(r, 300));
+          await new Promise((r) => setTimeout(r, 400));
         }
       } catch {
-        // continuar os próximos formatos
+        // continuar os próximos formatos mesmo se um falhar
       }
 
-      setExportProgress(Math.round(((i + 1) / formatIds.length) * 100));
+      setExportProgress(Math.round(((i + 1) / total) * 100));
     }
 
+    setExportStatus(null);
+    setExportDone(true);
     setExporting(false);
-    onClose();
+
+    // Fechar modal após breve confirmação de conclusão
+    setTimeout(() => {
+      setExportDone(false);
+      onClose();
+    }, 1200);
   }
 
   const selectedCount = selected.size;
@@ -377,12 +391,25 @@ export function ExportModal({
         </div>
 
         {/* ── Progress bar durante export ── */}
-        {exporting && (
-          <div className="mb-4 space-y-1">
-            <p className="text-xs text-zinc-400">
-              Exportando {exportProgress}%...
-            </p>
-            <Progress value={exportProgress} className="h-1.5 bg-zinc-800" />
+        {(exporting || exportDone) && (
+          <div className="mb-4 space-y-2">
+            {exportDone ? (
+              <p className="text-xs text-green-400 font-medium flex items-center gap-1">
+                <span>✓</span> Download concluído!
+              </p>
+            ) : exportStatus ? (
+              <p className="text-xs text-zinc-400">
+                Baixando{" "}
+                <span className="text-zinc-200 font-medium">{exportStatus.current}</span>
+                {" "}
+                <span className="text-zinc-500">
+                  ({exportStatus.step} de {exportStatus.total})
+                </span>
+              </p>
+            ) : (
+              <p className="text-xs text-zinc-400">Preparando...</p>
+            )}
+            <Progress value={exportDone ? 100 : exportProgress} className="h-1.5 bg-zinc-800" />
           </div>
         )}
 
@@ -399,10 +426,12 @@ export function ExportModal({
 
           <Button
             onClick={handleExport}
-            disabled={selectedCount === 0 || exporting}
+            disabled={selectedCount === 0 || exporting || exportDone}
             className="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-6"
           >
-            {exporting
+            {exportDone
+              ? "✓ Concluído"
+              : exporting
               ? "Exportando..."
               : selectedCount === 0
               ? "Selecione um formato"

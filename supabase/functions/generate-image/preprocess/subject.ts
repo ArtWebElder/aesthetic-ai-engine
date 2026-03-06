@@ -445,3 +445,153 @@ export async function preprocessSubjectImage(
     hash,
   };
 }
+
+// ─── preprocessSubjectBase64 ──────────────────────────────────────────────────
+// Mesma lógica mas aceita data URI (data:image/jpeg;base64,...) ou base64 raw.
+// Usado pelo wizard frontend — sem precisar de URL pública.
+
+export async function preprocessSubjectBase64(
+  dataUri: string,
+  opts: PreprocessOptions = {},
+): Promise<PreprocessedSubject> {
+  if (!dataUri) throw new Error("subject_invalid_datauri: empty");
+
+  let mime = "image/jpeg";
+  let b64 = dataUri;
+
+  const commaIdx = dataUri.indexOf(",");
+  if (commaIdx !== -1 && dataUri.startsWith("data:")) {
+    mime = dataUri.slice(5, commaIdx).split(";")[0].trim() || "image/jpeg";
+    b64 = dataUri.slice(commaIdx + 1);
+  }
+
+  let bytes: Uint8Array;
+  try {
+    const bin = atob(b64);
+    bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  } catch {
+    throw new Error("subject_invalid_base64");
+  }
+
+  const detectedMime = detectMimeFromBytes(bytes);
+  const finalMime = detectedMime ?? mime;
+  if (!isAllowedImageMime(finalMime)) throw new Error(`subject_unsupported_mime:${finalMime}`);
+
+  const intrinsic = getImageInfo(bytes, finalMime);
+  const intrinsicWidth = intrinsic?.width ?? 0;
+  const intrinsicHeight = intrinsic?.height ?? 0;
+  const hasAlpha = intrinsic?.hasAlpha ?? (finalMime === "image/png");
+
+  if (bytes.byteLength > MAX_BYTES) {
+    const hash = await sha256Hex(bytes);
+    const base64 = encodeBase64(bytes);
+    return {
+      dataUrl: `data:${finalMime};base64,${base64}`,
+      base64,
+      mime: finalMime,
+      width: intrinsicWidth,
+      height: intrinsicHeight,
+      flags: { alphaComposited: false, upscaled: false, padded: false },
+      hash,
+    };
+  }
+
+  const minSide = Math.max(64, Math.round(Number(opts.minSide ?? DEFAULT_MIN_SIDE)));
+  const paddingPct = clampNumber(Number(opts.paddingPct ?? DEFAULT_PADDING_PCT), 0, 0.4);
+
+  let outBytes = bytes;
+  let outMime = finalMime;
+  let outWidth = intrinsicWidth;
+  let outHeight = intrinsicHeight;
+  const flags: PreprocessFlags = { alphaComposited: false, upscaled: false, padded: false };
+
+  if (DECODE_RUNTIME_SUPPORTED === false) {
+    const base64 = encodeBase64(outBytes);
+    return {
+      base64, mime: outMime,
+      dataUrl: `data:${outMime};base64,${base64}`,
+      width: outWidth, height: outHeight,
+      hash: await sha256Hex(outBytes), flags,
+    };
+  }
+
+  try {
+    if (!DECODE_ENABLED) throw new Error("preprocess_decode_disabled");
+    let mod: any;
+    try {
+      mod = await import("npm:imagescript@1.3.0");
+      DECODE_RUNTIME_SUPPORTED = true;
+    } catch (e) {
+      markDecodeUnsupported();
+      throw e;
+    }
+    const Img = (mod as any).Image ?? (mod as any).default?.Image ?? (mod as any).default;
+    if (!Img || typeof Img.decode !== "function") throw new Error("imagescript_import_invalid");
+
+    const decoded = await Img.decode(bytes);
+    let working: any = decoded;
+    let currentWidth = Number(decoded?.width) || intrinsicWidth;
+    let currentHeight = Number(decoded?.height) || intrinsicHeight;
+    const padPx = Math.max(0, Math.round(minSide * Math.max(0, paddingPct)));
+    const minCurrent = Math.max(1, Math.min(currentWidth || 1, currentHeight || 1));
+
+    if (minSide > 0 && minCurrent < minSide && typeof working.resize === "function") {
+      const scale = minSide / minCurrent;
+      working = await working.resize(Math.max(1, Math.round(currentWidth * scale)), Math.max(1, Math.round(currentHeight * scale)));
+      currentWidth = Number(working.width) || currentWidth;
+      currentHeight = Number(working.height) || currentHeight;
+      flags.upscaled = true;
+    }
+
+    if ((hasAlpha || padPx > 0) && typeof Img === "function") {
+      const canvas = new Img(currentWidth + padPx * 2, currentHeight + padPx * 2);
+      if (typeof canvas.fill === "function") canvas.fill(0xffffffff);
+      if (typeof canvas.composite === "function") await canvas.composite(working, padPx, padPx);
+      working = canvas;
+      currentWidth = currentWidth + padPx * 2;
+      currentHeight = currentHeight + padPx * 2;
+      flags.padded = padPx > 0;
+      flags.alphaComposited = hasAlpha;
+    }
+
+    let encoded: Uint8Array | null = null;
+    if (typeof working.encode === "function") {
+      const r = await working.encode();
+      encoded = r instanceof Uint8Array ? r : new Uint8Array(r);
+    } else if (typeof working.encodePNG === "function") {
+      const r = await working.encodePNG();
+      encoded = r instanceof Uint8Array ? r : new Uint8Array(r);
+    }
+    if (!encoded || !encoded.byteLength) throw new Error("imagescript_encode_failed");
+
+    outBytes = encoded;
+    outMime = "image/png";
+    outWidth = currentWidth;
+    outHeight = currentHeight;
+  } catch (err) {
+    if (DECODE_ENABLED) {
+      const msg = String((err as { message?: string })?.message ?? err);
+      if (msg.toLowerCase().includes("unsupported arch/platform")) markDecodeUnsupported();
+      console.error("preprocess_base64_decode_failed", msg);
+    }
+    outBytes = bytes; outMime = finalMime;
+    outWidth = intrinsicWidth; outHeight = intrinsicHeight;
+    flags.alphaComposited = false; flags.upscaled = false; flags.padded = false;
+  }
+
+  const hash = await sha256Hex(outBytes);
+  const base64 = encodeBase64(outBytes);
+  return {
+    dataUrl: `data:${outMime};base64,${base64}`,
+    base64, mime: outMime,
+    width: Number.isFinite(outWidth) ? outWidth : 0,
+    height: Number.isFinite(outHeight) ? outHeight : 0,
+    flags: {
+      alphaComposited: Boolean(flags.alphaComposited),
+      upscaled: Boolean(flags.upscaled),
+      padded: Boolean(flags.padded),
+    },
+    hash,
+  };
+}

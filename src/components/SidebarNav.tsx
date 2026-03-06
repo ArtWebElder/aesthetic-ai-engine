@@ -6,6 +6,7 @@ import {
   Settings,
   HelpCircle,
   LogOut,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/fake-auth';
@@ -47,6 +48,17 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
       </div>
 
       <div className="mx-4 h-px bg-border" />
+
+      {/* New creation CTA */}
+      <div className="px-3 pt-3">
+        <button
+          onClick={() => handleNav('/app/create')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-150"
+        >
+          <Sparkles className="h-4 w-4" />
+          {t('nav.new_creation')}
+        </button>
+      </div>
 
       {/* Nav */}
       <nav className="flex-1 p-3 space-y-0.5 mt-2">

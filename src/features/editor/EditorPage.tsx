@@ -101,7 +101,10 @@ type EditorProject = Project & {
 
 /** Placeholder seguro para compilar mesmo sem TemplateRenderer pronto */
 function newId() {
-  return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
 }
 
 function clampSize(n: number, min: number, max: number): number {
