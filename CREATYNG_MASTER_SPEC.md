@@ -1580,6 +1580,369 @@ PS.1-PS.8  sistema de aprendizado + marketplace
 
 ---
 
+# ═══════════════════════════════════════════
+# PRÉ-FASE 2 — CORREÇÕES OBRIGATÓRIAS ANTES DE CONTINUAR
+# Execute e conclua os 3 diffs abaixo antes de iniciar qualquer diff da Fase 2.
+# ═══════════════════════════════════════════
+
+## Contexto
+
+A Fase 1 foi concluída com sucesso (build limpo, todos os diffs commitados).
+Três pontos do log de execução precisam ser resolvidos antes do merge na main
+e antes de iniciar a Fase 2. São correções de qualidade — não features novas.
+
+```
+PRE.1 → PRE.2 → PRE.3 → npm run build → merge main → tag v0.1.0-mvp → FASE 2
+```
+
+---
+
+## DIFF PRE.1 — AVATAR: FEATURE FLAG LIMPA
+**Risco: zero. Tempo estimado: 20 minutos.**
+
+**Problema:** Previews do Avatar estão como stub (TODO).
+Expor funcionalidade incompleta em produção prejudica a percepção do produto.
+
+**O que criar:**
+
+```typescript
+// src/config/features.ts
+// Arquivo central de feature flags. Adicionar novas flags aqui sempre.
+
+export const FEATURES = {
+  // Avatar requer Edge Function ainda não implementada.
+  // Mudar para true quando supabase/functions/generate-avatar estiver pronto.
+  AVATAR_ENABLED: false,
+
+  // Futuras flags (não implementar ainda — só declarar):
+  MARKETPLACE_ENABLED: false,
+  QUALITY_SCORE_ENABLED: false,
+  VARIATIONS_ENABLED: false,
+} as const
+```
+
+```typescript
+// src/features/brandKit/AvatarSection.tsx
+// Envolver o conteúdo existente neste wrapper — não reescrever o conteúdo.
+
+import { FEATURES } from '@/config/features'
+
+export function AvatarSection() {
+  if (!FEATURES.AVATAR_ENABLED) {
+    return (
+      <div className="relative rounded-xl overflow-hidden">
+        {/* Conteúdo atual com blur — não apagar, só ofuscar */}
+        <div className="opacity-40 pointer-events-none select-none blur-[1.5px]">
+          <AvatarSectionContent />
+        </div>
+        {/* Overlay de "em breve" */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="bg-black/75 backdrop-blur-sm rounded-2xl px-8 py-5 text-center">
+            <p className="text-white font-semibold text-base">Avatar em breve</p>
+            <p className="text-white/60 text-sm mt-1">
+              Estamos finalizando esta funcionalidade
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return <AvatarSectionContent />
+}
+```
+
+**NÃO FAZER:**
+- Não apagar o conteúdo existente do Avatar — só envolver com a flag
+- Não criar feature flags em outros arquivos — centralizar em `src/config/features.ts`
+
+**CHECKLIST PRE.1:**
+- [ ] `src/config/features.ts` criado com `AVATAR_ENABLED: false`
+- [ ] AvatarSection renderiza overlay "em breve" quando flag é false
+- [ ] AvatarSection renderiza normalmente quando flag é true (testar manualmente)
+- [ ] Nenhum outro componente foi alterado
+- [ ] `npm run build` passa
+
+---
+
+## DIFF PRE.2 — BRAND KIT: CAMADA DE ABSTRAÇÃO DE STORAGE
+**Risco: médio. Tempo estimado: 1-2 horas.**
+
+**Problema:** Brand Kit usa localStorage diretamente nos componentes.
+Quando Supabase for configurado, precisaria refatorar cada componente.
+A solução é criar uma camada de abstração agora — os componentes nunca
+tocam localStorage diretamente, só chamam `brandKitStorage`.
+
+**O que criar:**
+
+```typescript
+// src/lib/brandKitStorage.ts
+
+import { BrandKit } from '@/types/preset'
+import { supabase } from '@/lib/supabase'
+
+// ─── INTERFACE ────────────────────────────────────────────────────────────────
+// Todos os componentes usam esta interface. Nunca localStorage diretamente.
+
+export interface IBrandKitStorage {
+  getAll(): Promise<BrandKit[]>
+  getById(id: string): Promise<BrandKit | null>
+  save(kit: BrandKit): Promise<BrandKit>
+  delete(id: string): Promise<void>
+}
+
+// ─── IMPLEMENTAÇÃO LOCAL (ativa agora) ───────────────────────────────────────
+
+class LocalBrandKitStorage implements IBrandKitStorage {
+  private readonly KEY = 'creatyng_brand_kits_v2'
+
+  async getAll(): Promise<BrandKit[]> {
+    try {
+      const raw = localStorage.getItem(this.KEY)
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
+  }
+
+  async getById(id: string): Promise<BrandKit | null> {
+    const all = await this.getAll()
+    return all.find(k => k.id === id) ?? null
+  }
+
+  async save(kit: BrandKit): Promise<BrandKit> {
+    const all = await this.getAll()
+    const idx = all.findIndex(k => k.id === kit.id)
+    const updated = { ...kit, updatedAt: new Date().toISOString() }
+    if (idx >= 0) {
+      all[idx] = updated
+    } else {
+      all.push({ ...updated, createdAt: new Date().toISOString() })
+    }
+    localStorage.setItem(this.KEY, JSON.stringify(all))
+    return updated
+  }
+
+  async delete(id: string): Promise<void> {
+    const all = await this.getAll()
+    localStorage.setItem(this.KEY, JSON.stringify(all.filter(k => k.id !== id)))
+  }
+}
+
+// ─── IMPLEMENTAÇÃO SUPABASE (ativa quando SUPABASE_READY = true) ──────────────
+
+class SupabaseBrandKitStorage implements IBrandKitStorage {
+  async getAll(): Promise<BrandKit[]> {
+    const { data, error } = await supabase
+      .from('brand_kits')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) throw error
+    return data ?? []
+  }
+
+  async getById(id: string): Promise<BrandKit | null> {
+    const { data, error } = await supabase
+      .from('brand_kits')
+      .select('*')
+      .eq('id', id)
+      .single()
+    if (error) return null
+    return data
+  }
+
+  async save(kit: BrandKit): Promise<BrandKit> {
+    const { data, error } = await supabase
+      .from('brand_kits')
+      .upsert({ ...kit, updated_at: new Date().toISOString() })
+      .select()
+      .single()
+    if (error) throw error
+    return data
+  }
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('brand_kits')
+      .delete()
+      .eq('id', id)
+    if (error) throw error
+  }
+}
+
+// ─── INSTÂNCIA EXPORTADA ──────────────────────────────────────────────────────
+// Mudar SUPABASE_READY para true quando:
+// 1. supabase/migrations/001_preset_system.sql foi aplicada
+// 2. Variáveis SUPABASE_URL e SUPABASE_ANON_KEY estão no .env
+// 3. RLS policies estão configuradas
+
+const SUPABASE_READY = false
+
+export const brandKitStorage: IBrandKitStorage = SUPABASE_READY
+  ? new SupabaseBrandKitStorage()
+  : new LocalBrandKitStorage()
+```
+
+**Refatoração dos componentes existentes:**
+
+Encontrar todos os arquivos que hoje usam localStorage para brand kits.
+Substituir cada acesso direto pela chamada equivalente ao `brandKitStorage`:
+
+```typescript
+// ANTES (padrão a eliminar):
+const kits = JSON.parse(localStorage.getItem('brand_kits') || '[]')
+localStorage.setItem('brand_kits', JSON.stringify(kits))
+
+// DEPOIS (padrão correto):
+import { brandKitStorage } from '@/lib/brandKitStorage'
+const kits = await brandKitStorage.getAll()
+await brandKitStorage.save(kit)
+```
+
+**NÃO FAZER:**
+- Não mudar a UI dos componentes — só a fonte dos dados
+- Não apagar dados existentes no localStorage (usar KEY diferente: `creatyng_brand_kits_v2`)
+- Não implementar migração de dados agora — usuários de teste aceitam recomeçar
+
+**CHECKLIST PRE.2:**
+- [ ] `src/lib/brandKitStorage.ts` criado com as duas implementações
+- [ ] Nenhum componente acessa `localStorage` diretamente para brand kits
+- [ ] `SUPABASE_READY = false` (localStorage ativo)
+- [ ] Criar, editar e deletar brand kit funcionam normalmente
+- [ ] `npm run build` passa
+
+---
+
+## DIFF PRE.3 — EXPORT: UX DE DOWNLOAD SEQUENCIAL
+**Risco: baixo. Tempo estimado: 30 minutos.**
+
+**Problema:** Downloads sequenciais sem feedback parecem bugs.
+O usuário não sabe quantos arquivos estão sendo baixados ou o progresso.
+
+**O que criar:**
+
+```typescript
+// src/features/editor/export/sequentialDownload.ts
+
+export interface DownloadFile {
+  filename: string
+  base64: string
+  label: string       // "Instagram Feed", "Stories", etc
+}
+
+export async function downloadSequential(
+  files: DownloadFile[],
+  onProgress: (current: number, total: number, label: string) => void
+): Promise<void> {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i]
+
+    // Notificar progresso antes de baixar
+    onProgress(i + 1, files.length, file.label)
+
+    // Converter base64 para blob e baixar
+    const blob = base64ToBlob(file.base64, 'image/png')
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = file.filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    // Delay entre downloads — evita que o browser bloqueie
+    if (i < files.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 900))
+    }
+  }
+}
+
+function base64ToBlob(base64: string, mimeType: string): Blob {
+  const byteString = atob(base64.split(',')[1] ?? base64)
+  const ab = new ArrayBuffer(byteString.length)
+  const ia = new Uint8Array(ab)
+  for (let i = 0; i < byteString.length; i++) {
+    ia[i] = byteString.charCodeAt(i)
+  }
+  return new Blob([ab], { type: mimeType })
+}
+```
+
+**UI de progresso no ExportModal:**
+
+```typescript
+// Adicionar ao ExportModal — estado de download
+
+const [downloadState, setDownloadState] = useState<{
+  active: boolean
+  current: number
+  total: number
+  currentLabel: string
+} | null>(null)
+
+async function handleExport() {
+  const files = buildFilesToExport(selectedFormats, cachedGeneration)
+
+  setDownloadState({ active: true, current: 0, total: files.length, currentLabel: '' })
+
+  await downloadSequential(files, (current, total, label) => {
+    setDownloadState({ active: true, current, total, currentLabel: label })
+  })
+
+  setDownloadState(null)
+}
+
+// UI durante download:
+{downloadState?.active && (
+  <div className="flex flex-col gap-2 p-4 bg-black/10 rounded-xl">
+    <div className="flex justify-between text-sm text-white/80">
+      <span>Baixando {downloadState.currentLabel}...</span>
+      <span>{downloadState.current} de {downloadState.total}</span>
+    </div>
+    <div className="w-full bg-white/10 rounded-full h-1.5">
+      <div
+        className="bg-white rounded-full h-1.5 transition-all duration-500"
+        style={{ width: `${(downloadState.current / downloadState.total) * 100}%` }}
+      />
+    </div>
+  </div>
+)}
+```
+
+**CHECKLIST PRE.3:**
+- [ ] Download de 1 formato: baixa direto sem barra de progresso
+- [ ] Download de 2+ formatos: mostra barra com label de cada arquivo
+- [ ] Delay de 900ms entre downloads (browser não bloqueia)
+- [ ] Após todos os downloads: estado reseta, botão volta ao normal
+- [ ] `npm run build` passa
+
+---
+
+## CHECKLIST FINAL PRÉ-FASE 2
+
+Após PRE.1 + PRE.2 + PRE.3 concluídos:
+
+```bash
+npm run build          # deve passar com 0 erros
+npm run typecheck      # se existir
+
+# Merge na main
+git checkout main
+git merge --no-ff feat/pre-fase2-fixes
+git push origin main
+
+# Tag do MVP
+git tag -a v0.1.0-mvp -m "Fase 1 completa + correções pré-Fase 2"
+git push origin v0.1.0-mvp
+```
+
+**Após o merge e a tag: a Fase 2 pode começar.**
+Primeiro diff da Fase 2: conectar `useWizardStore` ao motor de geração real.
+Ver seção FASE 2 deste documento para a ordem completa.
+
+---
+
 # PROMPT DE INÍCIO PARA O CLAUDE CODE
 
 ```
@@ -1589,17 +1952,28 @@ Leia estes arquivos nesta ordem — todos, antes de qualquer implementação:
 3. CREATYNG_VISION_FIRST.md
 4. CREATYNG_MOTOR_PLAN.md
 
-Este documento é a fonte única de verdade.
-Substitui todos os outros specs de features e text engine.
+FASE 1 está 100% concluída (build limpo, todos os diffs commitados).
 
-Antes de começar, responda:
-1. Quais arquivos de preset ou estilo já existem no projeto?
-   (procurar por: preset, style, theme em src/)
-2. Como o estado do editor está organizado hoje?
-   (qual store, quais campos)
-3. Existe algum tipo que conflite com CreatygnPreset ou WizardState?
+Antes de iniciar a Fase 2, execute os 3 diffs de correção obrigatórios
+na seção PRÉ-FASE 2 deste documento:
 
-Após o mapeamento e minha aprovação: começar pelo DIFF PS.0.
-PS.0 cria os tipos e o banco. Nenhum diff começa antes dele.
-Não implemente nada ainda. Só mapeie.
+  PRE.1 → Feature flag para Avatar (20 min, risco zero)
+  PRE.2 → Camada de abstração de storage para Brand Kit (1-2h, risco médio)
+  PRE.3 → UX de download sequencial no Export (30 min, risco baixo)
+
+Regras de execução:
+- Execute um diff por vez na ordem acima
+- Após cada diff: npm run build deve passar limpo
+- Não misture os diffs
+- Não inicie PRE.2 antes de PRE.1 estar commitado
+- Não inicie PRE.3 antes de PRE.2 estar commitado
+- Não misture correções dos PRE com qualquer diff da Fase 2
+
+Ao finalizar os 3 diffs:
+1. Rode npm run build uma última vez
+2. Execute o merge na main e a tag v0.1.0-mvp conforme o CHECKLIST FINAL
+3. Me informe: "PRÉ-FASE 2 concluída. Build limpo. Tag v0.1.0-mvp criada.
+   Pronto para iniciar Fase 2 — conectar useWizardStore ao motor de geração."
+
+Só então aguarde minha confirmação para iniciar a Fase 2.
 ```
