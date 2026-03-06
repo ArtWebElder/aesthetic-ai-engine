@@ -5,9 +5,9 @@ import { useDeferredValue } from "react";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { TextStylePicker } from "@/components/TextStylePicker";
 import { FontSelector } from "@/components/FontSelector";
+import { PreviewCanvas } from "./PreviewCanvas";
 import type { CreatygnPreset, ColorConfig } from "@/types/preset";
 import { DEFAULT_COLORS } from "@/features/editor/engine/cssVarsInjector";
-import { getPresetById } from "@/lib/presetUtils";
 
 // Fontes sugeridas por preset de texto
 const SUGGESTED_FONTS: Record<string, string[]> = {
@@ -101,6 +101,9 @@ export function WizardStep3Text() {
         colors={colors}
         onSelect={handleSelectTextPreset}
       />
+
+      {/* Preview canvas — zona de texto + sujeito */}
+      <PreviewCanvas />
 
       {/* FontSelector — override da fonte do preset ativo */}
       {mode === "advanced" && (
