@@ -235,9 +235,20 @@ export function createDefaultSpec(format: ProjectFormat): ProjectSpec {
   };
 }
 
+function generateId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  // fallback for non-secure contexts
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 export function createMockProject(name: string, format: ProjectFormat): Project {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     name,
     spec: createDefaultSpec(format),
     status: "draft",
