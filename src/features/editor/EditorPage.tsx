@@ -122,7 +122,10 @@ const warnedUploadTokenUrls = new Set<string>();
 function normalizeProjectAssetsUrl(input: string | null | undefined): string | null {
   if (typeof input !== "string") return null;
   const raw = input.trim();
-  if (!raw || raw.startsWith("data:")) return null;
+  // Reject empty, data URLs, blob URLs (session-only), and non-http(s) URLs.
+  // Mirrors the backend regex so strictIdentity is never sent with an unservable URL.
+  if (!raw || raw.startsWith("data:") || raw.startsWith("blob:")) return null;
+  if (!/^https?:\/\//i.test(raw)) return null;
   const publicPrefix = `/storage/v1/object/public/${UPLOADS_BUCKET}/`;
   if (!raw.includes(publicPrefix)) return raw;
   if (!raw.includes("?token=")) return raw;
