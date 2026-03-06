@@ -1,7 +1,7 @@
 /// <reference lib="deno.ns" />
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { selectProvider } from "./providers/registry.ts";
-import { preprocessSubjectImage } from "./preprocess/subject.ts";
+import { preprocessSubjectImage, preprocessSubjectBase64 } from "./preprocess/subject.ts";
 import { ReplicateFluxKontextProvider } from "./providers/replicateFluxKontext.ts";
 import { fetchUrlAsBase64 } from "./utils/base64.ts";
 
@@ -106,6 +106,7 @@ type GenerateBody = {
   identityStrength?: number;
   styleStrength?: number;
   subjectImageUrl?: string;
+  subjectBase64?: string;      // data URI ou base64 raw — alternativa ao URL
   styleRefImageUrl?: string;
   referenceImages?: Array<{
     url?: string;
@@ -133,6 +134,7 @@ type ParsedRequest = {
   identityStrength: number | null;
   styleStrength: number | null;
   subjectImageUrl: string | null;
+  subjectBase64: string | null;  // alternativa ao URL
   referenceImages: ParsedReferenceImage[];
 };
 
@@ -249,6 +251,10 @@ function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { o
     typeof body.subjectImageUrl === "string" && /^https?:\/\//i.test(body.subjectImageUrl.trim())
       ? body.subjectImageUrl.trim()
       : null;
+  const subjectBase64 =
+    typeof body.subjectBase64 === "string" && body.subjectBase64.trim().length > 0
+      ? body.subjectBase64.trim()
+      : null;
   const referenceImages = parseReferenceImages(body);
 
   return {
@@ -264,6 +270,7 @@ function parseRequestBody(raw: unknown): { ok: true; data: ParsedRequest } | { o
       identityStrength,
       styleStrength,
       subjectImageUrl,
+      subjectBase64,
       referenceImages,
     },
   };
@@ -629,8 +636,8 @@ Deno.serve(async (req: Request) => {
     }
 
     if (input.strictIdentity) {
-      if (!input.subjectImageUrl) {
-        const details = "strictIdentity=true requires subjectImageUrl.";
+      if (!input.subjectImageUrl && !input.subjectBase64) {
+        const details = "strictIdentity=true requires subjectImageUrl or subjectBase64.";
         await updateGenerationError(supabase, generationId, startedAt, details, input.prompt.length, input.negativePrompt ?? null);
         return json(
           {
@@ -655,7 +662,9 @@ Deno.serve(async (req: Request) => {
 
       let preprocessedSubject: Awaited<ReturnType<typeof preprocessSubjectImage>>;
       try {
-        preprocessedSubject = await preprocessSubjectImage(input.subjectImageUrl);
+        preprocessedSubject = input.subjectBase64
+          ? await preprocessSubjectBase64(input.subjectBase64)
+          : await preprocessSubjectImage(input.subjectImageUrl!);
       } catch (e) {
         const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
         await updateGenerationError(supabase, generationId, startedAt, `strict_preprocess_error: ${details}`, input.prompt.length, input.negativePrompt ?? null);
