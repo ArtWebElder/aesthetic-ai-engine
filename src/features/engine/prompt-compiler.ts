@@ -29,7 +29,7 @@ export interface CompiledPrompt {
   };
 }
 
-type MoodTier = "drama_impact" | "clean_premium" | "dark_cinematic" | "neutral";
+export type MoodTier = "drama_impact" | "clean_premium" | "dark_cinematic" | "neutral";
 
 type PaletteMode = "mono" | "duo" | "tri" | "custom";
 
@@ -72,7 +72,7 @@ function buildColorPaletteInstruction(
   return `COLOR PALETTE (MANDATORY — non-negotiable): ${parts.join(" ")} The dominant visual atmosphere of the entire image MUST reflect these colors. This is a hard requirement.`;
 }
 
-function getMoodTier(mood: string): MoodTier {
+export function getMoodTier(mood: string): MoodTier {
   if (mood === "cinematic_moody" || mood === "energetic_pop") return "drama_impact";
   if (mood === "luxury_premium" || mood === "clean_bright") return "clean_premium";
   if (mood === "night_neon" || mood === "cool_modern") return "dark_cinematic";
@@ -299,32 +299,18 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const sceneBlock = sceneParts.length > 1 ? sceneParts.join(" ") : null;
 
   // ── [TYPOGRAPHY_BLOCK] ────────────────────────────────────────────────────
-  // When text content is provided, the AI integrates it into the image (Stage 4b IA-first).
-  // When no text: reserve a clean safe area for the empty composition.
+  // RULE: The AI NEVER generates text. Typography is applied by Canvas 2D
+  // renderer (exportCanvasWithText) after generation. The AI only prepares
+  // compositional space in the correct zone.
   const hasText = Boolean(headline?.trim() || subheadline?.trim() || cta?.trim());
 
   const typographyBlock = (() => {
     if (module === "photoshoot") return null;
-
+    const textZone = resolveTextPosition(safeSpace, module);
     if (hasText) {
-      const textPosition = resolveTextPosition(safeSpace, module);
-      const lines: string[] = [
-        "TYPOGRAPHY (integrated into the image — part of the scene, not an overlay):",
-      ];
-      const typographyStyle = getTierTypographyStyle(moodTier);
-      if (headline?.trim()) lines.push(`Headline: "${headline.trim()}" — ${typographyStyle}.`);
-      if (subheadline?.trim()) lines.push(`Subheadline: "${subheadline.trim()}" — medium weight, legible, secondary hierarchy consistent with the headline style.`);
-      if (cta?.trim()) lines.push(`CTA: "${cta.trim()}" — strong callout treatment, visually distinct from headline.`);
-      lines.push(
-        `Text placement: ${textPosition}`,
-        "Render the text with texture, ambient lighting blend, and depth consistent with the scene. The typography must feel painted into the scene — not floating on top.",
-        "Letterforms must be sharp, correctly spelled, and readable."
-      );
-      return lines.join(" ");
+      return `TEXT COMPOSITION ZONE: ${textZone} This area will receive real typography in post-processing — keep it visually atmospheric and lower-contrast: no busy textures, no competing details, no hard edges in this zone. The background should feel like it was designed to receive text. Do NOT generate any text, letters, words, numbers, or typographic elements anywhere in the image — zero exceptions.`;
     }
-
-    // No text — reserve compositional space
-    return `TEXT SAFE AREA: No text in the image. ${resolveTextPosition(safeSpace, module)} Keep this zone visually clean with low complexity for future text overlay.`;
+    return `TEXT SAFE AREA: No text in the image. ${textZone} Keep this zone clean and minimal.`;
   })();
 
   // ── [QUALITY_BLOCK] ───────────────────────────────────────────────────────
@@ -333,7 +319,7 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     "Consistent lighting — the light direction on the subject must match the scene light source. No contradictory dual lighting.",
     "No white halo or edge fringe around the subject. No JPEG artifacts. No pixelation. No over-compression.",
     "No watermarks. No logos from other tools.",
-    !hasText ? "No text, no letters, no words, no numbers anywhere in the image." : null,
+    "No text, no letters, no words, no numbers, no typography anywhere in the image.",
     "Print-ready quality. The result must be directly usable in a paid advertising campaign without any additional editing.",
   ];
 
@@ -351,8 +337,8 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     "stock photo generic background, inconsistent lighting, two suns, dual contradictory light sources",
     "white halo around subject, edge fringe, cutout artifact, JPEG noise, pixelated, over-compressed",
     "watermark, tool logo, brand logo overlay, copyright stamp",
-    module !== "photoshoot" && !hasText
-      ? "text, letters, words, numbers, typography, headline, label, caption, subtitle, watermark text, any written characters"
+    module !== "photoshoot"
+      ? "text, letters, words, numbers, typography, headline, label, caption, subtitle, watermark text, any written characters, fonts rendered in scene"
       : "watermark, tool logo overlay, copyright stamp, unintended random text artifacts",
     module === "ecom_banner" ? "wrong product category, unrelated object, replaced product" : null,
   ]

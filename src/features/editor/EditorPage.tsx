@@ -64,7 +64,8 @@ import {
   normalizeSceneProps,
 } from "@/features/editor/scene-props";
 import { FONT_OPTIONS, buildGoogleFontsUrl, getFontOption } from "@/features/editor/font-presets";
-import { compilePrompt } from "@/features/engine/prompt-compiler";
+import { compilePrompt, getMoodTier } from "@/features/engine/prompt-compiler";
+import type { MoodTier } from "@/features/engine/prompt-compiler";
 import { summarizeSpec } from "@/features/engine/prompt-summarizer";
 import { OVERLAY_DEFINITIONS } from "@/features/editor/overlay-library";
 
@@ -2110,6 +2111,11 @@ export default function EditorPage() {
   async function export2K() {
     if (!bgUrl) return;
 
+    const headlineText = (safeSpec?.builder?.headline || content?.headline || "").trim();
+    const subText = (safeSpec?.builder?.subheadline || content?.subheadline || "").trim();
+    const ctaText_ = (safeSpec?.builder?.cta || content?.ctaText || "").trim();
+    const hasExportText = Boolean(headlineText || subText || ctaText_);
+
     const moduleSlug =
       safeSpec?.module === "ecom_banner"
         ? "ecom-banner"
@@ -2121,18 +2127,28 @@ export default function EditorPage() {
     setIsExporting2K(true);
     setLastExportError(null);
     try {
-      // Download the AI-generated image directly — no canvas re-rendering.
-      const response = await fetch(bgUrl);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (!hasExportText || safeSpec?.module === "photoshoot") {
+        // No text or photoshoot: download AI image directly
+        const response = await fetch(bgUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } else {
+        // Text + non-photoshoot: Canvas composite with real typography
+        await exportCanvasWithText({
+          fileName,
+          headlineText,
+          subText,
+          ctaText: ctaText_,
+        });
+      }
       toast({ title: t("editor.toast.export_ready") });
     } catch {
       setLastExportError(t("editor.toast.export_failed"));
@@ -2140,6 +2156,218 @@ export default function EditorPage() {
     } finally {
       setIsExporting2K(false);
     }
+  }
+
+  async function exportCanvasWithText(opts: {
+    fileName: string;
+    headlineText: string;
+    subText: string;
+    ctaText: string;
+  }): Promise<void> {
+    const { fileName, headlineText, subText, ctaText } = opts;
+    const gw = safeSpec?.generation?.width ?? 1080;
+    const gh = safeSpec?.generation?.height ?? 1080;
+    const longest = 2048;
+    const cw = gw >= gh ? longest : Math.round((gw / gh) * longest);
+    const ch = gh > gw ? longest : Math.round((gh / gw) * longest);
+
+    // Load AI base image
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image();
+      i.crossOrigin = "anonymous";
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error("base image load failed"));
+      i.src = bgUrl!;
+    });
+
+    // Determine Google Font from spec
+    const fontOption = getFontOption(safeSpec?.brand?.fontPreset ?? "inter");
+    const googleFamily = fontOption.googleFamily;
+
+    // Ensure font is loaded before drawing
+    try {
+      await document.fonts.load(`800 1px "${googleFamily}"`);
+      await document.fonts.load(`400 1px "${googleFamily}"`);
+    } catch { /* fallback to system font */ }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = cw;
+    canvas.height = ch;
+    const ctx = canvas.getContext("2d")!;
+
+    // Draw base image (cover fill)
+    const scale = Math.max(cw / img.width, ch / img.height);
+    const dw = img.width * scale;
+    const dh = img.height * scale;
+    ctx.drawImage(img, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
+
+    // Determine tier and text position
+    const tier = getMoodTier(safeSpec?.builder?.sceneMood ?? "");
+    const safeSpaceKey = (safeSpec?.builder?.safeSpace ?? "bottom").toLowerCase();
+    const accentHex = safeSpec?.brand?.accent || "#7B2FFF";
+
+    // Draw per-tier text overlay
+    drawExportText(ctx, cw, ch, tier, safeSpaceKey, accentHex, googleFamily, {
+      headline: headlineText,
+      sub: subText,
+      cta: ctaText,
+    });
+
+    // Download
+    await new Promise<void>((resolve) => {
+      canvas.toBlob((blob) => {
+        const src = blob ? URL.createObjectURL(blob) : canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = src;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        if (blob) setTimeout(() => URL.revokeObjectURL(src), 1000);
+        resolve();
+      }, "image/png");
+    });
+  }
+
+  function drawExportText(
+    ctx: CanvasRenderingContext2D,
+    cw: number,
+    ch: number,
+    tier: MoodTier,
+    zone: string,
+    accentHex: string,
+    fontFamily: string,
+    texts: { headline: string; sub: string; cta: string }
+  ) {
+    const { headline: hl, sub, cta } = texts;
+    const pad = Math.round(cw * 0.07);
+    const maxW = cw - pad * 2;
+
+    // Zone positions
+    const isTop = zone === "top";
+    const isLeft = zone === "left";
+    const isRight = zone === "right";
+    const isOver = zone === "over";
+    let startX = pad;
+    let startY = Math.round(ch * 0.67); // bottom default
+    let align: CanvasTextAlign = "left";
+
+    if (isTop) { startY = Math.round(ch * 0.07); }
+    else if (isLeft) { startX = pad; startY = Math.round(ch * 0.18); }
+    else if (isRight) { startX = Math.round(cw * 0.55); startY = Math.round(ch * 0.18); }
+    else if (isOver) { startX = cw / 2; startY = Math.round(ch * 0.65); align = "center"; }
+
+    // Per-tier styles
+    type TierStyle = {
+      hlSize: number; subSize: number; ctaSize: number;
+      hlColor: string; subColor: string; ctaColor: string;
+      shadowColor: string; shadowBlur: number; shadowY: number;
+      strokeW: number; strokeColor: string; hlWeight: number;
+      gradientColor: string;
+    };
+    const s: TierStyle =
+      tier === "drama_impact"
+        ? {
+            hlSize: Math.round(cw * 0.085), subSize: Math.round(cw * 0.038), ctaSize: Math.round(cw * 0.032),
+            hlColor: "#FFFFFF", subColor: "rgba(255,255,255,0.88)", ctaColor: accentHex,
+            shadowColor: "rgba(0,0,0,0.95)", shadowBlur: Math.round(cw * 0.022), shadowY: Math.round(cw * 0.004),
+            strokeW: Math.round(cw * 0.0025), strokeColor: "rgba(0,0,0,0.7)", hlWeight: 800,
+            gradientColor: "rgba(0,0,0,0.65)",
+          }
+        : tier === "clean_premium"
+        ? {
+            hlSize: Math.round(cw * 0.072), subSize: Math.round(cw * 0.034), ctaSize: Math.round(cw * 0.028),
+            hlColor: "#111111", subColor: "#444444", ctaColor: accentHex,
+            shadowColor: "rgba(0,0,0,0.12)", shadowBlur: Math.round(cw * 0.004), shadowY: Math.round(cw * 0.002),
+            strokeW: 0, strokeColor: "transparent", hlWeight: 700,
+            gradientColor: "rgba(255,255,255,0.45)",
+          }
+        : tier === "dark_cinematic"
+        ? {
+            hlSize: Math.round(cw * 0.08), subSize: Math.round(cw * 0.036), ctaSize: Math.round(cw * 0.03),
+            hlColor: "#FFFFFF", subColor: "rgba(180,225,255,0.92)", ctaColor: "#00E5FF",
+            shadowColor: accentHex, shadowBlur: Math.round(cw * 0.03), shadowY: 0,
+            strokeW: 0, strokeColor: "transparent", hlWeight: 700,
+            gradientColor: "rgba(0,0,10,0.6)",
+          }
+        : {
+            hlSize: Math.round(cw * 0.075), subSize: Math.round(cw * 0.036), ctaSize: Math.round(cw * 0.03),
+            hlColor: "#FFFFFF", subColor: "rgba(255,255,255,0.85)", ctaColor: accentHex,
+            shadowColor: "rgba(0,0,0,0.85)", shadowBlur: Math.round(cw * 0.018), shadowY: Math.round(cw * 0.003),
+            strokeW: Math.round(cw * 0.002), strokeColor: "rgba(0,0,0,0.6)", hlWeight: 800,
+            gradientColor: "rgba(0,0,0,0.55)",
+          };
+
+    // Gradient overlay behind text zone for readability
+    const gradH = Math.round(ch * 0.42);
+    const gradY = isTop ? 0 : ch - gradH;
+    const grad = ctx.createLinearGradient(0, gradY, 0, gradY + gradH);
+    if (isTop) {
+      grad.addColorStop(0, s.gradientColor);
+      grad.addColorStop(1, "rgba(0,0,0,0)");
+    } else {
+      grad.addColorStop(0, "rgba(0,0,0,0)");
+      grad.addColorStop(1, s.gradientColor);
+    }
+    if (!isLeft && !isRight && !isOver) {
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, gradY, cw, gradH);
+    }
+
+    // Helper: draw one text line
+    const drawLine = (
+      text: string, x: number, y: number,
+      size: number, color: string, weight: number
+    ): number => {
+      if (!text) return 0;
+      ctx.save();
+      ctx.textAlign = align;
+      ctx.textBaseline = "alphabetic";
+      ctx.font = `${weight} ${size}px "${fontFamily}", system-ui, sans-serif`;
+      ctx.shadowColor = s.shadowColor;
+      ctx.shadowBlur = s.shadowBlur;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = s.shadowY;
+      if (s.strokeW > 0) {
+        ctx.strokeStyle = s.strokeColor;
+        ctx.lineWidth = s.strokeW * 2;
+        ctx.lineJoin = "round";
+        // Wrap and stroke
+        const words = text.split(/\s+/);
+        let line = "";
+        let ly = y;
+        for (const word of words) {
+          const test = line ? `${line} ${word}` : word;
+          if (ctx.measureText(test).width > maxW && line) {
+            ctx.strokeText(line, x, ly);
+            line = word; ly += size * 1.2;
+          } else { line = test; }
+        }
+        if (line) ctx.strokeText(line, x, ly);
+      }
+      ctx.fillStyle = color;
+      let line2 = "";
+      let ly2 = y;
+      let lineCount = 0;
+      const words2 = text.split(/\s+/);
+      for (const word of words2) {
+        const test = line2 ? `${line2} ${word}` : word;
+        if (ctx.measureText(test).width > maxW && line2) {
+          ctx.fillText(line2, x, ly2);
+          line2 = word; ly2 += size * 1.2; lineCount++;
+          if (lineCount >= 2) { ctx.fillText(line2, x, ly2); line2 = ""; break; }
+        } else { line2 = test; }
+      }
+      if (line2) { ctx.fillText(line2, x, ly2); lineCount++; }
+      ctx.restore();
+      return size * 1.25 * Math.max(1, lineCount);
+    };
+
+    const gap = Math.round(ch * 0.013);
+    let y = startY;
+    y += drawLine(hl, startX, y, s.hlSize, s.hlColor, s.hlWeight);
+    if (sub) { y += gap; y += drawLine(sub, startX, y, s.subSize, s.subColor, 500); }
+    if (cta) { y += gap * 1.5; drawLine(cta, startX, y, s.ctaSize, s.ctaColor, 700); }
   }
 
   // estados bÃ¡sicos
