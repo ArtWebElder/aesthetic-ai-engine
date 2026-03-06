@@ -77,7 +77,7 @@ export const geminiImageProvider: Provider = {
       throw new Error("gemini_missing_api_key");
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const url = `https://generativelanguage.googleapis.com/v1alpha/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
     const parts: Array<Record<string, unknown>> = [
       { text: buildGeminiInstruction(input) },
       {
