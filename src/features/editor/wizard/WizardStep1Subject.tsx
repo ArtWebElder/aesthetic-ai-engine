@@ -49,10 +49,30 @@ export function WizardStep1Subject() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const base64 = (ev.target?.result as string) ?? "";
-      setSubject(base64, base64);
+      const raw = (ev.target?.result as string) ?? "";
+      compressImage(raw, 1248, 0.88).then((compressed) => {
+        setSubject(compressed, compressed);
+      });
     };
     reader.readAsDataURL(file);
+  }
+
+  function compressImage(dataUrl: string, maxSide: number, quality: number): Promise<string> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
   }
 
   return (
