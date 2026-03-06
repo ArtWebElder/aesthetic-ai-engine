@@ -4,7 +4,7 @@
 // NUNCA criar estado paralelo ao WizardState aqui.
 
 import { create } from "zustand";
-import type { WizardState, PresetConfig, SubjectProfile, VisualDNA } from "@/types/preset";
+import type { WizardState, PresetConfig, SubjectProfile, VisualDNA, CachedGeneration } from "@/types/preset";
 import { buildActiveConfig, applyPresetOverride, getSuggestedTextPreset } from "@/lib/presetUtils";
 
 interface WizardStore extends WizardState {
@@ -35,6 +35,11 @@ interface WizardStore extends WizardState {
 
   // ── Modo ─────────────────────────────────────────────────────────────────────
   setMode: (mode: "quick" | "advanced") => void;
+
+  // ── DIFF 13.2 — Cache de geração ─────────────────────────────────────────────
+  currentGeneration?: CachedGeneration;
+  setGeneration: (gen: CachedGeneration) => void;
+  clearGeneration: () => void;
 
   // ── Reset ────────────────────────────────────────────────────────────────────
   reset: () => void;
@@ -140,6 +145,12 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
     set({ mode });
   },
 
+  // ── DIFF 13.2 — Cache de geração ─────────────────────────────────────────────
+
+  setGeneration: (gen) => set({ currentGeneration: gen }),
+
+  clearGeneration: () => set({ currentGeneration: undefined }),
+
   // ── Reset ────────────────────────────────────────────────────────────────────
 
   reset: () =>
@@ -147,5 +158,6 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
       ...DEFAULT_WIZARD_STATE,
       mode: get().mode, // preserva modo quick/advanced
       currentStep: 1,
+      currentGeneration: undefined,
     }),
 }));
