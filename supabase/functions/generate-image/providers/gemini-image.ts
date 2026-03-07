@@ -1,7 +1,7 @@
 /// <reference lib="deno.ns" />
 import type { Provider } from "./provider.ts";
 
-const GEMINI_MODEL = "gemini-2.0-flash-preview-image-generation";
+const GEMINI_MODEL = "gemini-2.0-flash-exp";
 const GEMINI_TIMEOUT_MS = 60_000;
 
 function clamp01(value: number) {
