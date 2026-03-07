@@ -16,7 +16,7 @@ e entrega resultado de nível agência — mesmo para usuários que não sabem n
 
 ---
 
-## O QUE O USUÁRIO FORNECE
+## O QUE O USUÁRIO FORNECEE
 
 ```
 OBRIGATÓRIO:
