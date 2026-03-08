@@ -232,6 +232,71 @@ function drawHeadlineMultiLayer(
   ctx.fillText(text, x, y);
 }
 
+// ── Food Pop: renderizador de headline composta ───────────────────────────────
+
+/**
+ * Renderiza headline como dois segmentos tipográficos independentes.
+ * Hierarquia criada por TAMANHO e PESO — não por cor.
+ * Retorna o Y imediatamente abaixo do último segmento.
+ */
+function renderComposedHeadline(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  headline: string,
+  baseSize: number,
+  startY: number,
+  displayFont: string,
+  bodyFont: string
+): number {
+  const segments = segmentHeadline(headline);
+  let currentY = startY;
+  ctx.save();
+  ctx.textAlign = "center";
+  const centerX = canvas.width / 2;
+  const maxWidth = canvas.width * 0.84; // same padding as resolveTextZone
+
+  for (const seg of segments) {
+    const fontSize = baseSize * seg.sizeFactor;
+    const fontFamily = seg.font === "display" ? displayFont : bodyFont;
+    ctx.font = `${seg.weight} ${fontSize}px "${fontFamily}", sans-serif`;
+
+    // Split long context lines so they don't overflow
+    const lines = wrapText(ctx, seg.text, maxWidth);
+
+    for (const line of lines) {
+      if (seg.isAccent) {
+        // Impact segment — elegant shadow, white text
+        ctx.shadowColor = "rgba(0,0,0,0.35)";
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 4;
+        ctx.fillStyle = "#FFFFFF";
+      } else {
+        // Context segment — subtle shadow, slightly transparent
+        ctx.shadowColor = "rgba(0,0,0,0.30)";
+        ctx.shadowBlur = 6;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
+        ctx.fillStyle = "rgba(255,255,255,0.82)";
+      }
+
+      ctx.fillText(line, centerX, currentY);
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+
+      const lineHeight = seg.isAccent ? 0.95 : 1.1;
+      currentY += fontSize * lineHeight;
+    }
+
+    // Small gap between segments
+    currentY += baseSize * 0.08;
+  }
+
+  ctx.restore();
+  return currentY;
+}
+
 // ── Renderizador principal ────────────────────────────────────────────────────
 
 /**
@@ -282,6 +347,21 @@ export function renderTextOnCanvas(
   // ── Headline ─────────────────────────────────────────────────────────────────
 
   if (texts.headline) {
+    // Food Pop: renderizar como dois segmentos tipográficos (contexto + impacto)
+    if (foodPop) {
+      const hlStartY = currentY + hlSize * 0.9;
+      currentY = renderComposedHeadline(
+        ctx,
+        { width: cw, height: ch },
+        texts.headline,
+        hlSize,
+        hlStartY,
+        presetConfig.headlineFont,
+        presetConfig.bodyFont,
+      );
+      (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
+    } else {
+
     const hl =
       presetConfig.headlineTransform === "uppercase"
         ? texts.headline.toUpperCase()
@@ -412,6 +492,7 @@ export function renderTextOnCanvas(
 
     (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
     currentY += lines.length * lineH + hlSize * 0.3;
+    } // end else (non food-pop)
   }
 
   // ── Subheadline ───────────────────────────────────────────────────────────────
