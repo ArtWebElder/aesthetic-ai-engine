@@ -140,9 +140,9 @@ export interface PresetConfig {
 }
 
 export interface ImagePresetConfig {
-  preset: "drama" | "clean" | "dark" | "editorial" | "neon";
-  atmosphere: "fog" | "particles" | "glass_shards" | "rain" | "none";
-  lighting: "rim_purple" | "rim_blue" | "natural" | "studio" | "neon" | "none";
+  preset: "drama" | "clean" | "dark" | "editorial" | "neon" | "food-pop";
+  atmosphere: "fog" | "particles" | "glass_shards" | "rain" | "none" | string;
+  lighting: "rim_purple" | "rim_blue" | "natural" | "studio" | "neon" | "none" | string;
   sceneKeywords: string[];
   negativeKeywords: string[];
   visualDNA?: VisualDNA;             // DNA extraído de referência real (Vision First)
@@ -170,7 +170,8 @@ export type TextStylePreset =
   | "street"         // T5 — Black Han Sans, spray
   | "luxury"         // T6 — Cormorant, dourado
   | "sport"          // T7 — Teko, bold máximo
-  | "minimal";       // T8 — Inter, Swiss design
+  | "minimal"        // T8 — Inter, Swiss design
+  | "food-pop";      // T9 — Montserrat bold italic, food energy
 
 export type TextBlendMode =
   | "normal" | "screen" | "overlay" | "soft-light" | "luminosity";
@@ -257,6 +258,15 @@ export interface WizardState {
 
   // META
   lastGenerationId?: string;
+
+  // FOOD/POP — campos opcionais para criativos de food/delivery
+  category?: "food" | "person" | "product" | "general";
+  whatsapp?: string;
+  instagram?: string;
+  price?: { value: string; prefix: string; suffix: string } | null;
+  extraText?: string;
+  freeInstructions?: string;
+  logoBase64?: string | null;
 }
 
 // ─── GERAÇÃO E CACHE ───────────────────────────────────────────────────────────
