@@ -598,6 +598,42 @@ export function chooseBadgeVariant(headline: string, priceValue: string): BadgeV
   return variants[simpleHash((headline + priceValue).toLowerCase()) % variants.length];
 }
 
+// ── Food Pop: canvas helpers ──────────────────────────────────────────────────
+
+/**
+ * Desenha um retângulo arredondado como path (fallback para browsers sem ctx.roundRect).
+ */
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number
+): void {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+/**
+ * Ajusta o brilho de uma cor hex. amount positivo = mais claro, negativo = mais escuro.
+ */
+function adjustBrightness(hex: string, amount: number): string {
+  const clean = hex.replace("#", "");
+  const num = parseInt(clean.length === 3
+    ? clean.split("").map(c => c + c).join("")
+    : clean, 16);
+  const r = Math.max(0, Math.min(255, (num >> 16) + amount));
+  const g = Math.max(0, Math.min(255, ((num >> 8) & 0xff) + amount));
+  const b = Math.max(0, Math.min(255, (num & 0xff) + amount));
+  return `#${[r, g, b].map(v => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
 // ── Food Pop: sub-renderizadores de badge ─────────────────────────────────────
 
 function renderCardBadge(
