@@ -184,7 +184,11 @@ export function renderTextOnCanvas(
     (ctx as unknown as { letterSpacing: string }).letterSpacing = "-0.02em";
 
     const lines = wrapText(ctx, hl, zone.w);
-    const accentParts = getAccentParts(hl, presetConfig.accentWordAuto);
+    // Accent parts computed from LAST LINE to avoid cross-line word duplication.
+    // "SMASH BURGER ARTESANAL" wraps to ["SMASH BURGER", "ARTESANAL"]:
+    // accentParts of full text = {before:"SMASH", accent:"BURGER ARTESANAL"}
+    // but last line is only "ARTESANAL" — so we compute from last line directly.
+    const accentParts = getAccentParts(lines[lines.length - 1], presetConfig.accentWordAuto);
 
     for (let i = 0; i < lines.length; i++) {
       const lineY = currentY + i * lineH + hlSize;
@@ -314,6 +318,7 @@ export function renderPriceBadge(
   cta: string | undefined,
   accentColor: string
 ): void {
+  console.log('[Creatyng] renderPriceBadge called with:', price);
   const cw = canvas.width;
   const ch = canvas.height;
 
@@ -427,6 +432,7 @@ export function renderContactBar(
   whatsapp: string | undefined,
   instagram: string | undefined
 ): void {
+  console.log('[Creatyng] renderContactBar called with:', { whatsapp, instagram });
   if (!whatsapp && !instagram) return;
 
   const cw = canvas.width;

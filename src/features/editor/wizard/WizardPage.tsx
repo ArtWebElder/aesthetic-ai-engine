@@ -63,7 +63,11 @@ export function WizardPage() {
       const composition: CompositionConfig = cfg.composition ?? DEFAULT_COMPOSITION;
       const targetFormat = FORMAT_BY_ID.get(DEFAULT_FORMAT_ID)!;
 
-      const isFoodPop = state.category === "food";
+      // setCategory nunca é chamado na UI ainda → category fica "general".
+      // Ativar food pop também quando dados de food pop estiverem preenchidos.
+      const isFoodPop =
+        state.category === "food" ||
+        Boolean(state.price?.value || state.whatsapp || state.instagram);
       const composed = await exportComposed({
         imageBase64: gen.imageBase64,
         texts: {

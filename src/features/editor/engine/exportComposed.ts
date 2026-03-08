@@ -232,6 +232,12 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
   renderTextOnCanvas(ctx, textConfig);
 
   // 4. Food Pop: price badge + contact bar (após o texto padrão)
+  console.log('[Creatyng] exportComposed foodPop:', {
+    foodPopOverlay,
+    price: foodPopData?.price,
+    whatsapp: foodPopData?.whatsapp,
+    instagram: foodPopData?.instagram,
+  });
   if (foodPopOverlay && foodPopData) {
     const accentColor = foodPopData.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFD700";
     if (foodPopData.price?.value) {
