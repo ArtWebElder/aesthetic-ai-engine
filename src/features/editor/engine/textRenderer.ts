@@ -499,17 +499,23 @@ export function renderTextOnCanvas(
 
   if (texts.subheadline) {
     if (foodPop) {
-      ctx.font = `500 ${shSize}px Montserrat, sans-serif`;
-      ctx.fillStyle = "rgba(255,255,255,0.88)";
-      ctx.shadowColor = "rgba(0,0,0,0.4)";
-      ctx.shadowBlur = 6;
+      // Subheadline food-pop: MUITO menor que a headline de impacto.
+      // Hierarquia dramática: se impacto = 100px, sub = ~22px.
+      const subFoodSize = Math.max(12, Math.round(hlSize * 0.22));
+      ctx.font = `400 ${subFoodSize}px Montserrat, sans-serif`;
+      ctx.fillStyle = "rgba(255,255,255,0.72)";
+      ctx.textAlign = "center";
+      ctx.shadowColor = "rgba(0,0,0,0.25)";
+      ctx.shadowBlur = 4;
       ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 2;
-      (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.08em";
-      ctx.fillText(texts.subheadline, xAnchor, currentY + shSize);
+      ctx.shadowOffsetY = 1;
+      (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.06em";
+      ctx.fillText(texts.subheadline, cw / 2, currentY + subFoodSize * 0.8);
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
       (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
+      ctx.textAlign = zone.align; // restore
+      currentY += subFoodSize * 1.4;
     } else {
       ctx.font = `300 ${shSize}px "${presetConfig.bodyFont}", sans-serif`;
       ctx.fillStyle =
@@ -517,8 +523,8 @@ export function renderTextOnCanvas(
       applyShadow(ctx, "soft");
       ctx.fillText(texts.subheadline, xAnchor, currentY + shSize);
       ctx.shadowBlur = 0;
+      currentY += shSize * 1.6;
     }
-    currentY += shSize * 1.6;
   }
 
   // ── CTA ───────────────────────────────────────────────────────────────────────
