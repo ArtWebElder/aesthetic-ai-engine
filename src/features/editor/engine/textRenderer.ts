@@ -172,7 +172,7 @@ function segmentHeadline(headline: string): HeadlineSegment[] {
     // Primeira palavra é produto: SUSHI PREMIUM, PIZZA ARTESANAL
     return [
       { text: words[0], weight: 800, sizeFactor: 1.0,  font: "display", isAccent: true  },
-      { text: words[1], weight: 300, sizeFactor: 0.7,  font: "body",    isAccent: false },
+      { text: words[1], weight: 500, sizeFactor: 0.45, font: "body",    isAccent: false },
     ];
   }
 
@@ -194,7 +194,7 @@ function segmentHeadline(headline: string): HeadlineSegment[] {
     }
     splitIndex = Math.max(1, Math.min(splitIndex, words.length - 1));
     return [
-      { text: words.slice(0, splitIndex).join(" "), weight: 300, sizeFactor: 0.55, font: "body",    isAccent: false },
+      { text: words.slice(0, splitIndex).join(" "), weight: 500, sizeFactor: 0.45, font: "body",    isAccent: false },
       { text: words.slice(splitIndex).join(" "),    weight: 800, sizeFactor: 1.0,  font: "display", isAccent: true  },
     ];
   } else {
@@ -210,7 +210,7 @@ function segmentHeadline(headline: string): HeadlineSegment[] {
     splitIndex = Math.max(1, Math.min(splitIndex, words.length - 1));
     return [
       { text: words.slice(0, splitIndex).join(" "), weight: 800, sizeFactor: 1.0,  font: "display", isAccent: true  },
-      { text: words.slice(splitIndex).join(" "),    weight: 300, sizeFactor: 0.55, font: "body",    isAccent: false },
+      { text: words.slice(splitIndex).join(" "),    weight: 500, sizeFactor: 0.45, font: "body",    isAccent: false },
     ];
   }
 }
@@ -283,12 +283,12 @@ function renderComposedHeadline(
         ctx.shadowOffsetY = 4;
         ctx.fillStyle = "#FFFFFF";
       } else {
-        // Context segment — subtle shadow, slightly transparent
-        ctx.shadowColor = "rgba(0,0,0,0.30)";
-        ctx.shadowBlur = 6;
+        // Context segment — legível, não invisível. Hierarquia por tamanho, não por apagar.
+        ctx.shadowColor = "rgba(0,0,0,0.40)";
+        ctx.shadowBlur = 8;
         ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 2;
-        ctx.fillStyle = "rgba(255,255,255,0.82)";
+        ctx.shadowOffsetY = 3;
+        ctx.fillStyle = "rgba(255,255,255,0.92)";
       }
 
       ctx.fillText(line, centerX, currentY);
@@ -510,11 +510,10 @@ export function renderTextOnCanvas(
 
   if (texts.subheadline) {
     if (foodPop) {
-      // Subheadline food-pop: menor que headline mas legível.
-      // Hierarquia: se impacto = 100px, sub = ~30px.
-      const subFoodSize = Math.max(13, Math.round(hlSize * 0.30));
-      ctx.font = `400 ${subFoodSize}px Montserrat, sans-serif`;
-      ctx.fillStyle = "rgba(255,255,255,0.72)";
+      // Subheadline food-pop: menor que headline mas visível e presente.
+      const subFoodSize = Math.max(13, Math.round(hlSize * 0.28));
+      ctx.font = `500 ${subFoodSize}px Montserrat, sans-serif`;
+      ctx.fillStyle = "rgba(255,255,255,0.82)";
       ctx.textAlign = "center";
       ctx.shadowColor = "rgba(0,0,0,0.25)";
       ctx.shadowBlur = 4;
