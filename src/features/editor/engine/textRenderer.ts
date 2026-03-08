@@ -296,3 +296,197 @@ export function renderTextOnCanvas(
 
   ctx.restore();
 }
+
+// ── Food Pop: Price Badge ──────────────────────────────────────────────────────
+
+/**
+ * Renderiza badge de preço no canto inferior direito.
+ * Chamado APÓS renderTextOnCanvas, condicionado a ter price no state.
+ */
+export function renderPriceBadge(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  price: { value: string; prefix: string; suffix: string },
+  cta: string | undefined,
+  accentColor: string
+): void {
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  const badgeWidth = cw * 0.22;
+  const badgeHeight = ch * 0.18;
+  const badgeX = cw * 0.72;
+  const badgeY = ch * 0.55;
+
+  ctx.save();
+
+  // Fundo do badge com rounded corners
+  const radius = badgeWidth * 0.06;
+  ctx.beginPath();
+  ctx.moveTo(badgeX + radius, badgeY);
+  ctx.lineTo(badgeX + badgeWidth - radius, badgeY);
+  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY, badgeX + badgeWidth, badgeY + radius);
+  ctx.lineTo(badgeX + badgeWidth, badgeY + badgeHeight - radius);
+  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY + badgeHeight, badgeX + badgeWidth - radius, badgeY + badgeHeight);
+  ctx.lineTo(badgeX + radius, badgeY + badgeHeight);
+  ctx.quadraticCurveTo(badgeX, badgeY + badgeHeight, badgeX, badgeY + badgeHeight - radius);
+  ctx.lineTo(badgeX, badgeY + radius);
+  ctx.quadraticCurveTo(badgeX, badgeY, badgeX + radius, badgeY);
+  ctx.closePath();
+  ctx.fillStyle = "rgba(20, 12, 5, 0.88)";
+  ctx.fill();
+
+  const priceSize = badgeWidth * 0.35;
+  const prefixSize = priceSize * 0.35;
+  const centerX = badgeX + badgeWidth / 2;
+
+  // Parte inteira e centavos do valor
+  const valueParts = price.value.split(/[,.]/);
+  const mainValue = valueParts[0] || price.value;
+  const cents = valueParts[1] || "";
+
+  // Valor principal
+  ctx.font = `900 ${priceSize}px Montserrat, sans-serif`;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textAlign = "center";
+  const priceY = badgeY + badgeHeight * 0.5;
+  ctx.fillText(mainValue, centerX, priceY);
+
+  // Mede a largura do valor principal para posicionar prefixo e centavos
+  const mainWidth = ctx.measureText(mainValue).width;
+
+  // Prefixo (R$, etc.)
+  if (price.prefix) {
+    ctx.font = `700 ${prefixSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = accentColor || "#FFD700";
+    ctx.textAlign = "right";
+    ctx.fillText(price.prefix, centerX - mainWidth / 2 - 4, priceY - priceSize * 0.2);
+  }
+
+  // Centavos
+  if (cents) {
+    ctx.font = `700 ${prefixSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "left";
+    ctx.fillText(`,${cents}`, centerX + mainWidth / 2 + 2, priceY - priceSize * 0.2);
+  }
+
+  // Sufixo (CADA, A PARTIR DE, etc.)
+  if (price.suffix) {
+    ctx.font = `600 ${badgeWidth * 0.065}px Montserrat, sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+    ctx.textAlign = "center";
+    ctx.fillText(price.suffix.toUpperCase(), centerX, priceY + priceSize * 0.25);
+  }
+
+  // Barra do CTA dentro do badge
+  if (cta) {
+    const ctaH = badgeHeight * 0.18;
+    const ctaY = badgeY + badgeHeight - ctaH - badgeHeight * 0.08;
+    const ctaPad = badgeWidth * 0.08;
+
+    ctx.beginPath();
+    const ctaRadius = ctaH * 0.3;
+    const ctaX = badgeX + ctaPad;
+    const ctaW = badgeWidth - ctaPad * 2;
+    ctx.moveTo(ctaX + ctaRadius, ctaY);
+    ctx.lineTo(ctaX + ctaW - ctaRadius, ctaY);
+    ctx.quadraticCurveTo(ctaX + ctaW, ctaY, ctaX + ctaW, ctaY + ctaRadius);
+    ctx.lineTo(ctaX + ctaW, ctaY + ctaH - ctaRadius);
+    ctx.quadraticCurveTo(ctaX + ctaW, ctaY + ctaH, ctaX + ctaW - ctaRadius, ctaY + ctaH);
+    ctx.lineTo(ctaX + ctaRadius, ctaY + ctaH);
+    ctx.quadraticCurveTo(ctaX, ctaY + ctaH, ctaX, ctaY + ctaH - ctaRadius);
+    ctx.lineTo(ctaX, ctaY + ctaRadius);
+    ctx.quadraticCurveTo(ctaX, ctaY, ctaX + ctaRadius, ctaY);
+    ctx.closePath();
+    ctx.fillStyle = "#E53935";
+    ctx.fill();
+
+    ctx.font = `800 ${ctaH * 0.55}px Montserrat, sans-serif`;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "center";
+    ctx.fillText(cta.toUpperCase(), centerX, ctaY + ctaH * 0.68);
+  }
+
+  ctx.restore();
+}
+
+// ── Food Pop: Contact Bar ──────────────────────────────────────────────────────
+
+/**
+ * Renderiza barra de contatos (WhatsApp + Instagram) na base da imagem.
+ * Chamado APÓS renderTextOnCanvas, condicionado a ter whatsapp/instagram no state.
+ */
+export function renderContactBar(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  whatsapp: string | undefined,
+  instagram: string | undefined
+): void {
+  if (!whatsapp && !instagram) return;
+
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  const barY = ch * 0.94;
+  const fontSize = cw * 0.022;
+  const iconSize = fontSize * 1.3;
+  const gap = cw * 0.04;
+
+  ctx.save();
+  ctx.font = `400 ${fontSize}px Montserrat, sans-serif`;
+  ctx.textBaseline = "middle";
+
+  // Calcular largura total para centralizar
+  let totalWidth = 0;
+  if (whatsapp) totalWidth += iconSize + 6 + ctx.measureText(whatsapp).width;
+  if (whatsapp && instagram) totalWidth += gap;
+  if (instagram) {
+    const handle = instagram.startsWith("@") ? instagram : `@${instagram}`;
+    totalWidth += iconSize + 6 + ctx.measureText(handle).width;
+  }
+
+  let currentX = (cw - totalWidth) / 2;
+
+  // WhatsApp
+  if (whatsapp) {
+    ctx.beginPath();
+    ctx.arc(currentX + iconSize / 2, barY, iconSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(37, 211, 102, 0.85)";
+    ctx.fill();
+
+    ctx.font = `700 ${iconSize * 0.5}px sans-serif`;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "center";
+    ctx.fillText("✆", currentX + iconSize / 2, barY + 1);
+
+    currentX += iconSize + 6;
+    ctx.font = `400 ${fontSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
+    ctx.textAlign = "left";
+    ctx.fillText(whatsapp, currentX, barY);
+    currentX += ctx.measureText(whatsapp).width + gap;
+  }
+
+  // Instagram
+  if (instagram) {
+    ctx.beginPath();
+    ctx.arc(currentX + iconSize / 2, barY, iconSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(225, 48, 108, 0.85)";
+    ctx.fill();
+
+    ctx.font = `700 ${iconSize * 0.5}px sans-serif`;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.textAlign = "center";
+    ctx.fillText("📷", currentX + iconSize / 2, barY + 1);
+
+    currentX += iconSize + 6;
+    ctx.font = `400 ${fontSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
+    ctx.textAlign = "left";
+    const handle = instagram.startsWith("@") ? instagram : `@${instagram}`;
+    ctx.fillText(handle, currentX, barY);
+  }
+
+  ctx.restore();
+}
