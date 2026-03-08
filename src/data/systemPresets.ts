@@ -13,7 +13,7 @@ const emptyStats = {
   favoriteCount: 0,
 };
 
-// ─── IMAGE PRESETS (5) ────────────────────────────────────────────────────────
+// ─── IMAGE PRESETS ────────────────────────────────────────────────────────────
 
 export const SYSTEM_IMAGE_PRESETS: CreatygnPreset[] = [
   {
@@ -152,9 +152,47 @@ export const SYSTEM_IMAGE_PRESETS: CreatygnPreset[] = [
     createdAt: now,
     updatedAt: now,
   },
+  {
+    id: "sys-img-food-pop",
+    slug: "food-pop",
+    name: "Food Pop",
+    description: "Fotografia de food dinâmica com energia, ingredientes voando e iluminação apetitosa",
+    type: "image_style",
+    scope: "system",
+    thumbnailUrl: "/presets/thumbs/food-pop.jpg",
+    config: {
+      image: {
+        preset: "food-pop",
+        atmosphere: "warm, energetic, appetizing, vibrant",
+        lighting: "warm key light upper-left 45deg 3200K, soft fill right, rim light on product edges",
+        sceneKeywords: [
+          "professional food photography",
+          "hero shot slightly below eye level",
+          "warm bokeh background",
+          "dynamic floating ingredients with motion blur",
+          "appetizing warm lighting",
+          "shallow depth of field 85mm f2.8",
+          "restaurant kitchen environment blurred",
+          "food energy and movement",
+          "sauce splashes scattered seeds steam wisps",
+        ],
+        negativeKeywords: [
+          "text", "letters", "typography", "words", "numbers", "watermark",
+          "logo", "border", "frame", "vignette",
+          "artificial food", "wax texture", "3D render", "stock photography",
+          "AI generated text", "cold lighting", "blue tones",
+          "plastic look", "oversaturation", "collage", "split screen",
+        ],
+      },
+    },
+    stats: emptyStats,
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+  },
 ];
 
-// ─── TEXT PRESETS (8) ─────────────────────────────────────────────────────────
+// ─── TEXT PRESETS ─────────────────────────────────────────────────────────────
 
 export const SYSTEM_TEXT_PRESETS: CreatygnPreset[] = [
   {
@@ -426,6 +464,39 @@ export const SYSTEM_TEXT_PRESETS: CreatygnPreset[] = [
     createdAt: now,
     updatedAt: now,
   },
+  {
+    id: "sys-txt-food-pop",
+    slug: "food-pop-text",
+    name: "Food Pop Text",
+    description: "Montserrat bold italic, sombra quente, tipografia apetitosa para promoções",
+    type: "text_style",
+    scope: "system",
+    thumbnailUrl: "/presets/thumbs/text-food-pop.jpg",
+    config: {
+      text: {
+        stylePreset: "food-pop",
+        headlineFont: "Montserrat",
+        bodyFont: "Montserrat",
+        headlineWeight: 900,
+        headlineTracking: "-0.02em",
+        headlineLineHeight: 0.95,
+        headlineTransform: "uppercase",
+        effects: {
+          glow: false,
+          glowIntensity: 0,
+          shadow: "medium",
+          stroke: false,
+          gradient: false,
+        },
+        accentWordAuto: true,
+        blendMode: "normal",
+      },
+    },
+    stats: emptyStats,
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+  },
 ];
 
 // ─── AFINIDADE: qual text preset combina com qual image preset ────────────────
@@ -436,6 +507,7 @@ export const PRESET_AFFINITY: Record<string, string> = {
   "sys-img-dark":      "sys-txt-dark",
   "sys-img-editorial": "sys-txt-luxury",
   "sys-img-neon":      "sys-txt-neon",
+  "sys-img-food-pop":  "sys-txt-food-pop",
 };
 
 // ─── ÍNDICES para lookup O(1) ─────────────────────────────────────────────────
