@@ -153,6 +153,8 @@ export interface TextPresetConfig {
   headlineFont: string;              // Google Font name
   bodyFont: string;                  // Google Font name
   headlineWeight: number;            // 400-900
+  /** Weight used for the "context" segment in composed typography (food-pop). Defaults to 300. */
+  bodyWeight?: number;               // 100-400, used in segmentHeadline context segment
   headlineTracking: string;          // '-0.02em', '0.05em', etc
   headlineLineHeight: number;        // 0.85-1.3
   headlineTransform: "uppercase" | "none" | "capitalize";
