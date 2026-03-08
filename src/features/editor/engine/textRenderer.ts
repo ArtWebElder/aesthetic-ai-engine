@@ -32,7 +32,7 @@ function resolveTextZone(
 ): TextZone {
   const pos = comp.textPosition ?? "bottom";
   const align = (comp.textAlignment ?? "left") as CanvasTextAlign;
-  const pad = cw * 0.06;
+  const pad = cw * 0.08; // 8% lateral margin
 
   switch (pos) {
     case "top":
@@ -43,24 +43,20 @@ function resolveTextZone(
       return { x: cw * 0.55, y: ch * 0.1, w: cw * 0.45 - pad, h: ch * 0.8, align: "right", verticalAnchor: "center" };
     case "center":
       return { x: cw * 0.1, y: ch * 0.2, w: cw * 0.8, h: ch * 0.6, align: "center", verticalAnchor: "center" };
-    default: // bottom
-      return { x: pad, y: ch * 0.6, w: cw - pad * 2, h: ch * 0.36, align, verticalAnchor: "bottom" };
+    default: // bottom — zone ends at 85% height (15% bottom margin)
+      return { x: pad, y: ch * 0.45, w: cw - pad * 2, h: ch * 0.40, align, verticalAnchor: "bottom" };
   }
 }
 
 // ── Tamanhos ──────────────────────────────────────────────────────────────────
 
-function headlineFontSize(cw: number, ch: number): number {
-  // 8.5% da largura, clamp entre 32px e 120px
-  return Math.max(32, Math.min(120, Math.round(cw * 0.085)));
+function headlineFontSize(ch: number): number {
+  // 10% da altura do canvas, clamp entre 32px e 180px
+  return Math.max(32, Math.min(180, Math.round(ch * 0.10)));
 }
 
 function subheadlineFontSize(cw: number): number {
   return Math.max(14, Math.min(36, Math.round(cw * 0.028)));
-}
-
-function ctaFontSize(cw: number): number {
-  return Math.max(12, Math.min(28, Math.round(cw * 0.022)));
 }
 
 // ── Wrap de texto ──────────────────────────────────────────────────────────────
@@ -143,9 +139,9 @@ export function renderTextOnCanvas(
   const zone = resolveTextZone(composition, cw, ch);
   const preset = presetConfig.stylePreset;
   const accentColor = colors.accentWord ?? colors.primary;
-  const hlSize = headlineFontSize(cw, ch);
+  const hlSize = headlineFontSize(ch);
   const shSize = subheadlineFontSize(cw);
-  const ctaSize = ctaFontSize(cw);
+  const ctaSize = Math.max(12, Math.round(hlSize * 0.35)); // 35% of headline
   const fontName = presetConfig.headlineFont;
   const lineH = hlSize * presetConfig.headlineLineHeight;
 
@@ -171,7 +167,7 @@ export function renderTextOnCanvas(
     const totalH =
       hlLines.length * lineH +
       (texts.subheadline ? shSize * 1.6 : 0) +
-      (texts.cta ? ctaSize * 2 : 0);
+      (texts.cta ? 12 + ctaSize * 1.5 : 0);
     currentY = zone.y + zone.h - totalH;
   }
 
@@ -185,6 +181,7 @@ export function renderTextOnCanvas(
 
     const fontStr = `${presetConfig.headlineWeight} ${hlSize}px "${fontName}", sans-serif`;
     ctx.font = fontStr;
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "-0.02em";
 
     const lines = wrapText(ctx, hl, zone.w);
     const accentParts = getAccentParts(hl, presetConfig.accentWordAuto);
@@ -252,6 +249,7 @@ export function renderTextOnCanvas(
       ctx.shadowOffsetY = 0;
     }
 
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
     currentY += lines.length * lineH + hlSize * 0.3;
   }
 
@@ -270,11 +268,13 @@ export function renderTextOnCanvas(
   // ── CTA ───────────────────────────────────────────────────────────────────────
 
   if (texts.cta) {
-    currentY += ctaSize * 0.5;
+    currentY += 12; // fixed 12px spacing from headline/subheadline
     ctx.font = `600 ${ctaSize}px "${presetConfig.bodyFont}", sans-serif`;
-    ctx.fillStyle = colors.primary;
+    ctx.fillStyle = colors.accentWord ?? `rgba(255,255,255,0.70)`;
     ctx.shadowColor = "transparent";
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.15em";
     ctx.fillText(texts.cta.toUpperCase(), xAnchor, currentY + ctaSize);
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
 
     // Underline para preset clean
     if (preset === "clean") {
@@ -288,7 +288,7 @@ export function renderTextOnCanvas(
       ctx.beginPath();
       ctx.moveTo(lineX, currentY + ctaSize + 3);
       ctx.lineTo(lineX + ctaWidth, currentY + ctaSize + 3);
-      ctx.strokeStyle = colors.primary;
+      ctx.strokeStyle = colors.accentWord ?? `rgba(255,255,255,0.70)`;
       ctx.lineWidth = 2;
       ctx.stroke();
     }

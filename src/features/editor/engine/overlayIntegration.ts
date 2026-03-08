@@ -54,10 +54,10 @@ export function calculateZoneLuminosity(
  * Fundo claro → overlay mais forte; fundo escuro → overlay mais suave.
  */
 export function calculateOverlayIntensity(avgLuminosity: number): number {
-  if (avgLuminosity > 0.7) return 0.80; // fundo muito claro
-  if (avgLuminosity > 0.5) return 0.65; // fundo claro
-  if (avgLuminosity > 0.3) return 0.50; // fundo médio
-  return 0.35;                           // fundo escuro — overlay suave
+  if (avgLuminosity > 0.7) return 0.85; // fundo muito claro
+  if (avgLuminosity > 0.5) return 0.80; // fundo claro
+  if (avgLuminosity > 0.3) return 0.75; // fundo médio
+  return 0.75;                           // fundo escuro
 }
 
 /**
@@ -104,7 +104,7 @@ export function drawTextOverlay(
       gradStart = [cw * 0.5, ch * 0.5];
       gradEnd = [cw * 0.5, ch];
       break;
-    default: // bottom
+    default: // bottom — 45% of canvas height, aligns with text zone
       zone = { x: 0, y: ch * 0.55, w: cw, h: ch * 0.45 };
       gradStart = [0, ch];
       gradEnd = [0, ch * 0.55];
