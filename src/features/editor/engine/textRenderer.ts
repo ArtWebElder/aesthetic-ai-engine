@@ -154,14 +154,13 @@ const CONNECTOR_WORDS = new Set([
 ]);
 
 /**
- * Divide a headline em dois segmentos tipográficos:
- * - "contexto" (palavras de conexão/setup) → menor, peso 300
- * - "impacto" (palavra/s chave do produto) → maior, peso 800
- *
- * O destaque hierárquico vem de TAMANHO e PESO, não de cor.
+ * Divide a headline em dois segmentos tipográficos.
+ * Regra: a primeira palavra costuma ser o PRODUTO → grande e bold (impacto).
+ * Se a headline começa com connector word → contexto primeiro, impacto depois.
+ * O destaque vem de TAMANHO e PESO, não de cor.
  */
 function segmentHeadline(headline: string): HeadlineSegment[] {
-  const words = headline.toUpperCase().split(/\s+/).filter(Boolean);
+  const words = headline.toUpperCase().trim().split(/\s+/).filter(Boolean);
 
   if (words.length === 0) return [];
 
@@ -170,40 +169,50 @@ function segmentHeadline(headline: string): HeadlineSegment[] {
   }
 
   if (words.length === 2) {
+    // Primeira palavra é produto: SUSHI PREMIUM, PIZZA ARTESANAL
     return [
-      { text: words[0], weight: 300, sizeFactor: 0.85, font: "body",    isAccent: false },
-      { text: words[1], weight: 800, sizeFactor: 1.0,  font: "display", isAccent: true  },
+      { text: words[0], weight: 800, sizeFactor: 1.0,  font: "display", isAccent: true  },
+      { text: words[1], weight: 300, sizeFactor: 0.7,  font: "body",    isAccent: false },
     ];
   }
 
-  // 3+ words — find natural split point
-  // Walk backwards, split before the first non-connector word from the end
-  let splitIndex = 1; // default: first word = context, rest = impact
-  for (let i = words.length - 1; i >= 1; i--) {
-    if (CONNECTOR_WORDS.has(words[i])) {
-      splitIndex = i + 1;
-      break;
-    }
-    if (i === 1) splitIndex = i;
-  }
-  splitIndex = Math.max(1, Math.min(splitIndex, words.length - 1));
+  // 3+ palavras
+  const startsWithConnector = CONNECTOR_WORDS.has(words[0]);
 
-  return [
-    {
-      text:       words.slice(0, splitIndex).join(" "),
-      weight:     300,
-      sizeFactor: 0.65,
-      font:       "body",
-      isAccent:   false,
-    },
-    {
-      text:       words.slice(splitIndex).join(" "),
-      weight:     800,
-      sizeFactor: 1.0,
-      font:       "display",
-      isAccent:   true,
-    },
-  ];
+  if (startsWithConnector) {
+    // "DO TAMANHO DA SUA FOME" → contexto primeiro, impacto no fim
+    let splitIndex = words.length;
+    for (let i = words.length - 1; i >= 1; i--) {
+      if (CONNECTOR_WORDS.has(words[i])) {
+        splitIndex = i + 1;
+        break;
+      }
+    }
+    // Garantir pelo menos 2 palavras no impacto quando possível
+    if (words.length - splitIndex < 2 && splitIndex > 2) {
+      splitIndex = Math.max(1, splitIndex - 1);
+    }
+    splitIndex = Math.max(1, Math.min(splitIndex, words.length - 1));
+    return [
+      { text: words.slice(0, splitIndex).join(" "), weight: 300, sizeFactor: 0.55, font: "body",    isAccent: false },
+      { text: words.slice(splitIndex).join(" "),    weight: 800, sizeFactor: 1.0,  font: "display", isAccent: true  },
+    ];
+  } else {
+    // "AÇAÍ DO SEU JEITO", "SMASH BURGER ARTESANAL"
+    // Produto = palavras antes do primeiro connector; resto = contexto
+    let splitIndex = words.length;
+    for (let i = 1; i < words.length; i++) {
+      if (CONNECTOR_WORDS.has(words[i])) {
+        splitIndex = i;
+        break;
+      }
+    }
+    splitIndex = Math.max(1, Math.min(splitIndex, words.length - 1));
+    return [
+      { text: words.slice(0, splitIndex).join(" "), weight: 800, sizeFactor: 1.0,  font: "display", isAccent: true  },
+      { text: words.slice(splitIndex).join(" "),    weight: 300, sizeFactor: 0.55, font: "body",    isAccent: false },
+    ];
+  }
 }
 
 // ── Food Pop: multi-layer headline shadow ──────────────────────────────────────
