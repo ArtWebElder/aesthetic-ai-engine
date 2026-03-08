@@ -569,58 +569,51 @@ export function renderTextOnCanvas(
   ctx.restore();
 }
 
-// ── Food Pop: Price Badge ──────────────────────────────────────────────────────
+// ── Food Pop: tipos compartilhados ────────────────────────────────────────────
 
-/**
- * Renderiza badge de preço no canto inferior direito.
- * Chamado APÓS renderTextOnCanvas, condicionado a ter price no state.
- */
-// Helper: ajustar brilho de cor hex
-function adjustBrightness(hex: string, amount: number): string {
-  const clean = hex.replace("#", "");
-  if (clean.length !== 6) return hex;
-  const r = Math.max(0, Math.min(255, parseInt(clean.slice(0, 2), 16) + amount));
-  const g = Math.max(0, Math.min(255, parseInt(clean.slice(2, 4), 16) + amount));
-  const b = Math.max(0, Math.min(255, parseInt(clean.slice(4, 6), 16) + amount));
-  return `rgb(${r},${g},${b})`;
+interface FoodPaletteLocal {
+  accent: string;
+  accentLight: string;
+  badgeBg: string;
+  badgeText: string;
+  ctaBg: string;
+  ctaText: string;
 }
 
-// Helper: desenhar rounded rect path (fallback para ctx.roundRect)
-function roundRectPath(
-  ctx: CanvasRenderingContext2D,
-  x: number, y: number, w: number, h: number, r: number
-): void {
-  if (ctx.roundRect) {
-    ctx.roundRect(x, y, w, h, r);
-  } else {
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
+// ── Food Pop: hash determinístico para variação ────────────────────────────────
+
+function simpleHash(text: string): number {
+  let h = 0;
+  for (let i = 0; i < text.length; i++) {
+    h = ((h << 5) - h) + text.charCodeAt(i);
+    h |= 0;
   }
+  return Math.abs(h);
 }
 
-export function renderPriceBadge(
+type BadgeVariant = "card-right" | "card-left" | "pill-bottom" | "minimal-inline";
+
+export function chooseBadgeVariant(headline: string, priceValue: string): BadgeVariant {
+  const variants: BadgeVariant[] = ["card-right", "card-left", "pill-bottom", "minimal-inline"];
+  return variants[simpleHash((headline + priceValue).toLowerCase()) % variants.length];
+}
+
+// ── Food Pop: sub-renderizadores de badge ─────────────────────────────────────
+
+function renderCardBadge(
   ctx: CanvasRenderingContext2D,
   canvas: { width: number; height: number },
   price: { value: string; prefix: string; suffix: string },
   cta: string | undefined,
   accentColor: string,
-  palette?: { accent: string; accentLight: string; badgeBg: string; badgeText: string; ctaBg: string; ctaText: string }
+  palette: FoodPaletteLocal | undefined,
+  side: "left" | "right"
 ): void {
-  console.log('[Creatyng] renderPriceBadge called with:', price);
   const cw = canvas.width;
   const ch = canvas.height;
-
-  const badgeWidth = cw * 0.22;
+  const badgeWidth  = cw * 0.22;
   const badgeHeight = ch * 0.18;
-  const badgeX = cw * 0.75;
+  const badgeX = side === "right" ? cw * 0.75 : cw * 0.03;
   const badgeY = ch * 0.62;
   const badgeRadius = 12;
 
@@ -632,32 +625,23 @@ export function renderPriceBadge(
   const ctaTxtCol = palette?.ctaText     ?? "#FFFFFF";
 
   ctx.save();
-
-  // Drop shadow do badge
   ctx.shadowColor = "rgba(0,0,0,0.18)";
   ctx.shadowBlur = 20;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = 8;
 
-  // Fundo — gradiente angular claro (de topo-esquerdo a baixo-direito)
-  const grad = ctx.createLinearGradient(
-    badgeX, badgeY,
-    badgeX + badgeWidth, badgeY + badgeHeight
-  );
+  const grad = ctx.createLinearGradient(badgeX, badgeY, badgeX + badgeWidth, badgeY + badgeHeight);
   grad.addColorStop(0, bgColor);
   grad.addColorStop(1, accentLt);
-
   ctx.beginPath();
   roundRectPath(ctx, badgeX, badgeY, badgeWidth, badgeHeight, badgeRadius);
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Desativar shadow antes das bordas e texto
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
   ctx.shadowOffsetY = 0;
 
-  // Borda sutil
   ctx.beginPath();
   roundRectPath(ctx, badgeX, badgeY, badgeWidth, badgeHeight, badgeRadius);
   ctx.strokeStyle = "rgba(0,0,0,0.07)";
@@ -667,64 +651,49 @@ export function renderPriceBadge(
   const priceSize  = badgeWidth * 0.35;
   const prefixSize = priceSize * 0.35;
   const centerX    = badgeX + badgeWidth / 2;
-
   const valueParts = price.value.split(/[,.]/);
   const mainValue  = valueParts[0] || price.value;
   const cents      = valueParts[1] || "";
+  const priceY     = badgeY + badgeHeight * 0.50;
 
-  const priceY = badgeY + badgeHeight * 0.50;
-
-  // Valor principal — escuro
   ctx.font = `900 ${priceSize}px Montserrat, sans-serif`;
   ctx.fillStyle = textColor;
   ctx.textAlign = "center";
   ctx.fillText(mainValue, centerX, priceY);
-
   const mainWidth = ctx.measureText(mainValue).width;
 
-  // Prefixo (R$) — na cor accent
   if (price.prefix) {
     ctx.font = `700 ${prefixSize}px Montserrat, sans-serif`;
     ctx.fillStyle = accent;
     ctx.textAlign = "right";
     ctx.fillText(price.prefix, centerX - mainWidth / 2 - 4, priceY - priceSize * 0.2);
   }
-
-  // Centavos — escuro mais leve
   if (cents) {
     ctx.font = `700 ${prefixSize}px Montserrat, sans-serif`;
     ctx.fillStyle = textColor + "AA";
     ctx.textAlign = "left";
     ctx.fillText(`,${cents}`, centerX + mainWidth / 2 + 2, priceY - priceSize * 0.2);
   }
-
-  // Sufixo — escuro mais leve
   if (price.suffix) {
     ctx.font = `600 ${badgeWidth * 0.065}px Montserrat, sans-serif`;
     ctx.fillStyle = textColor + "99";
     ctx.textAlign = "center";
     ctx.fillText(price.suffix.toUpperCase(), centerX, priceY + priceSize * 0.25);
   }
-
-  // CTA — botão com gradiente accent
   if (cta) {
     const ctaH   = badgeHeight * 0.17;
     const ctaY   = badgeY + badgeHeight - ctaH - badgeHeight * 0.08;
     const ctaPad = badgeWidth * 0.06;
     const ctaX   = badgeX + ctaPad;
     const ctaW   = badgeWidth - ctaPad * 2;
-
     ctx.save();
-
     const ctaGrad = ctx.createLinearGradient(ctaX, ctaY, ctaX + ctaW, ctaY);
     ctaGrad.addColorStop(0, ctaBgCol);
     ctaGrad.addColorStop(1, adjustBrightness(ctaBgCol, -18));
-
     ctx.beginPath();
     roundRectPath(ctx, ctaX, ctaY, ctaW, ctaH, 4);
     ctx.fillStyle = ctaGrad;
     ctx.fill();
-
     ctx.font = `600 ${ctaH * 0.50}px Montserrat, sans-serif`;
     ctx.fillStyle = ctaTxtCol;
     ctx.textAlign = "center";
@@ -732,11 +701,177 @@ export function renderPriceBadge(
     (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.10em";
     ctx.fillText(cta.toUpperCase(), centerX, ctaY + ctaH / 2);
     (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
-
     ctx.restore();
+  }
+  ctx.restore();
+}
+
+function renderPillBadge(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  price: { value: string; prefix: string; suffix: string },
+  cta: string | undefined,
+  palette: FoodPaletteLocal | undefined
+): void {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const pillW = cw * 0.65;
+  const pillH = ch * 0.055;
+  const pillX = (cw - pillW) / 2;
+  const pillY = ch * 0.83;
+  const pillRadius = pillH / 2;
+
+  const accent    = palette?.accent    ?? "#D4A853";
+  const bgColor   = palette?.badgeBg   ?? "rgba(255,255,255,0.92)";
+  const accentLt  = palette?.accentLight ?? "rgba(255,248,240,0.88)";
+  const textColor = palette?.badgeText ?? "#1A1A1A";
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.12)";
+  ctx.shadowBlur = 15;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 4;
+
+  const grad = ctx.createLinearGradient(pillX, pillY, pillX + pillW, pillY);
+  grad.addColorStop(0, bgColor);
+  grad.addColorStop(1, accentLt);
+  ctx.beginPath();
+  roundRectPath(ctx, pillX, pillY, pillW, pillH, pillRadius);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.beginPath();
+  roundRectPath(ctx, pillX, pillY, pillW, pillH, pillRadius);
+  ctx.strokeStyle = "rgba(0,0,0,0.06)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  const priceSize = pillH * 0.36;
+  const centerY   = pillY + pillH / 2;
+  const priceX    = pillX + pillW * 0.25;
+  const priceText = `${price.prefix ? price.prefix + " " : ""}${price.value}`;
+
+  ctx.textBaseline = "middle";
+  ctx.font = `700 ${priceSize}px Montserrat, sans-serif`;
+  ctx.fillStyle = accent;
+  ctx.textAlign = "center";
+  ctx.fillText(priceText, priceX, centerY);
+
+  if (price.suffix) {
+    const sufSize = pillH * 0.22;
+    const sufX = priceX + ctx.measureText(priceText).width / 2 + cw * 0.015;
+    ctx.font = `500 ${sufSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = textColor + "AA";
+    ctx.textAlign = "left";
+    ctx.fillText(price.suffix.toUpperCase(), sufX, centerY);
+  }
+
+  // Separador vertical
+  const sepX = pillX + pillW * 0.55;
+  ctx.beginPath();
+  ctx.moveTo(sepX, pillY + pillH * 0.2);
+  ctx.lineTo(sepX, pillY + pillH * 0.8);
+  ctx.strokeStyle = "rgba(0,0,0,0.10)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  if (cta) {
+    const ctaSize = pillH * 0.30;
+    const ctaX    = pillX + pillW * 0.78;
+    ctx.font = `600 ${ctaSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = accent;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.08em";
+    ctx.fillText(cta.toUpperCase(), ctaX, centerY);
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
   }
 
   ctx.restore();
+}
+
+function renderMinimalPrice(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  price: { value: string; prefix: string; suffix: string },
+  cta: string | undefined,
+  palette: FoodPaletteLocal | undefined
+): void {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const centerX  = cw / 2;
+  const priceY   = ch * 0.78;
+  const priceSize = cw * 0.065;
+  const accent   = palette?.accent ?? "#D4A853";
+
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(0,0,0,0.50)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 3;
+
+  const priceText = `${price.prefix ? price.prefix + " " : ""}${price.value}`;
+  ctx.font = `800 ${priceSize}px Montserrat, sans-serif`;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(priceText, centerX, priceY);
+
+  if (price.suffix) {
+    ctx.font = `400 ${priceSize * 0.35}px Montserrat, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.70)";
+    ctx.fillText(price.suffix.toUpperCase(), centerX, priceY + priceSize * 0.5);
+  }
+
+  if (cta) {
+    const ctaY = priceY + priceSize * (price.suffix ? 0.9 : 0.6);
+    ctx.font = `600 ${priceSize * 0.4}px Montserrat, sans-serif`;
+    ctx.fillStyle = accent;
+    ctx.shadowColor = "rgba(0,0,0,0.40)";
+    ctx.shadowBlur = 6;
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.08em";
+    ctx.fillText(`${cta.toUpperCase()}  →`, centerX, ctaY);
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
+  }
+
+  ctx.restore();
+}
+
+// ── Food Pop: Price Badge (dispatcher) ────────────────────────────────────────
+
+/**
+ * Escolhe variante de badge por hash determinístico e despacha para sub-renderizador.
+ * headline param necessário para que o hash varie entre criativos diferentes.
+ */
+export function renderPriceBadge(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  price: { value: string; prefix: string; suffix: string },
+  cta: string | undefined,
+  accentColor: string,
+  palette?: FoodPaletteLocal,
+  headline?: string
+): void {
+  console.log('[Creatyng] renderPriceBadge called with:', price);
+  const variant = chooseBadgeVariant(headline ?? "", price.value);
+  switch (variant) {
+    case "card-right":
+      renderCardBadge(ctx, canvas, price, cta, accentColor, palette, "right");
+      break;
+    case "card-left":
+      renderCardBadge(ctx, canvas, price, cta, accentColor, palette, "left");
+      break;
+    case "pill-bottom":
+      renderPillBadge(ctx, canvas, price, cta, palette);
+      break;
+    case "minimal-inline":
+      renderMinimalPrice(ctx, canvas, price, cta, palette);
+      break;
+  }
 }
 
 // ── Food Pop: Contact Bar ──────────────────────────────────────────────────────
