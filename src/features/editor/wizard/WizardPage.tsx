@@ -68,6 +68,12 @@ export function WizardPage() {
       const isFoodPop =
         state.category === "food" ||
         Boolean(state.price?.value || state.whatsapp || state.instagram);
+
+      // Food pop accent: usar cor primary do preset se disponível,
+      // senão dourado elegante. NUNCA roxo/neon — destaque vem de tamanho/peso.
+      const foodAccentColor =
+        cfg.colors?.primary || colors.primary || "#D4A853";
+
       const composed = await exportComposed({
         imageBase64: gen.imageBase64,
         texts: {
@@ -86,7 +92,7 @@ export function WizardPage() {
               price: state.price ?? undefined,
               whatsapp: state.whatsapp,
               instagram: state.instagram,
-              accentColor: colors.accentWord ?? colors.primary,
+              accentColor: foodAccentColor,
             }
           : undefined,
       });
