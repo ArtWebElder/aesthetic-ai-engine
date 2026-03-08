@@ -347,12 +347,26 @@ export function renderTextOnCanvas(
   // ── Subheadline ───────────────────────────────────────────────────────────────
 
   if (texts.subheadline) {
-    ctx.font = `300 ${shSize}px "${presetConfig.bodyFont}", sans-serif`;
-    ctx.fillStyle =
-      preset === "dark" ? `rgba(0,229,255,0.8)` : "rgba(255,255,255,0.85)";
-    applyShadow(ctx, "soft");
-    ctx.fillText(texts.subheadline, xAnchor, currentY + shSize);
-    ctx.shadowBlur = 0;
+    if (foodPop) {
+      ctx.font = `500 ${shSize}px Montserrat, sans-serif`;
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      ctx.shadowColor = "rgba(0,0,0,0.4)";
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 2;
+      (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.08em";
+      ctx.fillText(texts.subheadline, xAnchor, currentY + shSize);
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
+    } else {
+      ctx.font = `300 ${shSize}px "${presetConfig.bodyFont}", sans-serif`;
+      ctx.fillStyle =
+        preset === "dark" ? `rgba(0,229,255,0.8)` : "rgba(255,255,255,0.85)";
+      applyShadow(ctx, "soft");
+      ctx.fillText(texts.subheadline, xAnchor, currentY + shSize);
+      ctx.shadowBlur = 0;
+    }
     currentY += shSize * 1.6;
   }
 
@@ -478,7 +492,7 @@ export function renderPriceBadge(
     const ctaPad = badgeWidth * 0.08;
 
     ctx.beginPath();
-    const ctaRadius = ctaH * 0.3;
+    const ctaRadius = ctaH * 0.4;
     const ctaX = badgeX + ctaPad;
     const ctaW = badgeWidth - ctaPad * 2;
     ctx.moveTo(ctaX + ctaRadius, ctaY);
@@ -497,7 +511,9 @@ export function renderPriceBadge(
     ctx.font = `800 ${ctaH * 0.55}px Montserrat, sans-serif`;
     ctx.fillStyle = "#FFFFFF";
     ctx.textAlign = "center";
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.1em";
     ctx.fillText(cta.toUpperCase(), centerX, ctaY + ctaH * 0.68);
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
   }
 
   ctx.restore();
