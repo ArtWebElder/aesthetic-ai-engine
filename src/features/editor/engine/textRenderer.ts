@@ -567,44 +567,81 @@ export function renderContactBar(
 
   let currentX = (cw - totalWidth) / 2;
 
-  // WhatsApp
-  if (whatsapp) {
-    ctx.beginPath();
-    ctx.arc(currentX + iconSize / 2, barY, iconSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(37, 211, 102, 0.85)";
-    ctx.fill();
+  // Text shadow helper for contact bar
+  function setContactShadow(): void {
+    ctx.shadowColor = "rgba(0,0,0,0.55)";
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 1;
+  }
 
-    ctx.font = `700 ${iconSize * 0.5}px sans-serif`;
+  // WhatsApp — solid #25D366 circle + "W"
+  if (whatsapp) {
+    const cx = currentX + iconSize / 2;
+    ctx.beginPath();
+    ctx.arc(cx, barY, iconSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = "#25D366";
+    ctx.shadowColor = "rgba(0,0,0,0.4)";
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.font = `800 ${iconSize * 0.52}px Montserrat, sans-serif`;
     ctx.fillStyle = "#FFFFFF";
     ctx.textAlign = "center";
-    ctx.fillText("✆", currentX + iconSize / 2, barY + 1);
+    ctx.fillText("W", cx, barY + iconSize * 0.19);
 
     currentX += iconSize + 6;
-    ctx.font = `400 ${fontSize}px Montserrat, sans-serif`;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
+    ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.88)";
     ctx.textAlign = "left";
+    setContactShadow();
     ctx.fillText(whatsapp, currentX, barY);
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
     currentX += ctx.measureText(whatsapp).width + gap;
   }
 
-  // Instagram
+  // Instagram — gradient circle + "@"
   if (instagram) {
-    ctx.beginPath();
-    ctx.arc(currentX + iconSize / 2, barY, iconSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(225, 48, 108, 0.85)";
-    ctx.fill();
+    const cx = currentX + iconSize / 2;
+    const igGrad = ctx.createLinearGradient(
+      cx - iconSize / 2, barY - iconSize / 2,
+      cx + iconSize / 2, barY + iconSize / 2
+    );
+    igGrad.addColorStop(0,   "#FCAF45");
+    igGrad.addColorStop(0.3, "#E1306C");
+    igGrad.addColorStop(0.65,"#C13584");
+    igGrad.addColorStop(1,   "#833AB4");
 
-    ctx.font = `700 ${iconSize * 0.5}px sans-serif`;
+    ctx.beginPath();
+    ctx.arc(cx, barY, iconSize / 2, 0, Math.PI * 2);
+    ctx.fillStyle = igGrad;
+    ctx.shadowColor = "rgba(0,0,0,0.4)";
+    ctx.shadowBlur = 6;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+
+    ctx.font = `800 ${iconSize * 0.52}px Montserrat, sans-serif`;
     ctx.fillStyle = "#FFFFFF";
     ctx.textAlign = "center";
-    ctx.fillText("📷", currentX + iconSize / 2, barY + 1);
+    ctx.fillText("@", cx, barY + iconSize * 0.19);
 
     currentX += iconSize + 6;
-    ctx.font = `400 ${fontSize}px Montserrat, sans-serif`;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.82)";
+    ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.88)";
     ctx.textAlign = "left";
+    setContactShadow();
     const handle = instagram.startsWith("@") ? instagram : `@${instagram}`;
     ctx.fillText(handle, currentX, barY);
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
   }
 
   ctx.restore();
