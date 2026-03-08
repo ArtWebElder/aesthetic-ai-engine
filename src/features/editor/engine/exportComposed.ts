@@ -270,8 +270,9 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
     // Partículas bokeh (entre gradiente e texto)
     const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
     renderBokehParticles(ctx, cw, ch, 15, accentColor);
-    // Linha decorativa de separação entre headline e subject
-    renderDecorativeLine(ctx, cw, ch, ch * 0.27, accentColor);
+    // Linha decorativa desativada — polui sobre o subject
+    // TODO: reativar com detecção de espaço disponível
+    // renderDecorativeLine(ctx, cw, ch, ch * 0.27, accentColor);
   } else if (texts.headline || texts.cta) {
     // Preset padrão: gradiente adaptativo
     drawTextOverlay(ctx, composition, cw, ch);
@@ -380,7 +381,7 @@ export async function renderFormatPreview(
     drawFoodPopOverlay(ctx, pw, ph);
     const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
     renderBokehParticles(ctx, pw, ph, 8, accentColor);
-    renderDecorativeLine(ctx, pw, ph, ph * 0.27, accentColor);
+    // renderDecorativeLine(ctx, pw, ph, ph * 0.27, accentColor); // desativada
   } else if (texts.headline || texts.cta) {
     drawTextOverlay(ctx, composition, pw, ph);
   }
