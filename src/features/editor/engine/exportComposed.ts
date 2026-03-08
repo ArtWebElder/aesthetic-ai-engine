@@ -174,6 +174,34 @@ function renderBokehParticles(
   ctx.restore();
 }
 
+// ─── FOOD POP: LINHA DECORATIVA ───────────────────────────────────────────────
+
+function renderDecorativeLine(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  y: number,
+  accentColor: string
+): void {
+  const lineW = cw * 0.55;
+  const lineX = (cw - lineW) / 2;
+  const grad = ctx.createLinearGradient(lineX, y, lineX + lineW, y);
+  grad.addColorStop(0,    "rgba(255,255,255,0)");
+  grad.addColorStop(0.2,  accentColor);
+  grad.addColorStop(0.8,  accentColor);
+  grad.addColorStop(1,    "rgba(255,255,255,0)");
+
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = Math.max(1, cw * 0.002);
+  ctx.beginPath();
+  ctx.moveTo(lineX, y);
+  ctx.lineTo(lineX + lineW, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ─── COMPOSIÇÃO PRINCIPAL ─────────────────────────────────────────────────────
 
 export interface ComposeOptions {
@@ -230,6 +258,8 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
     // Partículas bokeh (entre gradiente e texto)
     const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
     renderBokehParticles(ctx, cw, ch, 15, accentColor);
+    // Linha decorativa de separação entre headline e subject
+    renderDecorativeLine(ctx, cw, ch, ch * 0.27, accentColor);
   } else if (texts.headline || texts.cta) {
     // Preset padrão: gradiente adaptativo
     drawTextOverlay(ctx, composition, cw, ch);
@@ -338,6 +368,7 @@ export async function renderFormatPreview(
     drawFoodPopOverlay(ctx, pw, ph);
     const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
     renderBokehParticles(ctx, pw, ph, 8, accentColor);
+    renderDecorativeLine(ctx, pw, ph, ph * 0.27, accentColor);
   } else if (texts.headline || texts.cta) {
     drawTextOverlay(ctx, composition, pw, ph);
   }
