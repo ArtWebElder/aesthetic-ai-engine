@@ -4,7 +4,7 @@
 // Multi-formato: crop inteligente por proporção.
 
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
-import { renderTextOnCanvas, renderPriceBadge, renderContactBar, type TextRenderConfig } from "./textRenderer";
+import { renderTextOnCanvas, renderPriceBadge, renderContactBar, chooseBadgeVariant, type TextRenderConfig } from "./textRenderer";
 import { drawTextOverlay } from "./overlayIntegration";
 
 // ─── FOOD POP: PALETA CONTEXTUAL ──────────────────────────────────────────────
@@ -305,7 +305,12 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
       renderPriceBadge(ctx, { width: cw, height: ch }, foodPopData.price, texts.cta, accentColor, foodPopData.palette, texts.headline);
     }
     if (foodPopData.whatsapp || foodPopData.instagram) {
-      renderContactBar(ctx, { width: cw, height: ch }, foodPopData.whatsapp, foodPopData.instagram, foodPopData.palette?.accent);
+      // DIFF 4: pill-bottom badge at ch*0.83 conflicts with bar-center/inline-badge — force bar-left
+      const badgeVariant = foodPopData.price?.value
+        ? chooseBadgeVariant(texts.headline ?? "", foodPopData.price.value)
+        : null;
+      const forceContact = badgeVariant === "pill-bottom" ? "bar-left" as const : undefined;
+      renderContactBar(ctx, { width: cw, height: ch }, foodPopData.whatsapp, foodPopData.instagram, foodPopData.palette?.accent, foodPopData.palette, forceContact);
     }
   }
 
@@ -399,7 +404,11 @@ export async function renderFormatPreview(
       renderPriceBadge(ctx, { width: pw, height: ph }, foodPopData.price, texts.cta, accentColor, foodPopData.palette, texts.headline);
     }
     if (foodPopData.whatsapp || foodPopData.instagram) {
-      renderContactBar(ctx, { width: pw, height: ph }, foodPopData.whatsapp, foodPopData.instagram, foodPopData.palette?.accent);
+      const badgeVariant = foodPopData.price?.value
+        ? chooseBadgeVariant(texts.headline ?? "", foodPopData.price.value)
+        : null;
+      const forceContact = badgeVariant === "pill-bottom" ? "bar-left" as const : undefined;
+      renderContactBar(ctx, { width: pw, height: ph }, foodPopData.whatsapp, foodPopData.instagram, foodPopData.palette?.accent, foodPopData.palette, forceContact);
     }
   }
 

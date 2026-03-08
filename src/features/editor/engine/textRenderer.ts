@@ -591,7 +591,7 @@ function simpleHash(text: string): number {
   return Math.abs(h);
 }
 
-type BadgeVariant = "card-right" | "card-left" | "pill-bottom" | "minimal-inline";
+export type BadgeVariant = "card-right" | "card-left" | "pill-bottom" | "minimal-inline";
 
 export function chooseBadgeVariant(headline: string, priceValue: string): BadgeVariant {
   const variants: BadgeVariant[] = ["card-right", "card-left", "pill-bottom", "minimal-inline"];
@@ -876,38 +876,35 @@ export function renderPriceBadge(
 
 // ── Food Pop: Contact Bar ──────────────────────────────────────────────────────
 
-/**
- * Renderiza barra de contatos (WhatsApp + Instagram) na base da imagem.
- * Chamado APÓS renderTextOnCanvas, condicionado a ter whatsapp/instagram no state.
- */
-export function renderContactBar(
+export type ContactVariant = "bar-center" | "bar-left" | "inline-badge";
+
+export function chooseContactVariant(whatsapp: string, instagram: string): ContactVariant {
+  const variants: ContactVariant[] = ["bar-center", "bar-left", "inline-badge"];
+  return variants[simpleHash((whatsapp + instagram).toLowerCase()) % variants.length];
+}
+
+// Variante 1: centralizada (original)
+function renderContactCenter(
   ctx: CanvasRenderingContext2D,
   canvas: { width: number; height: number },
   whatsapp: string | undefined,
   instagram: string | undefined,
-  paletteAccent?: string
+  palette: FoodPaletteLocal | undefined
 ): void {
-  console.log('[Creatyng] renderContactBar called with:', { whatsapp, instagram });
-  if (!whatsapp && !instagram) return;
-
   const cw = canvas.width;
   const ch = canvas.height;
-
-  const barY    = ch * 0.94;
+  const barY     = ch * 0.94;
   const fontSize = cw * 0.022;
   const iconSize = fontSize * 1.3;
   const gap      = cw * 0.04;
-
-  // Ícones integrados à paleta: usar accent com opacidade
-  // Se não há paleta, manter cores de marca (WhatsApp verde, Instagram rosa) com 0.75 opacidade
-  const waIconColor = paletteAccent ? paletteAccent + "CC" : "rgba(37,211,102,0.80)";
-  const igIconColor = paletteAccent ? paletteAccent + "99" : "rgba(225,48,108,0.80)";
+  const accent   = palette?.accent;
+  const waIconColor = accent ? accent + "CC" : "rgba(37,211,102,0.80)";
+  const igIconColor = accent ? accent + "99" : "rgba(225,48,108,0.80)";
 
   ctx.save();
   ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
   ctx.textBaseline = "middle";
 
-  // Calcular largura total para centralizar
   let totalWidth = 0;
   if (whatsapp) totalWidth += iconSize + 6 + ctx.measureText(whatsapp).width;
   if (whatsapp && instagram) totalWidth += gap;
@@ -915,73 +912,164 @@ export function renderContactBar(
     const handle = instagram.startsWith("@") ? instagram : `@${instagram}`;
     totalWidth += iconSize + 6 + ctx.measureText(handle).width;
   }
-
   let currentX = (cw - totalWidth) / 2;
 
-  function setContactShadow(): void {
-    ctx.shadowColor = "rgba(0,0,0,0.50)";
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 1;
+  function shadow(): void {
+    ctx.shadowColor = "rgba(0,0,0,0.50)"; ctx.shadowBlur = 4; ctx.shadowOffsetY = 1;
   }
 
-  // WhatsApp
   if (whatsapp) {
     const cx = currentX + iconSize / 2;
     ctx.beginPath();
     ctx.arc(cx, barY, iconSize / 2, 0, Math.PI * 2);
     ctx.fillStyle = waIconColor;
-    ctx.shadowColor = "rgba(0,0,0,0.30)";
-    ctx.shadowBlur = 5;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = "rgba(0,0,0,0.30)"; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
     ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
     ctx.font = `800 ${iconSize * 0.50}px Montserrat, sans-serif`;
-    ctx.fillStyle = "#FFFFFF";
-    ctx.textAlign = "center";
+    ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center";
     ctx.fillText("W", cx, barY + iconSize * 0.17);
-
     currentX += iconSize + 6;
     ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.textAlign = "left";
-    setContactShadow();
+    ctx.fillStyle = "rgba(255,255,255,0.88)"; ctx.textAlign = "left";
+    shadow();
     ctx.fillText(whatsapp, currentX, barY);
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
     currentX += ctx.measureText(whatsapp).width + gap;
   }
-
-  // Instagram
   if (instagram) {
     const cx = currentX + iconSize / 2;
     ctx.beginPath();
     ctx.arc(cx, barY, iconSize / 2, 0, Math.PI * 2);
     ctx.fillStyle = igIconColor;
-    ctx.shadowColor = "rgba(0,0,0,0.30)";
-    ctx.shadowBlur = 5;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = "rgba(0,0,0,0.30)"; ctx.shadowBlur = 5; ctx.shadowOffsetY = 2;
     ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
-
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
     ctx.font = `800 ${iconSize * 0.50}px Montserrat, sans-serif`;
-    ctx.fillStyle = "#FFFFFF";
-    ctx.textAlign = "center";
+    ctx.fillStyle = "#FFFFFF"; ctx.textAlign = "center";
     ctx.fillText("@", cx, barY + iconSize * 0.17);
-
     currentX += iconSize + 6;
     ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.88)";
-    ctx.textAlign = "left";
-    setContactShadow();
+    ctx.fillStyle = "rgba(255,255,255,0.88)"; ctx.textAlign = "left";
+    shadow();
     const handle = instagram.startsWith("@") ? instagram : `@${instagram}`;
     ctx.fillText(handle, currentX, barY);
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  }
+  ctx.restore();
+}
+
+// Variante 2: esquerda, itens empilhados verticalmente
+function renderContactLeft(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  whatsapp: string | undefined,
+  instagram: string | undefined,
+  palette: FoodPaletteLocal | undefined
+): void {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const startX   = cw * 0.05;
+  const fontSize = cw * 0.022;
+  const iconR    = fontSize * 0.5;
+  const lineGap  = fontSize * 2.0;
+  const accent   = palette?.accent;
+  let currentY   = ch * (whatsapp && instagram ? 0.90 : 0.93);
+
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.50)";
+  ctx.shadowBlur = 6;
+  ctx.shadowOffsetY = 2;
+
+  const items: { text: string; iconColor: string }[] = [];
+  if (whatsapp) items.push({ text: whatsapp, iconColor: accent ? accent + "CC" : "rgba(37,211,102,0.80)" });
+  if (instagram) {
+    const handle = instagram.startsWith("@") ? instagram : `@${instagram}`;
+    items.push({ text: handle, iconColor: accent ? accent + "99" : "rgba(225,48,108,0.80)" });
   }
 
+  for (const item of items) {
+    ctx.beginPath();
+    ctx.arc(startX + iconR, currentY, iconR, 0, Math.PI * 2);
+    ctx.fillStyle = item.iconColor;
+    ctx.fill();
+    ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.85)";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(item.text, startX + iconR * 2 + 6, currentY);
+    currentY += lineGap;
+  }
   ctx.restore();
+}
+
+// Variante 3: pill semi-transparente na base
+function renderContactBadge(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  whatsapp: string | undefined,
+  instagram: string | undefined
+): void {
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const fontSize = cw * 0.020;
+  const barY     = ch * 0.93;
+  const barH     = ch * 0.040;
+  const items: string[] = [];
+  if (whatsapp) items.push(whatsapp);
+  if (instagram) items.push(instagram.startsWith("@") ? instagram : `@${instagram}`);
+  const fullText = items.join("   •   ");
+
+  ctx.save();
+  ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
+  const textWidth = ctx.measureText(fullText).width;
+  const pillW     = textWidth + cw * 0.06;
+  const pillX     = (cw - pillW) / 2;
+  const pillRadius = barH / 2;
+
+  ctx.beginPath();
+  roundRectPath(ctx, pillX, barY - barH / 2, pillW, barH, pillRadius);
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fill();
+  ctx.strokeStyle = "rgba(255,255,255,0.10)";
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(fullText, cw / 2, barY);
+  ctx.restore();
+}
+
+/**
+ * Renderiza contact bar com variante determinística por hash.
+ * forceVariant sobrepõe a escolha automática (usado para resolução de conflito com badge).
+ */
+export function renderContactBar(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  whatsapp: string | undefined,
+  instagram: string | undefined,
+  paletteAccent?: string,
+  palette?: FoodPaletteLocal,
+  forceVariant?: ContactVariant
+): void {
+  console.log('[Creatyng] renderContactBar called with:', { whatsapp, instagram });
+  if (!whatsapp && !instagram) return;
+
+  const resolvedPalette = palette ?? (paletteAccent ? { accent: paletteAccent } as FoodPaletteLocal : undefined);
+  const variant = forceVariant ?? chooseContactVariant(whatsapp ?? "", instagram ?? "");
+
+  switch (variant) {
+    case "bar-center":
+      renderContactCenter(ctx, canvas, whatsapp, instagram, resolvedPalette);
+      break;
+    case "bar-left":
+      renderContactLeft(ctx, canvas, whatsapp, instagram, resolvedPalette);
+      break;
+    case "inline-badge":
+      renderContactBadge(ctx, canvas, whatsapp, instagram);
+      break;
+  }
 }
