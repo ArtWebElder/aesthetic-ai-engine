@@ -136,6 +136,76 @@ function applyGlow(
   ctx.shadowBlur = blur;
 }
 
+// ── Food Pop: tipografia composta (segmentos com peso/tamanho variáveis) ─────────
+
+interface HeadlineSegment {
+  text: string;
+  weight: number;       // 300-900
+  sizeFactor: number;   // multiplicador do baseSize (0.6–1.2)
+  font: "display" | "body";
+  isAccent: boolean;    // true = linha de impacto
+}
+
+const CONNECTOR_WORDS = new Set([
+  "DO", "DA", "DE", "DAS", "DOS", "EM", "NO", "NA", "NOS", "NAS",
+  "COM", "SEM", "POR", "PARA", "E", "OU", "QUE", "SEU", "SUA",
+  "O", "A", "OS", "AS", "UM", "UMA", "AO", "À",
+  "THE", "OF", "AND", "FOR", "TO", "IN", "ON", "AT", "YOUR", "OUR",
+]);
+
+/**
+ * Divide a headline em dois segmentos tipográficos:
+ * - "contexto" (palavras de conexão/setup) → menor, peso 300
+ * - "impacto" (palavra/s chave do produto) → maior, peso 800
+ *
+ * O destaque hierárquico vem de TAMANHO e PESO, não de cor.
+ */
+function segmentHeadline(headline: string): HeadlineSegment[] {
+  const words = headline.toUpperCase().split(/\s+/).filter(Boolean);
+
+  if (words.length === 0) return [];
+
+  if (words.length === 1) {
+    return [{ text: words[0], weight: 800, sizeFactor: 1.0, font: "display", isAccent: true }];
+  }
+
+  if (words.length === 2) {
+    return [
+      { text: words[0], weight: 300, sizeFactor: 0.85, font: "body",    isAccent: false },
+      { text: words[1], weight: 800, sizeFactor: 1.0,  font: "display", isAccent: true  },
+    ];
+  }
+
+  // 3+ words — find natural split point
+  // Walk backwards, split before the first non-connector word from the end
+  let splitIndex = 1; // default: first word = context, rest = impact
+  for (let i = words.length - 1; i >= 1; i--) {
+    if (CONNECTOR_WORDS.has(words[i])) {
+      splitIndex = i + 1;
+      break;
+    }
+    if (i === 1) splitIndex = i;
+  }
+  splitIndex = Math.max(1, Math.min(splitIndex, words.length - 1));
+
+  return [
+    {
+      text:       words.slice(0, splitIndex).join(" "),
+      weight:     300,
+      sizeFactor: 0.65,
+      font:       "body",
+      isAccent:   false,
+    },
+    {
+      text:       words.slice(splitIndex).join(" "),
+      weight:     800,
+      sizeFactor: 1.0,
+      font:       "display",
+      isAccent:   true,
+    },
+  ];
+}
+
 // ── Food Pop: multi-layer headline shadow ──────────────────────────────────────
 
 /**
