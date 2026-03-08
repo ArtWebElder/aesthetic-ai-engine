@@ -12,6 +12,10 @@ export interface TextRenderConfig {
   composition: CompositionConfig;
   canvasWidth: number;
   canvasHeight: number;
+  /** Quando true, posiciona headline no terço superior (acima do subject) */
+  foodPopOverlay?: boolean;
+  /** Quando true, não renderiza CTA standalone (CTA já está dentro do price badge) */
+  skipCta?: boolean;
 }
 
 // ── Zonas de texto ────────────────────────────────────────────────────────────
@@ -28,11 +32,18 @@ interface TextZone {
 function resolveTextZone(
   comp: CompositionConfig,
   cw: number,
-  ch: number
+  ch: number,
+  foodPopOverlay = false
 ): TextZone {
+  const pad = cw * 0.08;
+
+  // Food Pop: headline sempre no terço superior, centralizada, acima do subject
+  if (foodPopOverlay) {
+    return { x: pad, y: ch * 0.05, w: cw - pad * 2, h: ch * 0.20, align: "center", verticalAnchor: "top" };
+  }
+
   const pos = comp.textPosition ?? "bottom";
   const align = (comp.textAlignment ?? "left") as CanvasTextAlign;
-  const pad = cw * 0.08; // 8% lateral margin
 
   switch (pos) {
     case "top":
@@ -136,7 +147,7 @@ export function renderTextOnCanvas(
   config: TextRenderConfig
 ): void {
   const { texts, presetConfig, colors, composition, canvasWidth: cw, canvasHeight: ch } = config;
-  const zone = resolveTextZone(composition, cw, ch);
+  const zone = resolveTextZone(composition, cw, ch, config.foodPopOverlay);
   const preset = presetConfig.stylePreset;
   const accentColor = colors.accentWord ?? colors.primary;
   const hlSize = headlineFontSize(ch);
@@ -218,36 +229,54 @@ export function renderTextOnCanvas(
         ctx.fillStyle = "#ffffff";
       }
 
-      // Stroke
-      if (presetConfig.effects.stroke) {
-        ctx.strokeStyle = presetConfig.effects.strokeColor ?? colors.primary;
-        ctx.lineWidth = presetConfig.effects.strokeWidth ?? 2;
-        ctx.strokeText(line, xAnchor, lineY);
-      }
-
-      // Accent word na última linha
-      if (isAccentLine && accentParts.accent) {
-        // Mede o before para posicionar o accent
+      if (isAccentLine) {
+        // Segment drawing: desenha "before" e "accent" separadamente.
+        // Nunca desenha a linha completa primeiro — evita ghost branco sob accent word.
         const { before, accent } = accentParts;
-        // Renderiza linha completa em branco primeiro
-        ctx.fillText(line, xAnchor, lineY);
-        // Sobrescreve a parte do accent com a cor de acento (todos os alinhamentos)
-        if (accent) {
-          const beforeW = ctx.measureText(before + (before ? " " : "")).width;
-          let accentX: number;
-          if (zone.align === "center") {
-            accentX = xAnchor - ctx.measureText(line).width / 2 + beforeW;
-          } else if (zone.align === "right") {
-            accentX = xAnchor - ctx.measureText(line).width + beforeW;
-          } else {
-            accentX = xAnchor + beforeW;
-          }
-          ctx.shadowBlur = 0;
-          ctx.shadowColor = "transparent";
-          ctx.fillStyle = accentColor;
-          ctx.fillText(accent, accentX, lineY);
+        const beforeText = before ? before + " " : "";
+        const beforeWidth = ctx.measureText(beforeText).width;
+        const fullLineWidth = ctx.measureText(line).width;
+        let lineStartX: number;
+        if (zone.align === "center") {
+          lineStartX = xAnchor - fullLineWidth / 2;
+        } else if (zone.align === "right") {
+          lineStartX = xAnchor - fullLineWidth;
+        } else {
+          lineStartX = xAnchor;
         }
+
+        ctx.save();
+        ctx.textAlign = "left";
+
+        // Segmento "before": stroke + fill em cor preset (com efeitos ativos)
+        if (beforeText) {
+          if (presetConfig.effects.stroke) {
+            ctx.strokeStyle = presetConfig.effects.strokeColor ?? colors.primary;
+            ctx.lineWidth = presetConfig.effects.strokeWidth ?? 2;
+            ctx.strokeText(beforeText, lineStartX, lineY);
+          }
+          ctx.fillText(beforeText, lineStartX, lineY);
+        }
+
+        // Segmento accent: limpa sombra, stroke + fill em cor accent
+        ctx.shadowBlur = 0;
+        ctx.shadowColor = "transparent";
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+        ctx.fillStyle = accentColor;
+        if (presetConfig.effects.stroke) {
+          ctx.strokeText(accent, lineStartX + beforeWidth, lineY);
+        }
+        ctx.fillText(accent, lineStartX + beforeWidth, lineY);
+
+        ctx.restore();
       } else {
+        // Linha normal: stroke + fill
+        if (presetConfig.effects.stroke) {
+          ctx.strokeStyle = presetConfig.effects.strokeColor ?? colors.primary;
+          ctx.lineWidth = presetConfig.effects.strokeWidth ?? 2;
+          ctx.strokeText(line, xAnchor, lineY);
+        }
         ctx.fillText(line, xAnchor, lineY);
       }
 
@@ -275,7 +304,7 @@ export function renderTextOnCanvas(
 
   // ── CTA ───────────────────────────────────────────────────────────────────────
 
-  if (texts.cta) {
+  if (texts.cta && !config.skipCta) {
     currentY += 12; // fixed 12px spacing from headline/subheadline
     ctx.font = `600 ${ctaSize}px "${presetConfig.bodyFont}", sans-serif`;
     ctx.fillStyle = colors.accentWord ?? `rgba(255,255,255,0.70)`;
@@ -324,8 +353,8 @@ export function renderPriceBadge(
 
   const badgeWidth = cw * 0.22;
   const badgeHeight = ch * 0.18;
-  const badgeX = cw * 0.72;
-  const badgeY = ch * 0.55;
+  const badgeX = cw * 0.75;   // margem direita ~3%
+  const badgeY = ch * 0.62;   // base do badge a 20% do fundo (zona de gradiente escuro)
 
   ctx.save();
 

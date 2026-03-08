@@ -228,6 +228,9 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
     composition,
     canvasWidth: cw,
     canvasHeight: ch,
+    foodPopOverlay,
+    // CTA já está dentro do price badge — não renderizar standalone
+    skipCta: foodPopOverlay && Boolean(foodPopData?.price?.value),
   };
   renderTextOnCanvas(ctx, textConfig);
 
@@ -327,6 +330,8 @@ export async function renderFormatPreview(
   renderTextOnCanvas(ctx, {
     texts, presetConfig, colors, composition,
     canvasWidth: pw, canvasHeight: ph,
+    foodPopOverlay,
+    skipCta: foodPopOverlay && Boolean(foodPopData?.price?.value),
   });
 
   if (foodPopOverlay && foodPopData) {
