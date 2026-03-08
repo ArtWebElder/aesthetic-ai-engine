@@ -136,6 +136,32 @@ function applyGlow(
   ctx.shadowBlur = blur;
 }
 
+// ── Food Pop: multi-layer headline shadow ──────────────────────────────────────
+
+/**
+ * Desenha o texto 4× com shadow progressivo, criando profundidade tridimensional.
+ * Apenas para o modo food pop — não afeta presets padrão.
+ */
+function drawHeadlineMultiLayer(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number
+): void {
+  // Layer 1 — contorno sutil
+  ctx.shadowColor = "rgba(0, 0, 0, 0.30)"; ctx.shadowBlur = 2; ctx.shadowOffsetX = 1; ctx.shadowOffsetY = 1;
+  ctx.fillText(text, x, y);
+  // Layer 2 — profundidade
+  ctx.shadowColor = "rgba(0, 0, 0, 0.25)"; ctx.shadowBlur = 8; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3;
+  ctx.fillText(text, x, y);
+  // Layer 3 — ambiente
+  ctx.shadowColor = "rgba(0, 0, 0, 0.15)"; ctx.shadowBlur = 20; ctx.shadowOffsetX = 6; ctx.shadowOffsetY = 6;
+  ctx.fillText(text, x, y);
+  // Layer 4 — texto final limpo (sem shadow)
+  ctx.shadowColor = "transparent"; ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
+  ctx.fillText(text, x, y);
+}
+
 // ── Renderizador principal ────────────────────────────────────────────────────
 
 /**
@@ -147,6 +173,7 @@ export function renderTextOnCanvas(
   config: TextRenderConfig
 ): void {
   const { texts, presetConfig, colors, composition, canvasWidth: cw, canvasHeight: ch } = config;
+  const foodPop = config.foodPopOverlay ?? false;
   const zone = resolveTextZone(composition, cw, ch, config.foodPopOverlay);
   const preset = presetConfig.stylePreset;
   const accentColor = colors.accentWord ?? colors.primary;
@@ -206,18 +233,18 @@ export function renderTextOnCanvas(
       const line = lines[i];
       const isAccentLine = i === lines.length - 1 && accentParts.accent;
 
-      // Glow
-      if (presetConfig.effects.glow) {
-        const gc = presetConfig.effects.glowColor ?? colors.primary;
-        applyGlow(ctx, gc, presetConfig.effects.glowIntensity);
+      // Glow/Shadow — apenas para presets padrão (foodPop tem multi-layer próprio)
+      if (!foodPop) {
+        if (presetConfig.effects.glow) {
+          const gc = presetConfig.effects.glowColor ?? colors.primary;
+          applyGlow(ctx, gc, presetConfig.effects.glowIntensity);
+        }
+        if (presetConfig.effects.shadow !== "none" && !presetConfig.effects.glow) {
+          applyShadow(ctx, presetConfig.effects.shadow);
+        }
       }
 
-      // Shadow
-      if (presetConfig.effects.shadow !== "none" && !presetConfig.effects.glow) {
-        applyShadow(ctx, presetConfig.effects.shadow);
-      }
-
-      // Gradient no texto
+      // Fill style (gradient ou cor sólida)
       if (presetConfig.effects.gradient && presetConfig.effects.gradientColors?.length) {
         const stops = presetConfig.effects.gradientColors;
         const grad = ctx.createLinearGradient(zone.x, lineY - hlSize, zone.x, lineY);
@@ -230,8 +257,6 @@ export function renderTextOnCanvas(
       }
 
       if (isAccentLine) {
-        // Segment drawing: desenha "before" e "accent" separadamente.
-        // Nunca desenha a linha completa primeiro — evita ghost branco sob accent word.
         const { before, accent } = accentParts;
         const beforeText = before ? before + " " : "";
         const beforeWidth = ctx.measureText(beforeText).width;
@@ -248,36 +273,65 @@ export function renderTextOnCanvas(
         ctx.save();
         ctx.textAlign = "left";
 
-        // Segmento "before": stroke + fill em cor preset (com efeitos ativos)
+        // Segmento "before"
         if (beforeText) {
-          if (presetConfig.effects.stroke) {
-            ctx.strokeStyle = presetConfig.effects.strokeColor ?? colors.primary;
-            ctx.lineWidth = presetConfig.effects.strokeWidth ?? 2;
+          if (foodPop) {
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+            ctx.lineWidth = cw * 0.002;
+            ctx.lineJoin = "round";
             ctx.strokeText(beforeText, lineStartX, lineY);
+            drawHeadlineMultiLayer(ctx, beforeText, lineStartX, lineY);
+          } else {
+            if (presetConfig.effects.stroke) {
+              ctx.strokeStyle = presetConfig.effects.strokeColor ?? colors.primary;
+              ctx.lineWidth = presetConfig.effects.strokeWidth ?? 2;
+              ctx.strokeText(beforeText, lineStartX, lineY);
+            }
+            ctx.fillText(beforeText, lineStartX, lineY);
           }
-          ctx.fillText(beforeText, lineStartX, lineY);
         }
 
-        // Segmento accent: limpa sombra, stroke + fill em cor accent
-        ctx.shadowBlur = 0;
-        ctx.shadowColor = "transparent";
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-        ctx.fillStyle = accentColor;
-        if (presetConfig.effects.stroke) {
-          ctx.strokeText(accent, lineStartX + beforeWidth, lineY);
+        // Segmento accent
+        if (foodPop) {
+          // Glow colorido na cor do accent + passada limpa para texto sólido
+          ctx.fillStyle = accentColor;
+          ctx.shadowColor = accentColor;
+          ctx.shadowBlur = 15;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+          ctx.fillText(accent, lineStartX + beforeWidth, lineY);
+          ctx.shadowColor = "transparent";
+          ctx.shadowBlur = 0;
+          ctx.fillText(accent, lineStartX + beforeWidth, lineY);
+        } else {
+          ctx.shadowBlur = 0;
+          ctx.shadowColor = "transparent";
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 0;
+          ctx.fillStyle = accentColor;
+          if (presetConfig.effects.stroke) {
+            ctx.strokeText(accent, lineStartX + beforeWidth, lineY);
+          }
+          ctx.fillText(accent, lineStartX + beforeWidth, lineY);
         }
-        ctx.fillText(accent, lineStartX + beforeWidth, lineY);
 
         ctx.restore();
       } else {
-        // Linha normal: stroke + fill
-        if (presetConfig.effects.stroke) {
-          ctx.strokeStyle = presetConfig.effects.strokeColor ?? colors.primary;
-          ctx.lineWidth = presetConfig.effects.strokeWidth ?? 2;
+        if (foodPop) {
+          // Stroke de definição sutil + multi-layer shadow
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+          ctx.lineWidth = cw * 0.002;
+          ctx.lineJoin = "round";
           ctx.strokeText(line, xAnchor, lineY);
+          drawHeadlineMultiLayer(ctx, line, xAnchor, lineY);
+        } else {
+          if (presetConfig.effects.stroke) {
+            ctx.strokeStyle = presetConfig.effects.strokeColor ?? colors.primary;
+            ctx.lineWidth = presetConfig.effects.strokeWidth ?? 2;
+            ctx.strokeText(line, xAnchor, lineY);
+          }
+          ctx.fillText(line, xAnchor, lineY);
         }
-        ctx.fillText(line, xAnchor, lineY);
       }
 
       ctx.shadowBlur = 0;
