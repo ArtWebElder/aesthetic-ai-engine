@@ -7,6 +7,17 @@ import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/p
 import { renderTextOnCanvas, renderPriceBadge, renderContactBar, type TextRenderConfig } from "./textRenderer";
 import { drawTextOverlay } from "./overlayIntegration";
 
+// ─── FOOD POP: PALETA CONTEXTUAL ──────────────────────────────────────────────
+
+export interface FoodPalette {
+  accent: string;       // cor principal de destaque (hex)
+  accentLight: string;  // versão clara do accent
+  badgeBg: string;      // fundo do badge (rgba)
+  badgeText: string;    // texto do badge
+  ctaBg: string;        // fundo do CTA
+  ctaText: string;      // texto do CTA
+}
+
 // ─── FORMATOS ─────────────────────────────────────────────────────────────────
 
 export type ExportCategory = "social" | "ecommerce" | "ads";
@@ -222,6 +233,7 @@ export interface ComposeOptions {
     whatsapp?: string;
     instagram?: string;
     accentColor?: string;
+    palette?: FoodPalette;
   };
 }
 

@@ -9,7 +9,7 @@ import { WizardStep2Style } from "./WizardStep2Style";
 import { WizardStep3Text } from "./WizardStep3Text";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { generateFromWizard, GenerateError } from "@/services/generateService";
-import { exportComposed, FORMAT_BY_ID } from "../engine/exportComposed";
+import { exportComposed, FORMAT_BY_ID, type FoodPalette } from "../engine/exportComposed";
 import { getPresetById } from "@/lib/presetUtils";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 
@@ -31,6 +31,65 @@ const DEFAULT_COMPOSITION: CompositionConfig = {
 };
 
 const DEFAULT_FORMAT_ID = "instagram_feed";
+
+// ── Paleta contextual por tipo de culinária ────────────────────────────────────
+function getFoodPalette(
+  headline = "",
+  subheadline = "",
+  instructions = ""
+): FoodPalette {
+  const t = [headline, subheadline, instructions].join(" ").toLowerCase();
+
+  if (/açaí|acai|frozen|smoothie|sorvete|gelato|milkshake|picolé/.test(t)) {
+    return {
+      accent:      "#7B2D8E",
+      accentLight: "#E8D5F0",
+      badgeBg:     "rgba(255,255,255,0.92)",
+      badgeText:   "#2D1B36",
+      ctaBg:       "#7B2D8E",
+      ctaText:     "#FFFFFF",
+    };
+  }
+  if (/sushi|sashimi|temaki|japonês|japanese|japa|uramaki|combinado/.test(t)) {
+    return {
+      accent:      "#C0392B",
+      accentLight: "#F5D5D0",
+      badgeBg:     "rgba(255,255,255,0.92)",
+      badgeText:   "#1A1A1A",
+      ctaBg:       "#C0392B",
+      ctaText:     "#FFFFFF",
+    };
+  }
+  if (/pizza|pizzaria|italiana|massa|lasanha|forno/.test(t)) {
+    return {
+      accent:      "#D4380D",
+      accentLight: "#FFF1E6",
+      badgeBg:     "rgba(255,248,240,0.92)",
+      badgeText:   "#2D1600",
+      ctaBg:       "#D4380D",
+      ctaText:     "#FFFFFF",
+    };
+  }
+  if (/burger|burguer|hambúrguer|hamburger|smash|lanche|sanduíche/.test(t)) {
+    return {
+      accent:      "#E67E22",
+      accentLight: "#FFF3E0",
+      badgeBg:     "rgba(255,248,240,0.92)",
+      badgeText:   "#2D1600",
+      ctaBg:       "#E67E22",
+      ctaText:     "#FFFFFF",
+    };
+  }
+  // Default — dourado elegante
+  return {
+    accent:      "#D4A853",
+    accentLight: "#FFF8E7",
+    badgeBg:     "rgba(255,255,255,0.90)",
+    badgeText:   "#1A1A1A",
+    ctaBg:       "#D4A853",
+    ctaText:     "#FFFFFF",
+  };
+}
 
 export function WizardPage() {
   const { setGeneration, clearGeneration, currentGeneration } = useWizardStore();
@@ -69,10 +128,12 @@ export function WizardPage() {
         state.category === "food" ||
         Boolean(state.price?.value || state.whatsapp || state.instagram);
 
-      // Food pop accent: usar cor primary do preset se disponível,
-      // senão dourado elegante. NUNCA roxo/neon — destaque vem de tamanho/peso.
-      const foodAccentColor =
-        cfg.colors?.primary || colors.primary || "#D4A853";
+      // Paleta contextual por tipo de culinária — detecta açaí, sushi, pizza, burger
+      const foodPalette = getFoodPalette(
+        state.headline,
+        state.subheadline,
+        state.freeInstructions
+      );
 
       const composed = await exportComposed({
         imageBase64: gen.imageBase64,
@@ -92,7 +153,8 @@ export function WizardPage() {
               price: state.price ?? undefined,
               whatsapp: state.whatsapp,
               instagram: state.instagram,
-              accentColor: foodAccentColor,
+              accentColor: foodPalette.accent,
+              palette: foodPalette,
             }
           : undefined,
       });
