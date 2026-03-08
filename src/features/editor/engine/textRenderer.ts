@@ -267,7 +267,9 @@ function renderComposedHeadline(
   for (const seg of segments) {
     const fontSize = baseSize * seg.sizeFactor;
     const fontFamily = seg.font === "display" ? displayFont : bodyFont;
-    ctx.font = `${seg.weight} ${fontSize}px "${fontFamily}", sans-serif`;
+    // Impacto com italic — dá dinâmica sem ser agressivo; contexto sem italic — contraste
+    const fontStyle = seg.isAccent ? "italic " : "";
+    ctx.font = `${fontStyle}${seg.weight} ${fontSize}px "${fontFamily}", sans-serif`;
 
     // Split long context lines so they don't overflow
     const lines = wrapText(ctx, seg.text, maxWidth);
@@ -508,9 +510,9 @@ export function renderTextOnCanvas(
 
   if (texts.subheadline) {
     if (foodPop) {
-      // Subheadline food-pop: MUITO menor que a headline de impacto.
-      // Hierarquia dramática: se impacto = 100px, sub = ~22px.
-      const subFoodSize = Math.max(12, Math.round(hlSize * 0.22));
+      // Subheadline food-pop: menor que headline mas legível.
+      // Hierarquia: se impacto = 100px, sub = ~30px.
+      const subFoodSize = Math.max(13, Math.round(hlSize * 0.30));
       ctx.font = `400 ${subFoodSize}px Montserrat, sans-serif`;
       ctx.fillStyle = "rgba(255,255,255,0.72)";
       ctx.textAlign = "center";
