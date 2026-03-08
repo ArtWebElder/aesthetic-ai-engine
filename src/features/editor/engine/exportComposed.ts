@@ -97,21 +97,36 @@ function drawFoodPopOverlay(
   cw: number,
   ch: number
 ): void {
-  // Gradiente inferior — zona de preço + contato
-  const bottomGrad = ctx.createLinearGradient(0, ch * 0.6, 0, ch);
-  bottomGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
-  bottomGrad.addColorStop(0.4, "rgba(0, 0, 0, 0.5)");
-  bottomGrad.addColorStop(1, "rgba(0, 0, 0, 0.85)");
+  // Gradiente inferior — zona de preço + contato (mais suave)
+  const bottomGrad = ctx.createLinearGradient(0, ch * 0.55, 0, ch);
+  bottomGrad.addColorStop(0,   "rgba(0,0,0,0)");
+  bottomGrad.addColorStop(0.35,"rgba(0,0,0,0.38)");
+  bottomGrad.addColorStop(0.75,"rgba(0,0,0,0.68)");
+  bottomGrad.addColorStop(1,   "rgba(0,0,0,0.88)");
   ctx.fillStyle = bottomGrad;
-  ctx.fillRect(0, ch * 0.6, cw, ch * 0.4);
+  ctx.fillRect(0, ch * 0.55, cw, ch * 0.45);
 
-  // Gradiente superior — zona de headline
-  const topGrad = ctx.createLinearGradient(0, 0, 0, ch * 0.35);
-  topGrad.addColorStop(0, "rgba(0, 0, 0, 0.45)");
-  topGrad.addColorStop(0.6, "rgba(0, 0, 0, 0.15)");
-  topGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  // Gradiente superior — zona de headline (mais suave)
+  const topGrad = ctx.createLinearGradient(0, 0, 0, ch * 0.38);
+  topGrad.addColorStop(0,   "rgba(0,0,0,0.50)");
+  topGrad.addColorStop(0.45,"rgba(0,0,0,0.18)");
+  topGrad.addColorStop(1,   "rgba(0,0,0,0)");
   ctx.fillStyle = topGrad;
-  ctx.fillRect(0, 0, cw, ch * 0.35);
+  ctx.fillRect(0, 0, cw, ch * 0.38);
+
+  // Vinheta lateral esquerda (0 → 15%)
+  const leftVig = ctx.createLinearGradient(0, 0, cw * 0.15, 0);
+  leftVig.addColorStop(0,   "rgba(0,0,0,0.25)");
+  leftVig.addColorStop(1,   "rgba(0,0,0,0)");
+  ctx.fillStyle = leftVig;
+  ctx.fillRect(0, 0, cw * 0.15, ch);
+
+  // Vinheta lateral direita (85% → 100%)
+  const rightVig = ctx.createLinearGradient(cw * 0.85, 0, cw, 0);
+  rightVig.addColorStop(0,   "rgba(0,0,0,0)");
+  rightVig.addColorStop(1,   "rgba(0,0,0,0.25)");
+  ctx.fillStyle = rightVig;
+  ctx.fillRect(cw * 0.85, 0, cw * 0.15, ch);
 }
 
 // ─── FOOD POP: BOKEH PARTICLES ────────────────────────────────────────────────
