@@ -301,10 +301,10 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
   if (foodPopOverlay && foodPopData) {
     const accentColor = foodPopData.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFD700";
     if (foodPopData.price?.value) {
-      renderPriceBadge(ctx, { width: cw, height: ch }, foodPopData.price, texts.cta, accentColor);
+      renderPriceBadge(ctx, { width: cw, height: ch }, foodPopData.price, texts.cta, accentColor, foodPopData.palette);
     }
     if (foodPopData.whatsapp || foodPopData.instagram) {
-      renderContactBar(ctx, { width: cw, height: ch }, foodPopData.whatsapp, foodPopData.instagram);
+      renderContactBar(ctx, { width: cw, height: ch }, foodPopData.whatsapp, foodPopData.instagram, foodPopData.palette?.accent);
     }
   }
 
@@ -395,10 +395,10 @@ export async function renderFormatPreview(
   if (foodPopOverlay && foodPopData) {
     const accentColor = foodPopData.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFD700";
     if (foodPopData.price?.value) {
-      renderPriceBadge(ctx, { width: pw, height: ph }, foodPopData.price, texts.cta, accentColor);
+      renderPriceBadge(ctx, { width: pw, height: ph }, foodPopData.price, texts.cta, accentColor, foodPopData.palette);
     }
     if (foodPopData.whatsapp || foodPopData.instagram) {
-      renderContactBar(ctx, { width: pw, height: ph }, foodPopData.whatsapp, foodPopData.instagram);
+      renderContactBar(ctx, { width: pw, height: ph }, foodPopData.whatsapp, foodPopData.instagram, foodPopData.palette?.accent);
     }
   }
 

@@ -574,12 +574,44 @@ export function renderTextOnCanvas(
  * Renderiza badge de preço no canto inferior direito.
  * Chamado APÓS renderTextOnCanvas, condicionado a ter price no state.
  */
+// Helper: ajustar brilho de cor hex
+function adjustBrightness(hex: string, amount: number): string {
+  const clean = hex.replace("#", "");
+  if (clean.length !== 6) return hex;
+  const r = Math.max(0, Math.min(255, parseInt(clean.slice(0, 2), 16) + amount));
+  const g = Math.max(0, Math.min(255, parseInt(clean.slice(2, 4), 16) + amount));
+  const b = Math.max(0, Math.min(255, parseInt(clean.slice(4, 6), 16) + amount));
+  return `rgb(${r},${g},${b})`;
+}
+
+// Helper: desenhar rounded rect path (fallback para ctx.roundRect)
+function roundRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number
+): void {
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+}
+
 export function renderPriceBadge(
   ctx: CanvasRenderingContext2D,
   canvas: { width: number; height: number },
   price: { value: string; prefix: string; suffix: string },
   cta: string | undefined,
-  accentColor: string
+  accentColor: string,
+  palette?: { accent: string; accentLight: string; badgeBg: string; badgeText: string; ctaBg: string; ctaText: string }
 ): void {
   console.log('[Creatyng] renderPriceBadge called with:', price);
   const cw = canvas.width;
@@ -587,122 +619,116 @@ export function renderPriceBadge(
 
   const badgeWidth = cw * 0.22;
   const badgeHeight = ch * 0.18;
-  const badgeX = cw * 0.75;   // margem direita ~3%
-  const badgeY = ch * 0.62;   // base do badge a 20% do fundo (zona de gradiente escuro)
+  const badgeX = cw * 0.75;
+  const badgeY = ch * 0.62;
+  const badgeRadius = 12;
+
+  const accent    = palette?.accent      ?? accentColor ?? "#D4A853";
+  const accentLt  = palette?.accentLight ?? "rgba(255,255,255,0.12)";
+  const bgColor   = palette?.badgeBg     ?? "rgba(255,255,255,0.92)";
+  const textColor = palette?.badgeText   ?? "#1A1A1A";
+  const ctaBgCol  = palette?.ctaBg       ?? accent;
+  const ctaTxtCol = palette?.ctaText     ?? "#FFFFFF";
 
   ctx.save();
 
-  // Fundo do badge com rounded corners
-  const radius = badgeWidth * 0.06;
+  // Drop shadow do badge
+  ctx.shadowColor = "rgba(0,0,0,0.18)";
+  ctx.shadowBlur = 20;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 8;
+
+  // Fundo — gradiente angular claro (de topo-esquerdo a baixo-direito)
+  const grad = ctx.createLinearGradient(
+    badgeX, badgeY,
+    badgeX + badgeWidth, badgeY + badgeHeight
+  );
+  grad.addColorStop(0, bgColor);
+  grad.addColorStop(1, accentLt);
+
   ctx.beginPath();
-  ctx.moveTo(badgeX + radius, badgeY);
-  ctx.lineTo(badgeX + badgeWidth - radius, badgeY);
-  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY, badgeX + badgeWidth, badgeY + radius);
-  ctx.lineTo(badgeX + badgeWidth, badgeY + badgeHeight - radius);
-  ctx.quadraticCurveTo(badgeX + badgeWidth, badgeY + badgeHeight, badgeX + badgeWidth - radius, badgeY + badgeHeight);
-  ctx.lineTo(badgeX + radius, badgeY + badgeHeight);
-  ctx.quadraticCurveTo(badgeX, badgeY + badgeHeight, badgeX, badgeY + badgeHeight - radius);
-  ctx.lineTo(badgeX, badgeY + radius);
-  ctx.quadraticCurveTo(badgeX, badgeY, badgeX + radius, badgeY);
-  ctx.closePath();
-  ctx.fillStyle = "rgba(20, 12, 5, 0.88)";
+  roundRectPath(ctx, badgeX, badgeY, badgeWidth, badgeHeight, badgeRadius);
+  ctx.fillStyle = grad;
   ctx.fill();
 
-  // Badge border
-  ctx.strokeStyle = "rgba(255,255,255,0.12)";
-  ctx.lineWidth = 1.5;
+  // Desativar shadow antes das bordas e texto
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  // Borda sutil
+  ctx.beginPath();
+  roundRectPath(ctx, badgeX, badgeY, badgeWidth, badgeHeight, badgeRadius);
+  ctx.strokeStyle = "rgba(0,0,0,0.07)";
+  ctx.lineWidth = 1;
   ctx.stroke();
 
-  const priceSize = badgeWidth * 0.35;
+  const priceSize  = badgeWidth * 0.35;
   const prefixSize = priceSize * 0.35;
-  const centerX = badgeX + badgeWidth / 2;
+  const centerX    = badgeX + badgeWidth / 2;
 
-  // Parte inteira e centavos do valor
   const valueParts = price.value.split(/[,.]/);
-  const mainValue = valueParts[0] || price.value;
-  const cents = valueParts[1] || "";
+  const mainValue  = valueParts[0] || price.value;
+  const cents      = valueParts[1] || "";
 
-  // Valor principal (com glow sutil)
+  const priceY = badgeY + badgeHeight * 0.50;
+
+  // Valor principal — escuro
   ctx.font = `900 ${priceSize}px Montserrat, sans-serif`;
-  ctx.fillStyle = "#FFFFFF";
+  ctx.fillStyle = textColor;
   ctx.textAlign = "center";
-  ctx.shadowColor = "rgba(255,255,255,0.2)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetX = 0;
-  ctx.shadowOffsetY = 0;
-  const priceY = badgeY + badgeHeight * 0.5;
   ctx.fillText(mainValue, centerX, priceY);
-  ctx.shadowBlur = 0;
 
-  // Mede a largura do valor principal para posicionar prefixo e centavos
   const mainWidth = ctx.measureText(mainValue).width;
 
-  // Prefixo (R$, etc.)
+  // Prefixo (R$) — na cor accent
   if (price.prefix) {
     ctx.font = `700 ${prefixSize}px Montserrat, sans-serif`;
-    ctx.fillStyle = accentColor || "#FFD700";
+    ctx.fillStyle = accent;
     ctx.textAlign = "right";
     ctx.fillText(price.prefix, centerX - mainWidth / 2 - 4, priceY - priceSize * 0.2);
   }
 
-  // Centavos
+  // Centavos — escuro mais leve
   if (cents) {
     ctx.font = `700 ${prefixSize}px Montserrat, sans-serif`;
-    ctx.fillStyle = "#FFFFFF";
+    ctx.fillStyle = textColor + "AA";
     ctx.textAlign = "left";
     ctx.fillText(`,${cents}`, centerX + mainWidth / 2 + 2, priceY - priceSize * 0.2);
   }
 
-  // Sufixo (CADA, A PARTIR DE, etc.)
+  // Sufixo — escuro mais leve
   if (price.suffix) {
     ctx.font = `600 ${badgeWidth * 0.065}px Montserrat, sans-serif`;
-    ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+    ctx.fillStyle = textColor + "99";
     ctx.textAlign = "center";
     ctx.fillText(price.suffix.toUpperCase(), centerX, priceY + priceSize * 0.25);
   }
 
-  // Barra do CTA dentro do badge — elegante, não bloco vermelho pesado
+  // CTA — botão com gradiente accent
   if (cta) {
-    const ctaH = badgeHeight * 0.17;
-    const ctaY = badgeY + badgeHeight - ctaH - badgeHeight * 0.08;
+    const ctaH   = badgeHeight * 0.17;
+    const ctaY   = badgeY + badgeHeight - ctaH - badgeHeight * 0.08;
     const ctaPad = badgeWidth * 0.06;
-    const ctaX = badgeX + ctaPad;
-    const ctaW = badgeWidth - ctaPad * 2;
-    const ctaRadius = 3; // cantos quase retos — mais elegante
+    const ctaX   = badgeX + ctaPad;
+    const ctaW   = badgeWidth - ctaPad * 2;
 
     ctx.save();
 
-    // Fundo — vermelho escuro, sutil
+    const ctaGrad = ctx.createLinearGradient(ctaX, ctaY, ctaX + ctaW, ctaY);
+    ctaGrad.addColorStop(0, ctaBgCol);
+    ctaGrad.addColorStop(1, adjustBrightness(ctaBgCol, -18));
+
     ctx.beginPath();
-    if (ctx.roundRect) {
-      ctx.roundRect(ctaX, ctaY, ctaW, ctaH, ctaRadius);
-    } else {
-      // fallback manual para browsers sem roundRect
-      ctx.moveTo(ctaX + ctaRadius, ctaY);
-      ctx.lineTo(ctaX + ctaW - ctaRadius, ctaY);
-      ctx.quadraticCurveTo(ctaX + ctaW, ctaY, ctaX + ctaW, ctaY + ctaRadius);
-      ctx.lineTo(ctaX + ctaW, ctaY + ctaH - ctaRadius);
-      ctx.quadraticCurveTo(ctaX + ctaW, ctaY + ctaH, ctaX + ctaW - ctaRadius, ctaY + ctaH);
-      ctx.lineTo(ctaX + ctaRadius, ctaY + ctaH);
-      ctx.quadraticCurveTo(ctaX, ctaY + ctaH, ctaX, ctaY + ctaH - ctaRadius);
-      ctx.lineTo(ctaX, ctaY + ctaRadius);
-      ctx.quadraticCurveTo(ctaX, ctaY, ctaX + ctaRadius, ctaY);
-      ctx.closePath();
-    }
-    ctx.fillStyle = "rgba(200,30,30,0.85)";
+    roundRectPath(ctx, ctaX, ctaY, ctaW, ctaH, 4);
+    ctx.fillStyle = ctaGrad;
     ctx.fill();
 
-    // Borda fina sutil
-    ctx.strokeStyle = "rgba(255,255,255,0.15)";
-    ctx.lineWidth = 0.5;
-    ctx.stroke();
-
-    // Texto — peso 500, tracking aberto, não bold pesado
-    ctx.font = `500 ${ctaH * 0.50}px Montserrat, sans-serif`;
-    ctx.fillStyle = "#FFFFFF";
+    ctx.font = `600 ${ctaH * 0.50}px Montserrat, sans-serif`;
+    ctx.fillStyle = ctaTxtCol;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.12em";
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.10em";
     ctx.fillText(cta.toUpperCase(), centerX, ctaY + ctaH / 2);
     (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
 
