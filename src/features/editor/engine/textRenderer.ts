@@ -646,35 +646,52 @@ export function renderPriceBadge(
     ctx.fillText(price.suffix.toUpperCase(), centerX, priceY + priceSize * 0.25);
   }
 
-  // Barra do CTA dentro do badge
+  // Barra do CTA dentro do badge — elegante, não bloco vermelho pesado
   if (cta) {
-    const ctaH = badgeHeight * 0.18;
+    const ctaH = badgeHeight * 0.17;
     const ctaY = badgeY + badgeHeight - ctaH - badgeHeight * 0.08;
-    const ctaPad = badgeWidth * 0.08;
-
-    ctx.beginPath();
-    const ctaRadius = ctaH * 0.4;
+    const ctaPad = badgeWidth * 0.06;
     const ctaX = badgeX + ctaPad;
     const ctaW = badgeWidth - ctaPad * 2;
-    ctx.moveTo(ctaX + ctaRadius, ctaY);
-    ctx.lineTo(ctaX + ctaW - ctaRadius, ctaY);
-    ctx.quadraticCurveTo(ctaX + ctaW, ctaY, ctaX + ctaW, ctaY + ctaRadius);
-    ctx.lineTo(ctaX + ctaW, ctaY + ctaH - ctaRadius);
-    ctx.quadraticCurveTo(ctaX + ctaW, ctaY + ctaH, ctaX + ctaW - ctaRadius, ctaY + ctaH);
-    ctx.lineTo(ctaX + ctaRadius, ctaY + ctaH);
-    ctx.quadraticCurveTo(ctaX, ctaY + ctaH, ctaX, ctaY + ctaH - ctaRadius);
-    ctx.lineTo(ctaX, ctaY + ctaRadius);
-    ctx.quadraticCurveTo(ctaX, ctaY, ctaX + ctaRadius, ctaY);
-    ctx.closePath();
-    ctx.fillStyle = "#E53935";
+    const ctaRadius = 3; // cantos quase retos — mais elegante
+
+    ctx.save();
+
+    // Fundo — vermelho escuro, sutil
+    ctx.beginPath();
+    if (ctx.roundRect) {
+      ctx.roundRect(ctaX, ctaY, ctaW, ctaH, ctaRadius);
+    } else {
+      // fallback manual para browsers sem roundRect
+      ctx.moveTo(ctaX + ctaRadius, ctaY);
+      ctx.lineTo(ctaX + ctaW - ctaRadius, ctaY);
+      ctx.quadraticCurveTo(ctaX + ctaW, ctaY, ctaX + ctaW, ctaY + ctaRadius);
+      ctx.lineTo(ctaX + ctaW, ctaY + ctaH - ctaRadius);
+      ctx.quadraticCurveTo(ctaX + ctaW, ctaY + ctaH, ctaX + ctaW - ctaRadius, ctaY + ctaH);
+      ctx.lineTo(ctaX + ctaRadius, ctaY + ctaH);
+      ctx.quadraticCurveTo(ctaX, ctaY + ctaH, ctaX, ctaY + ctaH - ctaRadius);
+      ctx.lineTo(ctaX, ctaY + ctaRadius);
+      ctx.quadraticCurveTo(ctaX, ctaY, ctaX + ctaRadius, ctaY);
+      ctx.closePath();
+    }
+    ctx.fillStyle = "rgba(200,30,30,0.85)";
     ctx.fill();
 
-    ctx.font = `800 ${ctaH * 0.55}px Montserrat, sans-serif`;
+    // Borda fina sutil
+    ctx.strokeStyle = "rgba(255,255,255,0.15)";
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Texto — peso 500, tracking aberto, não bold pesado
+    ctx.font = `500 ${ctaH * 0.50}px Montserrat, sans-serif`;
     ctx.fillStyle = "#FFFFFF";
     ctx.textAlign = "center";
-    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.1em";
-    ctx.fillText(cta.toUpperCase(), centerX, ctaY + ctaH * 0.68);
+    ctx.textBaseline = "middle";
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.12em";
+    ctx.fillText(cta.toUpperCase(), centerX, ctaY + ctaH / 2);
     (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
+
+    ctx.restore();
   }
 
   ctx.restore();
