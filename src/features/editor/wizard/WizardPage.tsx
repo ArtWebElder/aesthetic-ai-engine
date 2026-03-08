@@ -63,6 +63,7 @@ export function WizardPage() {
       const composition: CompositionConfig = cfg.composition ?? DEFAULT_COMPOSITION;
       const targetFormat = FORMAT_BY_ID.get(DEFAULT_FORMAT_ID)!;
 
+      const isFoodPop = state.category === "food";
       const composed = await exportComposed({
         imageBase64: gen.imageBase64,
         texts: {
@@ -75,6 +76,15 @@ export function WizardPage() {
         composition,
         targetFormat,
         watermark: false,
+        foodPopOverlay: isFoodPop,
+        foodPopData: isFoodPop
+          ? {
+              price: state.price ?? undefined,
+              whatsapp: state.whatsapp,
+              instagram: state.instagram,
+              accentColor: colors.accentWord ?? colors.primary,
+            }
+          : undefined,
       });
 
       setComposedBase64(composed);

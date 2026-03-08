@@ -263,7 +263,13 @@ export async function recomposeForFormat(
   colors: ColorConfig,
   composition: CompositionConfig,
   targetFormat: ExportFormat,
-  opts: { watermark?: boolean; quality?: "2k" | "4k"; outputFormat?: "png" | "jpg" } = {}
+  opts: {
+    watermark?: boolean;
+    quality?: "2k" | "4k";
+    outputFormat?: "png" | "jpg";
+    foodPopOverlay?: boolean;
+    foodPopData?: ComposeOptions["foodPopData"];
+  } = {}
 ): Promise<string> {
   return exportComposed({
     imageBase64,
@@ -286,7 +292,9 @@ export async function renderFormatPreview(
   colors: ColorConfig,
   composition: CompositionConfig,
   targetFormat: ExportFormat,
-  previewSize = 360
+  previewSize = 360,
+  foodPopOverlay = false,
+  foodPopData?: ComposeOptions["foodPopData"]
 ): Promise<string> {
   const { w, h } = targetFormat;
   const ratio = w / h;
@@ -302,7 +310,11 @@ export async function renderFormatPreview(
   const img = await base64ToImage(imageBase64);
   drawWithSmartCrop(ctx, img, pw, ph);
 
-  if (texts.headline || texts.cta) {
+  if (foodPopOverlay) {
+    drawFoodPopOverlay(ctx, pw, ph);
+    const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
+    renderBokehParticles(ctx, pw, ph, 8, accentColor);
+  } else if (texts.headline || texts.cta) {
     drawTextOverlay(ctx, composition, pw, ph);
   }
 
@@ -310,6 +322,16 @@ export async function renderFormatPreview(
     texts, presetConfig, colors, composition,
     canvasWidth: pw, canvasHeight: ph,
   });
+
+  if (foodPopOverlay && foodPopData) {
+    const accentColor = foodPopData.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFD700";
+    if (foodPopData.price?.value) {
+      renderPriceBadge(ctx, { width: pw, height: ph }, foodPopData.price, texts.cta, accentColor);
+    }
+    if (foodPopData.whatsapp || foodPopData.instagram) {
+      renderContactBar(ctx, { width: pw, height: ph }, foodPopData.whatsapp, foodPopData.instagram);
+    }
+  }
 
   return canvas.toDataURL("image/jpeg", 0.85);
 }

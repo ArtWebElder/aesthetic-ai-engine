@@ -34,6 +34,13 @@ interface ExportModalProps {
   colors: ColorConfig;
   composition: CompositionConfig;
   isPro?: boolean;
+  foodPopOverlay?: boolean;
+  foodPopData?: {
+    price?: { value: string; prefix: string; suffix: string } | null;
+    whatsapp?: string;
+    instagram?: string;
+    accentColor?: string;
+  };
 }
 
 type Quality = "2k" | "4k";
@@ -88,6 +95,8 @@ export function ExportModal({
   open, onClose,
   imageBase64, texts, presetConfig, colors, composition,
   isPro = false,
+  foodPopOverlay = false,
+  foodPopData,
 }: ExportModalProps) {
   const groups = groupFormats();
 
@@ -146,7 +155,8 @@ export function ExportModal({
 
         try {
           const preview = await renderFormatPreview(
-            imageBase64, texts, presetConfig, colors, composition, fmt, 280
+            imageBase64, texts, presetConfig, colors, composition, fmt, 280,
+            foodPopOverlay, foodPopData
           );
           if (!controller.signal.aborted) {
             setPreviews((prev) =>
@@ -206,7 +216,7 @@ export function ExportModal({
       try {
         const result = await recomposeForFormat(
           imageBase64, texts, presetConfig, colors, composition, fmt,
-          { quality, outputFormat }
+          { quality, outputFormat, foodPopOverlay, foodPopData }
         );
         const filename = `creatyng_${fmt.id}_${date}.${ext}`;
         triggerDownload(result, filename, mime);

@@ -224,16 +224,20 @@ export function renderTextOnCanvas(
       // Accent word na última linha
       if (isAccentLine && accentParts.accent) {
         // Mede o before para posicionar o accent
-        const { before, accent, after } = accentParts;
+        const { before, accent } = accentParts;
         // Renderiza linha completa em branco primeiro
         ctx.fillText(line, xAnchor, lineY);
-        // Sobrescreve a parte do accent com a cor de acento
-        if (accent && zone.align !== "center") {
+        // Sobrescreve a parte do accent com a cor de acento (todos os alinhamentos)
+        if (accent) {
           const beforeW = ctx.measureText(before + (before ? " " : "")).width;
-          const accentX =
-            zone.align === "right"
-              ? xAnchor - ctx.measureText(line).width + beforeW
-              : xAnchor + beforeW;
+          let accentX: number;
+          if (zone.align === "center") {
+            accentX = xAnchor - ctx.measureText(line).width / 2 + beforeW;
+          } else if (zone.align === "right") {
+            accentX = xAnchor - ctx.measureText(line).width + beforeW;
+          } else {
+            accentX = xAnchor + beforeW;
+          }
           ctx.shadowBlur = 0;
           ctx.shadowColor = "transparent";
           ctx.fillStyle = accentColor;
