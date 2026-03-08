@@ -4,7 +4,7 @@
 // Multi-formato: crop inteligente por proporção.
 
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
-import { renderTextOnCanvas, type TextRenderConfig } from "./textRenderer";
+import { renderTextOnCanvas, renderPriceBadge, renderContactBar, type TextRenderConfig } from "./textRenderer";
 import { drawTextOverlay } from "./overlayIntegration";
 
 // ─── FORMATOS ─────────────────────────────────────────────────────────────────
@@ -90,6 +90,75 @@ function applyWatermark(ctx: CanvasRenderingContext2D, w: number, h: number): vo
   ctx.restore();
 }
 
+// ─── FOOD POP: GRADIENTE DUPLO ────────────────────────────────────────────────
+
+function drawFoodPopOverlay(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number
+): void {
+  // Gradiente inferior — zona de preço + contato
+  const bottomGrad = ctx.createLinearGradient(0, ch * 0.6, 0, ch);
+  bottomGrad.addColorStop(0, "rgba(0, 0, 0, 0)");
+  bottomGrad.addColorStop(0.4, "rgba(0, 0, 0, 0.5)");
+  bottomGrad.addColorStop(1, "rgba(0, 0, 0, 0.85)");
+  ctx.fillStyle = bottomGrad;
+  ctx.fillRect(0, ch * 0.6, cw, ch * 0.4);
+
+  // Gradiente superior — zona de headline
+  const topGrad = ctx.createLinearGradient(0, 0, 0, ch * 0.35);
+  topGrad.addColorStop(0, "rgba(0, 0, 0, 0.45)");
+  topGrad.addColorStop(0.6, "rgba(0, 0, 0, 0.15)");
+  topGrad.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, cw, ch * 0.35);
+}
+
+// ─── FOOD POP: BOKEH PARTICLES ────────────────────────────────────────────────
+
+function renderBokehParticles(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  count = 15,
+  accentColor = "#FFFFFF"
+): void {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * cw;
+    const y = Math.random() * ch;
+    const size = 4 + Math.random() * 36;
+    const opacity = 0.05 + Math.random() * 0.18;
+    const blur = 1 + Math.random() * 5;
+
+    // Evitar zona central do subject
+    const inSubjectZone =
+      x > cw * 0.25 && x < cw * 0.75 &&
+      y > ch * 0.3 && y < ch * 0.65;
+    if (inSubjectZone && (size > 12 || opacity > 0.1)) continue;
+
+    ctx.save();
+    ctx.filter = `blur(${blur}px)`;
+    ctx.globalAlpha = opacity;
+
+    const color = Math.random() > 0.7 ? accentColor : "#FFFFFF";
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, size / 2);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
 // ─── COMPOSIÇÃO PRINCIPAL ─────────────────────────────────────────────────────
 
 export interface ComposeOptions {
@@ -102,6 +171,15 @@ export interface ComposeOptions {
   watermark?: boolean;
   quality?: "2k" | "4k";           // 4k = escalar canvas x2 (Pro only)
   outputFormat?: "png" | "jpg";
+  /** Food/Pop: gradiente duplo (topo + base) quando true */
+  foodPopOverlay?: boolean;
+  /** Food/Pop: dados para price badge e contact bar */
+  foodPopData?: {
+    price?: { value: string; prefix: string; suffix: string } | null;
+    whatsapp?: string;
+    instagram?: string;
+    accentColor?: string;
+  };
 }
 
 /**
@@ -112,6 +190,7 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
   const {
     imageBase64, texts, presetConfig, colors, composition,
     targetFormat, watermark, quality = "2k", outputFormat = "png",
+    foodPopOverlay = false, foodPopData,
   } = opts;
 
   const scale = quality === "4k" ? 2 : 1;
@@ -129,8 +208,15 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
   const img = await base64ToImage(imageBase64);
   drawWithSmartCrop(ctx, img, cw, ch);
 
-  // 2. Overlay de integração (gradiente adaptativo)
-  if (texts.headline || texts.cta) {
+  // 2. Overlay de integração
+  if (foodPopOverlay) {
+    // Food Pop: gradiente duplo (topo + base)
+    drawFoodPopOverlay(ctx, cw, ch);
+    // Partículas bokeh (entre gradiente e texto)
+    const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
+    renderBokehParticles(ctx, cw, ch, 15, accentColor);
+  } else if (texts.headline || texts.cta) {
+    // Preset padrão: gradiente adaptativo
     drawTextOverlay(ctx, composition, cw, ch);
   }
 
@@ -145,7 +231,18 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
   };
   renderTextOnCanvas(ctx, textConfig);
 
-  // 4. Marca d'água se plano free
+  // 4. Food Pop: price badge + contact bar (após o texto padrão)
+  if (foodPopOverlay && foodPopData) {
+    const accentColor = foodPopData.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFD700";
+    if (foodPopData.price?.value) {
+      renderPriceBadge(ctx, { width: cw, height: ch }, foodPopData.price, texts.cta, accentColor);
+    }
+    if (foodPopData.whatsapp || foodPopData.instagram) {
+      renderContactBar(ctx, { width: cw, height: ch }, foodPopData.whatsapp, foodPopData.instagram);
+    }
+  }
+
+  // 5. Marca d'água se plano free
   if (watermark) {
     applyWatermark(ctx, cw, ch);
   }
