@@ -92,6 +92,99 @@ function resolveAspectRatio(state: WizardState): { width: number; height: number
   return map[ar] ?? { width: 1080, height: 1350 };
 }
 
+// ─── FOOD POP PROMPT BUILDER (paralelo ao buildPrompt, não altera o original) ──
+
+function buildFoodPopPrompt(state: WizardState): { prompt: string; negativePrompt: string } {
+  const layers: string[] = [];
+
+  // === CAMADA 1 — PRESERVAÇÃO DO SUBJECT ===
+  layers.push(
+    `Professional food photography of the exact product shown in the reference image. ` +
+    `CRITICAL PRESERVATION RULES: maintain the exact shape, texture, proportions, and color of every ingredient. ` +
+    `Real food imperfections are desired — this is a real product being sold, not a stock photo. ` +
+    `Do NOT idealize, do NOT make it look like a 3D render or AI-generated food. ` +
+    `The owner must instantly recognize this as THEIR product photographed by a professional.`
+  );
+
+  // === CAMADA 2 — AMBIENTE E FUNDO ===
+  layers.push(
+    `Background: warm, slightly blurred restaurant or kitchen environment. ` +
+    `Bokeh lights from kitchen equipment. Warm color temperature. ` +
+    `The environment suggests a real restaurant atmosphere, not a sterile studio. ` +
+    `Product placed on a dark wooden surface with subtle reflections.`
+  );
+
+  // === CAMADA 3 — ASSETS DINÂMICOS ===
+  layers.push(
+    `Dynamic floating ingredient elements around the main product with motion blur suggesting explosive movement. ` +
+    `Ingredients flying outward: sauce splashes, scattered seeds, floating herb leaves, steam wisps. ` +
+    `Energy and movement throughout the frame. Dynamic commercial food photography style.`
+  );
+
+  // === CAMADA 4 — ILUMINAÇÃO ===
+  layers.push(
+    `Lighting: main key light from upper-left at 45 degrees, warm color temperature 3200-3500K. ` +
+    `Soft fill light from right side. Rim light on product edges to separate from background. ` +
+    `The lighting must make the food look appetizing, warm, and inviting. ` +
+    `Dramatic but not dark — this is about appetite appeal, not cinematic mood.`
+  );
+
+  // === CAMADA 5 — ZONA DE RESPIRO PARA TEXTO ===
+  const hasPrice = state.price && state.price.value;
+  const hasContact = state.whatsapp || state.instagram;
+  const textDensity = [state.headline, state.subheadline, state.cta, hasPrice ? "price" : "", hasContact ? "contact" : ""]
+    .filter(Boolean).length;
+
+  const topBreathing = textDensity >= 3 ? "30%" : "25%";
+  const bottomBreathing = hasContact ? "18%" : "12%";
+
+  layers.push(
+    `COMPOSITION RULE: The upper ${topBreathing} of the image must have significantly less visual detail ` +
+    `and lower contrast — this area will receive headline text overlay. ` +
+    `The bottom ${bottomBreathing} should also be slightly darker and simpler for contact information. ` +
+    `The product should occupy the center to lower-center of the frame. ` +
+    `Do NOT place important food elements in the upper portion or very bottom.`
+  );
+
+  // === CAMADA 6 — TÉCNICA FOTOGRÁFICA ===
+  layers.push(
+    `Shot with 85mm lens, f/2.8 aperture, shallow depth of field. ` +
+    `Food photography hero shot, slightly below eye level looking up at the product. ` +
+    `High resolution suitable for 2048x2048 output. ` +
+    `Vibrant but natural colors — no over-saturation, no filters, no vintage effects.`
+  );
+
+  // === CORES DO USUÁRIO (se informadas) ===
+  const colors = state.activePresetConfig?.colors;
+  if (colors?.primary || colors?.secondary) {
+    const colorParts: string[] = [];
+    if (colors.primary) colorParts.push(`primary: ${colors.primary}`);
+    if (colors.secondary) colorParts.push(`secondary: ${colors.secondary}`);
+    layers.push(
+      `Color direction: The scene lighting and environment should harmonize with these colors: ${colorParts.join(", ")}. ` +
+      `Use them as the dominant warm tones in the scene.`
+    );
+  }
+
+  // === INSTRUÇÕES LIVRES DO USUÁRIO ===
+  if (state.freeInstructions) {
+    layers.push(`Additional creative direction from the client: ${state.freeInstructions}`);
+  }
+
+  const negativePrompt = [
+    "text, letters, typography, words, numbers, written words, any form of text",
+    "watermark, logo, border, frame, vignette",
+    "artificial food, wax texture, 3D render, stock photography, CGI",
+    "AI generated text, AI artifacts, deformed food",
+    "cold lighting, blue color cast, flat lighting",
+    "plastic look, oversaturation, HDR look",
+    "collage, split screen, multiple products unless specified",
+    "blurry product, soft focus on main subject",
+  ].join(", ");
+
+  return { prompt: layers.join("\n\n"), negativePrompt };
+}
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 async function fetchAsBase64(url: string): Promise<string> {
@@ -137,7 +230,9 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
   }
 
   const startedAt = Date.now();
-  const { prompt, negativePrompt } = buildPrompt(state);
+  const { prompt, negativePrompt } = state.category === "food"
+    ? buildFoodPopPrompt(state)
+    : buildPrompt(state);
   const { width, height } = resolveAspectRatio(state);
 
   const body = {
