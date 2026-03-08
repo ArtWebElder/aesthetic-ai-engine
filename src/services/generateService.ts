@@ -114,12 +114,43 @@ function buildFoodPopPrompt(state: WizardState): { prompt: string; negativePromp
     `Product placed on a dark wooden surface with subtle reflections.`
   );
 
-  // === CAMADA 3 — ASSETS DINÂMICOS ===
-  layers.push(
-    `Dynamic floating ingredient elements around the main product with motion blur suggesting explosive movement. ` +
-    `Ingredients flying outward: sauce splashes, scattered seeds, floating herb leaves, steam wisps. ` +
-    `Energy and movement throughout the frame. Dynamic commercial food photography style.`
-  );
+  // === CAMADA 3 — ASSETS DINÂMICOS (contextual) ===
+  const allText = [
+    state.headline, state.subheadline, state.cta, state.freeInstructions,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  const isCold   = /açaí|acai|sorvete|gelato|frapê|milkshake|smoothie|cold|frozen|ice|sushi|sashimi|poke|temaki/i.test(allText);
+  const isSushi  = /sushi|sashimi|poke|temaki|japonês|japones|japonesa|niguiri/i.test(allText);
+  const isPizza  = /pizza|focaccia/i.test(allText);
+
+  if (isCold && !isPizza) {
+    layers.push(
+      `Dynamic presentation: delicate mist rising from the cold product, condensation droplets on the surface and container. ` +
+      `Small ice crystals catching light. Subtle cool steam wisps. ` +
+      `Fresh ingredients arranged elegantly around — no fire, no heat effects, no hot steam. ` +
+      `Serene but appetizing energy. The product must look refreshingly cold.`
+    );
+  } else if (isSushi) {
+    layers.push(
+      `Elegant presentation: sushi/Japanese food arranged artistically. ` +
+      `Clean white or dark slate surface. Subtle garnishes (ginger, wasabi, sesame seeds). ` +
+      `Light soy sauce reflection. Minimal, precise composition. No fire, no hot effects. ` +
+      `Refined, high-end Japanese restaurant feel.`
+    );
+  } else if (isPizza) {
+    layers.push(
+      `Dynamic presentation: cheese stretch visible as a slice is lifted. Tomato sauce splashes. ` +
+      `Fresh basil leaves falling. Oregano scattered. Steam rising from hot cheese. ` +
+      `Ingredients exploding outward from the pizza in an appetizing way. ` +
+      `Energy and movement. Italian restaurant atmosphere.`
+    );
+  } else {
+    layers.push(
+      `Dynamic floating ingredient elements around the main product with motion blur suggesting explosive movement. ` +
+      `Ingredients flying outward: sauce splashes, scattered seeds, floating herb leaves, steam wisps. ` +
+      `Energy and movement throughout the frame. Dynamic commercial food photography style.`
+    );
+  }
 
   // === CAMADA 4 — ILUMINAÇÃO ===
   layers.push(
@@ -230,7 +261,10 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
   }
 
   const startedAt = Date.now();
-  const { prompt, negativePrompt } = state.category === "food"
+  const isFoodPop =
+    state.category === "food" ||
+    Boolean(state.price?.value || state.whatsapp || state.instagram);
+  const { prompt, negativePrompt } = isFoodPop
     ? buildFoodPopPrompt(state)
     : buildPrompt(state);
   const { width, height } = resolveAspectRatio(state);
