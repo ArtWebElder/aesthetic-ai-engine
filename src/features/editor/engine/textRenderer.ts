@@ -442,6 +442,11 @@ export function renderPriceBadge(
   ctx.fillStyle = "rgba(20, 12, 5, 0.88)";
   ctx.fill();
 
+  // Badge border
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
   const priceSize = badgeWidth * 0.35;
   const prefixSize = priceSize * 0.35;
   const centerX = badgeX + badgeWidth / 2;
@@ -451,12 +456,17 @@ export function renderPriceBadge(
   const mainValue = valueParts[0] || price.value;
   const cents = valueParts[1] || "";
 
-  // Valor principal
+  // Valor principal (com glow sutil)
   ctx.font = `900 ${priceSize}px Montserrat, sans-serif`;
   ctx.fillStyle = "#FFFFFF";
   ctx.textAlign = "center";
+  ctx.shadowColor = "rgba(255,255,255,0.2)";
+  ctx.shadowBlur = 10;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
   const priceY = badgeY + badgeHeight * 0.5;
   ctx.fillText(mainValue, centerX, priceY);
+  ctx.shadowBlur = 0;
 
   // Mede a largura do valor principal para posicionar prefixo e centavos
   const mainWidth = ctx.measureText(mainValue).width;
