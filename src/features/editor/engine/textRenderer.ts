@@ -748,7 +748,8 @@ export function renderContactBar(
   ctx: CanvasRenderingContext2D,
   canvas: { width: number; height: number },
   whatsapp: string | undefined,
-  instagram: string | undefined
+  instagram: string | undefined,
+  paletteAccent?: string
 ): void {
   console.log('[Creatyng] renderContactBar called with:', { whatsapp, instagram });
   if (!whatsapp && !instagram) return;
@@ -756,13 +757,18 @@ export function renderContactBar(
   const cw = canvas.width;
   const ch = canvas.height;
 
-  const barY = ch * 0.94;
+  const barY    = ch * 0.94;
   const fontSize = cw * 0.022;
   const iconSize = fontSize * 1.3;
-  const gap = cw * 0.04;
+  const gap      = cw * 0.04;
+
+  // Ícones integrados à paleta: usar accent com opacidade
+  // Se não há paleta, manter cores de marca (WhatsApp verde, Instagram rosa) com 0.75 opacidade
+  const waIconColor = paletteAccent ? paletteAccent + "CC" : "rgba(37,211,102,0.80)";
+  const igIconColor = paletteAccent ? paletteAccent + "99" : "rgba(225,48,108,0.80)";
 
   ctx.save();
-  ctx.font = `400 ${fontSize}px Montserrat, sans-serif`;
+  ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
   ctx.textBaseline = "middle";
 
   // Calcular largura total para centralizar
@@ -776,32 +782,30 @@ export function renderContactBar(
 
   let currentX = (cw - totalWidth) / 2;
 
-  // Text shadow helper for contact bar
   function setContactShadow(): void {
-    ctx.shadowColor = "rgba(0,0,0,0.55)";
+    ctx.shadowColor = "rgba(0,0,0,0.50)";
     ctx.shadowBlur = 4;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 1;
   }
 
-  // WhatsApp — solid #25D366 circle + "W"
+  // WhatsApp
   if (whatsapp) {
     const cx = currentX + iconSize / 2;
     ctx.beginPath();
     ctx.arc(cx, barY, iconSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = "#25D366";
-    ctx.shadowColor = "rgba(0,0,0,0.4)";
-    ctx.shadowBlur = 6;
-    ctx.shadowOffsetX = 0;
+    ctx.fillStyle = waIconColor;
+    ctx.shadowColor = "rgba(0,0,0,0.30)";
+    ctx.shadowBlur = 5;
     ctx.shadowOffsetY = 2;
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    ctx.font = `800 ${iconSize * 0.52}px Montserrat, sans-serif`;
+    ctx.font = `800 ${iconSize * 0.50}px Montserrat, sans-serif`;
     ctx.fillStyle = "#FFFFFF";
     ctx.textAlign = "center";
-    ctx.fillText("W", cx, barY + iconSize * 0.19);
+    ctx.fillText("W", cx, barY + iconSize * 0.17);
 
     currentX += iconSize + 6;
     ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
@@ -814,33 +818,23 @@ export function renderContactBar(
     currentX += ctx.measureText(whatsapp).width + gap;
   }
 
-  // Instagram — gradient circle + "@"
+  // Instagram
   if (instagram) {
     const cx = currentX + iconSize / 2;
-    const igGrad = ctx.createLinearGradient(
-      cx - iconSize / 2, barY - iconSize / 2,
-      cx + iconSize / 2, barY + iconSize / 2
-    );
-    igGrad.addColorStop(0,   "#FCAF45");
-    igGrad.addColorStop(0.3, "#E1306C");
-    igGrad.addColorStop(0.65,"#C13584");
-    igGrad.addColorStop(1,   "#833AB4");
-
     ctx.beginPath();
     ctx.arc(cx, barY, iconSize / 2, 0, Math.PI * 2);
-    ctx.fillStyle = igGrad;
-    ctx.shadowColor = "rgba(0,0,0,0.4)";
-    ctx.shadowBlur = 6;
-    ctx.shadowOffsetX = 0;
+    ctx.fillStyle = igIconColor;
+    ctx.shadowColor = "rgba(0,0,0,0.30)";
+    ctx.shadowBlur = 5;
     ctx.shadowOffsetY = 2;
     ctx.fill();
     ctx.shadowBlur = 0;
     ctx.shadowOffsetY = 0;
 
-    ctx.font = `800 ${iconSize * 0.52}px Montserrat, sans-serif`;
+    ctx.font = `800 ${iconSize * 0.50}px Montserrat, sans-serif`;
     ctx.fillStyle = "#FFFFFF";
     ctx.textAlign = "center";
-    ctx.fillText("@", cx, barY + iconSize * 0.19);
+    ctx.fillText("@", cx, barY + iconSize * 0.17);
 
     currentX += iconSize + 6;
     ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
