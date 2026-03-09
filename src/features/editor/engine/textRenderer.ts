@@ -296,12 +296,13 @@ function renderComposedHeadline(
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
-      const lineHeight = seg.isAccent ? 0.95 : 1.1;
+      // Avança apenas o suficiente para a próxima linha DENTRO do mesmo segmento
+      const lineHeight = seg.isAccent ? 0.85 : 0.90;
       currentY += fontSize * lineHeight;
     }
 
-    // Small gap between segments
-    currentY += baseSize * 0.08;
+    // Gap mínimo ENTRE segmentos — headline composta parece uma peça só
+    currentY += baseSize * 0.04;
   }
 
   ctx.restore();
@@ -360,12 +361,14 @@ export function renderTextOnCanvas(
   if (texts.headline) {
     // Food Pop: renderizar como dois segmentos tipográficos (contexto + impacto)
     if (foodPop) {
-      const hlStartY = currentY + hlSize * 0.9;
+      // Food-pop: baseSize maior para preencher bem o canvas (impacto ~70-80% da largura)
+      const foodPopBaseSize = Math.round(Math.max(hlSize, cw * 0.14));
+      const hlStartY = currentY + foodPopBaseSize * 0.9;
       currentY = renderComposedHeadline(
         ctx,
         { width: cw, height: ch },
         texts.headline,
-        hlSize,
+        foodPopBaseSize,
         hlStartY,
         presetConfig.headlineFont,
         presetConfig.bodyFont,
