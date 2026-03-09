@@ -188,7 +188,9 @@ export function buildPopDesignSubjectPrompt(state: WizardState): { prompt: strin
   layers.push(
     `100mm macro lens, f/8, maximum sharpness. ` +
     `Even studio lighting from all sides, no dramatic shadows, no colored lighting. ` +
-    `The white background must be perfectly clean — #FFFFFF — for easy isolation.`
+    `The background must be PERFECTLY WHITE (#FFFFFF) with absolutely NO shadows, ` +
+    `NO gradients, NO gray areas. The product should appear to float on pure white ` +
+    `with NO contact shadows on the background surface.`
   );
 
   return {

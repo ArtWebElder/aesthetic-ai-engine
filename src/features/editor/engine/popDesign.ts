@@ -187,26 +187,88 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 /**
- * Convert near-white pixels to transparent on an offscreen canvas.
- * threshold: pixels with min(R,G,B) above this value fade to transparent.
- * Pixels at 255 → alpha 0; at threshold → alpha 255. Smooth linear ramp.
+ * Remove white/near-white background from an image, returning a canvas
+ * with transparent background.
+ *
+ * Strategy (3-pass):
+ * 1. Brightness + saturation check:
+ *    - min(R,G,B) > 240 AND saturation < 0.08 → fully transparent
+ *    - min(R,G,B) 200-240 AND saturation < 0.08 → smooth alpha fadeout
+ *    - saturation ≥ 0.15 → always fully opaque (colored food elements)
+ *    - everything else → unchanged
+ * 2. Edge feathering: opaque pixels adjacent to transparent ones → alpha 60%
+ *    (removes hard sticker-edge artifacts)
  */
-function makeWhiteTransparent(img: HTMLImageElement, threshold = 232): HTMLCanvasElement {
+function makeWhiteTransparent(img: HTMLImageElement): HTMLCanvasElement {
   const off = document.createElement("canvas");
-  off.width  = img.naturalWidth;
-  off.height = img.naturalHeight;
+  const W = img.naturalWidth;
+  const H = img.naturalHeight;
+  off.width  = W;
+  off.height = H;
   const offCtx = off.getContext("2d")!;
   offCtx.drawImage(img, 0, 0);
 
-  const imageData = offCtx.getImageData(0, 0, off.width, off.height);
+  const imageData = offCtx.getImageData(0, 0, W, H);
   const d = imageData.data;
-  const range = 255 - threshold;
+
+  // ── Pass 1: brightness + saturation ──────────────────────────────────────
+  const BRIGHT_FULL  = 240; // above → fully transparent (if low-sat)
+  const BRIGHT_START = 200; // below → fully opaque
+  const SAT_OPAQUE   = 0.15; // colored pixel → always keep
+  const SAT_CLEAR    = 0.08; // desaturated → apply brightness rule
 
   for (let i = 0; i < d.length; i += 4) {
-    const whiteness = Math.min(d[i], d[i + 1], d[i + 2]);
-    if (whiteness > threshold) {
-      const alpha = Math.round((255 - whiteness) / range * 255);
-      d[i + 3] = Math.min(d[i + 3], alpha);
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    const maxC = Math.max(r, g, b);
+    const minC = Math.min(r, g, b);
+    const saturation = maxC === 0 ? 0 : (maxC - minC) / maxC;
+    const brightness = minC; // min(R,G,B) as brightness proxy
+
+    if (saturation >= SAT_OPAQUE) {
+      // Colored pixel (food, elements) — always keep
+      continue;
+    }
+
+    if (saturation < SAT_CLEAR) {
+      // Desaturated (white/gray) — apply brightness rule
+      if (brightness >= BRIGHT_FULL) {
+        d[i + 3] = 0; // fully transparent
+      } else if (brightness > BRIGHT_START) {
+        // Smooth fadeout from BRIGHT_START→opaque to BRIGHT_FULL→transparent
+        const t = (brightness - BRIGHT_START) / (BRIGHT_FULL - BRIGHT_START);
+        d[i + 3] = Math.min(d[i + 3], Math.round((1 - t) * 255));
+      }
+      // brightness <= BRIGHT_START: leave fully opaque
+    } else {
+      // Mid-saturation (0.08-0.15): partial fadeout weighted by saturation
+      if (brightness > BRIGHT_START) {
+        const brightFactor = (brightness - BRIGHT_START) / (255 - BRIGHT_START);
+        const satFactor = 1 - (saturation - SAT_CLEAR) / (SAT_OPAQUE - SAT_CLEAR);
+        const reduction = brightFactor * satFactor;
+        d[i + 3] = Math.min(d[i + 3], Math.round((1 - reduction) * 255));
+      }
+    }
+  }
+
+  // ── Pass 2: edge feathering ───────────────────────────────────────────────
+  // Any opaque pixel adjacent (4-connected) to a transparent pixel → 60% alpha
+  const alphaSnapshot = new Uint8Array(W * H);
+  for (let i = 0; i < W * H; i++) alphaSnapshot[i] = d[i * 4 + 3];
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const idx = y * W + x;
+      if (alphaSnapshot[idx] < 128) continue; // already transparent
+      const neighbors = [
+        x > 0       ? alphaSnapshot[idx - 1]     : 255,
+        x < W - 1   ? alphaSnapshot[idx + 1]     : 255,
+        y > 0       ? alphaSnapshot[idx - W]      : 255,
+        y < H - 1   ? alphaSnapshot[idx + W]      : 255,
+      ];
+      if (neighbors.some(a => a < 128)) {
+        // This opaque pixel is on the edge → feather to 60%
+        d[idx * 4 + 3] = Math.round(d[idx * 4 + 3] * 0.60);
+      }
     }
   }
 
