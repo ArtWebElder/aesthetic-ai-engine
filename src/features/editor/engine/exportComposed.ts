@@ -262,11 +262,11 @@ function chooseDecorativeConfig(headline: string): DecorativeConfig {
     hash |= 0;
   }
   const configs: DecorativeConfig[] = [
-    { style: "outline", position: "center", opacity: 0.07, rotation:  0 },
-    { style: "outline", position: "center", opacity: 0.06, rotation: -3 },
-    { style: "filled",  position: "center", opacity: 0.05, rotation:  0 },
-    { style: "outline", position: "top",    opacity: 0.08, rotation:  2 },
-    { style: "filled",  position: "bottom", opacity: 0.04, rotation: -2 },
+    { style: "outline", position: "center", opacity: 0.12, rotation:  0 },
+    { style: "outline", position: "center", opacity: 0.10, rotation: -3 },
+    { style: "filled",  position: "center", opacity: 0.08, rotation:  0 },
+    { style: "outline", position: "top",    opacity: 0.13, rotation:  2 },
+    { style: "filled",  position: "bottom", opacity: 0.07, rotation: -2 },
   ];
   return configs[Math.abs(hash) % configs.length];
 }

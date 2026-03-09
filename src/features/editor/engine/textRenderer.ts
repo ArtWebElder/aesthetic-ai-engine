@@ -264,6 +264,8 @@ function renderComposedHeadline(
   const centerX = canvas.width / 2;
   const maxWidth = canvas.width * 0.84; // same padding as resolveTextZone
 
+  const lastSeg = segments[segments.length - 1];
+
   for (const seg of segments) {
     const fontSize = baseSize * seg.sizeFactor;
     const fontFamily = seg.font === "display" ? displayFont : bodyFont;
@@ -273,8 +275,11 @@ function renderComposedHeadline(
 
     // Split long context lines so they don't overflow
     const lines = wrapText(ctx, seg.text, maxWidth);
+    const isLastSeg = seg === lastSeg;
 
-    for (const line of lines) {
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li];
+
       if (seg.isAccent) {
         // Impact segment — elegant shadow, white text
         ctx.shadowColor = "rgba(0,0,0,0.35)";
@@ -296,13 +301,19 @@ function renderComposedHeadline(
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
 
-      // Avança apenas o suficiente para a próxima linha DENTRO do mesmo segmento
-      const lineHeight = seg.isAccent ? 0.85 : 0.90;
+      const isLastLine = li === lines.length - 1;
+      let lineHeight: number;
+      if (isLastLine && !isLastSeg) {
+        // Transição inter-segmento: avanço apertado para os dois segmentos parecerem UMA headline
+        // 0.55 × impactFontSize: deixa ~17px de gap visual com a linha seguinte de contexto
+        lineHeight = seg.isAccent ? 0.55 : 0.65;
+      } else {
+        // Dentro do mesmo segmento (multi-line wrap): espaçamento normal sem overlap
+        lineHeight = seg.isAccent ? 0.85 : 0.90;
+      }
+      console.log('[Creatyng] headline advance:', { seg: seg.text, li, fontSize: Math.round(fontSize), lineHeight, currentY: Math.round(currentY) });
       currentY += fontSize * lineHeight;
     }
-
-    // Gap mínimo ENTRE segmentos — headline composta parece uma peça só
-    currentY += baseSize * 0.04;
   }
 
   ctx.restore();
@@ -755,7 +766,9 @@ function renderPillBadge(
   const cw = canvas.width;
   const ch = canvas.height;
   const pillW = cw * 0.65;
-  const pillH = ch * 0.055;
+  // Pill mais alta quando há sufixo para acomodar duas linhas de texto
+  const hasSuffix = Boolean(price.suffix);
+  const pillH = ch * (hasSuffix ? 0.075 : 0.055);
   const pillX = (cw - pillW) / 2;
   const pillY = ch * 0.83;
   const pillRadius = pillH / 2;
@@ -789,25 +802,31 @@ function renderPillBadge(
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  const priceSize = pillH * 0.36;
-  const centerY   = pillY + pillH / 2;
   const priceX    = pillX + pillW * 0.25;
   const priceText = `${price.prefix ? price.prefix + " " : ""}${price.value}`;
+  // Quando há sufixo: preço fica na metade inferior; caso contrário: centro
+  const priceY  = hasSuffix ? pillY + pillH * 0.72 : pillY + pillH / 2;
+  const centerY = priceY; // referência para separador e CTA
 
+  // Sufixo como rótulo contextual ACIMA do preço (ex: "POR APENAS")
+  if (hasSuffix) {
+    const sufSize = pillH * 0.18;
+    const sufY    = pillY + pillH * 0.32;
+    ctx.font = `500 ${sufSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = textColor + "88";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0.08em";
+    ctx.fillText(price.suffix.toUpperCase(), priceX, sufY);
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
+  }
+
+  const priceSize = pillH * (hasSuffix ? 0.26 : 0.36);
   ctx.textBaseline = "middle";
   ctx.font = `700 ${priceSize}px Montserrat, sans-serif`;
   ctx.fillStyle = accent;
   ctx.textAlign = "center";
-  ctx.fillText(priceText, priceX, centerY);
-
-  if (price.suffix) {
-    const sufSize = pillH * 0.22;
-    const sufX = priceX + ctx.measureText(priceText).width / 2 + cw * 0.015;
-    ctx.font = `500 ${sufSize}px Montserrat, sans-serif`;
-    ctx.fillStyle = textColor + "AA";
-    ctx.textAlign = "left";
-    ctx.fillText(price.suffix.toUpperCase(), sufX, centerY);
-  }
+  ctx.fillText(priceText, priceX, priceY);
 
   // Separador vertical
   const sepX = pillX + pillW * 0.55;
@@ -897,6 +916,7 @@ export function renderPriceBadge(
 ): void {
   console.log('[Creatyng] renderPriceBadge called with:', price);
   const variant = chooseBadgeVariant(headline ?? "", price.value);
+  console.log('[Creatyng] renderPriceBadge variant:', variant, { headline: headline ?? '', priceValue: price.value });
   switch (variant) {
     case "card-right":
       renderCardBadge(ctx, canvas, price, cta, accentColor, palette, "right");
