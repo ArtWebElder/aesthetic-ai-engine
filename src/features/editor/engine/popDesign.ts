@@ -314,7 +314,7 @@ function autoCropTransparent(src: HTMLCanvasElement): HTMLCanvasElement {
 }
 
 interface SubjectOpts {
-  scale?: number;       // fração de ch como altura (padrão 0.82)
+  scale?: number;       // fração de ch como altura do conteúdo cropado (padrão 0.60)
   offsetY?: number;     // offset adicional, fração de ch (padrão 0.05 → levemente abaixo do centro)
   shadowBlur?: number;
   shadowColor?: string;
@@ -328,30 +328,29 @@ function renderIsolatedSubject(
   opts: SubjectOpts = {}
 ): void {
   const {
-    scale       = 0.82,
+    scale       = 0.60,
     offsetY     = 0.05,
     shadowBlur  = 35,
     shadowColor = "rgba(0,0,0,0.20)",
   } = opts;
-
-  const targetH = ch * scale;
-  const imgScale = targetH / img.naturalHeight;
-  const drawW = img.naturalWidth * imgScale;
-  const drawH = img.naturalHeight * imgScale;
-
-  // Centralizado horizontalmente; verticalmente centrado com offset sutil
-  const drawX = (cw - drawW) / 2;
-  const drawY = (ch - drawH) / 2 + ch * offsetY;
 
   // Remove white background, then crop transparent borders so scale
   // applies to actual content rather than empty padding
   const masked  = makeWhiteTransparent(img);
   const cropped = autoCropTransparent(masked);
 
-  // Recompute draw dimensions using cropped content size
+  // Compute draw dimensions respecting both max height and max width
+  const maxH = ch * scale;
+  const maxW = cw * 0.75;
   const croppedAspect = cropped.width / cropped.height;
-  const finalH = ch * scale;
-  const finalW = finalH * croppedAspect;
+
+  let finalH = maxH;
+  let finalW = finalH * croppedAspect;
+  if (finalW > maxW) {
+    finalW = maxW;
+    finalH = finalW / croppedAspect;
+  }
+
   const finalX = (cw - finalW) / 2;
   const finalY = (ch - finalH) / 2 + ch * offsetY;
 
@@ -426,11 +425,18 @@ function renderPopHeadline(
   ctx.textAlign = "center";
   ctx.textBaseline = "alphabetic"; // use baseline so +0.8 offset works naturally
 
+  const maxTextWidth = cw * 0.90;
+
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i];
-    const fontSize = Math.round(baseSize * seg.sizeFactor);
+    let fontSize = Math.round(baseSize * seg.sizeFactor);
 
+    // Auto-shrink: reduce fontSize until text fits within 90% of canvas width
     ctx.font = `${seg.weight} ${fontSize}px Montserrat, sans-serif`;
+    while (ctx.measureText(seg.text).width > maxTextWidth && fontSize > 20) {
+      fontSize -= 2;
+      ctx.font = `${seg.weight} ${fontSize}px Montserrat, sans-serif`;
+    }
 
     if (bgIsDark) {
       ctx.fillStyle = seg.isAccent ? "#FFFFFF" : "rgba(255,255,255,0.75)";
@@ -693,7 +699,7 @@ export async function composePopDesignV2(
   try {
     const subjectImg = await loadImage(subjectBase64);
     renderIsolatedSubject(ctx, cw, ch, subjectImg, {
-      scale:       0.82,
+      scale:       0.60,
       offsetY:     0.05,
       shadowBlur:  40,
       shadowColor: "rgba(0,0,0,0.30)",
@@ -780,7 +786,7 @@ export async function composePopDesign(
   try {
     const subjectImg = await loadImage(subjectBase64);
     renderIsolatedSubject(ctx, cw, ch, subjectImg, {
-      scale:       0.82,
+      scale:       0.60,
       offsetY:     0.05,
       shadowBlur:  35,
       shadowColor: bgIsDark ? "rgba(0,0,0,0.30)" : "rgba(0,0,0,0.18)",
