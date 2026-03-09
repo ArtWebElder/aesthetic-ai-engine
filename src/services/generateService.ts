@@ -153,6 +153,14 @@ export function buildPopDesignBackgroundPrompt(state: WizardState): { prompt: st
   );
 
   layers.push(
+    `The floating food elements must be LARGE, COLORFUL, and HIGHLY SATURATED — ` +
+    `clearly visible against the gradient background. ` +
+    `Place at least 8-12 distinct food elements scattered around the edges. ` +
+    `Elements should be VIBRANT, not subtle. ` +
+    `Think of a dynamic food advertisement with ingredients EXPLODING outward from the center.`
+  );
+
+  layers.push(
     `CRITICAL: Do NOT place any main food product, bowl, cup, or plate in the center. ` +
     `Leave the CENTER clean. All elements must stay near the EDGES and CORNERS.`
   );
@@ -166,6 +174,7 @@ export function buildPopDesignBackgroundPrompt(state: WizardState): { prompt: st
     negativePrompt: [
       "text, letters, typography, watermark, logo",
       "white background, plain background, gray background",
+      "empty background, plain gradient, minimal elements, subtle, monochromatic",
       "main product in center, central food item, bowl in center, cup in center, plate in center",
       "collage, split screen, borders, frames",
     ].join(", "),

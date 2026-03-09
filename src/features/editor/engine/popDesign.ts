@@ -276,6 +276,43 @@ function makeWhiteTransparent(img: HTMLImageElement): HTMLCanvasElement {
   return off;
 }
 
+/**
+ * Crop transparent borders from a canvas, returning a new canvas containing
+ * only the bounding box of pixels with alpha > 10.
+ * If the canvas is fully transparent, returns the original unchanged.
+ */
+function autoCropTransparent(src: HTMLCanvasElement): HTMLCanvasElement {
+  const W = src.width;
+  const H = src.height;
+  const ctx = src.getContext("2d")!;
+  const d = ctx.getImageData(0, 0, W, H).data;
+
+  let top    = H, bottom = 0;
+  let left   = W, right  = 0;
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      if (d[(y * W + x) * 4 + 3] > 10) {
+        if (y < top)    top    = y;
+        if (y > bottom) bottom = y;
+        if (x < left)   left   = x;
+        if (x > right)  right  = x;
+      }
+    }
+  }
+
+  if (top > bottom || left > right) return src; // fully transparent
+
+  const cropW = right  - left + 1;
+  const cropH = bottom - top  + 1;
+
+  const out = document.createElement("canvas");
+  out.width  = cropW;
+  out.height = cropH;
+  out.getContext("2d")!.drawImage(src, left, top, cropW, cropH, 0, 0, cropW, cropH);
+  return out;
+}
+
 interface SubjectOpts {
   scale?: number;       // fração de ch como altura (padrão 0.82)
   offsetY?: number;     // offset adicional, fração de ch (padrão 0.05 → levemente abaixo do centro)
@@ -306,15 +343,24 @@ function renderIsolatedSubject(
   const drawX = (cw - drawW) / 2;
   const drawY = (ch - drawH) / 2 + ch * offsetY;
 
-  // Apply white-to-transparent conversion (preserves flying elements, removes white BG)
-  const masked = makeWhiteTransparent(img);
+  // Remove white background, then crop transparent borders so scale
+  // applies to actual content rather than empty padding
+  const masked  = makeWhiteTransparent(img);
+  const cropped = autoCropTransparent(masked);
+
+  // Recompute draw dimensions using cropped content size
+  const croppedAspect = cropped.width / cropped.height;
+  const finalH = ch * scale;
+  const finalW = finalH * croppedAspect;
+  const finalX = (cw - finalW) / 2;
+  const finalY = (ch - finalH) / 2 + ch * offsetY;
 
   ctx.save();
   ctx.shadowColor = shadowColor;
   ctx.shadowBlur = shadowBlur;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = ch * 0.020;
-  ctx.drawImage(masked, drawX, drawY, drawW, drawH);
+  ctx.drawImage(cropped, finalX, finalY, finalW, finalH);
   ctx.restore();
 }
 
