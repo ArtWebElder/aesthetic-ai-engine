@@ -137,23 +137,34 @@ export function WizardPage() {
           }
         }
 
+        // Re-read state AFTER async bg removal — wizard fields may have changed
+        const freshState = useWizardStore.getState();
+        const freshPalette = getFoodPalette(freshState.headline, freshState.subheadline, freshState.freeInstructions);
+
+        console.log("[Creatyng PopDesign] composePopDesign input:", {
+          headline: freshState.headline,
+          price: freshState.price,
+          whatsapp: freshState.whatsapp,
+          instagram: freshState.instagram,
+        });
+
         const popBase64 = await composePopDesign({
-          subjectBase64: state.subjectBase64,
+          subjectBase64: freshState.subjectBase64 ?? state.subjectBase64,
           subjectIsolatedBase64: isolatedBase64,
           texts: {
-            headline: state.headline ?? "",
-            subheadline: state.subheadline,
-            cta: state.cta,
+            headline: freshState.headline ?? "",
+            subheadline: freshState.subheadline,
+            cta: freshState.cta,
           },
           presetConfig: textConfig,
           colors,
           width: targetFormat.w,
           height: targetFormat.h,
           popData: {
-            price: state.price ?? undefined,
-            whatsapp: state.whatsapp,
-            instagram: state.instagram,
-            palette: foodPalette,
+            price: freshState.price ?? undefined,
+            whatsapp: freshState.whatsapp,
+            instagram: freshState.instagram,
+            palette: freshPalette,
           },
           watermark: false,
         });
