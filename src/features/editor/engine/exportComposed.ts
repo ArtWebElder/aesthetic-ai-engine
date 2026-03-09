@@ -213,6 +213,140 @@ function renderDecorativeLine(
   ctx.restore();
 }
 
+// ─── FOOD POP: TEXTO DECORATIVO ───────────────────────────────────────────────
+
+const DECO_SKIP = new Set([
+  "DO", "DA", "DE", "DAS", "DOS", "EM", "NO", "NA", "NOS", "NAS",
+  "COM", "SEM", "POR", "PARA", "E", "OU", "QUE", "SEU", "SUA",
+  "O", "A", "OS", "AS", "UM", "UMA", "AO", "À",
+  "THE", "OF", "AND", "FOR", "TO", "IN", "YOUR", "OUR",
+]);
+
+function extractDecorativeWord(headline: string): string {
+  const words = headline.toUpperCase().trim().split(/\s+/);
+  for (const word of words) {
+    if (!DECO_SKIP.has(word) && word.length >= 3) return word;
+  }
+  return words[0] || "";
+}
+
+function calculateDecorativeFontSize(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  text: string
+): number {
+  // Target: ~110% of canvas width so text naturally bleeds past edges
+  const targetWidth = canvas.width * 1.1;
+  let fontSize = canvas.width * 0.5;
+  ctx.font = `900 ${fontSize}px Montserrat, sans-serif`;
+  const measured = ctx.measureText(text).width;
+  fontSize = fontSize * (targetWidth / measured);
+  return Math.max(canvas.width * 0.2, Math.min(fontSize, canvas.width * 0.6));
+}
+
+type DecorativeStyle    = "outline" | "filled" | "shadow-only";
+type DecorativePosition = "center" | "top" | "bottom";
+
+interface DecorativeConfig {
+  style:    DecorativeStyle;
+  position: DecorativePosition;
+  opacity:  number;
+  rotation: number;
+}
+
+function chooseDecorativeConfig(headline: string): DecorativeConfig {
+  let hash = 0;
+  const text = headline.toLowerCase();
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  const configs: DecorativeConfig[] = [
+    { style: "outline", position: "center", opacity: 0.07, rotation:  0 },
+    { style: "outline", position: "center", opacity: 0.06, rotation: -3 },
+    { style: "filled",  position: "center", opacity: 0.05, rotation:  0 },
+    { style: "outline", position: "top",    opacity: 0.08, rotation:  2 },
+    { style: "filled",  position: "bottom", opacity: 0.04, rotation: -2 },
+  ];
+  return configs[Math.abs(hash) % configs.length];
+}
+
+/**
+ * Renderiza texto decorativo gigante com baixa opacidade — camada de fundo visual.
+ * Deve ser chamada ANTES do gradiente overlay para que o gradiente o cubra nas bordas.
+ */
+function renderDecorativeText(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  text: string,
+  options?: {
+    opacity?:  number;
+    style?:    DecorativeStyle;
+    position?: DecorativePosition;
+    color?:    string;
+    rotation?: number;
+  }
+): void {
+  if (!text || !text.trim()) return;
+
+  const opts = {
+    opacity:  options?.opacity  ?? 0.07,
+    style:    options?.style    ?? ("outline" as DecorativeStyle),
+    position: options?.position ?? ("center"  as DecorativePosition),
+    color:    options?.color    ?? "#FFFFFF",
+    rotation: options?.rotation ?? 0,
+  };
+
+  ctx.save();
+
+  const decorWord = extractDecorativeWord(text);
+  const fontSize  = calculateDecorativeFontSize(ctx, canvas, decorWord);
+
+  let centerY: number;
+  switch (opts.position) {
+    case "top":    centerY = canvas.height * 0.25; break;
+    case "bottom": centerY = canvas.height * 0.70; break;
+    default:       centerY = canvas.height * 0.48; break;
+  }
+
+  if (opts.rotation !== 0) {
+    ctx.translate(canvas.width / 2, centerY);
+    ctx.rotate((opts.rotation * Math.PI) / 180);
+    ctx.translate(-canvas.width / 2, -centerY);
+  }
+
+  ctx.font         = `900 ${fontSize}px Montserrat, sans-serif`;
+  ctx.textAlign    = "center";
+  ctx.textBaseline = "middle";
+  const centerX    = canvas.width / 2;
+
+  switch (opts.style) {
+    case "outline":
+      ctx.globalAlpha  = opts.opacity;
+      ctx.strokeStyle  = opts.color;
+      ctx.lineWidth    = Math.max(2, fontSize * 0.015);
+      ctx.lineJoin     = "round";
+      ctx.strokeText(decorWord, centerX, centerY);
+      break;
+    case "filled":
+      ctx.globalAlpha = opts.opacity * 0.6;
+      ctx.fillStyle   = opts.color;
+      ctx.fillText(decorWord, centerX, centerY);
+      break;
+    case "shadow-only":
+      ctx.globalAlpha  = opts.opacity;
+      ctx.shadowColor  = opts.color;
+      ctx.shadowBlur   = fontSize * 0.05;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle    = "rgba(0,0,0,0)";
+      ctx.fillText(decorWord, centerX, centerY);
+      break;
+  }
+
+  ctx.restore();
+}
+
 // ─── COMPOSIÇÃO PRINCIPAL ─────────────────────────────────────────────────────
 
 export interface ComposeOptions {
