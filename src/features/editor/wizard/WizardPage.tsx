@@ -166,30 +166,26 @@ export function WizardPage() {
 
         let popBase64: string;
         try {
-          popBase64 = await composePopDesign({
-            subjectBase64: freshState.subjectBase64 ?? state.subjectBase64,
-            subjectIsolatedBase64: isolatedBase64,
-            texts: {
-              headline: freshState.headline ?? "",
+          popBase64 = await composePopDesign(
+            isolatedBase64 || (freshState.subjectBase64 ?? state.subjectBase64),
+            {
+              headline:    freshState.headline ?? "",
               subheadline: freshState.subheadline,
-              cta: freshState.cta,
+              cta:         freshState.cta,
+              price:       freshState.price ?? undefined,
+              whatsapp:    freshState.whatsapp,
+              instagram:   freshState.instagram,
             },
-            presetConfig: textConfig,
-            colors,
-            width: targetFormat.w,
-            height: targetFormat.h,
-            popData: {
-              price: freshState.price ?? undefined,
-              whatsapp: freshState.whatsapp,
-              instagram: freshState.instagram,
-              palette: freshPalette,
-            },
-            watermark: false,
-          });
+            freshPalette,
+            textConfig,
+            targetFormat.w,
+            targetFormat.h,
+            false, // watermark
+          );
           console.log("[PopDesign] compose OK, base64 length:", popBase64?.length);
         } catch (e) {
           console.error("[PopDesign] composePopDesign failed:", e);
-          throw e; // re-throw so outer catch shows the error
+          throw e;
         }
 
         try {

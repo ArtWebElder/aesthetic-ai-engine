@@ -1,83 +1,89 @@
 // src/features/editor/engine/popDesign.ts
-// CREATYNG — Paradigma B: Pop Design
-// Pipeline completo: bg removal → gradient bg → organic blobs → isolated subject
-// → composed dark/accent headline → price badge → contact bar
-// Não usa Gemini — composição 100% client-side.
+// CREATYNG — Paradigma B: Pop Design (reestruturado)
+// Pipeline: vibrant bg → decorative text → isolated subject →
+//           centered headline → subheadline → centered badge → centered contact bar
+//
+// NÃO usa renderPriceBadge/renderContactBar do textRenderer —
+// usa versões próprias centralizadas.
 
-import type { TextPresetConfig, ColorConfig } from "@/types/preset";
-import { renderPriceBadge, renderContactBar, chooseBadgeVariant, type ContactVariant } from "./textRenderer";
+import type { TextPresetConfig } from "@/types/preset";
 import type { FoodPalette } from "./exportComposed";
 
-// ─── TIPOS LOCAIS ──────────────────────────────────────────────────────────────
+// ─── TIPOS PÚBLICOS ───────────────────────────────────────────────────────────
 
-export interface PopDesignData {
+export interface PopTexts {
+  headline: string;
+  subheadline?: string;
+  cta?: string;
   price?: { value: string; prefix: string; suffix: string } | null;
   whatsapp?: string;
   instagram?: string;
-  palette: FoodPalette;
-}
-
-export interface ComposePopDesignOptions {
-  /** Subject ORIGINAL base64 (com fundo). */
-  subjectBase64: string;
-  /** Subject já isolado (PNG transparente). Passe para evitar re-processar. */
-  subjectIsolatedBase64?: string | null;
-  texts: {
-    headline: string;
-    subheadline?: string;
-    cta?: string;
-  };
-  presetConfig: TextPresetConfig;
-  colors: ColorConfig;
-  /** Output size */
-  width: number;
-  height: number;
-  popData: PopDesignData;
-  watermark?: boolean;
 }
 
 // ─── HELPERS DE COR ───────────────────────────────────────────────────────────
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace("#", "");
-  const num = parseInt(clean.length === 3
+  const full = clean.length === 3
     ? clean.split("").map(c => c + c).join("")
-    : clean, 16);
+    : clean;
+  const num = parseInt(full, 16);
   return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
 }
 
 function rgbToHex(r: number, g: number, b: number): string {
-  return "#" + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join("");
+  return "#" + [r, g, b]
+    .map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0"))
+    .join("");
 }
 
-/** Clamp-lighten a hex color by a 0-255 amount. */
-function lighten(hex: string, amount: number): string {
+/** Blend hex color toward white. factor 0 = original, 1 = white. */
+function lighten(hex: string, factor: number): string {
   const [r, g, b] = hexToRgb(hex);
-  return rgbToHex(r + amount, g + amount, b + amount);
+  return rgbToHex(r + (255 - r) * factor, g + (255 - g) * factor, b + (255 - b) * factor);
 }
 
-// ─── PALETA DE FUNDO ──────────────────────────────────────────────────────────
+/** Blend hex color toward black. factor 0 = original, 1 = black. */
+function darken(hex: string, factor: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(r * (1 - factor), g * (1 - factor), b * (1 - factor));
+}
+
+// ─── DIFF 1 — FUNDO COM COR REAL ─────────────────────────────────────────────
 
 interface PopBackground {
-  bg1: string;  // gradient stop 1
-  bg2: string;  // gradient stop 2
-  bg3: string;  // gradient stop 3 (corner)
-  blob1: string;
-  blob2: string;
+  colors: [string, string];
+  angle: number;
+  textColor: string; // '#FFFFFF' se fundo escuro, accent se fundo claro
 }
 
-function getPopBackground(accent: string): PopBackground {
-  const [r, g, b] = hexToRgb(accent);
-  // Very light tints of the accent for a "editorial illustration" feel
-  const bg1 = rgbToHex(Math.min(255, r + 190), Math.min(255, g + 190), Math.min(255, b + 170));
-  const bg2 = rgbToHex(Math.min(255, r + 210), Math.min(255, g + 210), Math.min(255, b + 200));
-  const bg3 = rgbToHex(Math.min(255, r + 160), Math.min(255, g + 165), Math.min(255, b + 145));
-  const blob1 = lighten(accent, 140);
-  const blob2 = lighten(accent, 160);
-  return { bg1, bg2, bg3, blob1, blob2 };
+function simpleHash(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
 }
 
-// ─── BACKGROUND GRADIENT ──────────────────────────────────────────────────────
+function getPopBackground(palette: FoodPalette, headline: string): PopBackground {
+  const hash = simpleHash(headline || "pop");
+  const useDark = hash % 3 === 0; // ~33% chance de fundo escuro
+
+  if (useDark) {
+    return {
+      colors: [darken(palette.accent, 0.50), darken(palette.accent, 0.65)],
+      angle: 160,
+      textColor: "#FFFFFF",
+    };
+  }
+
+  // Fundo claro com COR PRESENTE — lighten 65-75%, não 85-90%
+  return {
+    colors: [lighten(palette.accent, 0.65), lighten(palette.accent, 0.75)],
+    angle: 160,
+    textColor: palette.accent,
+  };
+}
 
 function renderPopBackground(
   ctx: CanvasRenderingContext2D,
@@ -85,174 +91,91 @@ function renderPopBackground(
   ch: number,
   bg: PopBackground
 ): void {
-  // Main gradient: top-left (bg1) → bottom-right (bg3)
-  const grad = ctx.createLinearGradient(0, 0, cw, ch);
-  grad.addColorStop(0, bg.bg1);
-  grad.addColorStop(0.55, bg.bg2);
-  grad.addColorStop(1, bg.bg3);
+  const rad = (bg.angle * Math.PI) / 180;
+  const diagLen = Math.sqrt(cw * cw + ch * ch) / 2;
+  const cx = cw / 2;
+  const cy = ch / 2;
+
+  const grad = ctx.createLinearGradient(
+    cx - Math.cos(rad) * diagLen,
+    cy - Math.sin(rad) * diagLen,
+    cx + Math.cos(rad) * diagLen,
+    cy + Math.sin(rad) * diagLen,
+  );
+  grad.addColorStop(0, bg.colors[0]);
+  grad.addColorStop(1, bg.colors[1]);
+
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, cw, ch);
 
-  // Subtle radial highlight center
-  const radial = ctx.createRadialGradient(
-    cw * 0.5, ch * 0.42, 0,
-    cw * 0.5, ch * 0.42, cw * 0.65
-  );
-  radial.addColorStop(0, "rgba(255,255,255,0.18)");
+  // Sutil highlight radial no centro
+  const radial = ctx.createRadialGradient(cx, cy * 0.85, 0, cx, cy * 0.85, cw * 0.6);
+  radial.addColorStop(0, "rgba(255,255,255,0.14)");
   radial.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = radial;
   ctx.fillRect(0, 0, cw, ch);
 }
 
-// ─── LCG SEED (deterministic randomness) ──────────────────────────────────────
+// ─── DIFF 2 — TEXTO DECORATIVO VIBRANTE (substitui blobs) ────────────────────
 
-function simpleHash(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
-  return Math.abs(h);
-}
+const DECO_SKIP = new Set([
+  "DE", "DA", "DO", "DAS", "DOS", "E", "A", "O", "AS", "OS",
+  "EM", "NO", "NA", "NOS", "NAS", "COM", "POR", "PARA", "ATÉ",
+  "THE", "AN", "OF", "IN", "ON", "AT", "BY", "FOR", "WITH", "AND",
+]);
 
-function makeLCG(seed: number) {
-  let s = seed;
-  return () => {
-    s = (Math.imul(1664525, s) + 1013904223) & 0xffffffff;
-    return (s >>> 0) / 0xffffffff;
-  };
-}
-
-// ─── ORGANIC BLOBS ────────────────────────────────────────────────────────────
-
-interface BlobSpec {
-  cx: number;       // 0-1 relative to cw
-  cy: number;       // 0-1 relative to ch
-  rx: number;       // 0-1 relative to cw
-  ry: number;       // 0-1 relative to ch
-  rotation: number; // radians
-  color: string;
-  opacity: number;
-  points: number;   // number of control points
-  distortion: number; // 0-0.4
-}
-
-function generateBlobPath(
-  ctx: CanvasRenderingContext2D,
-  cx: number, cy: number,
-  rx: number, ry: number,
-  rotation: number,
-  points: number,
-  distortion: number,
-  rng: () => number
-): void {
-  const angleStep = (Math.PI * 2) / points;
-  ctx.beginPath();
-  for (let i = 0; i <= points; i++) {
-    const angle = i * angleStep + rotation;
-    const d = 1 + (rng() - 0.5) * distortion * 2;
-    const x = cx + Math.cos(angle) * rx * d;
-    const y = cy + Math.sin(angle) * ry * d;
-    if (i === 0) {
-      ctx.moveTo(x, y);
-    } else {
-      // Smooth bezier tangent
-      const prevAngle = (i - 1) * angleStep + rotation;
-      const pd = 1 + (rng() - 0.5) * distortion * 2;
-      const px = cx + Math.cos(prevAngle) * rx * pd;
-      const py = cy + Math.sin(prevAngle) * ry * pd;
-      const cpx1 = px + (x - cx) * 0.25;
-      const cpy1 = py + (y - cy) * 0.25;
-      const cpx2 = x - (x - cx) * 0.25;
-      const cpy2 = y - (y - cy) * 0.25;
-      ctx.bezierCurveTo(cpx1, cpy1, cpx2, cpy2, x, y);
-    }
+function extractDecorativeWord(headline: string): string {
+  const words = headline.toUpperCase().trim().split(/\s+/);
+  for (const word of words) {
+    if (!DECO_SKIP.has(word) && word.length >= 3) return word;
   }
-  ctx.closePath();
+  return words[0] || "";
 }
 
-function getPopBlobs(headline: string, bg: PopBackground): BlobSpec[] {
-  const hash = simpleHash(headline || "pop");
-  const rng = makeLCG(hash);
-
-  return [
-    // Large bottom-right blob
-    {
-      cx: 0.78 + rng() * 0.12,
-      cy: 0.72 + rng() * 0.10,
-      rx: 0.30 + rng() * 0.08,
-      ry: 0.26 + rng() * 0.06,
-      rotation: rng() * Math.PI,
-      color: bg.blob1,
-      opacity: 0.55,
-      points: 7,
-      distortion: 0.28,
-    },
-    // Medium top-left blob
-    {
-      cx: 0.12 + rng() * 0.10,
-      cy: 0.18 + rng() * 0.10,
-      rx: 0.20 + rng() * 0.06,
-      ry: 0.16 + rng() * 0.05,
-      rotation: rng() * Math.PI,
-      color: bg.blob2,
-      opacity: 0.45,
-      points: 6,
-      distortion: 0.32,
-    },
-    // Small accent blob top-right
-    {
-      cx: 0.82 + rng() * 0.08,
-      cy: 0.14 + rng() * 0.08,
-      rx: 0.12 + rng() * 0.04,
-      ry: 0.10 + rng() * 0.04,
-      rotation: rng() * Math.PI,
-      color: bg.blob1,
-      opacity: 0.35,
-      points: 5,
-      distortion: 0.22,
-    },
-    // Tiny bottom-left blob
-    {
-      cx: 0.08 + rng() * 0.08,
-      cy: 0.82 + rng() * 0.08,
-      rx: 0.10 + rng() * 0.04,
-      ry: 0.08 + rng() * 0.03,
-      rotation: rng() * Math.PI,
-      color: bg.blob2,
-      opacity: 0.30,
-      points: 5,
-      distortion: 0.25,
-    },
-  ];
-}
-
-function renderBlobs(
+function renderPopDecorativeText(
   ctx: CanvasRenderingContext2D,
   cw: number,
   ch: number,
-  blobs: BlobSpec[],
-  headline: string
+  headline: string,
+  accentColor: string,
+  bgIsDark: boolean
 ): void {
-  const hash = simpleHash(headline || "pop");
-  const rng = makeLCG(hash + 1);
+  const word = extractDecorativeWord(headline);
+  if (!word) return;
 
-  for (const blob of blobs) {
-    ctx.save();
-    ctx.globalAlpha = blob.opacity;
-    ctx.fillStyle = blob.color;
-    generateBlobPath(
-      ctx,
-      blob.cx * cw, blob.cy * ch,
-      blob.rx * cw, blob.ry * ch,
-      blob.rotation,
-      blob.points,
-      blob.distortion,
-      rng
-    );
-    ctx.fill();
-    ctx.restore();
+  ctx.save();
+
+  // Tamanho ENORME: calibrar para 130% da largura
+  ctx.font = `900 ${cw * 0.5}px Montserrat, sans-serif`;
+  const measured = ctx.measureText(word).width;
+  const targetWidth = cw * 1.3;
+  const ratio = targetWidth / measured;
+  const fontSize = Math.min(cw * 0.5 * ratio, cw * 0.7);
+
+  ctx.font = `900 ${fontSize}px Montserrat, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const centerX = cw / 2;
+  const centerY = ch * 0.50;
+
+  if (bgIsDark) {
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = "#FFFFFF";
+  } else {
+    ctx.globalAlpha = 0.18;
+    ctx.fillStyle = accentColor;
   }
+  ctx.fillText(word, centerX, centerY);
+
+  // Segunda linha deslocada — efeito de profundidade volumétrica
+  ctx.globalAlpha = bgIsDark ? 0.04 : 0.10;
+  ctx.fillText(word, centerX, centerY + fontSize * 0.85);
+
+  ctx.restore();
 }
 
-// ─── ISOLATED SUBJECT ─────────────────────────────────────────────────────────
+// ─── SUBJECT ──────────────────────────────────────────────────────────────────
 
 async function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -263,263 +186,370 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+interface SubjectOpts {
+  scale?: number;       // fração de ch como altura (padrão 0.60)
+  offsetY?: number;     // offset adicional, fração de ch (padrão 0.05 → levemente abaixo do centro)
+  shadowBlur?: number;
+  shadowColor?: string;
+}
+
 function renderIsolatedSubject(
   ctx: CanvasRenderingContext2D,
-  img: HTMLImageElement,
   cw: number,
-  ch: number
+  ch: number,
+  img: HTMLImageElement,
+  opts: SubjectOpts = {}
 ): void {
-  // Subject occupies center, lower-center. Height = 68-72% of canvas.
-  const targetH = ch * 0.72;
-  const scale = targetH / img.naturalHeight;
-  const drawW = img.naturalWidth * scale;
-  const drawH = img.naturalHeight * scale;
+  const {
+    scale       = 0.60,
+    offsetY     = 0.05,
+    shadowBlur  = 35,
+    shadowColor = "rgba(0,0,0,0.20)",
+  } = opts;
 
-  // Center horizontally, aligned slightly below center
+  const targetH = ch * scale;
+  const imgScale = targetH / img.naturalHeight;
+  const drawW = img.naturalWidth * imgScale;
+  const drawH = img.naturalHeight * imgScale;
+
+  // Centralizado horizontalmente; verticalmente centrado com offset sutil
   const drawX = (cw - drawW) / 2;
-  const drawY = ch * 0.14; // starts at 14% from top → bottom at ~86%
+  const drawY = (ch - drawH) / 2 + ch * offsetY;
 
-  // Drop shadow for depth
   ctx.save();
-  ctx.shadowColor = "rgba(0,0,0,0.35)";
-  ctx.shadowBlur = cw * 0.06;
-  ctx.shadowOffsetX = cw * 0.01;
-  ctx.shadowOffsetY = ch * 0.025;
+  ctx.shadowColor = shadowColor;
+  ctx.shadowBlur = shadowBlur;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = ch * 0.020;
   ctx.drawImage(img, drawX, drawY, drawW, drawH);
   ctx.restore();
 }
 
-// ─── POP DESIGN HEADLINE ──────────────────────────────────────────────────────
+// ─── DIFF 3 + 4 — HEADLINE CENTRALIZADA, SEM SOMBRA PESADA ──────────────────
+
+const CONNECTOR_WORDS = new Set([
+  "DE", "DA", "DO", "DAS", "DOS", "E", "A", "O", "AS", "OS",
+  "EM", "NO", "NA", "NOS", "NAS", "COM", "POR", "PARA", "ATÉ",
+  "THE", "AN", "OF", "IN", "ON", "AT", "BY", "FOR", "WITH", "AND",
+]);
+
+interface PopSegment {
+  text: string;
+  weight: number;
+  sizeFactor: number;
+  isAccent: boolean;
+}
+
+function segmentPopHeadline(headline: string): PopSegment[] {
+  const words = headline.toUpperCase().trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [];
+  if (words.length === 1) {
+    return [{ text: words[0], weight: 900, sizeFactor: 1.0, isAccent: true }];
+  }
+  if (words.length === 2) {
+    return [
+      { text: words[0], weight: 900, sizeFactor: 1.0,  isAccent: true  },
+      { text: words[1], weight: 500, sizeFactor: 0.45, isAccent: false },
+    ];
+  }
+  // 3+ palavras: produto antes do primeiro connector
+  let splitIndex = words.length - 1;
+  for (let i = 1; i < words.length; i++) {
+    if (CONNECTOR_WORDS.has(words[i])) { splitIndex = i; break; }
+  }
+  splitIndex = Math.max(1, Math.min(splitIndex, words.length - 1));
+  return [
+    { text: words.slice(0, splitIndex).join(" "), weight: 900, sizeFactor: 1.0,  isAccent: true  },
+    { text: words.slice(splitIndex).join(" "),    weight: 500, sizeFactor: 0.45, isAccent: false },
+  ];
+}
 
 /**
- * Renders the dark/accent composed headline for Pop Design.
- * Impact segment: accent color, 900 weight, italic.
- * Context segment: near-black, 400 weight, normal.
+ * Renderiza headline centralizada no topo.
+ * Retorna Y final após o último segmento.
  */
 function renderPopHeadline(
   ctx: CanvasRenderingContext2D,
   cw: number,
   ch: number,
   headline: string,
-  font: string,
-  accent: string,
-  darkColor = "#1A1A1A"
+  accentColor: string,
+  bgIsDark: boolean
 ): number {
   if (!headline.trim()) return ch * 0.06;
 
-  const words = headline.trim().split(/\s+/);
-  const CONNECTORS = new Set([
-    "DE", "DA", "DO", "DAS", "DOS", "E", "A", "O", "AS", "OS",
-    "EM", "NO", "NA", "NOS", "NAS", "COM", "POR", "PARA", "ATÉ",
-    "THE", "A", "AN", "OF", "IN", "ON", "AT", "BY", "FOR", "WITH",
-  ]);
-
-  // Split: words 0..N-2 are impact (accent), last connector group is context
-  // Simple rule: headline last word if short (<= 3 chars) is context; else all impact
-  let impactWords = words;
-  let contextWords: string[] = [];
-  const lastWord = words[words.length - 1].toUpperCase();
-  if (words.length > 1 && (CONNECTORS.has(lastWord) || lastWord.length <= 3)) {
-    contextWords = [words[words.length - 1]];
-    impactWords = words.slice(0, words.length - 1);
-  }
-
-  const baseSize = Math.round(Math.max(cw * 0.11, 80));
-  const contextSize = Math.round(baseSize * 0.48);
-  const padding = cw * 0.06;
-  const maxWidth = cw - padding * 2;
-
-  let y = ch * 0.06;
+  const segments = segmentPopHeadline(headline);
+  const baseSize = Math.round(cw * 0.13);
+  const centerX = cw / 2;
+  let currentY = ch * 0.055;
 
   ctx.save();
-  ctx.textAlign = "left";
+  ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
-  // ── Impact segment (accent, italic, bold) ──
-  const impactText = impactWords.join(" ").toUpperCase();
-  ctx.font = `italic 900 ${baseSize}px "${font}", Montserrat, sans-serif`;
-  ctx.fillStyle = accent;
+  for (const seg of segments) {
+    const fontSize = Math.round(baseSize * seg.sizeFactor);
+    // Sem italic — mais gráfico/editorial
+    ctx.font = `${seg.weight} ${fontSize}px Montserrat, sans-serif`;
 
-  // Drop shadow for legibility
-  ctx.shadowColor = "rgba(0,0,0,0.15)";
-  ctx.shadowBlur = 8;
-  ctx.shadowOffsetX = 2;
-  ctx.shadowOffsetY = 3;
+    if (bgIsDark) {
+      ctx.fillStyle = seg.isAccent ? "#FFFFFF" : "rgba(255,255,255,0.80)";
+    } else {
+      ctx.fillStyle = seg.isAccent ? accentColor : "#333333";
+    }
 
-  // Word-wrap the impact text
-  const impactLines = wrapText(ctx, impactText, maxWidth, baseSize);
-  for (const line of impactLines) {
-    ctx.fillText(line, padding, y);
-    y += baseSize * 0.92;
+    // Sombra MUITO sutil — contraste vem da cor do fundo, não do efeito
+    ctx.shadowColor = bgIsDark ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.08)";
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 1;
+
+    ctx.fillText(seg.text, centerX, currentY);
+    ctx.shadowColor = "transparent";
+    ctx.shadowBlur = 0;
+
+    currentY += fontSize * (seg.isAccent ? 0.92 : 0.88);
   }
 
+  ctx.restore();
+  return currentY;
+}
+
+// ─── DIFF 5 — BADGE CENTRALIZADO ─────────────────────────────────────────────
+
+function roundRectPop(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, w: number, h: number, r: number
+): void {
+  const radius = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + w - radius, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+  ctx.lineTo(x + w, y + h - radius);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+  ctx.lineTo(x + radius, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+}
+
+function renderPopBadge(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  price: { value: string; prefix: string; suffix: string },
+  cta: string,
+  accentColor: string,
+  bgIsDark: boolean
+): void {
+  if (!price?.value) return;
+
+  const badgeW = cw * 0.54;
+  const badgeH = ch * 0.082;
+  const badgeX = (cw - badgeW) / 2; // CENTRALIZADO
+  const badgeY = ch * 0.775;
+
+  ctx.save();
+
+  // Fundo: sempre branco com alta opacidade para leitura
+  ctx.fillStyle = bgIsDark ? "rgba(255,255,255,0.93)" : "rgba(255,255,255,0.96)";
+  roundRectPop(ctx, badgeX, badgeY, badgeW, badgeH, 14);
+  ctx.shadowColor = "rgba(0,0,0,0.12)";
+  ctx.shadowBlur = 18;
+  ctx.shadowOffsetY = 6;
+  ctx.fill();
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
 
-  // ── Context segment (dark, normal) ──
-  if (contextWords.length) {
-    const contextText = contextWords.join(" ").toUpperCase();
-    ctx.font = `400 ${contextSize}px "${font}", Montserrat, sans-serif`;
-    ctx.fillStyle = darkColor;
-    ctx.fillText(contextText, padding, y - contextSize * 0.1);
-    y += contextSize * 0.85;
-  }
+  ctx.textBaseline = "middle";
+  const centerBadgeX = badgeX + badgeW / 2;
+  const midY = badgeY + badgeH / 2;
+  const priceFontSize = badgeH * 0.44;
 
-  ctx.restore();
-  return y;
-}
+  const priceText = `${price.prefix ? price.prefix + " " : ""}${price.value}`;
 
-function wrapText(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  maxWidth: number,
-  _fontSize: number
-): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (ctx.measureText(test).width <= maxWidth) {
-      current = test;
+  if (cta) {
+    // Preço à esquerda, CTA à direita
+    ctx.textAlign = "center";
+    const leftCx = badgeX + badgeW * 0.30;
+    const rightCx = badgeX + badgeW * 0.72;
+
+    // Divisor
+    ctx.beginPath();
+    ctx.moveTo(centerBadgeX, badgeY + badgeH * 0.15);
+    ctx.lineTo(centerBadgeX, badgeY + badgeH * 0.85);
+    ctx.strokeStyle = "rgba(0,0,0,0.07)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Preço
+    if (price.suffix) {
+      ctx.font = `500 ${priceFontSize * 0.38}px Montserrat, sans-serif`;
+      ctx.fillStyle = "rgba(100,100,100,0.9)";
+      ctx.fillText(price.suffix.toUpperCase(), leftCx, badgeY + badgeH * 0.27);
+      ctx.font = `800 ${priceFontSize}px Montserrat, sans-serif`;
+      ctx.fillStyle = accentColor;
+      ctx.fillText(priceText, leftCx, badgeY + badgeH * 0.68);
     } else {
-      if (current) lines.push(current);
-      current = word;
+      ctx.font = `800 ${priceFontSize}px Montserrat, sans-serif`;
+      ctx.fillStyle = accentColor;
+      ctx.fillText(priceText, leftCx, midY);
+    }
+
+    // CTA
+    ctx.font = `700 ${priceFontSize * 0.52}px Montserrat, sans-serif`;
+    ctx.fillStyle = accentColor;
+    ctx.fillText(cta.toUpperCase(), rightCx, midY);
+  } else {
+    // Só preço centralizado
+    ctx.textAlign = "center";
+    if (price.suffix) {
+      ctx.font = `500 ${priceFontSize * 0.38}px Montserrat, sans-serif`;
+      ctx.fillStyle = "rgba(100,100,100,0.9)";
+      ctx.fillText(price.suffix.toUpperCase(), centerBadgeX, badgeY + badgeH * 0.28);
+      ctx.font = `800 ${priceFontSize}px Montserrat, sans-serif`;
+      ctx.fillStyle = accentColor;
+      ctx.fillText(priceText, centerBadgeX, badgeY + badgeH * 0.70);
+    } else {
+      ctx.font = `800 ${priceFontSize}px Montserrat, sans-serif`;
+      ctx.fillStyle = accentColor;
+      ctx.fillText(priceText, centerBadgeX, midY);
     }
   }
-  if (current) lines.push(current);
-  return lines;
+
+  ctx.restore();
 }
 
-// ─── SUBHEADLINE ──────────────────────────────────────────────────────────────
+// ─── CONTACT BAR CENTRALIZADA ─────────────────────────────────────────────────
 
-function renderPopSubheadline(
+function renderPopContactBar(
   ctx: CanvasRenderingContext2D,
   cw: number,
-  text: string,
-  y: number,
-  font: string,
-  darkColor = "#1A1A1A"
-): number {
-  if (!text.trim()) return y;
+  ch: number,
+  whatsapp: string | undefined,
+  instagram: string | undefined,
+  accentColor: string,
+  bgIsDark: boolean
+): void {
+  if (!whatsapp && !instagram) return;
 
-  const size = Math.round(cw * 0.038);
-  const padding = cw * 0.06;
+  const barY = ch * 0.930;
+  const fontSize = Math.round(cw * 0.022);
+
+  const items: string[] = [];
+  if (whatsapp) items.push(whatsapp);
+  if (instagram) items.push(instagram.startsWith("@") ? instagram : `@${instagram}`);
+  const text = items.join("   •   ");
+
   ctx.save();
-  ctx.font = `500 ${size}px "${font}", Montserrat, sans-serif`;
-  ctx.fillStyle = darkColor;
-  ctx.globalAlpha = 0.65;
-  ctx.textAlign = "left";
-  ctx.textBaseline = "top";
-  ctx.fillText(text, padding, y);
+  ctx.font = `500 ${fontSize}px Montserrat, sans-serif`;
+  ctx.fillStyle = bgIsDark ? "rgba(255,255,255,0.72)" : "rgba(30,30,30,0.52)";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = bgIsDark ? "rgba(0,0,0,0.30)" : "rgba(0,0,0,0.04)";
+  ctx.shadowBlur = 2;
+  ctx.fillText(text, cw / 2, barY);
   ctx.restore();
-  return y + size * 1.4;
 }
 
 // ─── WATERMARK ────────────────────────────────────────────────────────────────
 
 function applyWatermark(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   ctx.save();
-  ctx.globalAlpha = 0.25;
+  ctx.globalAlpha = 0.22;
   ctx.fillStyle = "#1A1A1A";
   ctx.font = `bold ${Math.round(w * 0.018)}px Inter, sans-serif`;
   ctx.textAlign = "right";
   ctx.textBaseline = "bottom";
-  ctx.fillText("✦ CREATYNG.COM", w - w * 0.02, h - h * 0.015);
+  ctx.fillText("✦ CREATYNG.COM", w - w * 0.02, h - h * 0.012);
   ctx.restore();
 }
 
-// ─── PIPELINE PRINCIPAL ───────────────────────────────────────────────────────
+// ─── DIFF 6 — PIPELINE REESTRUTURADO ─────────────────────────────────────────
 
 /**
  * Compõe o criativo Pop Design completo e retorna base64 PNG.
  *
  * Etapas:
- * 1. Gradient background
- * 2. Organic blobs
- * 3. Isolated subject (PNG transparent)
- * 4. Composed headline (accent + dark)
+ * 1. Fundo vibrante (claro ou escuro, ~33% escuro, ~67% claro)
+ * 2. Texto decorativo gigante vibrante (atrás de tudo)
+ * 3. Subject isolado centralizado
+ * 4. Headline centralizada no topo
  * 5. Subheadline
- * 6. Price badge
- * 7. Contact bar
+ * 6. Badge centralizado
+ * 7. Contact bar centralizada
  * 8. Watermark (opcional)
  */
 export async function composePopDesign(
-  opts: ComposePopDesignOptions
+  subjectBase64: string,
+  texts: PopTexts,
+  palette: FoodPalette,
+  _presetConfig: TextPresetConfig,
+  canvasWidth  = 1080,
+  canvasHeight = 1080,
+  watermark    = false,
 ): Promise<string> {
-  const { width: cw, height: ch, texts, presetConfig, colors, popData, watermark = false } = opts;
+  const cw = canvasWidth;
+  const ch = canvasHeight;
 
   const canvas = document.createElement("canvas");
-  canvas.width = cw;
+  canvas.width  = cw;
   canvas.height = ch;
   const ctx = canvas.getContext("2d")!;
 
-  const accent = popData.palette.accent ?? colors.primary ?? "#D4A853";
-  const bg = getPopBackground(accent);
+  const accentColor = palette.accent || "#7B2D8E";
+  const headline    = texts.headline || "";
 
-  // ── 1. Background gradient ──
+  // ── 1. Fundo vibrante com cor real ──
+  const bg = getPopBackground(palette, headline);
   renderPopBackground(ctx, cw, ch, bg);
+  const bgIsDark = bg.textColor === "#FFFFFF";
 
-  // ── 2. Organic blobs ──
-  const blobs = getPopBlobs(texts.headline, bg);
-  renderBlobs(ctx, cw, ch, blobs, texts.headline);
+  // ── 2. Texto decorativo gigante (atrás do subject) ──
+  if (headline) {
+    renderPopDecorativeText(ctx, cw, ch, headline, accentColor, bgIsDark);
+  }
 
-  // ── 3. Isolated subject ──
-  const isolatedSrc = opts.subjectIsolatedBase64 || opts.subjectBase64;
+  // ── 3. Subject isolado centralizado ──
   try {
-    const subjectImg = await loadImage(isolatedSrc);
-    renderIsolatedSubject(ctx, subjectImg, cw, ch);
+    const subjectImg = await loadImage(subjectBase64);
+    renderIsolatedSubject(ctx, cw, ch, subjectImg, {
+      scale:       0.60,
+      offsetY:     0.05,
+      shadowBlur:  35,
+      shadowColor: bgIsDark ? "rgba(0,0,0,0.30)" : "rgba(0,0,0,0.18)",
+    });
   } catch {
     console.warn("[Creatyng PopDesign] Failed to render subject image.");
   }
 
-  // ── 4. Composed headline ──
-  const headlineBottomY = renderPopHeadline(
-    ctx, cw, ch,
-    texts.headline,
-    presetConfig.headlineFont,
-    accent,
-    "#1A1A1A"
-  );
+  // ── 4. Headline centralizada no topo ──
+  const headlineEndY = renderPopHeadline(ctx, cw, ch, headline, accentColor, bgIsDark);
 
   // ── 5. Subheadline ──
-  if (texts.subheadline) {
-    renderPopSubheadline(ctx, cw, texts.subheadline, headlineBottomY + ch * 0.008, presetConfig.bodyFont, "#1A1A1A");
+  if (texts.subheadline?.trim()) {
+    const subSize = Math.round(cw * 0.028);
+    ctx.save();
+    ctx.font = `400 ${subSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = bgIsDark ? "rgba(255,255,255,0.70)" : "rgba(30,30,30,0.55)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(texts.subheadline, cw / 2, headlineEndY + ch * 0.018);
+    ctx.restore();
   }
 
-  // ── 6. Price badge ──
-  const canvasSize = { width: cw, height: ch };
-  if (popData.price?.value) {
-    renderPriceBadge(
-      ctx, canvasSize,
-      popData.price,
-      texts.cta,
-      accent,
-      popData.palette,
-      texts.headline,
-    );
+  // ── 6. Badge centralizado ──
+  if (texts.price?.value) {
+    renderPopBadge(ctx, cw, ch, texts.price, texts.cta || "", accentColor, bgIsDark);
   }
 
-  // ── 7. Contact bar ──
-  const hasContact = Boolean(popData.whatsapp || popData.instagram);
-  if (hasContact) {
-    const badgeVariant = popData.price?.value
-      ? chooseBadgeVariant(texts.headline ?? "", popData.price.value)
-      : null;
-    const forceContact: ContactVariant | undefined =
-      badgeVariant === "pill-bottom" ? "bar-left" : undefined;
-
-    renderContactBar(
-      ctx, canvasSize,
-      popData.whatsapp, popData.instagram,
-      accent,
-      popData.palette,
-      forceContact
-    );
-  }
+  // ── 7. Contact bar centralizada ──
+  renderPopContactBar(ctx, cw, ch, texts.whatsapp, texts.instagram, accentColor, bgIsDark);
 
   // ── 8. Watermark ──
   if (watermark) applyWatermark(ctx, cw, ch);
 
-  return canvas.toDataURL("image/png");
+  return canvas.toDataURL("image/png", 0.95);
 }
