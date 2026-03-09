@@ -10,7 +10,7 @@ import { WizardStep3Text } from "./WizardStep3Text";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { generateFromWizard, GenerateError } from "@/services/generateService";
 import { exportComposed, FORMAT_BY_ID, type FoodPalette } from "../engine/exportComposed";
-import { composePopDesign } from "../engine/popDesign";
+import { composePopDesign, composePopDesignV2 } from "../engine/popDesign";
 import { getPresetById } from "@/lib/presetUtils";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 
@@ -91,6 +91,7 @@ export function WizardPage() {
   const [composing, setComposing] = useState(false);
   const [composedBase64, setComposedBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [popDesignStep, setPopDesignStep] = useState<string>("");
 
   async function handleGenerate() {
     const state = useWizardStore.getState();
@@ -100,15 +101,13 @@ export function WizardPage() {
     clearGeneration();
 
     try {
-      // ── Pop Design: Gemini gera subject+elementos em fundo branco, depois bg removal ──
+      // ── Pop Design: pipeline duplo Gemini — fundo separado + subject separado ──
       if (state.selectedImagePresetId === "sys-img-pop-design") {
         if (!state.subjectBase64) {
           throw new GenerateError("no_subject", "Envie uma imagem do sujeito antes de gerar.");
         }
 
         const cfg = state.activePresetConfig ?? {};
-
-        // Defensive fallback: if text preset config is missing, use hardcoded defaults
         const textConfig: TextPresetConfig =
           cfg.text ??
           (getPresetById("sys-txt-pop-design")?.config.text as TextPresetConfig | undefined) ??
@@ -126,97 +125,103 @@ export function WizardPage() {
             blendMode: "normal",
           } satisfies TextPresetConfig;
         const targetFormat = FORMAT_BY_ID.get(DEFAULT_FORMAT_ID)!;
+        const t0 = Date.now();
 
-        // Step 1 — Gemini gera o subject com elementos flutuantes em fundo branco
-        let geminiBase64: string;
+        // ── Chamada 1: Fundo + elementos (text-to-image, sem subject no centro) ──
+        setPopDesignStep("Gerando ambientação...");
+        let bgBase64 = "";
         try {
-          const gen = await generateFromWizard(state);
-          geminiBase64 = gen.imageBase64;
-          setGeneration(gen); // salva geração intermediária para meta
+          const bgGen = await generateFromWizard(
+            { ...state, _popDesignPhase: "background" } as typeof state
+          );
+          bgBase64 = bgGen.imageBase64;
+          console.log("[PopDesignV2] Step 1 OK — background generated");
         } catch (e) {
-          // Fallback: usar subject original se Gemini falhar
-          console.warn("[PopDesign] Gemini failed, using original subject:", e);
-          geminiBase64 = state.subjectBase64;
+          console.warn("[PopDesignV2] Step 1 failed, falling back to renderer gradient:", e);
+        }
+
+        // ── Chamada 2: Subject isolado em fundo branco (img2img strict) ──
+        setPopDesignStep("Gerando produto...");
+        let subjectBase64 = state.subjectBase64;
+        try {
+          const subGen = await generateFromWizard(
+            { ...state, _popDesignPhase: "subject" } as typeof state
+          );
+          subjectBase64 = subGen.imageBase64;
+          setSubjectIsolated(subjectBase64);
+          console.log("[PopDesignV2] Step 2 OK — subject generated");
+        } catch (e) {
+          console.warn("[PopDesignV2] Step 2 failed, using original subject photo:", e);
         }
 
         setGenerating(false);
         setComposing(true);
+        setPopDesignStep("Compondo criativo...");
 
-        // Re-read state após async Gemini — wizard fields may have changed
         const freshState = useWizardStore.getState();
         const freshPalette = getFoodPalette(freshState.headline, freshState.subheadline, freshState.freeInstructions);
-
-        // Step 2 — Usar Gemini output direto (bg branco removido via white-threshold
-        // no canvas; bg removal cortava elementos voando junto ao subject)
-        const isolatedBase64: string | null = geminiBase64;
-        setSubjectIsolated(isolatedBase64);
-
-        console.log("[Creatyng PopDesign] composePopDesign input:", {
-          headline: freshState.headline,
-          price: freshState.price,
-          whatsapp: freshState.whatsapp,
-          instagram: freshState.instagram,
-        });
+        const popTexts = {
+          headline:    freshState.headline ?? "",
+          subheadline: freshState.subheadline,
+          cta:         freshState.cta,
+          price:       freshState.price ?? undefined,
+          whatsapp:    freshState.whatsapp,
+          instagram:   freshState.instagram,
+        };
 
         let popBase64: string;
         try {
-          popBase64 = await composePopDesign(
-            isolatedBase64 || geminiBase64,
-            {
-              headline:    freshState.headline ?? "",
-              subheadline: freshState.subheadline,
-              cta:         freshState.cta,
-              price:       freshState.price ?? undefined,
-              whatsapp:    freshState.whatsapp,
-              instagram:   freshState.instagram,
-            },
+          popBase64 = await composePopDesignV2(
+            bgBase64,
+            subjectBase64,
+            popTexts,
             freshPalette,
             textConfig,
             targetFormat.w,
             targetFormat.h,
-            false, // watermark
+            false,
           );
-          console.log("[PopDesign] compose OK, base64 length:", popBase64?.length);
+          console.log("[PopDesignV2] compose OK, length:", popBase64?.length);
         } catch (e) {
-          console.error("[PopDesign] composePopDesign failed:", e);
-          throw e;
+          console.error("[PopDesignV2] composePopDesignV2 failed, falling back to v1:", e);
+          // Fallback to original single-layer compose
+          popBase64 = await composePopDesign(
+            subjectBase64,
+            popTexts,
+            freshPalette,
+            textConfig,
+            targetFormat.w,
+            targetFormat.h,
+            false,
+          );
         }
 
-        try {
-          setComposedBase64(popBase64);
-          console.log("[PopDesign] setComposedBase64 OK");
-        } catch (e) {
-          console.error("[PopDesign] setComposedBase64 failed:", e);
-        }
+        setComposedBase64(popBase64);
 
-        try {
-          const genId = typeof crypto.randomUUID === "function"
-            ? crypto.randomUUID()
-            : `pop-${Date.now().toString(36)}`;
-          setGeneration({
-            generationId: genId,
-            imageBase64: popBase64,
-            imageThumbnail: popBase64,
-            wizardStateSnapshot: { ...freshState } as never,
-            presetIds: {
-              image: freshState.selectedImagePresetId,
-              text: freshState.selectedTextPresetId,
-            },
-            activePresetConfigSnapshot: { ...(freshState.activePresetConfig ?? {}) },
-            meta: {
-              provider: "pop-design",
-              model: "client-side",
-              dnaUsed: false,
-              aspectRatio: `${targetFormat.w}x${targetFormat.h}`,
-              generationMs: 0,
-            },
-            timestamp: Date.now(),
-          });
-          console.log("[PopDesign] setGeneration OK");
-        } catch (e) {
-          console.error("[PopDesign] setGeneration failed:", e);
-        }
+        const genId = typeof crypto.randomUUID === "function"
+          ? crypto.randomUUID()
+          : `pop-${Date.now().toString(36)}`;
+        setGeneration({
+          generationId: genId,
+          imageBase64: popBase64,
+          imageThumbnail: popBase64,
+          wizardStateSnapshot: { ...freshState } as never,
+          presetIds: {
+            image: freshState.selectedImagePresetId,
+            text: freshState.selectedTextPresetId,
+          },
+          activePresetConfigSnapshot: { ...(freshState.activePresetConfig ?? {}) },
+          meta: {
+            provider: "pop-design-v2",
+            model: "gemini-dual",
+            dnaUsed: false,
+            aspectRatio: `${targetFormat.w}x${targetFormat.h}`,
+            generationMs: Date.now() - t0,
+          },
+          timestamp: Date.now(),
+        });
 
+        setPopDesignStep("");
         return;
       }
 
@@ -319,7 +324,10 @@ export function WizardPage() {
             />
           )}
 
-          {composing && (
+          {(generating || composing) && popDesignStep && (
+            <div className="text-xs text-purple-400 animate-pulse font-medium">{popDesignStep}</div>
+          )}
+          {composing && !popDesignStep && (
             <div className="text-xs text-zinc-500 animate-pulse">Aplicando tipografia...</div>
           )}
 
