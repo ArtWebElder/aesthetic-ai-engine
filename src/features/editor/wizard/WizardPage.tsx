@@ -118,8 +118,24 @@ export function WizardPage() {
         setComposing(true);
 
         const cfg = state.activePresetConfig ?? {};
+
+        // Defensive fallback: if text preset config is missing, use hardcoded defaults
         const textConfig: TextPresetConfig =
-          cfg.text ?? (getPresetById("sys-txt-pop-design")?.config.text as TextPresetConfig);
+          cfg.text ??
+          (getPresetById("sys-txt-pop-design")?.config.text as TextPresetConfig | undefined) ??
+          {
+            stylePreset: "pop-design",
+            headlineFont: "Montserrat",
+            bodyFont: "Montserrat",
+            headlineWeight: 900,
+            bodyWeight: 400,
+            headlineTracking: "-0.02em",
+            headlineLineHeight: 0.92,
+            headlineTransform: "uppercase",
+            effects: { glow: false, glowIntensity: 0, shadow: "soft", stroke: false, gradient: false },
+            accentWordAuto: false,
+            blendMode: "normal",
+          } satisfies TextPresetConfig;
         const colors: ColorConfig = cfg.colors ?? DEFAULT_COLORS;
         const targetFormat = FORMAT_BY_ID.get(DEFAULT_FORMAT_ID)!;
 
@@ -148,49 +164,68 @@ export function WizardPage() {
           instagram: freshState.instagram,
         });
 
-        const popBase64 = await composePopDesign({
-          subjectBase64: freshState.subjectBase64 ?? state.subjectBase64,
-          subjectIsolatedBase64: isolatedBase64,
-          texts: {
-            headline: freshState.headline ?? "",
-            subheadline: freshState.subheadline,
-            cta: freshState.cta,
-          },
-          presetConfig: textConfig,
-          colors,
-          width: targetFormat.w,
-          height: targetFormat.h,
-          popData: {
-            price: freshState.price ?? undefined,
-            whatsapp: freshState.whatsapp,
-            instagram: freshState.instagram,
-            palette: freshPalette,
-          },
-          watermark: false,
-        });
+        let popBase64: string;
+        try {
+          popBase64 = await composePopDesign({
+            subjectBase64: freshState.subjectBase64 ?? state.subjectBase64,
+            subjectIsolatedBase64: isolatedBase64,
+            texts: {
+              headline: freshState.headline ?? "",
+              subheadline: freshState.subheadline,
+              cta: freshState.cta,
+            },
+            presetConfig: textConfig,
+            colors,
+            width: targetFormat.w,
+            height: targetFormat.h,
+            popData: {
+              price: freshState.price ?? undefined,
+              whatsapp: freshState.whatsapp,
+              instagram: freshState.instagram,
+              palette: freshPalette,
+            },
+            watermark: false,
+          });
+          console.log("[PopDesign] compose OK, base64 length:", popBase64?.length);
+        } catch (e) {
+          console.error("[PopDesign] composePopDesign failed:", e);
+          throw e; // re-throw so outer catch shows the error
+        }
 
-        setComposedBase64(popBase64);
+        try {
+          setComposedBase64(popBase64);
+          console.log("[PopDesign] setComposedBase64 OK");
+        } catch (e) {
+          console.error("[PopDesign] setComposedBase64 failed:", e);
+        }
 
-        // Mock CachedGeneration so the result panel renders
-        setGeneration({
-          generationId: crypto.randomUUID(),
-          imageBase64: popBase64,
-          imageThumbnail: popBase64,
-          wizardStateSnapshot: { ...state },
-          presetIds: {
-            image: state.selectedImagePresetId,
-            text: state.selectedTextPresetId,
-          },
-          activePresetConfigSnapshot: { ...(state.activePresetConfig ?? {}) },
-          meta: {
-            provider: "pop-design",
-            model: "client-side",
-            dnaUsed: false,
-            aspectRatio: `${targetFormat.w}x${targetFormat.h}`,
-            generationMs: 0,
-          },
-          timestamp: Date.now(),
-        });
+        try {
+          const genId = typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `pop-${Date.now().toString(36)}`;
+          setGeneration({
+            generationId: genId,
+            imageBase64: popBase64,
+            imageThumbnail: popBase64,
+            wizardStateSnapshot: { ...freshState } as never,
+            presetIds: {
+              image: freshState.selectedImagePresetId,
+              text: freshState.selectedTextPresetId,
+            },
+            activePresetConfigSnapshot: { ...(freshState.activePresetConfig ?? {}) },
+            meta: {
+              provider: "pop-design",
+              model: "client-side",
+              dnaUsed: false,
+              aspectRatio: `${targetFormat.w}x${targetFormat.h}`,
+              generationMs: 0,
+            },
+            timestamp: Date.now(),
+          });
+          console.log("[PopDesign] setGeneration OK");
+        } catch (e) {
+          console.error("[PopDesign] setGeneration failed:", e);
+        }
 
         return;
       }
