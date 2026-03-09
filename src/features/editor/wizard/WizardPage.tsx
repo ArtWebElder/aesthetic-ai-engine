@@ -108,14 +108,11 @@ export function WizardPage() {
     clearGeneration();
 
     try {
-      // ── Pop Design: composição client-side, sem Gemini ──────────────────────
+      // ── Pop Design: Gemini gera subject+elementos em fundo branco, depois bg removal ──
       if (state.selectedImagePresetId === "sys-img-pop-design") {
         if (!state.subjectBase64) {
           throw new GenerateError("no_subject", "Envie uma imagem do sujeito antes de gerar.");
         }
-
-        setGenerating(false);
-        setComposing(true);
 
         const cfg = state.activePresetConfig ?? {};
 
@@ -136,26 +133,36 @@ export function WizardPage() {
             accentWordAuto: false,
             blendMode: "normal",
           } satisfies TextPresetConfig;
-        const colors: ColorConfig = cfg.colors ?? DEFAULT_COLORS;
         const targetFormat = FORMAT_BY_ID.get(DEFAULT_FORMAT_ID)!;
 
-        const foodPalette = getFoodPalette(state.headline, state.subheadline, state.freeInstructions);
-
-        // Bg removal (com cache)
-        let isolatedBase64 = state.subjectIsolatedBase64 ?? null;
-        if (!isolatedBase64) {
-          try {
-            isolatedBase64 = await removeSubjectBackground(state.subjectBase64);
-            setSubjectIsolated(isolatedBase64);
-          } catch (e) {
-            console.warn("[Creatyng PopDesign] bg removal failed, using original:", e);
-            isolatedBase64 = null;
-          }
+        // Step 1 — Gemini gera o subject com elementos flutuantes em fundo branco
+        let geminiBase64: string;
+        try {
+          const gen = await generateFromWizard(state);
+          geminiBase64 = gen.imageBase64;
+          setGeneration(gen); // salva geração intermediária para meta
+        } catch (e) {
+          // Fallback: usar subject original se Gemini falhar
+          console.warn("[PopDesign] Gemini failed, using original subject:", e);
+          geminiBase64 = state.subjectBase64;
         }
 
-        // Re-read state AFTER async bg removal — wizard fields may have changed
+        setGenerating(false);
+        setComposing(true);
+
+        // Re-read state após async Gemini — wizard fields may have changed
         const freshState = useWizardStore.getState();
         const freshPalette = getFoodPalette(freshState.headline, freshState.subheadline, freshState.freeInstructions);
+
+        // Step 2 — Bg removal no output do Gemini (subject + elementos juntos)
+        let isolatedBase64: string | null = null;
+        try {
+          isolatedBase64 = await removeSubjectBackground(geminiBase64);
+          setSubjectIsolated(isolatedBase64);
+        } catch (e) {
+          console.warn("[PopDesign] bg removal failed, using Gemini output:", e);
+          isolatedBase64 = null;
+        }
 
         console.log("[Creatyng PopDesign] composePopDesign input:", {
           headline: freshState.headline,
@@ -167,7 +174,7 @@ export function WizardPage() {
         let popBase64: string;
         try {
           popBase64 = await composePopDesign(
-            isolatedBase64 || (freshState.subjectBase64 ?? state.subjectBase64),
+            isolatedBase64 || geminiBase64,
             {
               headline:    freshState.headline ?? "",
               subheadline: freshState.subheadline,

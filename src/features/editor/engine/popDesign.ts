@@ -169,8 +169,8 @@ function renderPopDecorativeText(
   ctx.fillText(word, centerX, centerY);
 
   // Segunda linha deslocada — efeito de profundidade volumétrica
-  ctx.globalAlpha = bgIsDark ? 0.04 : 0.10;
-  ctx.fillText(word, centerX, centerY + fontSize * 0.85);
+  ctx.globalAlpha = bgIsDark ? 0.03 : 0.10;
+  ctx.fillText(word, centerX, centerY + fontSize * 0.80);
 
   ctx.restore();
 }
@@ -279,36 +279,38 @@ function renderPopHeadline(
   if (!headline.trim()) return ch * 0.06;
 
   const segments = segmentPopHeadline(headline);
-  const baseSize = Math.round(cw * 0.13);
+  const baseSize = Math.round(cw * 0.14); // larger base for presence
   const centerX = cw / 2;
-  let currentY = ch * 0.055;
+  let currentY = ch * 0.04; // tight to the top
 
   ctx.save();
   ctx.textAlign = "center";
-  ctx.textBaseline = "top";
+  ctx.textBaseline = "alphabetic"; // use baseline so +0.8 offset works naturally
 
-  for (const seg of segments) {
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
     const fontSize = Math.round(baseSize * seg.sizeFactor);
-    // Sem italic — mais gráfico/editorial
+
     ctx.font = `${seg.weight} ${fontSize}px Montserrat, sans-serif`;
 
     if (bgIsDark) {
-      ctx.fillStyle = seg.isAccent ? "#FFFFFF" : "rgba(255,255,255,0.80)";
+      ctx.fillStyle = seg.isAccent ? "#FFFFFF" : "rgba(255,255,255,0.75)";
     } else {
-      ctx.fillStyle = seg.isAccent ? accentColor : "#333333";
+      ctx.fillStyle = seg.isAccent ? accentColor : "#2D2D2D";
     }
 
-    // Sombra MUITO sutil — contraste vem da cor do fundo, não do efeito
-    ctx.shadowColor = bgIsDark ? "rgba(0,0,0,0.25)" : "rgba(0,0,0,0.08)";
-    ctx.shadowBlur = 3;
+    ctx.shadowColor = "rgba(0,0,0,0.08)";
+    ctx.shadowBlur = 2;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 1;
 
-    ctx.fillText(seg.text, centerX, currentY);
+    // draw at currentY + fontSize*0.8 (baseline offset from currentY slot)
+    ctx.fillText(seg.text, centerX, currentY + fontSize * 0.8);
     ctx.shadowColor = "transparent";
     ctx.shadowBlur = 0;
 
-    currentY += fontSize * (seg.isAccent ? 0.92 : 0.88);
+    // Tight gap: non-last segments 0.45, last 0.6
+    currentY += fontSize * (i < segments.length - 1 ? 0.45 : 0.60);
   }
 
   ctx.restore();
@@ -363,6 +365,12 @@ function renderPopBadge(
   ctx.shadowColor = "transparent";
   ctx.shadowBlur = 0;
 
+  // Borda accent sutil
+  ctx.strokeStyle = accentColor + "30";
+  ctx.lineWidth = 2;
+  roundRectPop(ctx, badgeX, badgeY, badgeW, badgeH, 14);
+  ctx.stroke();
+
   ctx.textBaseline = "middle";
   const centerBadgeX = badgeX + badgeW / 2;
   const midY = badgeY + badgeH / 2;
@@ -371,10 +379,9 @@ function renderPopBadge(
   const priceText = `${price.prefix ? price.prefix + " " : ""}${price.value}`;
 
   if (cta) {
-    // Preço à esquerda, CTA à direita
+    // Preço à esquerda, CTA botão à direita
     ctx.textAlign = "center";
     const leftCx = badgeX + badgeW * 0.30;
-    const rightCx = badgeX + badgeW * 0.72;
 
     // Divisor
     ctx.beginPath();
@@ -398,10 +405,17 @@ function renderPopBadge(
       ctx.fillText(priceText, leftCx, midY);
     }
 
-    // CTA
-    ctx.font = `700 ${priceFontSize * 0.52}px Montserrat, sans-serif`;
+    // CTA — botão com fundo accent
+    const ctaW = badgeW * 0.38;
+    const ctaH = badgeH * 0.55;
+    const ctaX = badgeX + badgeW - ctaW - 12;
+    const ctaYPos = badgeY + (badgeH - ctaH) / 2;
     ctx.fillStyle = accentColor;
-    ctx.fillText(cta.toUpperCase(), rightCx, midY);
+    roundRectPop(ctx, ctaX, ctaYPos, ctaW, ctaH, 8);
+    ctx.fill();
+    ctx.font = `700 ${priceFontSize * 0.44}px Montserrat, sans-serif`;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillText(cta.toUpperCase(), ctaX + ctaW / 2, midY);
   } else {
     // Só preço centralizado
     ctx.textAlign = "center";

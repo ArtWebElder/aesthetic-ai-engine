@@ -92,6 +92,81 @@ function resolveAspectRatio(state: WizardState): { width: number; height: number
   return map[ar] ?? { width: 1080, height: 1350 };
 }
 
+// ─── POP DESIGN PROMPT BUILDER ────────────────────────────────────────────────
+
+function buildPopDesignPrompt(state: WizardState): { prompt: string; negativePrompt: string } {
+  const layers: string[] = [];
+
+  layers.push(
+    `Professional product photography of the exact item shown in the reference. ` +
+    `The product must be centered on a PURE WHITE background (#FFFFFF). ` +
+    `CRITICAL: preserve exact shape, color, texture of the original product. ` +
+    `The product must be sharp, well-lit with even studio lighting from all sides.`
+  );
+
+  layers.push(
+    `Dynamic floating elements arranged around the product: relevant ingredients, ` +
+    `decorative pieces, splashes, and garnishes flying outward with subtle motion blur. ` +
+    `The elements should be related to the product and create energy and movement. ` +
+    `All floating elements must also be on the WHITE background — no colored backgrounds.`
+  );
+
+  const allText = [state.headline, state.subheadline, state.freeInstructions]
+    .filter(Boolean).join(" ").toLowerCase();
+
+  const isCold   = /açaí|acai|sorvete|gelato|milkshake|smoothie|frozen/.test(allText);
+  const isSushi  = /sushi|sashimi|temaki|japonês|japa|uramaki|combinado/.test(allText);
+  const isPizza  = /pizza|pizzaria|italiana|massa|lasanha|forno/.test(allText);
+  const isBurger = /burger|burguer|hambúrguer|hamburger|smash|lanche|sanduíche/.test(allText);
+
+  if (isCold) {
+    layers.push(
+      `Floating elements: fresh strawberries, banana slices, granola pieces, blueberries, ` +
+      `coconut shavings, chocolate chips, condensation droplets. Fresh and energetic feel.`
+    );
+  } else if (isSushi) {
+    layers.push(
+      `Floating elements: soy sauce splash, sesame seeds, ginger slices, wasabi, ` +
+      `chopsticks, nori pieces. Elegant Japanese style.`
+    );
+  } else if (isPizza) {
+    layers.push(
+      `Floating elements: fresh basil leaves, tomato sauce splash, cheese stretching, ` +
+      `oregano sprinkles, olive oil drops. Italian style.`
+    );
+  } else if (isBurger) {
+    layers.push(
+      `Floating elements: bacon strips, lettuce leaves, cheese slices, onion rings, ` +
+      `sauce splashes, sesame seeds. Dynamic food style.`
+    );
+  } else {
+    layers.push(
+      `Floating decorative elements related to the product type. ` +
+      `Create energy and movement around the main item.`
+    );
+  }
+
+  layers.push(
+    `Shot with 85mm lens, f/5.6, sharp focus on product and floating elements. ` +
+    `Even studio lighting from all sides, no dramatic shadows. ` +
+    `The WHITE background must be completely clean — no gradients, no cast shadows on the background.`
+  );
+
+  if (state.freeInstructions) {
+    layers.push(`Additional direction: ${state.freeInstructions}`);
+  }
+
+  return {
+    prompt: layers.join("\n\n"),
+    negativePrompt: [
+      "text, letters, typography, watermark, logo",
+      "colored background, gradient background, dark background, gray background",
+      "kitchen, restaurant, table, environment, bokeh, dramatic lighting, moody",
+      "shadows on background, vignette, blurry background",
+    ].join(", "),
+  };
+}
+
 // ─── FOOD POP PROMPT BUILDER (paralelo ao buildPrompt, não altera o original) ──
 
 function buildFoodPopPrompt(state: WizardState): { prompt: string; negativePrompt: string } {
@@ -261,12 +336,16 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
   }
 
   const startedAt = Date.now();
+  const isPopDesign = state.selectedImagePresetId === "sys-img-pop-design";
   const isFoodPop =
-    state.category === "food" ||
-    Boolean(state.price?.value || state.whatsapp || state.instagram);
-  const { prompt, negativePrompt } = isFoodPop
-    ? buildFoodPopPrompt(state)
-    : buildPrompt(state);
+    !isPopDesign &&
+    (state.category === "food" ||
+      Boolean(state.price?.value || state.whatsapp || state.instagram));
+  const { prompt, negativePrompt } = isPopDesign
+    ? buildPopDesignPrompt(state)
+    : isFoodPop
+      ? buildFoodPopPrompt(state)
+      : buildPrompt(state);
   const { width, height } = resolveAspectRatio(state);
 
   const body = {
