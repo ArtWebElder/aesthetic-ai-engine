@@ -186,8 +186,36 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/**
+ * Convert near-white pixels to transparent on an offscreen canvas.
+ * threshold: pixels with min(R,G,B) above this value fade to transparent.
+ * Pixels at 255 → alpha 0; at threshold → alpha 255. Smooth linear ramp.
+ */
+function makeWhiteTransparent(img: HTMLImageElement, threshold = 232): HTMLCanvasElement {
+  const off = document.createElement("canvas");
+  off.width  = img.naturalWidth;
+  off.height = img.naturalHeight;
+  const offCtx = off.getContext("2d")!;
+  offCtx.drawImage(img, 0, 0);
+
+  const imageData = offCtx.getImageData(0, 0, off.width, off.height);
+  const d = imageData.data;
+  const range = 255 - threshold;
+
+  for (let i = 0; i < d.length; i += 4) {
+    const whiteness = Math.min(d[i], d[i + 1], d[i + 2]);
+    if (whiteness > threshold) {
+      const alpha = Math.round((255 - whiteness) / range * 255);
+      d[i + 3] = Math.min(d[i + 3], alpha);
+    }
+  }
+
+  offCtx.putImageData(imageData, 0, 0);
+  return off;
+}
+
 interface SubjectOpts {
-  scale?: number;       // fração de ch como altura (padrão 0.60)
+  scale?: number;       // fração de ch como altura (padrão 0.82)
   offsetY?: number;     // offset adicional, fração de ch (padrão 0.05 → levemente abaixo do centro)
   shadowBlur?: number;
   shadowColor?: string;
@@ -201,7 +229,7 @@ function renderIsolatedSubject(
   opts: SubjectOpts = {}
 ): void {
   const {
-    scale       = 0.60,
+    scale       = 0.82,
     offsetY     = 0.05,
     shadowBlur  = 35,
     shadowColor = "rgba(0,0,0,0.20)",
@@ -216,12 +244,15 @@ function renderIsolatedSubject(
   const drawX = (cw - drawW) / 2;
   const drawY = (ch - drawH) / 2 + ch * offsetY;
 
+  // Apply white-to-transparent conversion (preserves flying elements, removes white BG)
+  const masked = makeWhiteTransparent(img);
+
   ctx.save();
   ctx.shadowColor = shadowColor;
   ctx.shadowBlur = shadowBlur;
   ctx.shadowOffsetX = 0;
   ctx.shadowOffsetY = ch * 0.020;
-  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  ctx.drawImage(masked, drawX, drawY, drawW, drawH);
   ctx.restore();
 }
 
@@ -530,7 +561,7 @@ export async function composePopDesign(
   try {
     const subjectImg = await loadImage(subjectBase64);
     renderIsolatedSubject(ctx, cw, ch, subjectImg, {
-      scale:       0.60,
+      scale:       0.82,
       offsetY:     0.05,
       shadowBlur:  35,
       shadowColor: bgIsDark ? "rgba(0,0,0,0.30)" : "rgba(0,0,0,0.18)",

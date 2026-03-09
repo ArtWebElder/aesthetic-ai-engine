@@ -11,7 +11,6 @@ import { useWizardStore } from "@/stores/useWizardStore";
 import { generateFromWizard, GenerateError } from "@/services/generateService";
 import { exportComposed, FORMAT_BY_ID, type FoodPalette } from "../engine/exportComposed";
 import { composePopDesign } from "../engine/popDesign";
-import { removeSubjectBackground } from "../engine/bgRemoval";
 import { getPresetById } from "@/lib/presetUtils";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 
@@ -35,52 +34,45 @@ const DEFAULT_COMPOSITION: CompositionConfig = {
 const DEFAULT_FORMAT_ID = "instagram_feed";
 
 // ── Paleta contextual por tipo de culinária ────────────────────────────────────
+
+function paletteHash(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
 function getFoodPalette(
   headline = "",
   subheadline = "",
   instructions = ""
 ): FoodPalette {
   const t = [headline, subheadline, instructions].join(" ").toLowerCase();
+  const v = paletteHash(headline) % 3; // 0, 1, or 2
 
   if (/açaí|acai|frozen|smoothie|sorvete|gelato|milkshake|picolé/.test(t)) {
-    return {
-      accent:      "#7B2D8E",
-      accentLight: "#E8D5F0",
-      badgeBg:     "rgba(255,255,255,0.92)",
-      badgeText:   "#2D1B36",
-      ctaBg:       "#7B2D8E",
-      ctaText:     "#FFFFFF",
-    };
+    // A: roxo, B: roxo azulado, C: rosa roxo
+    const accents = ["#7B2D8E", "#5C2D91", "#9B2D8E"] as const;
+    const lights  = ["#E8D5F0", "#D5D0F5", "#F0D0EE"] as const;
+    const texts   = ["#2D1B36", "#1B1D36", "#361B33"] as const;
+    return { accent: accents[v], accentLight: lights[v], badgeBg: "rgba(255,255,255,0.92)", badgeText: texts[v], ctaBg: accents[v], ctaText: "#FFFFFF" };
   }
   if (/sushi|sashimi|temaki|japonês|japanese|japa|uramaki|combinado/.test(t)) {
-    return {
-      accent:      "#C0392B",
-      accentLight: "#F5D5D0",
-      badgeBg:     "rgba(255,255,255,0.92)",
-      badgeText:   "#1A1A1A",
-      ctaBg:       "#C0392B",
-      ctaText:     "#FFFFFF",
-    };
+    // A: vermelho, B: vermelho escuro, C: coral
+    const accents = ["#C0392B", "#8B0000", "#D44638"] as const;
+    const lights  = ["#F5D5D0", "#F0CCCC", "#F5D8D5"] as const;
+    return { accent: accents[v], accentLight: lights[v], badgeBg: "rgba(255,255,255,0.92)", badgeText: "#1A1A1A", ctaBg: accents[v], ctaText: "#FFFFFF" };
   }
   if (/pizza|pizzaria|italiana|massa|lasanha|forno/.test(t)) {
-    return {
-      accent:      "#D4380D",
-      accentLight: "#FFF1E6",
-      badgeBg:     "rgba(255,248,240,0.92)",
-      badgeText:   "#2D1600",
-      ctaBg:       "#D4380D",
-      ctaText:     "#FFFFFF",
-    };
+    // A: vermelho tomate, B: laranja fogo, C: vermelho escuro
+    const accents = ["#D4380D", "#E85D04", "#B71C1C"] as const;
+    const lights  = ["#FFF1E6", "#FFF3E0", "#FFEBEE"] as const;
+    return { accent: accents[v], accentLight: lights[v], badgeBg: "rgba(255,248,240,0.92)", badgeText: "#2D1600", ctaBg: accents[v], ctaText: "#FFFFFF" };
   }
   if (/burger|burguer|hambúrguer|hamburger|smash|lanche|sanduíche/.test(t)) {
-    return {
-      accent:      "#E67E22",
-      accentLight: "#FFF3E0",
-      badgeBg:     "rgba(255,248,240,0.92)",
-      badgeText:   "#2D1600",
-      ctaBg:       "#E67E22",
-      ctaText:     "#FFFFFF",
-    };
+    // A: dourado, B: laranja, C: bronze
+    const accents = ["#D4A853", "#E67E22", "#C0702B"] as const;
+    const lights  = ["#FFF8E7", "#FFF3E0", "#FFF0E0"] as const;
+    return { accent: accents[v], accentLight: lights[v], badgeBg: "rgba(255,248,240,0.92)", badgeText: "#2D1600", ctaBg: accents[v], ctaText: "#FFFFFF" };
   }
   // Default — dourado elegante
   return {
@@ -154,15 +146,10 @@ export function WizardPage() {
         const freshState = useWizardStore.getState();
         const freshPalette = getFoodPalette(freshState.headline, freshState.subheadline, freshState.freeInstructions);
 
-        // Step 2 — Bg removal no output do Gemini (subject + elementos juntos)
-        let isolatedBase64: string | null = null;
-        try {
-          isolatedBase64 = await removeSubjectBackground(geminiBase64);
-          setSubjectIsolated(isolatedBase64);
-        } catch (e) {
-          console.warn("[PopDesign] bg removal failed, using Gemini output:", e);
-          isolatedBase64 = null;
-        }
+        // Step 2 — Usar Gemini output direto (bg branco removido via white-threshold
+        // no canvas; bg removal cortava elementos voando junto ao subject)
+        const isolatedBase64: string | null = geminiBase64;
+        setSubjectIsolated(isolatedBase64);
 
         console.log("[Creatyng PopDesign] composePopDesign input:", {
           headline: freshState.headline,
