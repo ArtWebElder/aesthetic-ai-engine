@@ -5,9 +5,8 @@
 import { removeBackground, type Config } from "@imgly/background-removal";
 
 const BG_REMOVAL_CONFIG: Config = {
-  // Use CDN for ONNX/wasm assets so they are not bundled
-  publicPath: "https://unpkg.com/@imgly/background-removal@1.7.0/dist/",
-  // Output as PNG blob with transparent background
+  // No publicPath override — use the library's built-in default:
+  // https://staticimgly.com/@imgly/background-removal-data/{version}/dist/
   output: {
     format: "image/png",
     quality: 1.0,

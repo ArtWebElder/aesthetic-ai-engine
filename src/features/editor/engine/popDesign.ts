@@ -488,8 +488,16 @@ export async function composePopDesign(
   }
 
   // ── 6. Price badge ──
+  const canvasSize = { width: cw, height: ch };
   if (popData.price?.value) {
-    renderPriceBadge(ctx, cw, ch, popData.price, texts.headline, popData.palette);
+    renderPriceBadge(
+      ctx, canvasSize,
+      popData.price,
+      texts.cta,
+      accent,
+      popData.palette,
+      texts.headline,
+    );
   }
 
   // ── 7. Contact bar ──
@@ -502,7 +510,7 @@ export async function composePopDesign(
       badgeVariant === "pill-bottom" ? "bar-left" : undefined;
 
     renderContactBar(
-      ctx, cw, ch,
+      ctx, canvasSize,
       popData.whatsapp, popData.instagram,
       accent,
       popData.palette,
