@@ -50,6 +50,10 @@ interface WizardStore extends WizardState {
   setFreeInstructions: (val: string) => void;
   setLogoBase64: (val: string | null) => void;
 
+  // ── Pop Design ───────────────────────────────────────────────────────────────
+  /** Subject isolado (PNG transparente) — cache do resultado de bg removal. */
+  setSubjectIsolated: (val: string | null) => void;
+
   // ── Reset ────────────────────────────────────────────────────────────────────
   reset: () => void;
 }
@@ -176,6 +180,7 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
   setExtraText: (val) => set({ extraText: val }),
   setFreeInstructions: (val) => set({ freeInstructions: val }),
   setLogoBase64: (val) => set({ logoBase64: val }),
+  setSubjectIsolated: (val) => set({ subjectIsolatedBase64: val }),
 
   // ── Reset ────────────────────────────────────────────────────────────────────
 

@@ -10,6 +10,8 @@ import { WizardStep3Text } from "./WizardStep3Text";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { generateFromWizard, GenerateError } from "@/services/generateService";
 import { exportComposed, FORMAT_BY_ID, type FoodPalette } from "../engine/exportComposed";
+import { composePopDesign } from "../engine/popDesign";
+import { removeSubjectBackground } from "../engine/bgRemoval";
 import { getPresetById } from "@/lib/presetUtils";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 
@@ -92,7 +94,7 @@ function getFoodPalette(
 }
 
 export function WizardPage() {
-  const { setGeneration, clearGeneration, currentGeneration } = useWizardStore();
+  const { setGeneration, clearGeneration, currentGeneration, setSubjectIsolated } = useWizardStore();
   const [generating, setGenerating] = useState(false);
   const [composing, setComposing] = useState(false);
   const [composedBase64, setComposedBase64] = useState<string | null>(null);
@@ -106,6 +108,83 @@ export function WizardPage() {
     clearGeneration();
 
     try {
+      // ── Pop Design: composição client-side, sem Gemini ──────────────────────
+      if (state.selectedImagePresetId === "sys-img-pop-design") {
+        if (!state.subjectBase64) {
+          throw new GenerateError("no_subject", "Envie uma imagem do sujeito antes de gerar.");
+        }
+
+        setGenerating(false);
+        setComposing(true);
+
+        const cfg = state.activePresetConfig ?? {};
+        const textConfig: TextPresetConfig =
+          cfg.text ?? (getPresetById("sys-txt-pop-design")?.config.text as TextPresetConfig);
+        const colors: ColorConfig = cfg.colors ?? DEFAULT_COLORS;
+        const targetFormat = FORMAT_BY_ID.get(DEFAULT_FORMAT_ID)!;
+
+        const foodPalette = getFoodPalette(state.headline, state.subheadline, state.freeInstructions);
+
+        // Bg removal (com cache)
+        let isolatedBase64 = state.subjectIsolatedBase64 ?? null;
+        if (!isolatedBase64) {
+          try {
+            isolatedBase64 = await removeSubjectBackground(state.subjectBase64);
+            setSubjectIsolated(isolatedBase64);
+          } catch (e) {
+            console.warn("[Creatyng PopDesign] bg removal failed, using original:", e);
+            isolatedBase64 = null;
+          }
+        }
+
+        const popBase64 = await composePopDesign({
+          subjectBase64: state.subjectBase64,
+          subjectIsolatedBase64: isolatedBase64,
+          texts: {
+            headline: state.headline ?? "",
+            subheadline: state.subheadline,
+            cta: state.cta,
+          },
+          presetConfig: textConfig,
+          colors,
+          width: targetFormat.w,
+          height: targetFormat.h,
+          popData: {
+            price: state.price ?? undefined,
+            whatsapp: state.whatsapp,
+            instagram: state.instagram,
+            palette: foodPalette,
+          },
+          watermark: false,
+        });
+
+        setComposedBase64(popBase64);
+
+        // Mock CachedGeneration so the result panel renders
+        setGeneration({
+          generationId: crypto.randomUUID(),
+          imageBase64: popBase64,
+          imageThumbnail: popBase64,
+          wizardStateSnapshot: { ...state },
+          presetIds: {
+            image: state.selectedImagePresetId,
+            text: state.selectedTextPresetId,
+          },
+          activePresetConfigSnapshot: { ...(state.activePresetConfig ?? {}) },
+          meta: {
+            provider: "pop-design",
+            model: "client-side",
+            dnaUsed: false,
+            aspectRatio: `${targetFormat.w}x${targetFormat.h}`,
+            generationMs: 0,
+          },
+          timestamp: Date.now(),
+        });
+
+        return;
+      }
+
+      // ── Standard AI generation ──────────────────────────────────────────────
       const gen = await generateFromWizard(state);
       setGeneration(gen);
 

@@ -190,6 +190,28 @@ export const SYSTEM_IMAGE_PRESETS: CreatygnPreset[] = [
     createdAt: now,
     updatedAt: now,
   },
+  {
+    id: "sys-img-pop-design",
+    slug: "pop-design",
+    name: "Pop Design",
+    description: "Fundo gradiente claro, subject isolado com sombra, tipografia dark/accent — composição client-side sem IA",
+    type: "image_style",
+    scope: "system",
+    thumbnailUrl: "/presets/thumbs/pop-design.jpg",
+    config: {
+      image: {
+        preset: "pop-design",
+        atmosphere: "none",
+        lighting: "natural",
+        sceneKeywords: ["pop design", "isolated subject", "light gradient background", "editorial illustration"],
+        negativeKeywords: [],
+      },
+    },
+    stats: emptyStats,
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+  },
 ];
 
 // ─── TEXT PRESETS ─────────────────────────────────────────────────────────────
@@ -498,17 +520,52 @@ export const SYSTEM_TEXT_PRESETS: CreatygnPreset[] = [
     createdAt: now,
     updatedAt: now,
   },
+  {
+    id: "sys-txt-pop-design",
+    slug: "pop-design-text",
+    name: "Pop Design Text",
+    description: "Montserrat 900 italic accent + dark context, tipografia editorial de alto contraste",
+    type: "text_style",
+    scope: "system",
+    thumbnailUrl: "/presets/thumbs/text-pop-design.jpg",
+    config: {
+      text: {
+        stylePreset: "pop-design",
+        headlineFont: "Montserrat",
+        bodyFont: "Montserrat",
+        headlineWeight: 900,
+        bodyWeight: 400,
+        headlineTracking: "-0.02em",
+        headlineLineHeight: 0.92,
+        headlineTransform: "uppercase",
+        effects: {
+          glow: false,
+          glowIntensity: 0,
+          shadow: "soft",
+          stroke: false,
+          gradient: false,
+        },
+        accentWordAuto: false,
+        blendMode: "normal",
+      },
+    },
+    stats: emptyStats,
+    version: 1,
+    createdAt: now,
+    updatedAt: now,
+  },
 ];
 
 // ─── AFINIDADE: qual text preset combina com qual image preset ────────────────
 
 export const PRESET_AFFINITY: Record<string, string> = {
-  "sys-img-drama":     "sys-txt-impact",
-  "sys-img-clean":     "sys-txt-clean",
-  "sys-img-dark":      "sys-txt-dark",
-  "sys-img-editorial": "sys-txt-luxury",
-  "sys-img-neon":      "sys-txt-neon",
-  "sys-img-food-pop":  "sys-txt-food-pop",
+  "sys-img-drama":      "sys-txt-impact",
+  "sys-img-clean":      "sys-txt-clean",
+  "sys-img-dark":       "sys-txt-dark",
+  "sys-img-editorial":  "sys-txt-luxury",
+  "sys-img-neon":       "sys-txt-neon",
+  "sys-img-food-pop":   "sys-txt-food-pop",
+  "sys-img-pop-design": "sys-txt-pop-design",
 };
 
 // ─── ÍNDICES para lookup O(1) ─────────────────────────────────────────────────

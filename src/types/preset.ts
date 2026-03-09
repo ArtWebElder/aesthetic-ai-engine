@@ -140,7 +140,7 @@ export interface PresetConfig {
 }
 
 export interface ImagePresetConfig {
-  preset: "drama" | "clean" | "dark" | "editorial" | "neon" | "food-pop";
+  preset: "drama" | "clean" | "dark" | "editorial" | "neon" | "food-pop" | "pop-design";
   atmosphere: "fog" | "particles" | "glass_shards" | "rain" | "none" | string;
   lighting: "rim_purple" | "rim_blue" | "natural" | "studio" | "neon" | "none" | string;
   sceneKeywords: string[];
@@ -173,7 +173,8 @@ export type TextStylePreset =
   | "luxury"         // T6 — Cormorant, dourado
   | "sport"          // T7 — Teko, bold máximo
   | "minimal"        // T8 — Inter, Swiss design
-  | "food-pop";      // T9 — Montserrat bold italic, food energy
+  | "food-pop"       // T9 — Montserrat bold italic, food energy
+  | "pop-design";    // T10 — Montserrat 900 dark, Pop Design paradigm B
 
 export type TextBlendMode =
   | "normal" | "screen" | "overlay" | "soft-light" | "luminosity";
@@ -269,6 +270,9 @@ export interface WizardState {
   extraText?: string;
   freeInstructions?: string;
   logoBase64?: string | null;
+
+  // POP DESIGN — subject isolado (cache do resultado de bg removal)
+  subjectIsolatedBase64?: string | null;
 }
 
 // ─── GERAÇÃO E CACHE ───────────────────────────────────────────────────────────
