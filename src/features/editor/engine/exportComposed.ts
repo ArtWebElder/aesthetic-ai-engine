@@ -523,10 +523,13 @@ export async function renderFormatPreview(
   drawWithSmartCrop(ctx, img, pw, ph);
 
   if (foodPopOverlay) {
+    if (texts.headline) {
+      const decoConfig = chooseDecorativeConfig(texts.headline);
+      renderDecorativeText(ctx, { width: pw, height: ph }, texts.headline, decoConfig);
+    }
     drawFoodPopOverlay(ctx, pw, ph);
     const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
     renderBokehParticles(ctx, pw, ph, 8, accentColor);
-    // renderDecorativeLine(ctx, pw, ph, ph * 0.27, accentColor); // desativada
   } else if (texts.headline || texts.cta) {
     drawTextOverlay(ctx, composition, pw, ph);
   }
