@@ -512,7 +512,118 @@ function applyWatermark(ctx: CanvasRenderingContext2D, w: number, h: number): vo
   ctx.restore();
 }
 
-// ─── DIFF 6 — PIPELINE REESTRUTURADO ─────────────────────────────────────────
+// ─── PIPELINE V2 — DUPLO GEMINI (FUNDO SEPARADO + SUBJECT SEPARADO) ──────────
+
+/**
+ * Compõe Pop Design com profundidade real usando duas imagens Gemini:
+ * - bgBase64: fundo colorido com elementos (Chamada 1 — texto-para-imagem)
+ * - subjectBase64: subject isolado em fundo branco (Chamada 2 — img2img)
+ *
+ * Camadas (de baixo para cima):
+ * 1. Fundo Gemini (bgBase64) — preenche o canvas inteiro via smart crop
+ * 2. Texto decorativo gigante — atrás do subject, cria profundidade
+ * 3. Subject isolado (white-threshold) — na frente de tudo
+ * 4. Headline centralizada no topo
+ * 5. Subheadline
+ * 6. Badge de preço
+ * 7. Contact bar
+ * 8. Watermark (opcional)
+ */
+export async function composePopDesignV2(
+  bgBase64: string,
+  subjectBase64: string,
+  texts: PopTexts,
+  palette: FoodPalette,
+  _presetConfig: TextPresetConfig,
+  canvasWidth  = 1080,
+  canvasHeight = 1080,
+  watermark    = false,
+): Promise<string> {
+  const cw = canvasWidth;
+  const ch = canvasHeight;
+
+  const canvas = document.createElement("canvas");
+  canvas.width  = cw;
+  canvas.height = ch;
+  const ctx = canvas.getContext("2d")!;
+
+  const accentColor = palette.accent || "#7B2D8E";
+  const headline    = texts.headline || "";
+
+  const hasBgFromGemini = Boolean(bgBase64 && bgBase64.length > 100);
+
+  // ── 1. Fundo ──
+  let bgIsDark: boolean;
+  if (hasBgFromGemini) {
+    const bgImg = await loadImage(bgBase64);
+    // Smart crop: fill canvas without distortion (center crop)
+    const bgAspect = bgImg.naturalWidth / bgImg.naturalHeight;
+    const canvasAspect = cw / ch;
+    let sx = 0, sy = 0, sw = bgImg.naturalWidth, sh = bgImg.naturalHeight;
+    if (bgAspect > canvasAspect) {
+      sw = Math.round(bgImg.naturalHeight * canvasAspect);
+      sx = Math.round((bgImg.naturalWidth - sw) / 2);
+    } else {
+      sh = Math.round(bgImg.naturalWidth / canvasAspect);
+      sy = Math.round((bgImg.naturalHeight - sh) / 2);
+    }
+    ctx.drawImage(bgImg, sx, sy, sw, sh, 0, 0, cw, ch);
+    bgIsDark = true; // Gemini background is always colorful/saturated — use white text
+  } else {
+    // Fallback: renderer gradient
+    const bg = getPopBackground(palette, headline);
+    renderPopBackground(ctx, cw, ch, bg);
+    bgIsDark = bg.textColor === "#FFFFFF";
+  }
+
+  // ── 2. Texto decorativo gigante (ATRÁS do subject) ──
+  if (headline) {
+    renderPopDecorativeText(ctx, cw, ch, headline, accentColor, bgIsDark);
+  }
+
+  // ── 3. Subject isolado com white-threshold ──
+  try {
+    const subjectImg = await loadImage(subjectBase64);
+    renderIsolatedSubject(ctx, cw, ch, subjectImg, {
+      scale:       0.82,
+      offsetY:     0.05,
+      shadowBlur:  40,
+      shadowColor: "rgba(0,0,0,0.30)",
+    });
+  } catch {
+    console.warn("[Creatyng PopDesignV2] Failed to render subject image.");
+  }
+
+  // ── 4. Headline ──
+  const headlineEndY = renderPopHeadline(ctx, cw, ch, headline, accentColor, bgIsDark);
+
+  // ── 5. Subheadline ──
+  if (texts.subheadline?.trim()) {
+    const subSize = Math.round(cw * 0.028);
+    ctx.save();
+    ctx.font = `400 ${subSize}px Montserrat, sans-serif`;
+    ctx.fillStyle = bgIsDark ? "rgba(255,255,255,0.70)" : "rgba(30,30,30,0.55)";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(texts.subheadline, cw / 2, headlineEndY + ch * 0.018);
+    ctx.restore();
+  }
+
+  // ── 6. Badge ──
+  if (texts.price?.value) {
+    renderPopBadge(ctx, cw, ch, texts.price, texts.cta || "", accentColor, bgIsDark);
+  }
+
+  // ── 7. Contact bar ──
+  renderPopContactBar(ctx, cw, ch, texts.whatsapp, texts.instagram, accentColor, bgIsDark);
+
+  // ── 8. Watermark ──
+  if (watermark) applyWatermark(ctx, cw, ch);
+
+  return canvas.toDataURL("image/png", 0.95);
+}
+
+// ─── PIPELINE V1 — SINGLE GEMINI (original, mantido como fallback) ────────────
 
 /**
  * Compõe o criativo Pop Design completo e retorna base64 PNG.
