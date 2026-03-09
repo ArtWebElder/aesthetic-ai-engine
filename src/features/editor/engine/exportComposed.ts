@@ -399,9 +399,15 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
 
   // 2. Overlay de integração
   if (foodPopOverlay) {
-    // Food Pop: gradiente duplo (topo + base)
+    // 2a. Texto decorativo — camada de fundo, ANTES do gradiente
+    // O gradiente cobre parcialmente as bordas, criando profundidade
+    if (texts.headline) {
+      const decoConfig = chooseDecorativeConfig(texts.headline);
+      renderDecorativeText(ctx, { width: cw, height: ch }, texts.headline, decoConfig);
+    }
+    // 2b. Gradiente duplo (topo + base) — cobre parcialmente o texto decorativo
     drawFoodPopOverlay(ctx, cw, ch);
-    // Partículas bokeh (entre gradiente e texto)
+    // 2c. Partículas bokeh (entre gradiente e texto informativo)
     const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
     renderBokehParticles(ctx, cw, ch, 15, accentColor);
     // Linha decorativa desativada — polui sobre o subject
