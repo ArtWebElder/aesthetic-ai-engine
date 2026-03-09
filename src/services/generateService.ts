@@ -92,24 +92,11 @@ function resolveAspectRatio(state: WizardState): { width: number; height: number
   return map[ar] ?? { width: 1080, height: 1350 };
 }
 
-// ─── POP DESIGN PROMPT BUILDER ────────────────────────────────────────────────
+// ─── POP DESIGN PROMPT BUILDERS ───────────────────────────────────────────────
 
-function buildPopDesignPrompt(state: WizardState): { prompt: string; negativePrompt: string } {
+/** Chamada 1 — Fundo colorido + elementos flutuantes, SEM o subject principal no centro */
+export function buildPopDesignBackgroundPrompt(state: WizardState): { prompt: string; negativePrompt: string } {
   const layers: string[] = [];
-
-  layers.push(
-    `Professional product photography of the exact item shown in the reference. ` +
-    `The product must be centered on a PURE WHITE background (#FFFFFF). ` +
-    `CRITICAL: preserve exact shape, color, texture of the original product. ` +
-    `The product must be sharp, well-lit with even studio lighting from all sides.`
-  );
-
-  layers.push(
-    `Dynamic floating elements arranged around the product: relevant ingredients, ` +
-    `decorative pieces, splashes, and garnishes flying outward with subtle motion blur. ` +
-    `The elements should be related to the product and create energy and movement. ` +
-    `All floating elements must also be on the WHITE background — no colored backgrounds.`
-  );
 
   const allText = [state.headline, state.subheadline, state.freeInstructions]
     .filter(Boolean).join(" ").toLowerCase();
@@ -119,50 +106,98 @@ function buildPopDesignPrompt(state: WizardState): { prompt: string; negativePro
   const isPizza  = /pizza|pizzaria|italiana|massa|lasanha|forno/.test(allText);
   const isBurger = /burger|burguer|hambúrguer|hamburger|smash|lanche|sanduíche/.test(allText);
 
+  layers.push(
+    `A vibrant, colorful background scene for a social media food advertisement. ` +
+    `Rich gradient — NOT white, NOT plain, NOT gray. ` +
+    `Warm, appetizing colors creating atmosphere and depth. ` +
+    `The CENTER of the image must remain relatively clean — the main product will be composited later. ` +
+    `Focus all visual elements on the EDGES and CORNERS of the frame.`
+  );
+
   if (isCold) {
     layers.push(
-      `Floating elements: fresh strawberries, banana slices, granola pieces, blueberries, ` +
-      `coconut shavings, chocolate chips, condensation droplets. Fresh and energetic feel.`
+      `Floating food elements scattered around the edges: fresh strawberries, banana slices, ` +
+      `blueberries, granola clusters, coconut shavings, chocolate chips, açaí berries, ` +
+      `condensation droplets catching light. Splashes of berry juice flying outward with motion blur. ` +
+      `Color palette: deep purple to magenta gradient. Tropical, fresh, energetic atmosphere.`
     );
   } else if (isSushi) {
     layers.push(
-      `Floating elements: soy sauce splash, sesame seeds, ginger slices, wasabi, ` +
-      `chopsticks, nori pieces. Elegant Japanese style.`
+      `Floating food elements around the edges: soy sauce splashes, sesame seeds, ginger slices, ` +
+      `wasabi drops, nori pieces, rice grains, chopstick silhouettes. ` +
+      `Color palette: deep red to black gradient. Sophisticated Japanese aesthetic.`
     );
   } else if (isPizza) {
     layers.push(
-      `Floating elements: fresh basil leaves, tomato sauce splash, cheese stretching, ` +
-      `oregano sprinkles, olive oil drops. Italian style.`
+      `Floating food elements around the edges: fresh basil leaves, tomato sauce splashes, ` +
+      `cheese stretches, oregano, olive oil drops, flour dust particles. ` +
+      `Color palette: warm red to orange gradient. Italian rustic warmth.`
     );
   } else if (isBurger) {
     layers.push(
-      `Floating elements: bacon strips, lettuce leaves, cheese slices, onion rings, ` +
-      `sauce splashes, sesame seeds. Dynamic food style.`
+      `Floating food elements around the edges: bacon strips, lettuce leaves, cheese slices, ` +
+      `onion rings, sauce splashes, sesame seeds, french fries. ` +
+      `Color palette: warm amber to brown gradient. Energetic, appetite-driven atmosphere.`
     );
   } else {
     layers.push(
-      `Floating decorative elements related to the product type. ` +
-      `Create energy and movement around the main item.`
+      `Floating decorative food elements around the edges. ` +
+      `Colorful and energetic atmosphere. Warm gradient background with depth.`
     );
   }
 
   layers.push(
-    `Shot with 85mm lens, f/5.6, sharp focus on product and floating elements. ` +
-    `Even studio lighting from all sides, no dramatic shadows. ` +
-    `The WHITE background must be completely clean — no gradients, no cast shadows on the background.`
+    `Studio-quality lighting. Floating elements look three-dimensional, not flat. ` +
+    `Slight depth of field — some elements sharp, others softly blurred. ` +
+    `High resolution, vibrant colors, professional food advertising style.`
+  );
+
+  layers.push(
+    `CRITICAL: Do NOT place any main food product, bowl, cup, or plate in the center. ` +
+    `Leave the CENTER clean. All elements must stay near the EDGES and CORNERS.`
   );
 
   if (state.freeInstructions) {
-    layers.push(`Additional direction: ${state.freeInstructions}`);
+    layers.push(`Additional creative direction: ${state.freeInstructions}`);
   }
 
   return {
     prompt: layers.join("\n\n"),
     negativePrompt: [
       "text, letters, typography, watermark, logo",
-      "colored background, gradient background, dark background, gray background",
-      "kitchen, restaurant, table, environment, bokeh, dramatic lighting, moody",
-      "shadows on background, vignette, blurry background",
+      "white background, plain background, gray background",
+      "main product in center, central food item, bowl in center, cup in center, plate in center",
+      "collage, split screen, borders, frames",
+    ].join(", "),
+  };
+}
+
+/** Chamada 2 — Subject isolado em fundo branco puro para composição */
+export function buildPopDesignSubjectPrompt(state: WizardState): { prompt: string; negativePrompt: string } {
+  const layers: string[] = [];
+
+  layers.push(
+    `Professional product photography of the exact item shown in the reference image. ` +
+    `PURE WHITE background (#FFFFFF) — no gradients, no shadows on background. ` +
+    `CRITICAL: preserve exact shape, color, texture of the original product. ` +
+    `The product must be sharp, centered, well-lit with even studio lighting. ` +
+    `Do NOT add any floating elements or decorations — just the product alone ` +
+    `on a clean white background.`
+  );
+
+  layers.push(
+    `100mm macro lens, f/8, maximum sharpness. ` +
+    `Even studio lighting from all sides, no dramatic shadows, no colored lighting. ` +
+    `The white background must be perfectly clean — #FFFFFF — for easy isolation.`
+  );
+
+  return {
+    prompt: layers.join("\n\n"),
+    negativePrompt: [
+      "text, letters, typography, watermark, logo",
+      "colored background, gradient, dark background, gray background",
+      "floating elements, ingredients scattered around, decorations around product",
+      "kitchen, table, restaurant, environment, bokeh, shadows on background",
     ].join(", "),
   };
 }
@@ -341,12 +376,21 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
     !isPopDesign &&
     (state.category === "food" ||
       Boolean(state.price?.value || state.whatsapp || state.instagram));
-  const { prompt, negativePrompt } = isPopDesign
-    ? buildPopDesignPrompt(state)
-    : isFoodPop
-      ? buildFoodPopPrompt(state)
-      : buildPrompt(state);
+
+  const phase = (state as unknown as { _popDesignPhase?: string })._popDesignPhase;
+
+  const { prompt, negativePrompt } =
+    isPopDesign && phase === "background" ? buildPopDesignBackgroundPrompt(state) :
+    isPopDesign && phase === "subject"    ? buildPopDesignSubjectPrompt(state) :
+    isPopDesign                           ? buildPopDesignBackgroundPrompt(state) :
+    isFoodPop                             ? buildFoodPopPrompt(state) :
+                                            buildPrompt(state);
+
   const { width, height } = resolveAspectRatio(state);
+
+  // Background phase = text-to-image (no strict identity — we want a new scene)
+  // Subject phase = img2img strict (preserve exact product)
+  const strictIdentity = !(isPopDesign && phase === "background");
 
   const body = {
     prompt,
@@ -354,7 +398,7 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
     width,
     height,
     subjectBase64: state.subjectBase64,
-    strictIdentity: true,
+    strictIdentity,
     identityStrength: 90,
     styleStrength: 45,
     module: state.selectedImagePresetId ?? "wizard",
