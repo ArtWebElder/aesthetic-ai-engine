@@ -8,6 +8,7 @@ import {
   HelpCircle,
   LogOut,
   Sparkles,
+  Workflow,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -52,13 +53,20 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
       <div className="mx-4 h-px bg-border" />
 
       {/* New creation CTA */}
-      <div className="px-3 pt-3">
+      <div className="px-3 pt-3 flex flex-col gap-1.5">
         <button
           onClick={() => handleNav('/app/create')}
           className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors duration-150"
         >
           <Sparkles className="h-4 w-4" />
           {t('nav.new_creation')}
+        </button>
+        <button
+          onClick={() => handleNav('/app/create/studio')}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium border border-creatyng-accent/40 text-creatyng-accent hover:bg-creatyng-accent/10 transition-colors duration-150"
+        >
+          <Workflow className="h-4 w-4" />
+          {t('nav.studio')}
         </button>
       </div>
 

@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import Templates from "./pages/Templates";
 import { WizardPage } from "@/features/editor/wizard/WizardPage";
+import StudioPage from "@/app/create/StudioPage";
 import RefinementPage from "./pages/RefinementPage";
 import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
@@ -41,6 +42,7 @@ const App = () => (
                 <Route path="projects" element={<Projects />} />
                 <Route path="templates" element={<Templates />} />
                 <Route path="create" element={<WizardPage />} />
+                <Route path="create/studio" element={<StudioPage />} />
                 <Route path="refine/:id" element={<RefinementPage />} />
                 <Route path="billing" element={<Billing />} />
                 <Route path="settings" element={<Settings />} />
