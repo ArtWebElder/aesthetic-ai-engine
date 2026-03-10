@@ -1,15 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Utensils, Sparkles, BookOpen, Zap, ChevronLeft, ChevronRight,
-  FolderOpen, ArrowRight, Plus, Image,
+  FolderOpen, Plus, Image,
 } from 'lucide-react';
-import { Button, Badge, EmptyState } from '@/components/creatyng';
+import { EmptyState } from '@/components/creatyng';
 import ProjectWizard from '@/components/ProjectWizard';
-import { listProjects, createProject, deleteProject } from '@/features/projects/store';
+import { listProjects, createProject } from '@/features/projects/store';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import type { Project } from '@/types/spec';
+import { useEffect } from 'react';
 
 /* ── Feature cards ────────────────────────────────────── */
 const FEATURES = [
@@ -17,54 +18,54 @@ const FEATURES = [
     id: 'food_pop',
     labelKey: 'dashboard.feature.food_pop',
     descKey: 'dashboard.feature.food_pop_desc',
-    gradient: 'from-orange-500 to-rose-500',
+    gradient: 'linear-gradient(135deg, #f97316, #e11d48)',
     Icon: Utensils,
-    badgeKey: 'dashboard.badge.popular',
-    badgeVariant: 'accent' as const,
+    badgeLabel: 'Popular',
+    badgeBg: '#ff713d',
     active: true,
   },
   {
     id: 'pop_design',
     labelKey: 'dashboard.feature.pop_design',
     descKey: 'dashboard.feature.pop_design_desc',
-    gradient: 'from-violet-600 to-indigo-500',
+    gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
     Icon: Sparkles,
-    badgeKey: 'dashboard.badge.new',
-    badgeVariant: 'purple' as const,
+    badgeLabel: 'Novo',
+    badgeBg: '#7C3AED',
     active: true,
   },
   {
     id: 'editorial',
     labelKey: 'dashboard.feature.editorial',
     descKey: 'dashboard.feature.editorial_desc',
-    gradient: 'from-slate-600 to-gray-700',
+    gradient: 'linear-gradient(135deg, #475569, #334155)',
     Icon: BookOpen,
-    badgeKey: 'dashboard.badge.coming',
-    badgeVariant: 'default' as const,
+    badgeLabel: 'Em breve',
+    badgeBg: null,
     active: false,
   },
   {
     id: 'neon',
     labelKey: 'dashboard.feature.neon',
     descKey: 'dashboard.feature.neon_desc',
-    gradient: 'from-fuchsia-600 to-cyan-500',
+    gradient: 'linear-gradient(135deg, #a855f7, #06b6d4)',
     Icon: Zap,
-    badgeKey: 'dashboard.badge.coming',
-    badgeVariant: 'default' as const,
+    badgeLabel: 'Em breve',
+    badgeBg: null,
     active: false,
   },
 ];
 
 /* ── Discover mosaic data ─────────────────────────────── */
 const DISCOVER = [
-  { gradient: 'from-orange-400 to-rose-500', h: 'h-44' },
-  { gradient: 'from-violet-500 to-purple-600', h: 'h-56' },
-  { gradient: 'from-cyan-500 to-teal-500', h: 'h-36' },
-  { gradient: 'from-amber-400 to-orange-500', h: 'h-48' },
-  { gradient: 'from-pink-500 to-rose-400', h: 'h-40' },
-  { gradient: 'from-blue-500 to-indigo-500', h: 'h-52' },
-  { gradient: 'from-emerald-500 to-green-400', h: 'h-44' },
-  { gradient: 'from-fuchsia-500 to-pink-500', h: 'h-36' },
+  { gradient: 'linear-gradient(135deg, #f97316, #e11d48)', h: 176 },
+  { gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)', h: 224 },
+  { gradient: 'linear-gradient(135deg, #0891b2, #0d9488)', h: 144 },
+  { gradient: 'linear-gradient(135deg, #d97706, #ea580c)', h: 192 },
+  { gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)', h: 160 },
+  { gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)', h: 208 },
+  { gradient: 'linear-gradient(135deg, #10b981, #22c55e)', h: 176 },
+  { gradient: 'linear-gradient(135deg, #a855f7, #ec4899)', h: 144 },
 ];
 
 function formatDate(iso: string) {
@@ -72,11 +73,232 @@ function formatDate(iso: string) {
 }
 
 const PROJECT_GRADIENTS = [
-  'from-orange-400 to-rose-500', 'from-violet-500 to-purple-600',
-  'from-cyan-500 to-teal-500', 'from-amber-400 to-orange-500',
-  'from-blue-500 to-indigo-500', 'from-emerald-500 to-green-400',
+  'linear-gradient(135deg, #f97316, #e11d48)',
+  'linear-gradient(135deg, #7c3aed, #4f46e5)',
+  'linear-gradient(135deg, #0891b2, #0d9488)',
+  'linear-gradient(135deg, #d97706, #ea580c)',
+  'linear-gradient(135deg, #3b82f6, #6366f1)',
+  'linear-gradient(135deg, #10b981, #22c55e)',
 ];
 
+/* ── Section header ──────────────────────────────────── */
+function SectionHeader({
+  title, onViewAll, scrollRef,
+}: {
+  title: string;
+  onViewAll?: () => void;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
+}) {
+  const { t } = useI18n();
+  const scrollBy = (dir: number) => scrollRef?.current?.scrollBy({ left: dir * 210, behavior: 'smooth' });
+
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: '#141417' }}>{title}</h2>
+      <div className="flex items-center gap-2">
+        {scrollRef && (
+          <div className="flex gap-1">
+            {([-1, 1] as const).map((dir) => (
+              <button
+                key={dir}
+                onClick={() => scrollBy(dir)}
+                className="flex items-center justify-center transition-colors"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  border: '1px solid rgba(20,20,23,0.1)',
+                  background: '#ffffff',
+                  color: '#8e8e96',
+                }}
+              >
+                {dir === -1 ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              </button>
+            ))}
+          </div>
+        )}
+        {onViewAll && (
+          <button
+            onClick={onViewAll}
+            className="transition-colors"
+            style={{ fontSize: 12.5, color: '#8e8e96' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#ff713d'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96'; }}
+          >
+            {t('common.view_all')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Feature card ────────────────────────────────────── */
+function FeatureCard({ f, onNavigate }: { f: typeof FEATURES[0]; onNavigate: () => void }) {
+  const { t } = useI18n();
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="relative shrink-0 overflow-hidden"
+      style={{
+        width: 195,
+        height: 155,
+        borderRadius: 12,
+        background: f.gradient,
+        opacity: f.active ? 1 : 0.55,
+        cursor: f.active ? 'pointer' : 'default',
+      }}
+      onMouseEnter={() => f.active && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => f.active && onNavigate()}
+    >
+      {/* Content */}
+      <div className="relative z-10 p-[14px] h-full flex flex-col">
+        <div className="flex items-start justify-between">
+          <div
+            className="flex items-center justify-center"
+            style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.2)' }}
+          >
+            <f.Icon style={{ width: 18, height: 18, color: '#ffffff' }} />
+          </div>
+          <span
+            className="text-white"
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              padding: '3px 8px',
+              borderRadius: 20,
+              background: f.badgeBg || 'rgba(255,255,255,0.15)',
+              backdropFilter: f.badgeBg ? 'none' : 'blur(6px)',
+              border: f.badgeBg ? 'none' : '1px solid rgba(255,255,255,0.12)',
+            }}
+          >
+            {t(('dashboard.badge.' + (f.badgeLabel === 'Popular' ? 'popular' : f.badgeLabel === 'Novo' ? 'new' : 'coming')) as string) || f.badgeLabel}
+          </span>
+        </div>
+        <div className="mt-auto">
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }} className="line-clamp-2">
+            {t(f.labelKey)}
+          </p>
+        </div>
+      </div>
+
+      {/* Hover overlay */}
+      {hovered && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)' }}
+        >
+          <button
+            className="transition-colors"
+            style={{
+              background: '#ffffff',
+              color: '#141417',
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '7px 16px',
+              borderRadius: 8,
+            }}
+          >
+            {t('dashboard.create_now')}
+          </button>
+          <p className="text-white/80 text-center px-4 line-clamp-2" style={{ fontSize: 10.5 }}>
+            {t(f.descKey)}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Project card ────────────────────────────────────── */
+function ProjectCard({
+  project, gradient, onClick,
+}: {
+  project: Project;
+  gradient: string;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="group shrink-0 overflow-hidden cursor-pointer transition-all duration-200"
+      style={{
+        width: 180,
+        borderRadius: 10,
+        border: hovered ? '1.5px solid #ff713d' : '1px solid rgba(20,20,23,0.08)',
+        background: hovered ? 'linear-gradient(to bottom, #FFF0EA, #ffffff)' : '#ffffff',
+        boxShadow: hovered ? '0 4px 16px rgba(255,113,61,0.12)' : 'none',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
+    >
+      {/* Thumbnail */}
+      <div className="relative" style={{ height: 100, background: gradient }}>
+        <div className="absolute inset-0 flex items-center justify-center opacity-20">
+          <Image className="w-8 h-8 text-white" />
+        </div>
+        <div
+          className="absolute top-2 left-2 rounded-full"
+          style={{ width: 8, height: 8, background: '#ff713d' }}
+        />
+      </div>
+      {/* Body */}
+      <div style={{ padding: '10px 12px' }}>
+        <p className="line-clamp-1" style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>
+          {project.name}
+        </p>
+        <p style={{ fontSize: 11, color: '#b5b5bb', marginTop: 2 }}>
+          {formatDate(project.updatedAt)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Discover item ───────────────────────────────────── */
+function DiscoverItem({ gradient, height }: { gradient: string; height: number }) {
+  const { t } = useI18n();
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="break-inside-avoid overflow-hidden cursor-pointer transition-all duration-200 mb-3"
+      style={{
+        borderRadius: 12,
+        background: gradient,
+        height,
+        position: 'relative',
+        border: hovered ? '1.5px solid #ff713d' : '1.5px solid transparent',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {hovered && (
+        <div className="absolute inset-0 flex items-center justify-center animate-fade-in">
+          <span
+            className="text-white font-medium"
+            style={{
+              fontSize: 11,
+              padding: '4px 12px',
+              borderRadius: 20,
+              background: 'rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}
+          >
+            {t('dashboard.create_similar')}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Dashboard ───────────────────────────────────────── */
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -84,7 +306,6 @@ const Dashboard = () => {
 
   const [projects, setProjects] = useState<Project[]>(() => listProjects());
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [discoverTab, setDiscoverTab] = useState<'explore' | 'templates'>('explore');
 
   const featureScrollRef = useRef<HTMLDivElement>(null);
@@ -97,112 +318,41 @@ const Dashboard = () => {
     user?.email?.split('@')[0] ||
     t('dashboard.fallback_name');
 
-  const scrollBy = (ref: React.RefObject<HTMLDivElement | null>, dir: number) => {
-    ref.current?.scrollBy({ left: dir * 210, behavior: 'smooth' });
-  };
-
   return (
-    <div className="min-h-full px-6 py-7 max-w-6xl mx-auto space-y-10">
+    <div className="min-h-full px-8 py-7 max-w-6xl mx-auto space-y-10">
 
       {/* ── 1. Greeting ─────────────────────────────── */}
       <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
-        <h1 className="text-2xl font-semibold text-foreground">
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417' }}>
           {t('dashboard.greeting', { name: firstName })}
         </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{t('dashboard.greeting_sub')}</p>
+        <p style={{ fontSize: 14, color: '#5a5a60', marginTop: 2 }}>{t('dashboard.greeting_sub')}</p>
       </div>
 
-      {/* ── 2. Feature carousel ─────────────────────── */}
+      {/* ── 2. Quick start ──────────────────────────── */}
       <section className="animate-fade-up" style={{ animationDelay: '60ms' }}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-foreground">{t('dashboard.quick_create')}</h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/app/templates')}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {t('common.view_all')}
-            </button>
-            <div className="flex gap-1">
-              {[{ dir: -1, Icon: ChevronLeft }, { dir: 1, Icon: ChevronRight }].map(({ dir, Icon }) => (
-                <button
-                  key={dir}
-                  onClick={() => scrollBy(featureScrollRef, dir)}
-                  className="h-7 w-7 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
+        <SectionHeader
+          title={t('dashboard.quick_create')}
+          onViewAll={() => navigate('/app/templates')}
+          scrollRef={featureScrollRef}
+        />
         <div ref={featureScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
           {FEATURES.map((f) => (
-            <div
-              key={f.id}
-              className="relative shrink-0 w-[195px] h-[155px] rounded-2xl overflow-hidden group"
-              style={{ opacity: f.active ? 1 : 0.5, cursor: f.active ? 'pointer' : 'default' }}
-              onMouseEnter={() => f.active && setHoveredFeature(f.id)}
-              onMouseLeave={() => setHoveredFeature(null)}
-              onClick={() => f.active && navigate('/app/create')}
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br ${f.gradient}`} />
-              <div className="relative z-10 p-4 h-full flex flex-col">
-                <div className="flex items-start justify-between">
-                  <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-                    <f.Icon className="w-4 h-4 text-white" />
-                  </div>
-                  <Badge variant={f.badgeVariant} className="text-[10px]">
-                    {t(f.badgeKey)}
-                  </Badge>
-                </div>
-                <div className="mt-auto">
-                  <p className="text-white font-semibold text-sm line-clamp-2">{t(f.labelKey)}</p>
-                </div>
-              </div>
-              {hoveredFeature === f.id && (
-                <div className="absolute inset-0 z-20 bg-black/30 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 animate-fade-in">
-                  <button className="bg-white text-[#141417] text-xs font-semibold px-4 py-1.5 rounded-lg hover:bg-white/90 transition-colors">
-                    {t('dashboard.create_now')}
-                  </button>
-                  <p className="text-white/80 text-[11px] text-center px-4 line-clamp-2">
-                    {t(f.descKey)}
-                  </p>
-                </div>
-              )}
-            </div>
+            <FeatureCard key={f.id} f={f} onNavigate={() => navigate('/app/create')} />
           ))}
         </div>
       </section>
 
-      {/* ── 3. My Projects row ───────────────────────── */}
+      {/* ── 3. My Projects ──────────────────────────── */}
       <section className="animate-fade-up" style={{ animationDelay: '120ms' }}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-foreground">{t('dashboard.recent_projects')}</h2>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/app/projects')}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              {t('common.view_all')} <ArrowRight className="h-3 w-3" />
-            </button>
-            <div className="flex gap-1">
-              {[{ dir: -1, Icon: ChevronLeft }, { dir: 1, Icon: ChevronRight }].map(({ dir, Icon }) => (
-                <button
-                  key={dir}
-                  onClick={() => scrollBy(projectScrollRef, dir)}
-                  className="h-7 w-7 rounded-lg border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
+        <SectionHeader
+          title={t('dashboard.recent_projects')}
+          onViewAll={() => navigate('/app/projects')}
+          scrollRef={projectScrollRef}
+        />
 
         {projects.length === 0 ? (
-          <div className="bg-card border border-border rounded-2xl">
+          <div className="bg-white border rounded-2xl" style={{ borderColor: 'rgba(20,20,23,0.08)' }}>
             <EmptyState
               icon={<FolderOpen className="w-6 h-6" />}
               title={t('projects.empty_title')}
@@ -213,32 +363,43 @@ const Dashboard = () => {
           </div>
         ) : (
           <div ref={projectScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+            {/* New project button */}
             <button
               onClick={() => setWizardOpen(true)}
-              className="shrink-0 w-[175px] h-[135px] rounded-2xl border-2 border-dashed border-border hover:border-primary/40 flex flex-col items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-all group"
+              className="shrink-0 flex flex-col items-center justify-center gap-2 transition-all"
+              style={{
+                width: 180,
+                height: 135,
+                borderRadius: 10,
+                border: '2px dashed rgba(20,20,23,0.12)',
+                color: '#8e8e96',
+                background: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = '#ff713d';
+                (e.currentTarget as HTMLButtonElement).style.color = '#ff713d';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(20,20,23,0.12)';
+                (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96';
+              }}
             >
-              <div className="w-9 h-9 rounded-xl bg-muted group-hover:bg-primary/10 flex items-center justify-center transition-colors">
+              <div
+                className="flex items-center justify-center"
+                style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(20,20,23,0.04)' }}
+              >
                 <Plus className="w-4 h-4" />
               </div>
-              <span className="text-xs font-medium">{t('projects.new_project')}</span>
+              <span style={{ fontSize: 12, fontWeight: 500 }}>{t('projects.new_project')}</span>
             </button>
 
             {projects.slice(0, 8).map((p, idx) => (
-              <div
+              <ProjectCard
                 key={p.id}
-                className="group shrink-0 w-[175px] h-[135px] rounded-2xl border border-border bg-card overflow-hidden cursor-pointer hover:border-primary/40 hover:shadow-md transition-all"
+                project={p}
+                gradient={PROJECT_GRADIENTS[idx % PROJECT_GRADIENTS.length]}
                 onClick={() => navigate(`/app/projects/${p.id}`)}
-              >
-                <div className={`h-[84px] bg-gradient-to-br ${PROJECT_GRADIENTS[idx % PROJECT_GRADIENTS.length]} relative`}>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                    <Image className="w-8 h-8 text-white" />
-                  </div>
-                </div>
-                <div className="px-2.5 pt-2">
-                  <p className="text-xs font-medium text-foreground line-clamp-1">{p.name}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{formatDate(p.updatedAt)}</p>
-                </div>
-              </div>
+              />
             ))}
           </div>
         )}
@@ -247,17 +408,25 @@ const Dashboard = () => {
       {/* ── 4. Discover gallery ─────────────────────── */}
       <section className="animate-fade-up" style={{ animationDelay: '180ms' }}>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-foreground">{t('dashboard.discover')}</h2>
-          <div className="flex p-0.5 bg-muted rounded-lg">
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: '#141417' }}>{t('dashboard.discover')}</h2>
+          <div
+            className="flex"
+            style={{ padding: 2, background: 'rgba(20,20,23,0.04)', borderRadius: 8 }}
+          >
             {(['explore', 'templates'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setDiscoverTab(tab)}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all duration-150 ${
-                  discoverTab === tab
-                    ? 'bg-card text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
+                className="transition-all duration-150"
+                style={{
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  fontWeight: discoverTab === tab ? 600 : 400,
+                  color: discoverTab === tab ? '#141417' : '#8e8e96',
+                  borderRadius: 6,
+                  background: discoverTab === tab ? '#ffffff' : 'transparent',
+                  boxShadow: discoverTab === tab ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                }}
               >
                 {t(`dashboard.discover_tab_${tab}`)}
               </button>
@@ -265,25 +434,30 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="columns-2 sm:columns-3 lg:columns-4 gap-3 space-y-3">
+        <div className="columns-2 sm:columns-3 lg:columns-4" style={{ columnGap: 12 }}>
           {DISCOVER.map((item, i) => (
-            <div
-              key={i}
-              className={`break-inside-avoid rounded-2xl bg-gradient-to-br ${item.gradient} ${item.h} relative overflow-hidden group cursor-pointer hover:ring-2 hover:ring-primary/60 transition-all`}
-            >
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center bg-black/20">
-                <span className="text-[11px] text-white font-medium bg-black/40 backdrop-blur-sm px-3 py-1 rounded-full">
-                  {t('dashboard.create_similar')}
-                </span>
-              </div>
-            </div>
+            <DiscoverItem key={i} gradient={item.gradient} height={item.h} />
           ))}
         </div>
 
         <div className="flex justify-center mt-5">
-          <Button variant="outline" size="md" onClick={() => navigate('/app/templates')}>
+          <button
+            onClick={() => navigate('/app/templates')}
+            className="w-full transition-colors"
+            style={{
+              padding: '10px 0',
+              borderRadius: 10,
+              border: '1px solid rgba(20,20,23,0.1)',
+              background: 'transparent',
+              fontSize: 13.5,
+              fontWeight: 500,
+              color: '#5a5a60',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLButtonElement).style.color = '#ff713d'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#5a5a60'; }}
+          >
             {t('dashboard.view_more')}
-          </Button>
+          </button>
         </div>
       </section>
 

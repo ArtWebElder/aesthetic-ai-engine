@@ -3,36 +3,46 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
-import logoLight from '@/assets/logo-light.png';
 
 /* ─── Carousel card data ─────────────────────────────── */
 const CARDS = [
-  { label: 'Ecom Banner', color: 'from-orange-500 to-rose-500', sub: 'Fashion Drop' },
-  { label: 'Social Post', color: 'from-violet-600 to-indigo-500', sub: 'Instagram Feed' },
-  { label: 'Photoshoot', color: 'from-cyan-500 to-teal-400', sub: 'Studio Editorial' },
-  { label: 'Product Ad', color: 'from-amber-500 to-orange-400', sub: 'E-commerce' },
-  { label: 'Story Ad', color: 'from-pink-500 to-rose-400', sub: 'TikTok Vertical' },
-  { label: 'Brand Kit', color: 'from-emerald-500 to-green-400', sub: 'Identity Pack' },
-  { label: 'Hero Banner', color: 'from-blue-500 to-indigo-400', sub: 'Landing Page' },
-  { label: 'Thumbnail', color: 'from-yellow-500 to-amber-400', sub: 'YouTube' },
-  { label: 'Campaign', color: 'from-fuchsia-600 to-pink-500', sub: 'Multi-format' },
+  { label: 'Ecom Banner', gradient: 'linear-gradient(135deg, #f97316, #e11d48)', price: 'R$ 497' },
+  { label: 'Social Post', gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)', price: 'R$ 299' },
+  { label: 'Photoshoot', gradient: 'linear-gradient(135deg, #0891b2, #0d9488)', price: 'R$ 899' },
+  { label: 'Product Ad', gradient: 'linear-gradient(135deg, #d97706, #ea580c)', price: 'R$ 199' },
+  { label: 'Story Ad', gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)', price: 'R$ 149' },
+  { label: 'Brand Kit', gradient: 'linear-gradient(135deg, #10b981, #22c55e)', price: 'R$ 599' },
+  { label: 'Hero Banner', gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)', price: 'R$ 349' },
+  { label: 'Thumbnail', gradient: 'linear-gradient(135deg, #eab308, #f97316)', price: 'R$ 99' },
+  { label: 'Campaign', gradient: 'linear-gradient(135deg, #a855f7, #ec4899)', price: 'R$ 799' },
 ];
 
-function CreativeCard({ label, color, sub }: { label: string; color: string; sub: string }) {
+function CreativeCard({ label, gradient, price }: { label: string; gradient: string; price: string }) {
   return (
-    <div className={`rounded-xl bg-gradient-to-br ${color} p-px mb-3 shrink-0`}>
-      <div className="rounded-xl bg-[#1a1a1f]/70 backdrop-blur-sm p-4 h-28 flex flex-col justify-between">
-        <div className="flex items-center gap-2">
-          <div className={`w-6 h-6 rounded-md bg-gradient-to-br ${color} flex items-center justify-center`}>
-            <Sparkles className="w-3 h-3 text-white" />
-          </div>
-          <span className="text-white text-xs font-semibold">{label}</span>
-        </div>
+    <div
+      className="shrink-0 rounded-[14px] overflow-hidden mb-3 relative"
+      style={{ background: gradient, aspectRatio: '4/5' }}
+    >
+      {/* Headline */}
+      <div className="absolute inset-0 p-4 flex flex-col justify-between">
         <div>
-          <div className="h-2 bg-white/20 rounded-full mb-1.5 w-3/4" />
-          <div className="h-1.5 bg-white/10 rounded-full w-1/2" />
-          <span className="text-white/40 text-[10px] mt-1.5 block">{sub}</span>
+          <div className="h-2.5 bg-white/30 rounded-full mb-1.5 w-3/4" />
+          <div className="h-2 bg-white/20 rounded-full w-1/2" />
         </div>
+        <div className="flex flex-col gap-1">
+          <div className="h-1.5 bg-white/20 rounded-full w-full" />
+          <div className="h-1.5 bg-white/15 rounded-full w-4/5" />
+        </div>
+      </div>
+      {/* Label + price badge */}
+      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+        <span className="text-white text-[11px] font-semibold">{label}</span>
+        <span
+          className="text-white text-[10px] font-medium px-2 py-0.5 rounded-full"
+          style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
+        >
+          {price}
+        </span>
       </div>
     </div>
   );
@@ -41,9 +51,9 @@ function CreativeCard({ label, color, sub }: { label: string; color: string; sub
 function CarouselColumn({ cards, reverse }: { cards: typeof CARDS; reverse?: boolean }) {
   const doubled = [...cards, ...cards];
   return (
-    <div className="flex flex-col overflow-hidden h-full relative">
+    <div className="flex flex-col overflow-hidden h-full relative flex-1">
       <div
-        className={`flex flex-col ${reverse ? 'animate-scroll-down' : 'animate-scroll-up'}`}
+        className={reverse ? 'animate-scroll-down' : 'animate-scroll-up'}
         style={{ willChange: 'transform' }}
       >
         {doubled.map((c, i) => (
@@ -64,8 +74,8 @@ function getPasswordStrength(pw: string): { score: number; label: string; color:
   if (/[^a-zA-Z0-9]/.test(pw)) score++;
   const map = [
     { label: 'Weak', color: 'bg-red-500' },
-    { label: 'Fair', color: 'bg-yellow-500' },
-    { label: 'Good', color: 'bg-blue-500' },
+    { label: 'Fair', color: 'bg-orange-400' },
+    { label: 'Good', color: 'bg-yellow-400' },
     { label: 'Strong', color: 'bg-emerald-500' },
     { label: 'Excellent', color: 'bg-emerald-400' },
   ];
@@ -129,44 +139,76 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#141417]">
-      {/* ── Left panel ───────────────────────────────── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-8 py-12 min-h-screen max-w-[480px] relative z-10">
+    <div className="min-h-screen flex">
+      {/* ── Left panel (light) ───────────────────────────── */}
+      <div
+        className="flex flex-col items-center justify-center relative z-10 overflow-y-auto"
+        style={{ minWidth: 0, width: '100%', maxWidth: 480, padding: '48px', background: '#f5f5f3' }}
+      >
         {/* Logo */}
-        <div className="mb-8 self-start">
-          <img src={logoLight} alt="Creatyng" className="h-8 w-auto" />
+        <div className="mb-8 self-start flex items-center gap-2.5">
+          <div
+            className="flex items-center justify-center rounded-full text-white"
+            style={{
+              width: 32,
+              height: 32,
+              background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+              fontSize: 13,
+              fontWeight: 800,
+            }}
+          >
+            C
+          </div>
+          <span style={{ fontSize: 20, fontWeight: 700, color: '#141417', letterSpacing: '-0.02em' }}>Creatyng</span>
         </div>
 
         <div className="w-full max-w-sm animate-fade-up">
-          {/* Heading */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white mb-1">
-              {mode === 'login' ? t('auth.login.heading') : t('auth.signup.heading')}
-            </h1>
-            <p className="text-sm text-white/50">{t('auth.subtitle')}</p>
-          </div>
-
-          {/* Toggle */}
-          <div className="flex p-1 bg-white/5 rounded-xl mb-6">
+          {/* Toggle login/signup */}
+          <div
+            className="flex mb-6"
+            style={{ background: 'rgba(20,20,23,0.04)', borderRadius: 9, padding: 3 }}
+          >
             {(['login', 'signup'] as const).map((m) => (
               <button
                 key={m}
                 onClick={() => { setMode(m); setError(''); }}
-                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                  mode === m
-                    ? 'bg-white/10 text-white shadow'
-                    : 'text-white/40 hover:text-white/70'
-                }`}
+                className="flex-1 py-2 text-sm rounded-[7px] transition-all duration-200"
+                style={{
+                  fontWeight: mode === m ? 600 : 400,
+                  color: mode === m ? '#141417' : '#8e8e96',
+                  background: mode === m ? '#ffffff' : 'transparent',
+                  boxShadow: mode === m ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                }}
               >
                 {m === 'login' ? t('auth.tab_login') : t('auth.tab_signup')}
               </button>
             ))}
           </div>
 
+          {/* Heading */}
+          <div className="mb-6">
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#141417', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
+              {mode === 'login' ? t('auth.login.heading') : t('auth.signup.heading')}
+            </h1>
+            <p style={{ fontSize: 14, color: '#5a5a60', marginTop: 4 }}>{t('auth.subtitle')}</p>
+          </div>
+
           {/* Google */}
           <button
             onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-3 h-10 rounded-xl bg-white text-[#141417] text-sm font-medium hover:bg-white/90 transition-all duration-150 mb-4"
+            className="w-full flex items-center justify-center gap-3 transition-colors"
+            style={{
+              padding: '11px 16px',
+              borderRadius: 10,
+              border: '1px solid rgba(20,20,23,0.1)',
+              background: '#ffffff',
+              fontSize: 13.5,
+              fontWeight: 500,
+              color: '#141417',
+              marginBottom: 16,
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#f5f5f3'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#ffffff'; }}
           >
             <GoogleIcon />
             {t('auth.continue_google')}
@@ -174,53 +216,81 @@ const Login = () => {
 
           {/* Divider */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/30 text-xs">{t('auth.or_email')}</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-px" style={{ background: 'rgba(20,20,23,0.1)' }} />
+            <span style={{ fontSize: 12, color: '#b5b5bb' }}>{t('auth.or_email')}</span>
+            <div className="flex-1 h-px" style={{ background: 'rgba(20,20,23,0.1)' }} />
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-3">
             {mode === 'signup' && (
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
                 <input
                   type="text"
                   placeholder={t('auth.name_placeholder')}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full h-11 pl-10 pr-4 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#ff713d]/60 focus:bg-white/8 transition-all duration-150"
+                  className="w-full pl-10 pr-4 bg-white text-sm outline-none transition-all duration-150"
+                  style={{
+                    height: 44,
+                    borderRadius: 10,
+                    border: '1px solid rgba(20,20,23,0.1)',
+                    color: '#141417',
+                    fontSize: 13.5,
+                  }}
+                  onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
                 />
               </div>
             )}
 
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
               <input
                 type="email"
                 placeholder={t('auth.email_placeholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full h-11 pl-10 pr-4 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#ff713d]/60 focus:bg-white/8 transition-all duration-150"
+                className="w-full pl-10 pr-4 bg-white text-sm outline-none transition-all duration-150"
+                style={{
+                  height: 44,
+                  borderRadius: 10,
+                  border: '1px solid rgba(20,20,23,0.1)',
+                  color: '#141417',
+                  fontSize: 13.5,
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
               />
             </div>
 
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
               <input
                 type={showPw ? 'text' : 'password'}
                 placeholder={t('auth.password_placeholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full h-11 pl-10 pr-10 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-[#ff713d]/60 focus:bg-white/8 transition-all duration-150"
+                className="w-full pl-10 pr-10 bg-white text-sm outline-none transition-all duration-150"
+                style={{
+                  height: 44,
+                  borderRadius: 10,
+                  border: '1px solid rgba(20,20,23,0.1)',
+                  color: '#141417',
+                  fontSize: 13.5,
+                }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
               />
               <button
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                style={{ color: '#b5b5bb' }}
               >
                 {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -234,17 +304,17 @@ const Login = () => {
                     <div
                       key={i}
                       className={`flex-1 h-1 rounded-full transition-all duration-300 ${
-                        i < pwStrength.score ? pwStrength.color : 'bg-white/10'
+                        i < pwStrength.score ? pwStrength.color : 'bg-[rgba(20,20,23,0.08)]'
                       }`}
                     />
                   ))}
                 </div>
-                <p className="text-xs text-white/40">{pwStrength.label}</p>
+                <p className="text-xs" style={{ color: '#8e8e96' }}>{pwStrength.label}</p>
               </div>
             )}
 
             {error && (
-              <p className="text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+              <p className="text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600">
                 {error}
               </p>
             )}
@@ -252,7 +322,16 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 rounded-xl bg-[#ff713d] text-white text-sm font-semibold flex items-center justify-center gap-2 hover:brightness-110 active:scale-[0.98] transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_4px_16px_rgba(255,113,61,0.35)] mt-1"
+              className="w-full flex items-center justify-center gap-2 text-white font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
+              style={{
+                height: 44,
+                borderRadius: 10,
+                background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+                fontSize: 13.5,
+                fontWeight: 600,
+                boxShadow: '0 3px 10px rgba(255,113,61,0.3)',
+                marginTop: 4,
+              }}
             >
               {loading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -266,17 +345,23 @@ const Login = () => {
           </form>
 
           {/* Social proof */}
-          <div className="mt-8 p-4 bg-white/5 border border-white/8 rounded-xl">
+          <div
+            className="mt-8 p-4 rounded-xl"
+            style={{ background: 'rgba(20,20,23,0.03)', border: '1px solid rgba(20,20,23,0.06)' }}
+          >
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center shrink-0 text-white text-xs font-bold">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
+                style={{ background: 'linear-gradient(135deg, #f97316, #e11d48)' }}
+              >
                 M
               </div>
               <div>
-                <p className="text-white/70 text-xs leading-relaxed">
+                <p className="text-xs leading-relaxed" style={{ color: '#5a5a60' }}>
                   {t('auth.testimonial')}
                 </p>
-                <p className="text-white/40 text-xs mt-1.5 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#8e8e96' }}>
+                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
                   {t('auth.testimonial_author')}
                 </p>
               </div>
@@ -285,30 +370,39 @@ const Login = () => {
         </div>
       </div>
 
-      {/* ── Right panel (carousel) ──────────────────── */}
-      <div className="hidden lg:flex flex-1 relative overflow-hidden bg-[#0f0f12]">
-        {/* Overlay fades */}
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-[#0f0f12] to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[#0f0f12] to-transparent z-10 pointer-events-none" />
+      {/* ── Right panel (dark carousel) ─────────────────── */}
+      <div className="hidden lg:flex flex-1 relative overflow-hidden" style={{ background: '#141417' }}>
+        {/* Top fade */}
+        <div
+          className="absolute inset-x-0 top-0 z-10 pointer-events-none"
+          style={{ height: '18%', background: 'linear-gradient(to bottom, #141417, transparent)' }}
+        />
+        {/* Bottom fade */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
+          style={{ height: '18%', background: 'linear-gradient(to top, #141417, transparent)' }}
+        />
 
         {/* Carousel columns */}
-        <div className="flex gap-3 px-6 pt-4 w-full overflow-hidden h-full">
-          <div className="flex-1 h-full overflow-hidden">
-            <CarouselColumn cards={CARDS.slice(0, 3)} />
-          </div>
-          <div className="flex-1 h-full overflow-hidden">
-            <CarouselColumn cards={CARDS.slice(3, 6)} reverse />
-          </div>
-          <div className="flex-1 h-full overflow-hidden">
-            <CarouselColumn cards={CARDS.slice(6, 9)} />
-          </div>
+        <div className="flex gap-3 px-6 pt-4 w-full h-full overflow-hidden">
+          <CarouselColumn cards={CARDS.slice(0, 3)} />
+          <CarouselColumn cards={CARDS.slice(3, 6)} reverse />
+          <CarouselColumn cards={CARDS.slice(6, 9)} />
         </div>
 
-        {/* Badge */}
+        {/* Floating badge */}
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
-          <div className="flex items-center gap-2 px-4 py-2 bg-white/8 backdrop-blur-xl border border-white/15 rounded-full shadow-xl">
-            <Sparkles className="w-3.5 h-3.5 text-[#ff713d]" />
-            <span className="text-white/80 text-xs font-medium">{t('auth.generated_badge')}</span>
+          <div
+            className="flex items-center gap-2 rounded-full"
+            style={{
+              padding: '8px 18px',
+              background: 'rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            <Sparkles className="w-3.5 h-3.5" style={{ color: '#ff713d' }} />
+            <span className="text-white font-semibold" style={{ fontSize: 13 }}>{t('auth.generated_badge')}</span>
           </div>
         </div>
       </div>
@@ -324,10 +418,10 @@ const Login = () => {
           100% { transform: translateY(0); }
         }
         .animate-scroll-up {
-          animation: scrollUp 20s linear infinite;
+          animation: scrollUp 22s linear infinite;
         }
         .animate-scroll-down {
-          animation: scrollDown 20s linear infinite;
+          animation: scrollDown 22s linear infinite;
         }
       `}</style>
     </div>
