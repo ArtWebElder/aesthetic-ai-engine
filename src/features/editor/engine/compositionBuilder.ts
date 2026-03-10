@@ -178,7 +178,7 @@ export function buildComposition(input: CompositionInput): CreatygnComposition {
         y: isFoodPop ? '5%' : '4%',
         anchor: 'top-center',
       },
-      gap: '2px',
+      gap: '8px',
       zIndex: zIndex + 10,
     });
   }

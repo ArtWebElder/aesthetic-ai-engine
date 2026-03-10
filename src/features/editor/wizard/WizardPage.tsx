@@ -138,6 +138,7 @@ export function WizardPage() {
     // ── HTML renderer path (Pop Design + Food/Pop with composition JSON) ──────────────
     console.log('[Recompose] HTML renderer branch entered');
     console.log('[Recompose] compositionRef exists:', !!compositionRef.current);
+    console.log('[Recompose] ref value:', !!htmlCompositionRef.current);
     if (USE_HTML_RENDERER && htmlCompositionRef.current) {
       let updated = structuredClone(htmlCompositionRef.current);
 
@@ -344,6 +345,7 @@ export function WizardPage() {
               fontFamily: textConfig.headlineFont,
             });
             htmlCompositionRef.current = composition;
+            console.log('[Gen] htmlCompositionRef SET:', !!htmlCompositionRef.current, htmlCompositionRef.current?.layers?.length);
             popBase64 = await exportCompositionToPNG(composition);
             console.log("[PopDesignHTML] compose OK, length:", popBase64?.length);
           } catch (e) {
@@ -420,6 +422,7 @@ export function WizardPage() {
 
       // ── Standard AI generation ──────────────────────────────────────────────
       const gen = await generateFromWizard(state);
+      console.log('[FoodPop] Gemini generateFromWizard OK — imageBase64 length:', gen.imageBase64?.length, '| provider:', gen.meta?.provider);
       setGeneration(gen);
 
       // ── Composição: texto HTML/CSS sobre a imagem gerada ──────────────────
@@ -474,6 +477,7 @@ export function WizardPage() {
             fontFamily: textConfig?.headlineFont,
           });
           htmlCompositionRef.current = compositionJSON;
+          console.log('[Gen] htmlCompositionRef SET:', !!htmlCompositionRef.current, htmlCompositionRef.current?.layers?.length);
           composed = await exportCompositionToPNG(compositionJSON);
           console.log('[FoodPopHTML] HTML render OK, length:', composed?.length);
         } catch (e) {
