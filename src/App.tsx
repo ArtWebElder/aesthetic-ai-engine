@@ -4,10 +4,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
-import { AuthProvider } from "@/features/auth/fake-auth";
+import { AuthProvider } from "@/features/auth/AuthProvider";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
+import OnboardingPage from "./pages/OnboardingPage";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
 import { WizardPage } from "@/features/editor/wizard/WizardPage";
@@ -30,6 +31,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
 
               <Route path="/app" element={<AppShell />}>
                 <Route index element={<Navigate to="dashboard" replace />} />

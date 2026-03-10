@@ -1,16 +1,26 @@
 import { useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '@/features/auth/fake-auth';
+import { useAuth } from '@/features/auth/AuthProvider';
 import SidebarNav from './SidebarNav';
 import Topbar from './Topbar';
 import CommandBar from './CommandBar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 const AppShell = () => {
-  const { isAuthed } = useAuth();
+  const { user, loading } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (!isAuthed) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#141417] flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff713d] to-[#FF9B70] flex items-center justify-center animate-pulse">
+          <span className="text-white font-extrabold text-lg">C</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
     return <Navigate to="/login" replace />;
   }
 

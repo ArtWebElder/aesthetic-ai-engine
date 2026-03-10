@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/features/auth/fake-auth';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { useTheme } from 'next-themes';
 import logoLight from '@/assets/logo-light.png';
@@ -30,7 +30,7 @@ interface SidebarNavProps {
 const SidebarNav = ({ onClose }: SidebarNavProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { signOut } = useAuth();
   const { t } = useI18n();
   const { resolvedTheme } = useTheme();
   const logo = resolvedTheme === 'dark' ? logoDark : logoLight;
@@ -88,7 +88,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
           size="sm"
           className="w-full justify-start text-muted-foreground"
           onClick={() => {
-            logout();
+            signOut();
             navigate('/login');
           }}
         >
