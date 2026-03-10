@@ -54,6 +54,10 @@ interface WizardStore extends WizardState {
   /** Subject isolado (PNG transparente) — cache do resultado de bg removal. */
   setSubjectIsolated: (val: string | null) => void;
 
+  // ── Composed image (final render com texto overlay) ───────────────────────
+  composedImageBase64?: string | null;
+  setComposedImage: (val: string | null) => void;
+
   // ── Reset ────────────────────────────────────────────────────────────────────
   reset: () => void;
 }
@@ -181,6 +185,8 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
   setFreeInstructions: (val) => set({ freeInstructions: val }),
   setLogoBase64: (val) => set({ logoBase64: val }),
   setSubjectIsolated: (val) => set({ subjectIsolatedBase64: val }),
+
+  setComposedImage: (val) => set({ composedImageBase64: val }),
 
   // ── Reset ────────────────────────────────────────────────────────────────────
 
