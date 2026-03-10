@@ -41,7 +41,9 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              {/* DEV: redirect root directly to dashboard for visual review */}
+              <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+              {/* <Route path="/" element={<Index />} /> */}
               <Route path="/login" element={<Login />} />
               <Route path="/onboarding" element={<OnboardingPage />} />
 
