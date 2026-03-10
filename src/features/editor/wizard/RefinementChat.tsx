@@ -2,12 +2,47 @@
 // CREATYNG — Chat de refinamento pós-geração.
 // Path primário: Gemini Flash via Edge Function (chat-edit) — opera diretamente no JSON de composição.
 // Path fallback: parseChat() regex local → applyChatToComposition().
+// Path AI sem composition: qualquer comando desconhecido → Gemini Flash direto.
 
 import { useState, useRef, useEffect } from "react";
 import { parseChat } from "../engine/chatParser";
 import { applyCommand, type RefinementOverrides } from "../engine/chatApply";
 import { applyCommandWithAI } from "../engine/chatCompositionAI";
 import type { CreatygnComposition } from "@/types/composition";
+
+const GEMINI_API_KEY = (import.meta as { env: Record<string, string> }).env.VITE_GEMINI_API_KEY ?? "";
+
+/**
+ * Chama Gemini Flash sem composition — retorna resposta de texto livre.
+ * Usado quando regex=unknown e não há JSON de composição disponível.
+ */
+async function callGeminiForHelp(command: string): Promise<string> {
+  if (!GEMINI_API_KEY) {
+    console.warn('[Chat] VITE_GEMINI_API_KEY não configurado — IA indisponível');
+    return "IA não configurada. Verifique VITE_GEMINI_API_KEY.";
+  }
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `Você é assistente de design do Creatyng. O usuário quer ajustar um criativo visual e enviou: "${command}". Responda em 1-2 linhas em PT-BR, explicando o que faria para atender ao pedido ou pedindo mais detalhes se necessário.` }] }],
+        generationConfig: { temperature: 0.3, maxOutputTokens: 200 },
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) {
+      console.warn('[Chat] Gemini respondeu', res.status);
+      return `IA indisponível (${res.status}). Tente novamente.`;
+    }
+    const data = await res.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "Sem resposta da IA.";
+  } catch (e) {
+    console.warn('[Chat] Gemini error:', e);
+    return "Erro ao contatar a IA. Verifique sua conexão.";
+  }
+}
 
 interface ChatMessage {
   role: "user" | "system";
@@ -51,6 +86,9 @@ export function RefinementChat({
     const userMsg: ChatMessage = { role: "user", text: commandText };
     setInput("");
 
+    console.log('[Chat] composition available:', !!composition);
+    console.log('[Chat] onCompositionChange available:', !!onCompositionChange);
+
     // Comandos de regeneração sempre vão para onRegenerate
     const parsedCheck = parseChat(commandText);
     if (parsedCheck.type === "regenerate_image") {
@@ -93,15 +131,36 @@ export function RefinementChat({
       return;
     }
 
-    // ── Path fallback: regex overrides (quando não há composition JSON) ────────
-    if (parsedCheck.type === "unknown") {
-      setMessages((prev) => [...prev, userMsg, { role: "system", text: `❓ ${parsedCheck.description}` }]);
+    // ── Path fallback com regex: comando reconhecido sem composition JSON ──────
+    if (parsedCheck.type !== "unknown") {
+      const newOverrides = applyCommand(parsedCheck, overrides);
+      onOverridesChange(newOverrides);
+      setMessages((prev) => [...prev, userMsg, { role: "system", text: `✅ ${parsedCheck.description}` }]);
       return;
     }
 
-    const newOverrides = applyCommand(parsedCheck, overrides);
-    onOverridesChange(newOverrides);
-    setMessages((prev) => [...prev, userMsg, { role: "system", text: `✅ ${parsedCheck.description}` }]);
+    // ── Path Gemini direto: regex=unknown, sem composition → chama IA mesmo assim ──
+    console.log('[Chat] regex=unknown, sem composition — enviando para Gemini Flash direto');
+    const thinkingMsg: ChatMessage = { role: "system", text: "✨ Consultando IA..." };
+    setMessages((prev) => [...prev, userMsg, thinkingMsg]);
+    setAiLoading(true);
+
+    try {
+      const aiResponse = await callGeminiForHelp(commandText);
+      setMessages((prev) => {
+        const msgs = [...prev];
+        msgs[msgs.length - 1] = { role: "system", text: `🤖 ${aiResponse}` };
+        return msgs;
+      });
+    } catch {
+      setMessages((prev) => {
+        const msgs = [...prev];
+        msgs[msgs.length - 1] = { role: "system", text: "❌ Erro ao contatar IA." };
+        return msgs;
+      });
+    } finally {
+      setAiLoading(false);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
