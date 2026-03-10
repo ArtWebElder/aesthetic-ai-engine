@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   FolderOpen,
+  LayoutGrid,
   CreditCard,
   Settings,
   HelpCircle,
@@ -18,6 +19,7 @@ import logoDark from '@/assets/logo-dark.png';
 const navItems = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
   { labelKey: 'nav.projects', icon: FolderOpen, path: '/app/projects' },
+  { labelKey: 'nav.templates', icon: LayoutGrid, path: '/app/templates' },
   { labelKey: 'nav.billing', icon: CreditCard, path: '/app/billing' },
   { labelKey: 'nav.settings', icon: Settings, path: '/app/settings' },
   { labelKey: 'nav.help', icon: HelpCircle, path: '/app/help' },

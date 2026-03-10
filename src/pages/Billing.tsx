@@ -1,138 +1,261 @@
 import { useState } from 'react';
-import { CreditCard, Coins, Key, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import StatCard from '@/components/StatCard';
+  CreditCard, Coins, Zap, Users, Building2, Check, X,
+  RefreshCw, Sparkles, TrendingUp, Calendar,
+} from 'lucide-react';
+import { Button, Badge, KPICard, ProgressBar } from '@/components/creatyng';
 import { mockCredits } from '@/lib/mocks/data';
 import { useI18n } from '@/i18n';
 
-const creditPacks = [
-  { amount: 50, price: 5 },
-  { amount: 150, price: 12 },
-  { amount: 300, price: 20 },
+/* ── Static data ──────────────────────────────────────── */
+const PLANS = [
+  {
+    id: 'free',
+    nameKey: 'billing.plan_name.free',
+    price: 0,
+    creditsKey: 'billing.plan_credits.free',
+    Icon: Sparkles,
+    current: false,
+    features: [
+      { key: 'billing.feature.10_credits', ok: true },
+      { key: 'billing.feature.all_templates', ok: true },
+      { key: 'billing.feature.hd_export', ok: true },
+      { key: 'billing.feature.priority_generation', ok: false },
+      { key: 'billing.feature.4k_export', ok: false },
+    ],
+  },
+  {
+    id: 'pro',
+    nameKey: 'billing.plan_name.pro',
+    price: 29,
+    creditsKey: 'billing.plan_credits.pro',
+    Icon: Zap,
+    current: true,
+    features: [
+      { key: 'billing.feature.500_credits', ok: true },
+      { key: 'billing.feature.all_templates', ok: true },
+      { key: 'billing.feature.2k_export', ok: true },
+      { key: 'billing.feature.priority_generation', ok: true },
+      { key: 'billing.feature.byok', ok: true },
+    ],
+  },
+  {
+    id: 'team',
+    nameKey: 'billing.plan_name.team',
+    price: 79,
+    creditsKey: 'billing.plan_credits.team',
+    Icon: Users,
+    current: false,
+    features: [
+      { key: 'billing.feature.1500_credits', ok: true },
+      { key: 'billing.feature.all_templates', ok: true },
+      { key: 'billing.feature.4k_export', ok: true },
+      { key: 'billing.feature.priority_generation', ok: true },
+      { key: 'billing.feature.team_seats', ok: true },
+    ],
+  },
+  {
+    id: 'enterprise',
+    nameKey: 'billing.plan_name.enterprise',
+    price: 0,
+    creditsKey: 'billing.plan_credits.enterprise',
+    Icon: Building2,
+    current: false,
+    features: [
+      { key: 'billing.feature.unlimited_credits', ok: true },
+      { key: 'billing.feature.all_templates', ok: true },
+      { key: 'billing.feature.4k_export', ok: true },
+      { key: 'billing.feature.api_access', ok: true },
+      { key: 'billing.feature.team_seats', ok: true },
+    ],
+  },
 ];
 
+const HISTORY = [
+  { id: 'h1', action: 'billing.hist.generation', type: 'generation', credits: -1, date: '2026-03-10' },
+  { id: 'h2', action: 'billing.hist.generation', type: 'generation', credits: -1, date: '2026-03-10' },
+  { id: 'h3', action: 'billing.hist.recharge', type: 'recharge', credits: +100, date: '2026-03-09' },
+  { id: 'h4', action: 'billing.hist.generation', type: 'generation', credits: -1, date: '2026-03-08' },
+  { id: 'h5', action: 'billing.hist.renewal', type: 'renewal', credits: +500, date: '2026-03-01' },
+];
+
+const HISTORY_ICONS: Record<string, React.FC<{ className?: string }>> = {
+  generation: Sparkles,
+  recharge: RefreshCw,
+  renewal: Calendar,
+};
+
+/* ── Component ────────────────────────────────────────── */
 const Billing = () => {
-  const [buyOpen, setBuyOpen] = useState(false);
   const { t } = useI18n();
-  const plans = [
-    { name: t('billing.plan.starter'), price: 19, credits: 100, features: [t('billing.feature.100_credits'), t('billing.feature.all_templates'), t('billing.feature.hd_export')] },
-    { name: t('billing.plan.pro'), price: 49, credits: 500, features: [t('billing.feature.500_credits'), t('billing.feature.priority_generation'), t('billing.feature.2k_export'), t('billing.feature.byok')] },
-    { name: t('billing.plan.business'), price: 99, credits: 1500, features: [t('billing.feature.1500_credits'), t('billing.feature.api_access'), t('billing.feature.4k_export'), t('billing.feature.team_seats')] },
-  ];
+  const [tab, setTab] = useState<'plans' | 'usage'>('plans');
+
+  const totalCredits = 500;
+  const usedCredits = totalCredits - mockCredits.current;
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-heading font-bold tracking-tight">{t('billing.title')}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{t('billing.subtitle')}</p>
+    <div className="min-h-full px-6 py-7 max-w-5xl mx-auto space-y-7">
+      {/* Header */}
+      <div className="animate-fade-up">
+        <h1 className="text-2xl font-semibold text-foreground">{t('billing.title')}</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">{t('billing.subtitle')}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard title={t('billing.current_plan')} value={t('billing.plan.starter')} icon={CreditCard} subtitle={t('billing.per_month', { price: 19 })} />
-        <StatCard title={t('billing.credits')} value={mockCredits.current} icon={Coins} subtitle={t('billing.remaining')} />
+      {/* Tabs */}
+      <div className="flex p-0.5 bg-muted rounded-xl w-fit animate-fade-up" style={{ animationDelay: '40ms' }}>
+        {(['plans', 'usage'] as const).map((tb) => (
+          <button
+            key={tb}
+            onClick={() => setTab(tb)}
+            className={`px-5 py-2 text-sm font-medium rounded-lg transition-all duration-150 ${
+              tab === tb ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {t(`billing.tab.${tb}`)}
+          </button>
+        ))}
       </div>
 
-      {/* Plans */}
-      <div>
-        <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.plans')}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {plans.map((plan, i) => (
-            <div key={plan.name} className={`bg-card border rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] ${i === 1 ? 'border-primary/40' : 'border-border/50'}`}>
-              <h3 className="font-heading font-semibold">{plan.name}</h3>
-              <p className="text-2xl font-heading font-bold mt-1">${plan.price}<span className="text-sm text-muted-foreground font-normal">{t('billing.mo_suffix')}</span></p>
-              <ul className="mt-4 space-y-2">
-                {plan.features.map((f) => (
-                  <li key={f} className="text-xs text-muted-foreground flex items-center gap-2">
-                    <Check className="h-3 w-3 text-primary" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Button variant={i === 1 ? 'default' : 'outline'} size="sm" className="w-full mt-4" disabled>
-                {i === 0 ? t('billing.current') : t('billing.upgrade')}
-              </Button>
+      {tab === 'plans' ? (
+        <>
+          {/* Credit summary card */}
+          <div className="bg-card border border-border rounded-2xl p-5 flex items-center gap-6 animate-fade-up" style={{ animationDelay: '80ms' }}>
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-foreground">{t('billing.current_plan')}: <span className="text-primary">Pro</span></span>
+                <span className="text-muted-foreground text-xs">{t('billing.renews_in', { days: '18' })}</span>
+              </div>
+              <ProgressBar value={usedCredits} max={totalCredits} label={t('billing.credits_used', { used: String(usedCredits), total: String(totalCredits) })} showValue />
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Buy credits */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading font-semibold">{t('billing.buy_credits')}</h2>
-          <Button variant="outline" size="sm" onClick={() => setBuyOpen(true)}>{t('billing.buy')}</Button>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {creditPacks.map((pack) => (
-            <button key={pack.amount} className="bg-card border border-border/50 rounded-xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04]" onClick={() => setBuyOpen(true)}>
-              <p className="text-xl font-heading font-bold">{pack.amount}</p>
-              <p className="text-xs text-muted-foreground">{t('billing.credits_unit')}</p>
-              <p className="text-sm font-medium mt-2">${pack.price}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="h-px bg-border/50" />
-
-      {/* BYOK */}
-      <div>
-        <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.byok_title')}</h2>
-        <div className="bg-card border border-border/50 rounded-xl p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Key className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{t('billing.byok_subtitle')}</p>
+            <Button variant="outline" size="sm">
+              <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+              {t('billing.recharge')}
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Label className="text-xs">{t('billing.provider')}</Label>
-            <Select defaultValue="openai">
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="openai">OpenAI</SelectItem>
-                <SelectItem value="replicate">Replicate</SelectItem>
-                <SelectItem value="stability">Stability AI</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">{t('billing.api_key')}</Label>
-            <Input type="password" placeholder={t("billing.api_key_placeholder")} />
-          </div>
-          <Button variant="outline" size="sm" disabled>{t('billing.save_key')}</Button>
-        </div>
-      </div>
 
-      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
-        <DialogContent className="glass-surface-strong sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-heading">{t('billing.buy_credits')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 pt-2">
-            {creditPacks.map((pack) => (
-              <button key={pack.amount} className="w-full bg-card border border-border/50 rounded-xl p-4 flex items-center justify-between transition-all duration-200 hover:bg-muted/30">
-                <span className="font-medium">{t('billing.credit_pack', { amount: pack.amount })}</span>
-                <span className="text-sm">${pack.price}</span>
-              </button>
+          {/* Plans grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-up" style={{ animationDelay: '120ms' }}>
+            {PLANS.map((plan) => (
+              <div
+                key={plan.id}
+                className={`relative bg-card border rounded-2xl p-5 flex flex-col transition-all duration-200 ${
+                  plan.current
+                    ? 'border-creatyng-accent shadow-[0_0_0_2px_rgba(255,113,61,0.15)]'
+                    : 'border-border hover:border-primary/30 hover:shadow-md'
+                }`}
+              >
+                {plan.current && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Badge variant="accent" className="text-[10px] shadow-sm">{t('billing.current_plan_badge')}</Badge>
+                  </div>
+                )}
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-3 ${plan.current ? 'bg-creatyng-accent-pale' : 'bg-muted'}`}>
+                  <plan.Icon className={`w-4 h-4 ${plan.current ? 'text-creatyng-accent' : 'text-muted-foreground'}`} />
+                </div>
+                <h3 className="text-sm font-semibold text-foreground">{t(plan.nameKey)}</h3>
+                <p className="text-2xl font-bold text-foreground mt-1">
+                  {plan.price === 0 && plan.id === 'enterprise'
+                    ? t('billing.price.custom')
+                    : plan.price === 0
+                    ? t('billing.price.free')
+                    : `$${plan.price}`}
+                  {plan.price > 0 && <span className="text-xs font-normal text-muted-foreground">/mo</span>}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t(plan.creditsKey)}</p>
+
+                <ul className="mt-4 space-y-2 flex-1">
+                  {plan.features.map((f) => (
+                    <li key={f.key} className="flex items-center gap-2 text-xs">
+                      {f.ok
+                        ? <Check className="w-3.5 h-3.5 text-creatyng-success shrink-0" />
+                        : <X className="w-3.5 h-3.5 text-muted-foreground/40 shrink-0" />}
+                      <span className={f.ok ? 'text-foreground' : 'text-muted-foreground/50 line-through'}>
+                        {t(f.key)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  variant={plan.current ? 'primary' : 'outline'}
+                  size="sm"
+                  className="mt-5 w-full"
+                  disabled={plan.current || plan.id === 'enterprise'}
+                >
+                  {plan.current ? t('billing.current') : plan.id === 'enterprise' ? t('billing.contact') : t('billing.upgrade')}
+                </Button>
+              </div>
             ))}
-            <Button className="w-full mt-2" disabled>{t('billing.pay_with_stripe')}</Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </>
+      ) : (
+        <>
+          {/* KPI cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-fade-up" style={{ animationDelay: '80ms' }}>
+            <KPICard
+              label={t('billing.kpi.remaining')}
+              value={mockCredits.current}
+              icon={<Coins className="w-4 h-4" />}
+              trend={12}
+            />
+            <KPICard
+              label={t('billing.kpi.generations')}
+              value={47}
+              icon={<Sparkles className="w-4 h-4" />}
+              trend={5}
+            />
+            <KPICard
+              label={t('billing.kpi.avg_daily')}
+              value="1.5"
+              icon={<TrendingUp className="w-4 h-4" />}
+              trend={-2}
+            />
+          </div>
+
+          {/* History table */}
+          <div className="bg-card border border-border rounded-2xl overflow-hidden animate-fade-up" style={{ animationDelay: '120ms' }}>
+            <div className="px-5 py-4 border-b border-border">
+              <h2 className="text-sm font-semibold text-foreground">{t('billing.history.title')}</h2>
+            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs text-muted-foreground">
+                  <th className="px-5 py-3 text-left font-medium">{t('billing.history.col.action')}</th>
+                  <th className="px-5 py-3 text-left font-medium hidden sm:table-cell">{t('billing.history.col.type')}</th>
+                  <th className="px-5 py-3 text-right font-medium">{t('billing.history.col.credits')}</th>
+                  <th className="px-5 py-3 text-right font-medium hidden md:table-cell">{t('billing.history.col.date')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {HISTORY.map((h) => {
+                  const Icon = HISTORY_ICONS[h.type] ?? Sparkles;
+                  return (
+                    <tr key={h.id} className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors">
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                            <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                          </div>
+                          <span className="text-foreground">{t(h.action)}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 hidden sm:table-cell">
+                        <Badge variant={h.type === 'recharge' || h.type === 'renewal' ? 'success' : 'default'} className="text-[10px]">
+                          {h.type}
+                        </Badge>
+                      </td>
+                      <td className={`px-5 py-3 text-right font-medium tabular-nums ${h.credits > 0 ? 'text-creatyng-success' : 'text-foreground'}`}>
+                        {h.credits > 0 ? `+${h.credits}` : h.credits}
+                      </td>
+                      <td className="px-5 py-3 text-right text-muted-foreground hidden md:table-cell">{h.date}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 };
