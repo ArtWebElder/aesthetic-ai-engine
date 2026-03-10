@@ -138,7 +138,8 @@ function renderPopDecorativeText(
   ch: number,
   headline: string,
   accentColor: string,
-  bgIsDark: boolean
+  bgIsDark: boolean,
+  fontFamily = "Montserrat"
 ): void {
   const word = extractDecorativeWord(headline);
   if (!word) return;
@@ -146,13 +147,13 @@ function renderPopDecorativeText(
   ctx.save();
 
   // Tamanho ENORME: calibrar para 130% da largura
-  ctx.font = `900 ${cw * 0.5}px Montserrat, sans-serif`;
+  ctx.font = `900 ${cw * 0.5}px ${fontFamily}, sans-serif`;
   const measured = ctx.measureText(word).width;
   const targetWidth = cw * 1.3;
   const ratio = targetWidth / measured;
   const fontSize = Math.min(cw * 0.5 * ratio, cw * 0.7);
 
-  ctx.font = `900 ${fontSize}px Montserrat, sans-serif`;
+  ctx.font = `900 ${fontSize}px ${fontFamily}, sans-serif`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
 
@@ -412,12 +413,14 @@ function renderPopHeadline(
   ch: number,
   headline: string,
   accentColor: string,
-  bgIsDark: boolean
+  bgIsDark: boolean,
+  fontFamily = "Montserrat",
+  sizeFactor = 1.0
 ): number {
   if (!headline.trim()) return ch * 0.06;
 
   const segments = segmentPopHeadline(headline);
-  const baseSize = Math.round(cw * 0.14); // larger base for presence
+  const baseSize = Math.round(cw * 0.14 * sizeFactor); // larger base for presence
   const centerX = cw / 2;
   let currentY = ch * 0.04; // tight to the top
 
@@ -432,10 +435,10 @@ function renderPopHeadline(
     let fontSize = Math.round(baseSize * seg.sizeFactor);
 
     // Auto-shrink: reduce fontSize until text fits within 90% of canvas width
-    ctx.font = `${seg.weight} ${fontSize}px Montserrat, sans-serif`;
+    ctx.font = `${seg.weight} ${fontSize}px ${fontFamily}, sans-serif`;
     while (ctx.measureText(seg.text).width > maxTextWidth && fontSize > 20) {
       fontSize -= 2;
-      ctx.font = `${seg.weight} ${fontSize}px Montserrat, sans-serif`;
+      ctx.font = `${seg.weight} ${fontSize}px ${fontFamily}, sans-serif`;
     }
 
     if (bgIsDark) {
@@ -648,10 +651,11 @@ export async function composePopDesignV2(
   subjectBase64: string,
   texts: PopTexts,
   palette: FoodPalette,
-  _presetConfig: TextPresetConfig,
+  presetConfig: TextPresetConfig,
   canvasWidth  = 1080,
   canvasHeight = 1080,
   watermark    = false,
+  sizeFactor   = 1.0,
 ): Promise<string> {
   const cw = canvasWidth;
   const ch = canvasHeight;
@@ -663,6 +667,7 @@ export async function composePopDesignV2(
 
   const accentColor = palette.accent || "#7B2D8E";
   const headline    = texts.headline || "";
+  const fontFamily  = presetConfig?.headlineFont || "Montserrat";
 
   const hasBgFromGemini = Boolean(bgBase64 && bgBase64.length > 100);
 
@@ -692,7 +697,7 @@ export async function composePopDesignV2(
 
   // ── 2. Texto decorativo gigante (ATRÁS do subject) ──
   if (headline) {
-    renderPopDecorativeText(ctx, cw, ch, headline, accentColor, bgIsDark);
+    renderPopDecorativeText(ctx, cw, ch, headline, accentColor, bgIsDark, fontFamily);
   }
 
   // ── 3. Subject isolado com white-threshold ──
@@ -709,7 +714,7 @@ export async function composePopDesignV2(
   }
 
   // ── 4. Headline ──
-  const headlineEndY = renderPopHeadline(ctx, cw, ch, headline, accentColor, bgIsDark);
+  const headlineEndY = renderPopHeadline(ctx, cw, ch, headline, accentColor, bgIsDark, fontFamily, sizeFactor);
 
   // ── 5. Subheadline ──
   if (texts.subheadline?.trim()) {
@@ -756,10 +761,11 @@ export async function composePopDesign(
   subjectBase64: string,
   texts: PopTexts,
   palette: FoodPalette,
-  _presetConfig: TextPresetConfig,
+  presetConfig: TextPresetConfig,
   canvasWidth  = 1080,
   canvasHeight = 1080,
   watermark    = false,
+  sizeFactor   = 1.0,
 ): Promise<string> {
   const cw = canvasWidth;
   const ch = canvasHeight;
@@ -771,6 +777,7 @@ export async function composePopDesign(
 
   const accentColor = palette.accent || "#7B2D8E";
   const headline    = texts.headline || "";
+  const fontFamily  = presetConfig?.headlineFont || "Montserrat";
 
   // ── 1. Fundo vibrante com cor real ──
   const bg = getPopBackground(palette, headline);
@@ -779,7 +786,7 @@ export async function composePopDesign(
 
   // ── 2. Texto decorativo gigante (atrás do subject) ──
   if (headline) {
-    renderPopDecorativeText(ctx, cw, ch, headline, accentColor, bgIsDark);
+    renderPopDecorativeText(ctx, cw, ch, headline, accentColor, bgIsDark, fontFamily);
   }
 
   // ── 3. Subject isolado centralizado ──
@@ -796,7 +803,7 @@ export async function composePopDesign(
   }
 
   // ── 4. Headline centralizada no topo ──
-  const headlineEndY = renderPopHeadline(ctx, cw, ch, headline, accentColor, bgIsDark);
+  const headlineEndY = renderPopHeadline(ctx, cw, ch, headline, accentColor, bgIsDark, fontFamily, sizeFactor);
 
   // ── 5. Subheadline ──
   if (texts.subheadline?.trim()) {
