@@ -222,7 +222,7 @@ const DECO_SKIP = new Set([
   "THE", "OF", "AND", "FOR", "TO", "IN", "YOUR", "OUR",
 ]);
 
-function extractDecorativeWord(headline: string): string {
+export function extractDecorativeWord(headline: string): string {
   const words = headline.toUpperCase().trim().split(/\s+/);
   for (const word of words) {
     if (!DECO_SKIP.has(word) && word.length >= 3) return word;
@@ -254,7 +254,7 @@ interface DecorativeConfig {
   rotation: number;
 }
 
-function chooseDecorativeConfig(headline: string): DecorativeConfig {
+export function chooseDecorativeConfig(headline: string): DecorativeConfig {
   let hash = 0;
   const text = headline.toLowerCase();
   for (let i = 0; i < text.length; i++) {

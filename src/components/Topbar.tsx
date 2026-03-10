@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import ThemeToggle from '@/components/ThemeToggle';
 import { mockCredits } from '@/lib/mocks/data';
-import { useAuth } from '@/features/auth/fake-auth';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { LocaleDropdown } from '@/components/LocaleDropdown';
 
@@ -53,7 +53,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
       {/* Avatar */}
       <Avatar className="h-7 w-7">
         <AvatarFallback className="text-xs bg-primary/10 text-primary font-medium">
-          {user?.name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+          {user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
         </AvatarFallback>
       </Avatar>
     </header>
