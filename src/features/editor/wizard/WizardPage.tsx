@@ -120,8 +120,11 @@ export function WizardPage() {
 
   // ── Recompõe o criativo com overrides, sem regerar a imagem ─────────────
   async function recomposeWithOverrides(overrides: RefinementOverrides) {
-    if (!currentGeneration) return;
+    console.log("[Recompose] called with overrides:", overrides);
     const state = useWizardStore.getState();
+    const liveGeneration = state.currentGeneration;
+    console.log("[Recompose] has liveGeneration:", !!liveGeneration, "| popBg:", !!popBgRef.current, "| standardImg:", !!standardImgRef.current);
+    if (!liveGeneration) return;
     const isPopDesign = state.selectedImagePresetId === "sys-img-pop-design";
 
     if (overrides.fontFamily) await loadGoogleFont(overrides.fontFamily);
@@ -157,6 +160,7 @@ export function WizardPage() {
         false,
         overrides.headlineSizeFactor ?? 1.0,
       );
+      console.log("[Recompose] popDesignV2 result length:", result?.length);
       setComposedBase64(result);
     } else if (!isPopDesign && standardImgRef.current) {
       const mergedColors: ColorConfig = overrides.accentColor
@@ -184,7 +188,10 @@ export function WizardPage() {
           palette:     mergedPalette,
         } : undefined,
       });
+      console.log("[Recompose] exportComposed result length:", result?.length);
       setComposedBase64(result);
+    } else {
+      console.warn("[Recompose] no branch matched — isPopDesign:", isPopDesign, "popBg:", !!popBgRef.current, "standardImg:", !!standardImgRef.current);
     }
   }
 
