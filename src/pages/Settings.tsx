@@ -4,10 +4,12 @@ import {
   Camera, Upload, Plus, X, Copy, Trash2, Bell, Moon, Sun,
 } from 'lucide-react';
 import { Button, Toggle } from '@/components/creatyng';
+import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { LocaleDropdown } from '@/components/LocaleDropdown';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useToast } from '@/features/toast/useToast';
 
 type SettingsTab = 'profile' | 'preferences' | 'brandkit' | 'apikeys';
 
@@ -30,6 +32,7 @@ const DEFAULT_COLORS = ['#ff713d', '#141417', '#ffffff', '#7C3AED'];
 const Settings = () => {
   const { user } = useAuth();
   const { t } = useI18n();
+  const toast = useToast();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [name, setName] = useState(user?.user_metadata?.full_name || '');
@@ -40,6 +43,7 @@ const Settings = () => {
   const [brandFonts, setBrandFonts] = useState(['Instrument Sans', 'Space Grotesk']);
   const [fontInput, setFontInput] = useState('');
   const [apiKeys, setApiKeys] = useState(MOCK_KEYS);
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
 
   const addFont = () => {
     if (fontInput.trim() && !brandFonts.includes(fontInput.trim())) {
@@ -141,12 +145,12 @@ const Settings = () => {
                 </div>
               </div>
 
-              <Button variant="primary" size="sm">{t('common.save')}</Button>
+              <Button variant="primary" size="sm" onClick={() => toast.success('Configurações salvas!')}>{t('common.save')}</Button>
 
               {/* Danger zone */}
               <div className="pt-4 border-t border-border space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('settings.danger_zone')}</p>
-                <Button variant="danger" size="sm">
+                <Button variant="danger" size="sm" onClick={() => setConfirmDeleteAccount(true)}>
                   {t('settings.delete_account')}
                 </Button>
               </div>
@@ -196,7 +200,7 @@ const Settings = () => {
                 </div>
               </div>
 
-              <Button variant="primary" size="sm">{t('settings.save_preferences')}</Button>
+              <Button variant="primary" size="sm" onClick={() => toast.success('Preferências salvas!')}>{t('settings.save_preferences')}</Button>
             </div>
           )}
 
@@ -272,7 +276,7 @@ const Settings = () => {
                 </div>
               </div>
 
-              <Button variant="primary" size="sm">{t('settings.save_brand_kit')}</Button>
+              <Button variant="primary" size="sm" onClick={() => toast.success('Brand Kit atualizado!')}>{t('settings.save_brand_kit')}</Button>
             </div>
           )}
 
@@ -323,6 +327,16 @@ const Settings = () => {
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={confirmDeleteAccount}
+        onConfirm={() => { setConfirmDeleteAccount(false); toast.error('Conta excluída (placeholder)'); }}
+        onCancel={() => setConfirmDeleteAccount(false)}
+        title="Excluir sua conta?"
+        description="Todos os seus dados, projetos e créditos serão removidos permanentemente. Esta ação não pode ser desfeita."
+        confirmLabel="Excluir conta"
+        variant="danger"
+      />
     </div>
   );
 };

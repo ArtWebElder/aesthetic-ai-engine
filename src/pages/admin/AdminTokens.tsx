@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { adminService, MOCK_PROVIDERS, MOCK_TOP_USERS } from '@/services/adminService';
+import { Skeleton } from '@/components/creatyng';
 
 type Provider = typeof MOCK_PROVIDERS[number];
 type TopUser = typeof MOCK_TOP_USERS[number];
@@ -10,17 +11,36 @@ type TopUser = typeof MOCK_TOP_USERS[number];
 const CHART_STYLE = { fontSize: 11, fill: 'rgba(255,255,255,0.3)' };
 
 export default function AdminTokens() {
+  const [loading, setLoading] = useState(true);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [dailyData, setDailyData] = useState<{ day: string; geminiPro: number; geminiFlash: number; replicate: number }[]>([]);
 
   useEffect(() => {
-    adminService.getTokenStats().then(({ providers, topUsers }) => {
+    Promise.all([
+      adminService.getTokenStats(),
+      adminService.getDailyTokensByProvider(),
+    ]).then(([{ providers, topUsers }, daily]) => {
       setProviders(providers);
       setTopUsers(topUsers);
+      setDailyData(daily);
+      setTimeout(() => setLoading(false), 600);
     });
-    adminService.getDailyTokensByProvider().then(setDailyData);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-3 gap-4">
+          {[0, 1, 2].map((i) => <Skeleton key={i} height="148px" rounded className="rounded-xl" />)}
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton height="260px" rounded className="rounded-xl" />
+          <Skeleton height="260px" rounded className="rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

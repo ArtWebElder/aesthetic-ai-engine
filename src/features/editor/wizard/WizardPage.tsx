@@ -5,6 +5,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "@/features/toast/useToast";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { generateFromWizard, GenerateError } from "@/services/generateService";
 import { exportComposed, FORMAT_BY_ID, type FoodPalette } from "../engine/exportComposed";
@@ -156,6 +157,7 @@ function StepIndicator({ current }: { current: number }) {
 
 export function WizardPage() {
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4 | 5>(1);
   const [stageIndex, setStageIndex] = useState(0);
@@ -560,10 +562,12 @@ export function WizardPage() {
       setComposedBase64(composed);
       setComposedImage(composed);
       setGenerationDone(true);
+      toast.success("Criativo gerado com sucesso!");
     } catch (e) {
       const msg = e instanceof GenerateError ? e.message : "Erro inesperado. Tente novamente.";
       setError(msg);
       setGenerationError(msg);
+      toast.error("Erro na geração. Tente novamente.");
     } finally {
       setGenerating(false);
       setComposing(false);

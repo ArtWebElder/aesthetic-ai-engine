@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { ToastProvider } from "@/features/toast/ToastProvider";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -34,6 +35,7 @@ const App = () => (
   <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ToastProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -69,6 +71,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   </ThemeProvider>

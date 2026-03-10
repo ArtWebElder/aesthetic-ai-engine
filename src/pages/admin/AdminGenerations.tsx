@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { adminService, MOCK_LOGS } from '@/services/adminService';
 import { CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Skeleton } from '@/components/creatyng';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 
 type Log = typeof MOCK_LOGS[number];
 
@@ -17,6 +19,7 @@ const PROVIDER_COLORS: Record<string, string> = {
 };
 
 export default function AdminGenerations() {
+  const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<Log[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'error'>('all');
@@ -25,6 +28,7 @@ export default function AdminGenerations() {
     adminService.getGenerationLogs().then(({ logs, total }) => {
       setLogs(logs);
       setTotal(total);
+      setTimeout(() => setLoading(false), 600);
     });
   }, []);
 
@@ -32,10 +36,25 @@ export default function AdminGenerations() {
 
   const successCount = logs.filter((l) => l.status === 'success').length;
   const errorCount = logs.filter((l) => l.status === 'error').length;
-  const avgDuration = logs
+  const avgDurationRaw = logs
     .filter((l) => l.duration !== '—')
     .map((l) => parseFloat(l.duration))
     .reduce((a, b, _, arr) => a + b / arr.length, 0);
+
+  const totalCount = useAnimatedCounter(total);
+  const successPct = useAnimatedCounter(logs.length > 0 ? Math.round((successCount / logs.length) * 100) : 0);
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-4">
+          {[0,1,2].map((i) => <Skeleton key={i} height="80px" rounded className="rounded-xl" />)}
+        </div>
+        <Skeleton height="40px" rounded className="rounded-lg w-64" />
+        <Skeleton height="400px" rounded className="rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -47,7 +66,7 @@ export default function AdminGenerations() {
           </div>
           <div>
             <p className="text-white/30 text-[10px] uppercase tracking-wider">Total hoje</p>
-            <p className="text-xl font-bold text-white">{total.toLocaleString('pt-BR')}</p>
+            <p className="text-xl font-bold text-white">{totalCount.toLocaleString('pt-BR')}</p>
           </div>
         </div>
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex items-center gap-4">
@@ -56,7 +75,7 @@ export default function AdminGenerations() {
           </div>
           <div>
             <p className="text-white/30 text-[10px] uppercase tracking-wider">Sucesso %</p>
-            <p className="text-xl font-bold text-white">{logs.length > 0 ? Math.round((successCount / logs.length) * 100) : 0}%</p>
+            <p className="text-xl font-bold text-white">{successPct}%</p>
           </div>
         </div>
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex items-center gap-4">
@@ -65,7 +84,7 @@ export default function AdminGenerations() {
           </div>
           <div>
             <p className="text-white/30 text-[10px] uppercase tracking-wider">Tempo médio</p>
-            <p className="text-xl font-bold text-white">{avgDuration.toFixed(1)}s</p>
+            <p className="text-xl font-bold text-white">{avgDurationRaw.toFixed(1)}s</p>
           </div>
         </div>
       </div>

@@ -4,6 +4,8 @@ import {
 } from 'recharts';
 import { adminService, MOCK_TRANSACTIONS } from '@/services/adminService';
 import { TrendingUp, TrendingDown, Percent } from 'lucide-react';
+import { Skeleton } from '@/components/creatyng';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 
 interface FinanceStats {
   mrr: number;
@@ -25,14 +27,37 @@ const TX_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function AdminFinance() {
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<FinanceStats>({ mrr: 8400, churnRate: 3.2, conversionRate: 12.5 });
   const [revenue, setRevenue] = useState<{ month: string; revenue: number }[]>([]);
   const [transactions] = useState(MOCK_TRANSACTIONS);
 
+  const mrrCount = useAnimatedCounter(stats.mrr);
+  const churnCount = useAnimatedCounter(Math.round(stats.churnRate * 10));
+  const convCount = useAnimatedCounter(Math.round(stats.conversionRate * 10));
+
   useEffect(() => {
-    adminService.getFinanceStats().then(setStats);
-    adminService.getRevenueHistory().then(setRevenue);
+    Promise.all([
+      adminService.getFinanceStats(),
+      adminService.getRevenueHistory(),
+    ]).then(([s, rev]) => {
+      setStats(s);
+      setRevenue(rev);
+      setTimeout(() => setLoading(false), 600);
+    });
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-3 gap-4">
+          {[0,1,2].map((i) => <Skeleton key={i} height="96px" rounded className="rounded-xl" />)}
+        </div>
+        <Skeleton height="260px" rounded className="rounded-xl" />
+        <Skeleton height="280px" rounded className="rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -43,7 +68,7 @@ export default function AdminFinance() {
             <span className="text-white/40 text-xs font-medium uppercase tracking-wider">MRR</span>
             <TrendingUp className="h-4 w-4 text-emerald-400/60" />
           </div>
-          <span className="text-2xl font-bold text-white">R$ {stats.mrr.toLocaleString('pt-BR')}</span>
+          <span className="text-2xl font-bold text-white">R$ {mrrCount.toLocaleString('pt-BR')}</span>
           <span className="text-xs text-emerald-400">+12.5% este mês</span>
         </div>
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-3">
@@ -51,7 +76,7 @@ export default function AdminFinance() {
             <span className="text-white/40 text-xs font-medium uppercase tracking-wider">Churn Rate</span>
             <TrendingDown className="h-4 w-4 text-red-400/60" />
           </div>
-          <span className="text-2xl font-bold text-white">{stats.churnRate}%</span>
+          <span className="text-2xl font-bold text-white">{(churnCount / 10).toFixed(1)}%</span>
           <span className="text-xs text-red-400">+0.4% vs mês anterior</span>
         </div>
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-3">
@@ -59,7 +84,7 @@ export default function AdminFinance() {
             <span className="text-white/40 text-xs font-medium uppercase tracking-wider">Conversão Free→Pro</span>
             <Percent className="h-4 w-4 text-indigo-400/60" />
           </div>
-          <span className="text-2xl font-bold text-white">{stats.conversionRate}%</span>
+          <span className="text-2xl font-bold text-white">{(convCount / 10).toFixed(1)}%</span>
           <span className="text-xs text-emerald-400">+2.1% vs mês anterior</span>
         </div>
       </div>

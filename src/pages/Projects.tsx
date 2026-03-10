@@ -5,10 +5,12 @@ import {
   FolderOpen, Image, ExternalLink, Copy, Trash2, ChevronDown,
 } from 'lucide-react';
 import { Button, Badge, EmptyState, Dropdown } from '@/components/creatyng';
+import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
 import type { DropdownItem } from '@/components/creatyng';
 import ProjectWizard from '@/components/ProjectWizard';
 import { listProjects, deleteProject, createProject } from '@/features/projects/store';
 import { useI18n } from '@/i18n';
+import { useToast } from '@/features/toast/useToast';
 import type { Project } from '@/types/spec';
 
 type ViewMode = 'grid' | 'list';
@@ -35,6 +37,7 @@ const FILTERS: { id: FilterType; labelKey: string }[] = [
 const Projects = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
+  const toast = useToast();
 
   const [projects, setProjects] = useState<Project[]>(() => listProjects());
   const [createOpen, setCreateOpen] = useState(false);
@@ -43,6 +46,7 @@ const Projects = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [sort, setSort] = useState<SortMode>('recent');
   const [sortOpen, setSortOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   useEffect(() => { setProjects(listProjects()); }, [createOpen]);
 
@@ -56,14 +60,23 @@ const Projects = () => {
     return list;
   }, [projects, filter, search, sort]);
 
-  const handleDelete = (id: string) => { deleteProject(id); setProjects(listProjects()); };
-  const handleDuplicate = (p: Project) => { createProject(`${p.name} ${t('common.copy_suffix')}`, p.spec.format); setProjects(listProjects()); };
+  const handleDelete = (id: string) => {
+    deleteProject(id);
+    setProjects(listProjects());
+    setConfirmDelete(null);
+    toast.success('Projeto excluído');
+  };
+  const handleDuplicate = (p: Project) => {
+    createProject(`${p.name} ${t('common.copy_suffix')}`, p.spec.format);
+    setProjects(listProjects());
+    toast.success('Projeto duplicado!');
+  };
 
   const makeMenu = (p: Project): DropdownItem[] => [
     { label: t('projects.action.open'), icon: <ExternalLink className="w-3.5 h-3.5" />, onClick: () => navigate(`/app/projects/${p.id}`) },
     { label: t('projects.action.duplicate'), icon: <Copy className="w-3.5 h-3.5" />, onClick: () => handleDuplicate(p) },
     { divider: true } as DropdownItem,
-    { label: t('projects.action.delete'), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => handleDelete(p.id), danger: true },
+    { label: t('projects.action.delete'), icon: <Trash2 className="w-3.5 h-3.5" />, onClick: () => setConfirmDelete(p.id), danger: true },
   ];
 
   return (
@@ -211,6 +224,16 @@ const Projects = () => {
       )}
 
       <ProjectWizard open={createOpen} onOpenChange={setCreateOpen} />
+
+      <ConfirmModal
+        open={confirmDelete !== null}
+        onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+        title="Excluir projeto?"
+        description="Esta ação não pode ser desfeita. O projeto será removido permanentemente."
+        confirmLabel="Excluir"
+        variant="danger"
+      />
     </div>
   );
 };

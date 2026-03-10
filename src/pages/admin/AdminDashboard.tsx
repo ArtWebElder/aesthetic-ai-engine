@@ -5,6 +5,8 @@ import {
 } from 'recharts';
 import { adminService } from '@/services/adminService';
 import { TrendingUp, Users, Image, AlertTriangle } from 'lucide-react';
+import { Skeleton } from '@/components/creatyng';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 
 interface OverviewStats {
   mrr: number;
@@ -16,12 +18,20 @@ interface OverviewStats {
 interface KPICardProps {
   icon: React.ElementType;
   label: string;
-  value: string;
+  numericValue: number;
+  prefix?: string;
+  suffix?: string;
+  decimals?: number;
   change: string;
   positive: boolean;
 }
 
-function KPICard({ icon: Icon, label, value, change, positive }: KPICardProps) {
+function KPICard({ icon: Icon, label, numericValue, prefix = '', suffix = '', decimals = 0, change, positive }: KPICardProps) {
+  const animated = useAnimatedCounter(numericValue);
+  const display = decimals > 0
+    ? (animated / Math.pow(10, decimals)).toFixed(decimals)
+    : animated.toLocaleString('pt-BR');
+
   return (
     <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -31,7 +41,7 @@ function KPICard({ icon: Icon, label, value, change, positive }: KPICardProps) {
         </div>
       </div>
       <div className="flex items-end justify-between">
-        <span className="text-2xl font-bold text-white">{value}</span>
+        <span className="text-2xl font-bold text-white">{prefix}{display}{suffix}</span>
         <span className={`text-xs font-medium ${positive ? 'text-emerald-400' : 'text-red-400'}`}>
           {change}
         </span>
@@ -46,6 +56,7 @@ const CHART_STYLE = {
 };
 
 export default function AdminDashboard() {
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<OverviewStats>({ mrr: 8400, activeUsers: 127, gensToday: 379, errorRate: 2.1 });
   const [mrrData, setMrrData] = useState<{ month: string; mrr: number }[]>([]);
   const [featureData, setFeatureData] = useState<{ name: string; value: number; color: string }[]>([]);
@@ -53,12 +64,37 @@ export default function AdminDashboard() {
   const [logs, setLogs] = useState<typeof import('@/services/adminService').MOCK_LOGS>([]);
 
   useEffect(() => {
-    adminService.getOverviewStats().then(setStats);
-    adminService.getMRRHistory().then(setMrrData);
-    adminService.getFeatureUsage().then(setFeatureData);
-    adminService.getDailyGens().then(setDailyData);
-    adminService.getGenerationLogs().then(({ logs }) => setLogs(logs.slice(0, 5)));
+    Promise.all([
+      adminService.getOverviewStats(),
+      adminService.getMRRHistory(),
+      adminService.getFeatureUsage(),
+      adminService.getDailyGens(),
+      adminService.getGenerationLogs(),
+    ]).then(([s, mrr, feat, daily, { logs }]) => {
+      setStats(s);
+      setMrrData(mrr);
+      setFeatureData(feat);
+      setDailyData(daily);
+      setLogs(logs.slice(0, 5));
+      setTimeout(() => setLoading(false), 600);
+    });
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[0,1,2,3].map((i) => <Skeleton key={i} height="88px" rounded className="rounded-xl" />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <Skeleton height="220px" rounded className="lg:col-span-2 rounded-xl" />
+          <Skeleton height="220px" rounded className="rounded-xl" />
+          <Skeleton height="220px" rounded className="rounded-xl" />
+        </div>
+        <Skeleton height="240px" rounded className="rounded-xl" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -67,28 +103,31 @@ export default function AdminDashboard() {
         <KPICard
           icon={TrendingUp}
           label="MRR"
-          value={`R$ ${stats.mrr.toLocaleString('pt-BR')}`}
+          numericValue={stats.mrr}
+          prefix="R$ "
           change="+12.5% este mês"
           positive
         />
         <KPICard
           icon={Users}
           label="Usuários Ativos"
-          value={String(stats.activeUsers)}
+          numericValue={stats.activeUsers}
           change="+8 esta semana"
           positive
         />
         <KPICard
           icon={Image}
           label="Gerações Hoje"
-          value={String(stats.gensToday)}
+          numericValue={stats.gensToday}
           change="+15% vs ontem"
           positive
         />
         <KPICard
           icon={AlertTriangle}
           label="Taxa de Erro"
-          value={`${stats.errorRate}%`}
+          numericValue={Math.round(stats.errorRate * 10)}
+          suffix="%"
+          decimals={1}
           change="-0.3% vs ontem"
           positive
         />

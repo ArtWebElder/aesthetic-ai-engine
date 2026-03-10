@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthProvider';
 import SidebarNav from './SidebarNav';
 import Topbar from './Topbar';
@@ -9,6 +9,27 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 const AppShell = () => {
   const { user, loading } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, [pathname]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey;
+      // Cmd/Ctrl+N → new creation
+      if (isMod && e.key === 'n') {
+        e.preventDefault();
+        navigate('/app/create');
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [navigate]);
 
   if (loading) {
     return (
@@ -42,7 +63,9 @@ const AppShell = () => {
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
         <Topbar onMenuToggle={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-auto">
-          <Outlet />
+          <div key={pathname} className="animate-fade-up">
+            <Outlet />
+          </div>
         </main>
       </div>
 

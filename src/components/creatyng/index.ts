@@ -25,3 +25,7 @@ export { default as KPICard } from "./KPICard";
 
 export { default as Dropdown } from "./Dropdown";
 export type { DropdownItem } from "./Dropdown";
+
+export { ConfirmModal } from "./ConfirmModal";
+
+export { default as ConfettiEffect } from "./ConfettiEffect";

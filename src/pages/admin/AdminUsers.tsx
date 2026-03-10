@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, Download, Pencil, Ban, Trash2 } from 'lucide-react';
 import { adminService, MOCK_USERS } from '@/services/adminService';
+import { Skeleton } from '@/components/creatyng';
 
 type User = typeof MOCK_USERS[number];
 
@@ -19,6 +20,7 @@ const ROLE_COLORS: Record<string, string> = {
 const PAGE_SIZE = 10;
 
 export default function AdminUsers() {
+  const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<User[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
@@ -29,8 +31,21 @@ export default function AdminUsers() {
     adminService.getUsers().then(({ users, total }) => {
       setUsers(users);
       setTotal(total);
+      setTimeout(() => setLoading(false), 600);
     });
   }, []);
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex gap-3">
+          <Skeleton height="36px" rounded className="rounded-lg flex-1" />
+          <Skeleton height="36px" width="280px" rounded className="rounded-lg" />
+        </div>
+        <Skeleton height="420px" rounded className="rounded-xl" />
+      </div>
+    );
+  }
 
   const filtered = users.filter((u) => {
     const matchSearch =
