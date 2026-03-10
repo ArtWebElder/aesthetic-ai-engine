@@ -20,6 +20,13 @@ import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import AppShell from "./components/AppShell";
 import NotFound from "./pages/NotFound";
+import { AdminRoute } from "@/features/admin/AdminRoute";
+import { AdminShell } from "@/features/admin/AdminShell";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminFinance from "./pages/admin/AdminFinance";
+import AdminGenerations from "./pages/admin/AdminGenerations";
+import AdminTokens from "./pages/admin/AdminTokens";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +54,15 @@ const App = () => (
                 <Route path="billing" element={<Billing />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="help" element={<Help />} />
+              </Route>
+
+              {/* Admin routes — isolated from /app, own layout + guard */}
+              <Route path="/admin" element={<AdminRoute><AdminShell /></AdminRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="finance" element={<AdminFinance />} />
+                <Route path="generations" element={<AdminGenerations />} />
+                <Route path="tokens" element={<AdminTokens />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

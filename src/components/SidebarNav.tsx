@@ -9,11 +9,14 @@ import {
   LogOut,
   Sparkles,
   Workflow,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/services/supabaseClient';
 import logoLight from '@/assets/logo-light.png';
 import logoDark from '@/assets/logo-dark.png';
 
@@ -33,10 +36,24 @@ interface SidebarNavProps {
 const SidebarNav = ({ onClose }: SidebarNavProps) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { t } = useI18n();
   const { resolvedTheme } = useTheme();
   const logo = resolvedTheme === 'dark' ? logoDark : logoLight;
+  const devAdmin = import.meta.env.VITE_DEV_ADMIN === 'true';
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+
+  useEffect(() => {
+    if (devAdmin) { setIsSuperAdmin(true); return; }
+    if (!user) return;
+    supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => { if (data?.role === 'superadmin') setIsSuperAdmin(true); })
+      .catch(() => {});
+  }, [user, devAdmin]);
 
   const handleNav = (path: string) => {
     navigate(path);
@@ -91,8 +108,18 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
         })}
       </nav>
 
-      {/* Logout */}
-      <div className="p-3 border-t border-sidebar-border">
+      {/* Logout + Admin */}
+      <div className="p-3 border-t border-sidebar-border space-y-1">
+        {isSuperAdmin && (
+          <button
+            onClick={() => { navigate('/admin'); onClose?.(); }}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-red-400/70 hover:text-red-400 hover:bg-red-400/5 transition-colors duration-150"
+          >
+            <Shield className="h-4 w-4" />
+            <span>Super Admin</span>
+            <span className="ml-auto px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-400/10 text-red-400 uppercase tracking-wider">SA</span>
+          </button>
+        )}
         <Button
           variant="ghost"
           size="sm"
