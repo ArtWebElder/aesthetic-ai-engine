@@ -139,7 +139,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
+    <div className="min-h-screen flex" style={{ background: '#f5f5f3' }}>
       {/* ── Left panel (light) ───────────────────────────── */}
       <div
         className="flex flex-col items-center justify-center relative z-10 overflow-y-auto"
