@@ -1,3 +1,5 @@
+// LEGACY — Stage 3 suspenso. Verificar dependências antes de remover.
+// Mantido porque htmlExport.ts (usado pelo WizardPage.tsx) depende deste arquivo.
 import type {
   CreatygnComposition,
   CompositionLayer,

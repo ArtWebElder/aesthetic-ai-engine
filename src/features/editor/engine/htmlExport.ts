@@ -1,3 +1,5 @@
+// LEGACY — Stage 3 suspenso. Mantido porque WizardPage.tsx importa exportCompositionToPNG.
+// Remover quando o WizardPage for refatorado para não depender deste módulo.
 import html2canvas from 'html2canvas';
 import type { CreatygnComposition } from '@/types/composition';
 import { renderCompositionToHTML } from './htmlRenderer';
