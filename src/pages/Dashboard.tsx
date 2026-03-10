@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { EmptyState } from '@/components/creatyng';
 import ProjectWizard from '@/components/ProjectWizard';
-import { listProjects, createProject } from '@/features/projects/store';
+import { listProjects } from '@/features/projects/store';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import type { Project } from '@/types/spec';
