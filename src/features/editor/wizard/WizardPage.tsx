@@ -2,7 +2,7 @@
 // CREATYNG — Fase 2 — Página que conecta o wizard ao motor de geração.
 // Rota: /app/create
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { WizardLayout } from "./WizardLayout";
 import { WizardStep1Subject } from "./WizardStep1Subject";
 import { WizardStep2Style } from "./WizardStep2Style";
@@ -10,7 +10,9 @@ import { WizardStep3Text } from "./WizardStep3Text";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { generateFromWizard, GenerateError } from "@/services/generateService";
 import { exportComposed, FORMAT_BY_ID, type FoodPalette } from "../engine/exportComposed";
-import { composePopDesign, composePopDesignV2 } from "../engine/popDesign";
+import { composePopDesign, composePopDesignV2, type PopTexts } from "../engine/popDesign";
+import { RefinementChat } from "./RefinementChat";
+import { type RefinementOverrides } from "../engine/chatApply";
 import { getPresetById } from "@/lib/presetUtils";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 
@@ -92,6 +94,99 @@ export function WizardPage() {
   const [composedBase64, setComposedBase64] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [popDesignStep, setPopDesignStep] = useState<string>("");
+  const [refinementOverrides, setRefinementOverrides] = useState<RefinementOverrides>({});
+
+  // ── Refs para recomposição sem regerar ───────────────────────────────────
+  const popBgRef        = useRef<string>("");
+  const popSubjectRef   = useRef<string>("");
+  const standardImgRef  = useRef<string>("");
+  const paletteRef      = useRef<FoodPalette | null>(null);
+  const textConfigRef   = useRef<TextPresetConfig | null>(null);
+  const colorsRef       = useRef<ColorConfig>(DEFAULT_COLORS);
+  const compositionRef  = useRef<CompositionConfig>(DEFAULT_COMPOSITION);
+  const isFoodPopRef    = useRef<boolean>(false);
+
+  // ── Carrega Google Font dinamicamente ────────────────────────────────────
+  async function loadGoogleFont(fontName: string): Promise<void> {
+    if (!document.querySelector(`link[data-font="${fontName}"]`)) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.setAttribute("data-font", fontName);
+      link.href = `https://fonts.googleapis.com/css2?family=${fontName.replace(/ /g, "+")}:wght@300;400;500;600;700;800;900&display=swap`;
+      document.head.appendChild(link);
+    }
+    try { await document.fonts.load(`900 16px "${fontName}"`); } catch { /* proceed anyway */ }
+  }
+
+  // ── Recompõe o criativo com overrides, sem regerar a imagem ─────────────
+  async function recomposeWithOverrides(overrides: RefinementOverrides) {
+    if (!currentGeneration) return;
+    const state = useWizardStore.getState();
+    const isPopDesign = state.selectedImagePresetId === "sys-img-pop-design";
+
+    if (overrides.fontFamily) await loadGoogleFont(overrides.fontFamily);
+
+    const basePalette = paletteRef.current ?? getFoodPalette(state.headline, state.subheadline, state.freeInstructions);
+    const mergedPalette: FoodPalette = overrides.accentColor
+      ? { ...basePalette, accent: overrides.accentColor, ctaBg: overrides.accentColor }
+      : basePalette;
+
+    const baseTextConfig = textConfigRef.current;
+    const mergedTextConfig: TextPresetConfig = (overrides.fontFamily && baseTextConfig)
+      ? { ...baseTextConfig, headlineFont: overrides.fontFamily, bodyFont: overrides.fontFamily }
+      : (baseTextConfig ?? {} as TextPresetConfig);
+
+    const format = FORMAT_BY_ID.get(DEFAULT_FORMAT_ID)!;
+
+    if (isPopDesign && popBgRef.current) {
+      const popTexts: PopTexts = {
+        headline:    overrides.headline    ?? (state.headline ?? ""),
+        subheadline: overrides.subheadline ?? state.subheadline,
+        cta:         overrides.cta         ?? state.cta,
+        price:       overrides.price       ?? state.price ?? undefined,
+        whatsapp:    overrides.whatsapp    ?? state.whatsapp,
+        instagram:   overrides.instagram   ?? state.instagram,
+      };
+      const result = await composePopDesignV2(
+        popBgRef.current,
+        popSubjectRef.current,
+        popTexts,
+        mergedPalette,
+        mergedTextConfig,
+        format.w, format.h,
+        false,
+        overrides.headlineSizeFactor ?? 1.0,
+      );
+      setComposedBase64(result);
+    } else if (!isPopDesign && standardImgRef.current) {
+      const mergedColors: ColorConfig = overrides.accentColor
+        ? { ...colorsRef.current, primary: overrides.accentColor }
+        : colorsRef.current;
+      const isFoodPop = isFoodPopRef.current;
+      const result = await exportComposed({
+        imageBase64: standardImgRef.current,
+        texts: {
+          headline:    overrides.headline    ?? (state.headline ?? ""),
+          subheadline: overrides.subheadline ?? state.subheadline,
+          cta:         overrides.cta         ?? state.cta,
+        },
+        presetConfig: mergedTextConfig,
+        colors: mergedColors,
+        composition: compositionRef.current,
+        targetFormat: format,
+        watermark: false,
+        foodPopOverlay: isFoodPop,
+        foodPopData: isFoodPop ? {
+          price:       overrides.price    ?? state.price ?? undefined,
+          whatsapp:    overrides.whatsapp ?? state.whatsapp,
+          instagram:   overrides.instagram ?? state.instagram,
+          accentColor: mergedPalette.accent,
+          palette:     mergedPalette,
+        } : undefined,
+      });
+      setComposedBase64(result);
+    }
+  }
 
   async function handleGenerate() {
     const state = useWizardStore.getState();
@@ -99,6 +194,11 @@ export function WizardPage() {
     setGenerating(true);
     setComposedBase64(null);
     clearGeneration();
+    // Reset refinement on each new generation
+    setRefinementOverrides({});
+    popBgRef.current       = "";
+    popSubjectRef.current  = "";
+    standardImgRef.current = "";
 
     try {
       // ── Pop Design: pipeline duplo Gemini — fundo separado + subject separado ──
@@ -160,6 +260,13 @@ export function WizardPage() {
 
         const freshState = useWizardStore.getState();
         const freshPalette = getFoodPalette(freshState.headline, freshState.subheadline, freshState.freeInstructions);
+
+        // Store for recompose without re-generating
+        popBgRef.current      = bgBase64;
+        popSubjectRef.current = subjectBase64;
+        paletteRef.current    = freshPalette;
+        textConfigRef.current = textConfig;
+
         const popTexts = {
           headline:    freshState.headline ?? "",
           subheadline: freshState.subheadline,
@@ -254,6 +361,14 @@ export function WizardPage() {
         state.subheadline,
         state.freeInstructions
       );
+
+      // Store for recompose without re-generating
+      standardImgRef.current = gen.imageBase64;
+      textConfigRef.current  = textConfig;
+      colorsRef.current      = colors;
+      compositionRef.current = composition;
+      paletteRef.current     = foodPalette;
+      isFoodPopRef.current   = isFoodPop;
 
       const composed = await exportComposed({
         imageBase64: gen.imageBase64,
@@ -350,6 +465,19 @@ export function WizardPage() {
           >
             {isWorking ? "Gerando..." : "↺ Gerar novamente"}
           </button>
+
+          {!isWorking && (
+            <div className="w-full mt-2">
+              <RefinementChat
+                overrides={refinementOverrides}
+                onOverridesChange={(newOverrides) => {
+                  setRefinementOverrides(newOverrides);
+                  recomposeWithOverrides(newOverrides);
+                }}
+                onRegenerate={handleGenerate}
+              />
+            </div>
+          )}
         </div>
       )}
 
