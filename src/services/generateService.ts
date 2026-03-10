@@ -109,9 +109,7 @@ export function buildPopDesignBackgroundPrompt(state: WizardState): { prompt: st
   layers.push(
     `A vibrant, colorful background scene for a social media food advertisement. ` +
     `Rich gradient — NOT white, NOT plain, NOT gray. ` +
-    `Warm, appetizing colors creating atmosphere and depth. ` +
-    `The CENTER of the image must remain relatively clean — the main product will be composited later. ` +
-    `Focus all visual elements on the EDGES and CORNERS of the frame.`
+    `Warm, appetizing colors creating atmosphere and depth.`
   );
 
   if (isCold) {
@@ -153,16 +151,12 @@ export function buildPopDesignBackgroundPrompt(state: WizardState): { prompt: st
   );
 
   layers.push(
-    `The floating food elements must be LARGE, COLORFUL, and HIGHLY SATURATED — ` +
-    `clearly visible against the gradient background. ` +
-    `Place at least 8-12 distinct food elements scattered around the edges. ` +
-    `Elements should be VIBRANT, not subtle. ` +
-    `Think of a dynamic food advertisement with ingredients EXPLODING outward from the center.`
-  );
-
-  layers.push(
-    `CRITICAL: Do NOT place any main food product, bowl, cup, or plate in the center. ` +
-    `Leave the CENTER clean. All elements must stay near the EDGES and CORNERS.`
+    `Fill the ENTIRE image with floating food elements, scattered everywhere — ` +
+    `edges, corners, and throughout the frame. ` +
+    `The elements must be LARGE, COLORFUL, and HIGHLY SATURATED — clearly visible against the gradient. ` +
+    `At least 8-12 distinct food elements. VIBRANT, not subtle. ` +
+    `Think of a food explosion filling the entire scene. ` +
+    `A product will be layered on top digitally later, so elements behind it will be partially hidden — that is perfectly fine.`
   );
 
   if (state.freeInstructions) {
@@ -396,6 +390,11 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
     isPopDesign                           ? buildPopDesignBackgroundPrompt(state) :
     isFoodPop                             ? buildFoodPopPrompt(state) :
                                             buildPrompt(state);
+
+  if (isPopDesign && phase === "background") {
+    console.log("[PopDesign BG] Full prompt:", prompt);
+    console.log("[PopDesign BG] Negative:", negativePrompt);
+  }
 
   const { width, height } = resolveAspectRatio(state);
 
