@@ -159,7 +159,7 @@ const CONNECTOR_WORDS = new Set([
  * Se a headline começa com connector word → contexto primeiro, impacto depois.
  * O destaque vem de TAMANHO e PESO, não de cor.
  */
-function segmentHeadline(headline: string): HeadlineSegment[] {
+export function segmentHeadline(headline: string): HeadlineSegment[] {
   const words = headline.toUpperCase().trim().split(/\s+/).filter(Boolean);
 
   if (words.length === 0) return [];
