@@ -135,11 +135,14 @@ export function WizardPage() {
 
     if (overrides.fontFamily) await loadGoogleFont(overrides.fontFamily);
 
-    // ── HTML renderer path (Pop Design with composition JSON) ──────────────
-    if (isPopDesign && USE_HTML_RENDERER && htmlCompositionRef.current) {
+    // ── HTML renderer path (Pop Design + Food/Pop with composition JSON) ──────────────
+    console.log('[Recompose] HTML renderer branch entered');
+    console.log('[Recompose] compositionRef exists:', !!compositionRef.current);
+    if (USE_HTML_RENDERER && htmlCompositionRef.current) {
       let updated = structuredClone(htmlCompositionRef.current);
 
       // Apply each override as a chat command on the composition
+      console.log('[Recompose] applying chat command...');
       if (overrides.headline) {
         updated = applyChatToComposition(updated, { type: 'change_text', target: 'headline', value: overrides.headline });
       }
@@ -159,11 +162,13 @@ export function WizardPage() {
         updated = applyChatToComposition(updated, { type: 'change_font', value: overrides.fontFamily });
       }
 
+      console.log('[Recompose] re-exporting PNG...');
       const result = await exportCompositionToPNG(updated);
       htmlCompositionRef.current = updated;
       setComposedBase64(result);
       return;
     }
+    console.warn('[Recompose] htmlCompositionRef is null — chat cannot edit. USE_HTML_RENDERER:', USE_HTML_RENDERER, 'htmlCompositionRef.current:', !!htmlCompositionRef.current);
 
     const basePalette = paletteRef.current ?? getFoodPalette(state.headline, state.subheadline, state.freeInstructions);
     const mergedPalette: FoodPalette = overrides.accentColor
@@ -451,29 +456,79 @@ export function WizardPage() {
       paletteRef.current     = foodPalette;
       isFoodPopRef.current   = isFoodPop;
 
-      const composed = await exportComposed({
-        imageBase64: gen.imageBase64,
-        texts: {
-          headline: state.headline ?? "",
-          subheadline: state.subheadline,
-          cta: state.cta,
-        },
-        presetConfig: textConfig,
-        colors,
-        composition,
-        targetFormat,
-        watermark: false,
-        foodPopOverlay: isFoodPop,
-        foodPopData: isFoodPop
-          ? {
-              price: state.price ?? undefined,
-              whatsapp: state.whatsapp,
-              instagram: state.instagram,
-              accentColor: foodPalette.accent,
-              palette: foodPalette,
-            }
-          : undefined,
-      });
+      let composed: string;
+
+      if (USE_HTML_RENDERER) {
+        // ── HTML/CSS renderer path for Food/Pop ──────────────────────────────
+        try {
+          const compositionJSON = buildComposition({
+            sceneBase64: gen.imageBase64,
+            headline: state.headline ?? "",
+            subheadline: state.subheadline,
+            cta: state.cta,
+            price: state.price ?? undefined,
+            whatsapp: state.whatsapp,
+            instagram: state.instagram,
+            preset: state.selectedImagePresetId || 'sys-img-food-pop',
+            palette: foodPalette,
+            fontFamily: textConfig?.headlineFont,
+          });
+          htmlCompositionRef.current = compositionJSON;
+          composed = await exportCompositionToPNG(compositionJSON);
+          console.log('[FoodPopHTML] HTML render OK, length:', composed?.length);
+        } catch (e) {
+          console.error('[FoodPopHTML] HTML renderer failed, falling back to Canvas 2D:', e);
+          htmlCompositionRef.current = null;
+          composed = await exportComposed({
+            imageBase64: gen.imageBase64,
+            texts: {
+              headline: state.headline ?? "",
+              subheadline: state.subheadline,
+              cta: state.cta,
+            },
+            presetConfig: textConfig,
+            colors,
+            composition,
+            targetFormat,
+            watermark: false,
+            foodPopOverlay: isFoodPop,
+            foodPopData: isFoodPop
+              ? {
+                  price: state.price ?? undefined,
+                  whatsapp: state.whatsapp,
+                  instagram: state.instagram,
+                  accentColor: foodPalette.accent,
+                  palette: foodPalette,
+                }
+              : undefined,
+          });
+        }
+      } else {
+        // ── Canvas 2D renderer path (fallback) ───────────────────────────────
+        composed = await exportComposed({
+          imageBase64: gen.imageBase64,
+          texts: {
+            headline: state.headline ?? "",
+            subheadline: state.subheadline,
+            cta: state.cta,
+          },
+          presetConfig: textConfig,
+          colors,
+          composition,
+          targetFormat,
+          watermark: false,
+          foodPopOverlay: isFoodPop,
+          foodPopData: isFoodPop
+            ? {
+                price: state.price ?? undefined,
+                whatsapp: state.whatsapp,
+                instagram: state.instagram,
+                accentColor: foodPalette.accent,
+                palette: foodPalette,
+              }
+            : undefined,
+        });
+      }
 
       setComposedBase64(composed);
     } catch (e) {

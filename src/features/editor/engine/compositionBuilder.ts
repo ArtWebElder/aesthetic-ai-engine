@@ -71,6 +71,15 @@ export function buildComposition(input: CompositionInput): CreatygnComposition {
       type: 'background',
       source: { type: 'image', base64: sceneBase64, fit: 'cover' },
     });
+  } else {
+    // Food/Pop fallback gradient when no sceneBase64 is provided
+    layers.push({
+      type: 'background',
+      source: {
+        type: 'gradient',
+        css: `linear-gradient(160deg, ${lighten(palette.accent, 0.15)}, #0f0f1a)`,
+      },
+    });
   }
 
   // ===== CAMADA: GRADIENT OVERLAY (Food/Pop only) =====
