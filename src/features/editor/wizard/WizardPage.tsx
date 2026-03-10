@@ -615,6 +615,17 @@ export function WizardPage() {
                   recomposeWithOverrides(newOverrides);
                 }}
                 onRegenerate={handleGenerate}
+                composition={htmlCompositionRef.current}
+                onCompositionChange={async (updated) => {
+                  htmlCompositionRef.current = updated;
+                  setComposing(true);
+                  try {
+                    const result = await exportCompositionToPNG(updated);
+                    setComposedBase64(result);
+                  } finally {
+                    setComposing(false);
+                  }
+                }}
               />
             </div>
           )}

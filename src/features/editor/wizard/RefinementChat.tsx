@@ -1,10 +1,13 @@
 // src/features/editor/wizard/RefinementChat.tsx
 // CREATYNG — Chat de refinamento pós-geração.
-// Interpreta comandos via regex local (zero tokens de IA) e recompõe o criativo instantaneamente.
+// Path primário: Gemini Flash via Edge Function (chat-edit) — opera diretamente no JSON de composição.
+// Path fallback: parseChat() regex local → applyChatToComposition().
 
 import { useState, useRef, useEffect } from "react";
 import { parseChat } from "../engine/chatParser";
 import { applyCommand, type RefinementOverrides } from "../engine/chatApply";
+import { applyCommandWithAI } from "../engine/chatCompositionAI";
+import type { CreatygnComposition } from "@/types/composition";
 
 interface ChatMessage {
   role: "user" | "system";
@@ -15,9 +18,18 @@ interface RefinementChatProps {
   overrides: RefinementOverrides;
   onOverridesChange: (overrides: RefinementOverrides) => void;
   onRegenerate: () => void;
+  /** Quando fornecido, ativa o path IA que opera diretamente no JSON de composição. */
+  composition?: CreatygnComposition | null;
+  onCompositionChange?: (c: CreatygnComposition) => void;
 }
 
-export function RefinementChat({ overrides, onOverridesChange, onRegenerate }: RefinementChatProps) {
+export function RefinementChat({
+  overrides,
+  onOverridesChange,
+  onRegenerate,
+  composition,
+  onCompositionChange,
+}: RefinementChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "system",
@@ -25,39 +37,71 @@ export function RefinementChat({ overrides, onOverridesChange, onRegenerate }: R
     },
   ]);
   const [input, setInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  function handleSend() {
-    if (!input.trim()) return;
+  async function handleSend() {
+    if (!input.trim() || aiLoading) return;
 
-    const userMsg: ChatMessage = { role: "user", text: input };
-    const command = parseChat(input);
+    const commandText = input.trim();
+    const userMsg: ChatMessage = { role: "user", text: commandText };
+    setInput("");
 
-    if (command.type === "regenerate_image") {
+    // Comandos de regeneração sempre vão para onRegenerate
+    const parsedCheck = parseChat(commandText);
+    if (parsedCheck.type === "regenerate_image") {
       setMessages((prev) => [
         ...prev,
         userMsg,
         { role: "system", text: "🔄 Regenerando imagem..." },
       ]);
-      setInput("");
       onRegenerate();
       return;
     }
 
-    if (command.type === "unknown") {
-      setMessages((prev) => [...prev, userMsg, { role: "system", text: `❓ ${command.description}` }]);
-      setInput("");
+    // ── Path primário: AI opera diretamente no JSON de composição ──────────────
+    if (composition && onCompositionChange) {
+      const thinkingMsg: ChatMessage = { role: "system", text: "✨ Processando..." };
+      setMessages((prev) => [...prev, userMsg, thinkingMsg]);
+      setAiLoading(true);
+
+      try {
+        const result = await applyCommandWithAI(composition, commandText);
+
+        if (result.description.startsWith("✅")) {
+          onCompositionChange(result.composition);
+        }
+
+        setMessages((prev) => {
+          const msgs = [...prev];
+          msgs[msgs.length - 1] = { role: "system", text: result.description };
+          return msgs;
+        });
+      } catch {
+        setMessages((prev) => {
+          const msgs = [...prev];
+          msgs[msgs.length - 1] = { role: "system", text: "❌ Erro ao aplicar. Tente novamente." };
+          return msgs;
+        });
+      } finally {
+        setAiLoading(false);
+      }
       return;
     }
 
-    const newOverrides = applyCommand(command, overrides);
+    // ── Path fallback: regex overrides (quando não há composition JSON) ────────
+    if (parsedCheck.type === "unknown") {
+      setMessages((prev) => [...prev, userMsg, { role: "system", text: `❓ ${parsedCheck.description}` }]);
+      return;
+    }
+
+    const newOverrides = applyCommand(parsedCheck, overrides);
     onOverridesChange(newOverrides);
-    setMessages((prev) => [...prev, userMsg, { role: "system", text: `✅ ${command.description}` }]);
-    setInput("");
+    setMessages((prev) => [...prev, userMsg, { role: "system", text: `✅ ${parsedCheck.description}` }]);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -93,14 +137,16 @@ export function RefinementChat({ overrides, onOverridesChange, onRegenerate }: R
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
+          disabled={aiLoading}
           placeholder='"muda headline pra OFERTA ESPECIAL"'
-          className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-white placeholder:text-white/30 text-sm outline-none focus:border-purple-500/50 transition-colors"
+          className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-white placeholder:text-white/30 text-sm outline-none focus:border-purple-500/50 transition-colors disabled:opacity-40"
         />
         <button
           onClick={handleSend}
-          className="px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors"
+          disabled={aiLoading}
+          className="px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors disabled:opacity-40"
         >
-          Enviar
+          {aiLoading ? "..." : "Enviar"}
         </button>
       </div>
     </div>
