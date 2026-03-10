@@ -13,10 +13,15 @@ import { exportComposed, FORMAT_BY_ID, type FoodPalette } from "../engine/export
 import { composePopDesign, composePopDesignV2, type PopTexts } from "../engine/popDesign";
 import { RefinementChat } from "./RefinementChat";
 import { type RefinementOverrides } from "../engine/chatApply";
+import { buildComposition } from "../engine/compositionBuilder";
+import { exportCompositionToPNG } from "../engine/htmlExport";
+import { applyChatToComposition } from "../engine/chatApplyComposition";
+import type { CreatygnComposition } from "@/types/composition";
 import { getPresetById } from "@/lib/presetUtils";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 
 const FALLBACK_TEXT_PRESET_ID = "sys-txt-impact";
+const USE_HTML_RENDERER = true; // toggle para ativar/desativar o renderer HTML/CSS no Pop Design
 
 const DEFAULT_COLORS: ColorConfig = {
   primary: "#a855f7",
@@ -104,7 +109,8 @@ export function WizardPage() {
   const textConfigRef   = useRef<TextPresetConfig | null>(null);
   const colorsRef       = useRef<ColorConfig>(DEFAULT_COLORS);
   const compositionRef  = useRef<CompositionConfig>(DEFAULT_COMPOSITION);
-  const isFoodPopRef    = useRef<boolean>(false);
+  const isFoodPopRef        = useRef<boolean>(false);
+  const htmlCompositionRef  = useRef<CreatygnComposition | null>(null);
 
   // ── Carrega Google Font dinamicamente ────────────────────────────────────
   async function loadGoogleFont(fontName: string): Promise<void> {
@@ -128,6 +134,36 @@ export function WizardPage() {
     const isPopDesign = state.selectedImagePresetId === "sys-img-pop-design";
 
     if (overrides.fontFamily) await loadGoogleFont(overrides.fontFamily);
+
+    // ── HTML renderer path (Pop Design with composition JSON) ──────────────
+    if (isPopDesign && USE_HTML_RENDERER && htmlCompositionRef.current) {
+      let updated = structuredClone(htmlCompositionRef.current);
+
+      // Apply each override as a chat command on the composition
+      if (overrides.headline) {
+        updated = applyChatToComposition(updated, { type: 'change_text', target: 'headline', value: overrides.headline });
+      }
+      if (overrides.subheadline) {
+        updated = applyChatToComposition(updated, { type: 'change_text', target: 'subheadline', value: overrides.subheadline });
+      }
+      if (overrides.cta) {
+        updated = applyChatToComposition(updated, { type: 'change_text', target: 'cta', value: overrides.cta });
+      }
+      if (overrides.price?.value) {
+        updated = applyChatToComposition(updated, { type: 'change_text', target: 'price', value: overrides.price.value });
+      }
+      if (overrides.accentColor) {
+        updated = applyChatToComposition(updated, { type: 'change_color', value: overrides.accentColor });
+      }
+      if (overrides.fontFamily) {
+        updated = applyChatToComposition(updated, { type: 'change_font', value: overrides.fontFamily });
+      }
+
+      const result = await exportCompositionToPNG(updated);
+      htmlCompositionRef.current = updated;
+      setComposedBase64(result);
+      return;
+    }
 
     const basePalette = paletteRef.current ?? getFoodPalette(state.headline, state.subheadline, state.freeInstructions);
     const mergedPalette: FoodPalette = overrides.accentColor
@@ -203,9 +239,10 @@ export function WizardPage() {
     clearGeneration();
     // Reset refinement on each new generation
     setRefinementOverrides({});
-    popBgRef.current       = "";
-    popSubjectRef.current  = "";
-    standardImgRef.current = "";
+    popBgRef.current         = "";
+    popSubjectRef.current    = "";
+    standardImgRef.current   = "";
+    htmlCompositionRef.current = null;
 
     try {
       // ── Pop Design: pipeline duplo Gemini — fundo separado + subject separado ──
@@ -284,30 +321,67 @@ export function WizardPage() {
         };
 
         let popBase64: string;
-        try {
-          popBase64 = await composePopDesignV2(
-            bgBase64,
-            subjectBase64,
-            popTexts,
-            freshPalette,
-            textConfig,
-            targetFormat.w,
-            targetFormat.h,
-            false,
-          );
-          console.log("[PopDesignV2] compose OK, length:", popBase64?.length);
-        } catch (e) {
-          console.error("[PopDesignV2] composePopDesignV2 failed, falling back to v1:", e);
-          // Fallback to original single-layer compose
-          popBase64 = await composePopDesign(
-            subjectBase64,
-            popTexts,
-            freshPalette,
-            textConfig,
-            targetFormat.w,
-            targetFormat.h,
-            false,
-          );
+
+        if (USE_HTML_RENDERER) {
+          // ── HTML/CSS renderer path ──────────────────────────────────────
+          try {
+            const composition = buildComposition({
+              bgBase64: bgBase64 || undefined,
+              subjectBase64,
+              headline:    freshState.headline ?? "",
+              subheadline: freshState.subheadline,
+              cta:         freshState.cta,
+              price:       freshState.price ?? undefined,
+              whatsapp:    freshState.whatsapp,
+              instagram:   freshState.instagram,
+              preset: freshState.selectedImagePresetId || 'sys-img-pop-design',
+              palette: freshPalette,
+              fontFamily: textConfig.headlineFont,
+            });
+            htmlCompositionRef.current = composition;
+            popBase64 = await exportCompositionToPNG(composition);
+            console.log("[PopDesignHTML] compose OK, length:", popBase64?.length);
+          } catch (e) {
+            console.error("[PopDesignHTML] HTML renderer failed, falling back to Canvas 2D:", e);
+            htmlCompositionRef.current = null;
+            try {
+              popBase64 = await composePopDesignV2(
+                bgBase64, subjectBase64, popTexts, freshPalette, textConfig,
+                targetFormat.w, targetFormat.h, false,
+              );
+            } catch {
+              popBase64 = await composePopDesign(
+                subjectBase64, popTexts, freshPalette, textConfig,
+                targetFormat.w, targetFormat.h, false,
+              );
+            }
+          }
+        } else {
+          // ── Canvas 2D renderer path (fallback) ──────────────────────────
+          try {
+            popBase64 = await composePopDesignV2(
+              bgBase64,
+              subjectBase64,
+              popTexts,
+              freshPalette,
+              textConfig,
+              targetFormat.w,
+              targetFormat.h,
+              false,
+            );
+            console.log("[PopDesignV2] compose OK, length:", popBase64?.length);
+          } catch (e) {
+            console.error("[PopDesignV2] composePopDesignV2 failed, falling back to v1:", e);
+            popBase64 = await composePopDesign(
+              subjectBase64,
+              popTexts,
+              freshPalette,
+              textConfig,
+              targetFormat.w,
+              targetFormat.h,
+              false,
+            );
+          }
         }
 
         setComposedBase64(popBase64);
