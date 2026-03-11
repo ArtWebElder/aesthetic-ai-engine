@@ -214,17 +214,19 @@ const Templates = () => {
 
       {/* Grid */}
       <div style={{ padding: '24px 36px 48px' }}>
-        {filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', color: '#8e8e96' }}>
-            <Search size={36} color="#b5b5bb" style={{ margin: '0 auto 12px', display: 'block' }} />
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Nenhum template encontrado</div>
-            <div style={{ fontSize: 13 }}>Tente ajustar os filtros ou o termo de busca.</div>
-          </div>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
-            {filtered.map((tmpl, i) => <TemplateCard key={tmpl.id} tmpl={tmpl} i={i} ready={ready} />)}
-          </div>
-        )}
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: '#8e8e96' }}>
+              <Search size={36} color="#b5b5bb" style={{ margin: '0 auto 12px', display: 'block' }} />
+              <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>Nenhum template encontrado</div>
+              <div style={{ fontSize: 13 }}>Tente ajustar os filtros ou o termo de busca.</div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 18 }}>
+              {filtered.map((tmpl, i) => <TemplateCard key={tmpl.id} tmpl={tmpl} i={i} ready={ready} />)}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

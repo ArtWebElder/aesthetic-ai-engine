@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   User, Settings2, Palette, Key,
   Camera, Upload, Plus, X, Copy, Trash2, Check, ChevronDown,
+  Languages, Sun, Moon,
 } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
@@ -198,12 +199,15 @@ const Settings = () => {
               { id: 'es' as const, label: 'Español' },
             ].map(l => (
               <button key={l.id} onClick={() => setLang(l.id)} style={{
-                padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
                 border: lang === l.id ? '1.5px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
                 background: lang === l.id ? '#FFF0EA' : '#ffffff',
                 color: lang === l.id ? '#ff713d' : '#5a5a60', fontWeight: lang === l.id ? 600 : 400,
                 fontSize: 13, transition: 'all 150ms',
-              }}>{l.label}</button>
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <Languages size={14} />{l.label}
+              </button>
             ))}
           </div>
         </div>
@@ -213,16 +217,19 @@ const Settings = () => {
           <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 8, display: 'block' }}>Tema</label>
           <div style={{ display: 'flex', gap: 8 }}>
             {[
-              { id: 'light' as const, label: 'Claro' },
-              { id: 'dark' as const, label: 'Escuro' },
+              { id: 'light' as const, label: 'Claro', Icon: Sun },
+              { id: 'dark' as const, label: 'Escuro', Icon: Moon },
             ].map(th => (
               <button key={th.id} onClick={() => setTheme(th.id)} style={{
-                padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
                 border: theme === th.id ? '1.5px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
                 background: theme === th.id ? '#FFF0EA' : '#ffffff',
                 color: theme === th.id ? '#ff713d' : '#5a5a60', fontWeight: theme === th.id ? 600 : 400,
                 fontSize: 13, transition: 'all 150ms',
-              }}>{th.label}</button>
+                display: 'flex', alignItems: 'center', gap: 6,
+              }}>
+                <th.Icon size={14} />{th.label}
+              </button>
             ))}
           </div>
         </div>
@@ -256,7 +263,7 @@ const Settings = () => {
           <div
             style={{
               border: '2px dashed rgba(20,20,23,0.1)', borderRadius: 12,
-              width: 100, height: 100,
+              width: 180, height: 180,
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               cursor: 'pointer', background: '#ffffff', transition: 'all 150ms', color: '#b5b5bb', gap: 6,
             }}
@@ -465,11 +472,23 @@ const Settings = () => {
           ))}
         </div>
 
-        <button style={{
-          padding: '10px 22px', borderRadius: 9, border: '1.5px solid #ff713d',
-          background: '#FFF0EA', color: '#ff713d', fontSize: 13, fontWeight: 600,
-          cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
-        }}><Plus size={15} /> Nova API Key</button>
+        <button
+          onClick={() => {
+            const suffix = Math.random().toString(36).slice(2, 6);
+            const newKey = {
+              id: `k${Date.now()}`,
+              name: 'Nova chave',
+              key: `ck_live_••••••••••••${suffix}`,
+              created: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
+            };
+            setApiKeys(prev => [...prev, newKey]);
+            toast.success('Nova API Key criada!');
+          }}
+          style={{
+            padding: '10px 22px', borderRadius: 9, border: '1.5px solid #ff713d',
+            background: '#FFF0EA', color: '#ff713d', fontSize: 13, fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
+          }}><Plus size={15} /> Nova API Key</button>
       </div>
     );
 

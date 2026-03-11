@@ -350,14 +350,16 @@ const Dashboard = () => {
         />
 
         {projects.length === 0 ? (
-          <div className="bg-white border rounded-2xl" style={{ borderColor: 'rgba(20,20,23,0.08)' }}>
-            <EmptyState
-              icon={<FolderOpen className="w-6 h-6" />}
-              title={t('projects.empty_title')}
-              description={t('dashboard.empty_description')}
-              ctaLabel={t('projects.new_project')}
-              onCta={() => navigate('/app/create')}
-            />
+          <div style={{ maxWidth: 480 }}>
+            <div className="bg-white border rounded-2xl" style={{ borderColor: 'rgba(20,20,23,0.08)' }}>
+              <EmptyState
+                icon={<FolderOpen className="w-6 h-6" />}
+                title={t('projects.empty_title')}
+                description={t('dashboard.empty_description')}
+                ctaLabel={t('projects.new_project')}
+                onCta={() => navigate('/app/create')}
+              />
+            </div>
           </div>
         ) : (
           <div ref={projectScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
@@ -441,9 +443,9 @@ const Dashboard = () => {
         <div className="flex justify-center mt-5">
           <button
             onClick={() => navigate('/app/templates')}
-            className="w-full transition-colors"
+            className="transition-colors"
             style={{
-              padding: '10px 0',
+              padding: '10px 32px',
               borderRadius: 10,
               border: '1px solid rgba(20,20,23,0.1)',
               background: 'transparent',

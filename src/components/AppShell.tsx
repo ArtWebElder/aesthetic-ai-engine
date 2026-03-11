@@ -48,12 +48,10 @@ const AppShell = () => {
 
   return (
     <div className="min-h-screen flex w-full noise-overlay">
-      {/* Desktop sidebar — hidden on studio to prevent overlapping studio navbar */}
-      {pathname !== '/app/create/studio' && (
-        <aside className="hidden lg:block shrink-0 sticky top-0 h-screen z-20" style={{ overflow: 'visible' }}>
-          <SidebarNav />
-        </aside>
-      )}
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:block shrink-0 sticky top-0 h-screen z-20" style={{ overflow: 'visible' }}>
+        <SidebarNav />
+      </aside>
 
       {/* Mobile sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>

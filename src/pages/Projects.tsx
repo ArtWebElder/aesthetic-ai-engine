@@ -5,7 +5,6 @@ import {
   FolderOpen, Image, ExternalLink, Copy, Trash2, Edit2, Download,
 } from 'lucide-react';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
-import ProjectWizard from '@/components/ProjectWizard';
 import { listProjects, deleteProject, createProject } from '@/features/projects/store';
 import { useI18n } from '@/i18n';
 import { useToast } from '@/features/toast/useToast';
@@ -61,7 +60,6 @@ const Projects = () => {
   const toast = useToast();
 
   const [projects, setProjects] = useState<Project[]>(() => listProjects());
-  const [createOpen, setCreateOpen] = useState(false);
   const [view, setView] = useState<ViewMode>('grid');
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('all');
@@ -72,7 +70,7 @@ const Projects = () => {
   const [ready, setReady] = useState(false);
 
   useEffect(() => { setReady(true); }, []);
-  useEffect(() => { setProjects(listProjects()); }, [createOpen]);
+  useEffect(() => { setProjects(listProjects()); }, []);
   useEffect(() => {
     const h = () => setMenuOpen(null);
     document.addEventListener('click', h);
@@ -126,7 +124,7 @@ const Projects = () => {
           <p style={{ fontSize: 13, color: '#8e8e96' }}>{projects.length} projetos · {totalVersions} versões</p>
         </div>
         <button
-          onClick={() => setCreateOpen(true)}
+          onClick={() => navigate('/app/create')}
           style={{
             padding: '9px 20px', borderRadius: 9, border: 'none',
             background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
@@ -366,7 +364,7 @@ const Projects = () => {
             </p>
             {!search && (
               <button
-                onClick={() => setCreateOpen(true)}
+                onClick={() => navigate('/app/create')}
                 style={{
                   padding: '9px 22px', borderRadius: 10, border: 'none',
                   background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
@@ -382,7 +380,6 @@ const Projects = () => {
         </div>
       )}
 
-      <ProjectWizard open={createOpen} onOpenChange={setCreateOpen} />
       <ConfirmModal
         open={confirmDelete !== null}
         onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
