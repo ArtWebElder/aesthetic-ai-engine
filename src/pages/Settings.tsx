@@ -1,33 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   User, Settings2, Palette, Key,
-  Camera, Upload, Plus, X, Copy, Trash2, Bell, Moon, Sun,
+  Camera, Upload, Plus, X, Copy, Trash2,
 } from 'lucide-react';
-import { Button, Toggle } from '@/components/creatyng';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
-import { LocaleDropdown } from '@/components/LocaleDropdown';
-import ThemeToggle from '@/components/ThemeToggle';
 import { useToast } from '@/features/toast/useToast';
 
 type SettingsTab = 'profile' | 'preferences' | 'brandkit' | 'apikeys';
 
-const TABS: { id: SettingsTab; labelKey: string; Icon: React.FC<{ className?: string }> }[] = [
-  { id: 'profile', labelKey: 'settings.tab.profile', Icon: User },
-  { id: 'preferences', labelKey: 'settings.tab.preferences', Icon: Settings2 },
-  { id: 'brandkit', labelKey: 'settings.tab.brandkit', Icon: Palette },
-  { id: 'apikeys', labelKey: 'settings.tab.apikeys', Icon: Key },
+const TABS: { id: SettingsTab; label: string; Icon: React.FC<{ size?: number }> }[] = [
+  { id: 'profile', label: 'Perfil', Icon: User },
+  { id: 'preferences', label: 'Preferências', Icon: Settings2 },
+  { id: 'brandkit', label: 'Brand Kit', Icon: Palette },
+  { id: 'apikeys', label: 'API Keys', Icon: Key },
 ];
 
-/* ── Mock API keys ─────────────────────────────────────── */
 const MOCK_KEYS = [
-  { id: 'k1', name: 'Production Key', key: 'crtyng_live_••••••••••••3f8a', date: '2026-03-01' },
-  { id: 'k2', name: 'Dev Key', key: 'crtyng_live_••••••••••••7c2d', date: '2026-02-15' },
+  { id: 'k1', name: 'Produção', key: 'ck_live_••••••••••••a3f7', created: '12 Jan 2026' },
+  { id: 'k2', name: 'Desenvolvimento', key: 'ck_test_••••••••••••b8e2', created: '28 Fev 2026' },
 ];
 
-/* ── Mock brand colors ─────────────────────────────────── */
-const DEFAULT_COLORS = ['#ff713d', '#141417', '#ffffff', '#7C3AED'];
+const DEFAULT_COLORS = ['#ff713d', '#141417', '#f5f5f3', '#7C3AED'];
+
+/* ── Toggle Switch ───────────────────────────────────── */
+function Toggle({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+      <span style={{ fontSize: 13.5, color: '#141417' }}>{label}</span>
+      <button onClick={onToggle} style={{
+        width: 42, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative',
+        background: on ? '#ff713d' : 'rgba(20,20,23,0.12)', transition: 'background 200ms',
+      }}>
+        <div style={{
+          width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3,
+          left: on ? 21 : 3, transition: 'left 200ms', boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+        }} />
+      </button>
+    </div>
+  );
+}
+
+/* ── Field Input ─────────────────────────────────────── */
+function Field({ label, value, onChange, placeholder, disabled, type = 'text' }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; disabled?: boolean; type?: string;
+}) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 6, display: 'block' }}>{label}</label>
+      <input
+        type={type} value={value} onChange={e => onChange(e.target.value)}
+        placeholder={placeholder} disabled={disabled}
+        style={{
+          width: '100%', padding: '10px 14px', borderRadius: 10, fontSize: 14, fontFamily: 'inherit',
+          border: '1px solid rgba(20,20,23,0.1)', background: disabled ? '#f5f5f3' : '#ffffff',
+          color: disabled ? '#8e8e96' : '#141417',
+          outline: 'none', transition: 'border 150ms', boxSizing: 'border-box',
+        }}
+      />
+    </div>
+  );
+}
 
 const Settings = () => {
   const { user } = useAuth();
@@ -35,297 +69,339 @@ const Settings = () => {
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
-  const [name, setName] = useState(user?.user_metadata?.full_name || '');
-  const [phone, setPhone] = useState('');
+  const [ready, setReady] = useState(false);
+  const [name, setName] = useState(user?.user_metadata?.full_name || 'Rodrigo Nutra');
+  const [phone, setPhone] = useState('+55 63 9 9999-0000');
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(false);
+  const [lang, setLang] = useState<'pt' | 'en' | 'es'>('pt');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [brandColors, setBrandColors] = useState(DEFAULT_COLORS);
-  const [brandFonts, setBrandFonts] = useState(['Instrument Sans', 'Space Grotesk']);
-  const [fontInput, setFontInput] = useState('');
+  const [brandFonts, setBrandFonts] = useState(['Instrument Sans', 'Inter']);
   const [apiKeys, setApiKeys] = useState(MOCK_KEYS);
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
 
-  const addFont = () => {
-    if (fontInput.trim() && !brandFonts.includes(fontInput.trim())) {
-      setBrandFonts((f) => [...f, fontInput.trim()]);
-      setFontInput('');
-    }
+  useEffect(() => { setReady(true); }, []);
+
+  const email = user?.email || 'rodrigo@creatyng.com';
+  const avatarLetter = name.charAt(0).toUpperCase() || email.charAt(0).toUpperCase() || 'U';
+
+  const deleteKey = (id: string) => setApiKeys(prev => prev.filter(k => k.id !== id));
+  const removeFont = (f: string) => setBrandFonts(prev => prev.filter(x => x !== f));
+
+  /* ─── Tab Content ────────────────────────────────────── */
+  const renderTab = () => {
+    if (activeTab === 'profile') return (
+      <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Perfil</h2>
+        <p style={{ fontSize: 13, color: '#8e8e96', marginBottom: 28 }}>Gerencie suas informações pessoais.</p>
+
+        {/* Avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 28 }}>
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              width: 72, height: 72, borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ff713d, #141417)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontWeight: 700, fontSize: 26,
+            }}>{avatarLetter}</div>
+            <button style={{
+              position: 'absolute', bottom: -2, right: -2, width: 26, height: 26, borderRadius: '50%',
+              background: '#ffffff', border: '1.5px solid rgba(20,20,23,0.1)', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5a5a60',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.08)',
+            }}><Camera size={14} /></button>
+          </div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#141417' }}>{name}</div>
+            <div style={{ fontSize: 12, color: '#8e8e96', marginTop: 2 }}>Plano Pro · Membro desde Jan 2026</div>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: 420 }}>
+          <Field label="Nome completo" value={name} onChange={setName} placeholder="Seu nome" />
+          <Field label="Email" value={email} onChange={() => {}} disabled />
+          <Field label="Telefone" value={phone} onChange={setPhone} placeholder="+55 00 0000-0000" type="tel" />
+        </div>
+
+        <button
+          onClick={() => toast.success('Configurações salvas!')}
+          style={{
+            padding: '10px 28px', borderRadius: 9, border: 'none',
+            background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+            color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+            fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)', marginTop: 4,
+          }}
+        >Salvar alterações</button>
+
+        {/* Danger zone */}
+        <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid rgba(20,20,23,0.06)' }}>
+          <div style={{
+            border: '1px solid rgba(239,68,68,0.2)', borderRadius: 12,
+            background: 'rgba(239,68,68,0.02)', padding: '18px 20px',
+          }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: '#EF4444', marginBottom: 4 }}>Zona de perigo</h3>
+            <p style={{ fontSize: 12.5, color: '#8e8e96', marginBottom: 14 }}>Ações irreversíveis para sua conta.</p>
+            <button
+              onClick={() => setConfirmDeleteAccount(true)}
+              style={{
+                padding: '8px 20px', borderRadius: 8,
+                border: '1.5px solid #EF4444',
+                background: 'transparent', color: '#EF4444', fontSize: 12.5, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
+              }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.05)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+            >Excluir minha conta</button>
+          </div>
+        </div>
+      </div>
+    );
+
+    if (activeTab === 'preferences') return (
+      <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Preferências</h2>
+        <p style={{ fontSize: 13, color: '#8e8e96', marginBottom: 28 }}>Personalize sua experiência no Creatyng.</p>
+
+        {/* Language */}
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 8, display: 'block' }}>Idioma</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { id: 'pt' as const, label: 'Português' },
+              { id: 'en' as const, label: 'English' },
+              { id: 'es' as const, label: 'Español' },
+            ].map(l => (
+              <button key={l.id} onClick={() => setLang(l.id)} style={{
+                padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                border: lang === l.id ? '1.5px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
+                background: lang === l.id ? '#FFF0EA' : '#ffffff',
+                color: lang === l.id ? '#ff713d' : '#5a5a60', fontWeight: lang === l.id ? 600 : 400,
+                fontSize: 13, transition: 'all 150ms',
+              }}>{l.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Theme */}
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 8, display: 'block' }}>Tema</label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { id: 'light' as const, label: 'Claro' },
+              { id: 'dark' as const, label: 'Escuro' },
+            ].map(th => (
+              <button key={th.id} onClick={() => setTheme(th.id)} style={{
+                padding: '8px 16px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                border: theme === th.id ? '1.5px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
+                background: theme === th.id ? '#FFF0EA' : '#ffffff',
+                color: theme === th.id ? '#ff713d' : '#5a5a60', fontWeight: theme === th.id ? 600 : 400,
+                fontSize: 13, transition: 'all 150ms',
+              }}>{th.label}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Notifications */}
+        <div style={{ marginBottom: 8 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 4, display: 'block' }}>Notificações</label>
+          <div style={{ maxWidth: 360 }}>
+            <Toggle label="Notificações por email" on={emailNotif} onToggle={() => setEmailNotif(v => !v)} />
+            <Toggle label="Notificações push" on={pushNotif} onToggle={() => setPushNotif(v => !v)} />
+          </div>
+        </div>
+
+        <button onClick={() => toast.success('Preferências salvas!')} style={{
+          padding: '10px 28px', borderRadius: 9, border: 'none',
+          background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+          color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+          fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)', marginTop: 12,
+        }}>Salvar preferências</button>
+      </div>
+    );
+
+    if (activeTab === 'brandkit') return (
+      <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Brand Kit</h2>
+        <p style={{ fontSize: 13, color: '#8e8e96', marginBottom: 28 }}>Configure a identidade visual da sua marca para aplicar nos criativos.</p>
+
+        {/* Logo upload */}
+        <div style={{ marginBottom: 28 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 8, display: 'block' }}>Logo da marca</label>
+          <div style={{
+            border: '2px dashed rgba(20,20,23,0.1)', borderRadius: 12, height: 120,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', background: '#ffffff', transition: 'all 150ms', color: '#b5b5bb', gap: 8,
+          }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
+          >
+            <Upload size={24} />
+            <span style={{ fontSize: 13, fontWeight: 500 }}>Arraste ou clique para fazer upload</span>
+            <span style={{ fontSize: 11, color: '#b5b5bb' }}>PNG, SVG ou JPG · Max 2MB</span>
+          </div>
+        </div>
+
+        {/* Brand colors */}
+        <div style={{ marginBottom: 28 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 10, display: 'block' }}>Cores da marca</label>
+          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            {brandColors.map((color, i) => (
+              <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%', background: color,
+                  border: '2px solid #ffffff', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+                  cursor: 'pointer', transition: 'transform 150ms',
+                }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.08)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = ''}
+                />
+                <span style={{ fontSize: 10, color: '#8e8e96', textAlign: 'center' }}>{color}</span>
+              </div>
+            ))}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+              <button
+                onClick={() => setBrandColors(c => [...c, '#000000'])}
+                style={{
+                  width: 36, height: 36, borderRadius: '50%', border: '2px dashed rgba(20,20,23,0.1)',
+                  background: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', color: '#b5b5bb', transition: 'all 150ms',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
+              ><Plus size={16} /></button>
+              <span style={{ fontSize: 10, color: '#b5b5bb' }}>Add</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Brand fonts */}
+        <div style={{ marginBottom: 28 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 10, display: 'block' }}>Fontes da marca</label>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {brandFonts.map((f, i) => (
+              <div key={i} style={{
+                padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.06)',
+                background: '#f5f5f3', display: 'flex', alignItems: 'center', gap: 8,
+              }}>
+                <span style={{ fontSize: 13, fontWeight: 500, color: '#141417' }}>{f}</span>
+                <button onClick={() => removeFont(f)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b5b5bb', display: 'flex', padding: 0 }}>
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            <button style={{
+              padding: '6px 14px', borderRadius: 6, border: '2px dashed rgba(20,20,23,0.1)',
+              background: '#ffffff', cursor: 'pointer', color: '#b5b5bb', fontSize: 12.5, fontWeight: 500,
+              fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, transition: 'all 150ms',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
+            ><Plus size={14} /> Adicionar fonte</button>
+          </div>
+        </div>
+
+        <button onClick={() => toast.success('Brand Kit atualizado!')} style={{
+          padding: '10px 28px', borderRadius: 9, border: 'none',
+          background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+          color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
+          fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)',
+        }}>Salvar Brand Kit</button>
+      </div>
+    );
+
+    if (activeTab === 'apikeys') return (
+      <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>API Keys</h2>
+        <p style={{ fontSize: 13, color: '#8e8e96', marginBottom: 28 }}>Gerencie suas chaves de API para integração.</p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 540, marginBottom: 20 }}>
+          {apiKeys.map(k => (
+            <div key={k.id} style={{
+              padding: '14px 18px', borderRadius: 10, border: '1px solid rgba(20,20,23,0.06)',
+              background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              boxShadow: '0 1px 3px rgba(20,20,23,0.04)',
+            }}>
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: '#141417' }}>{k.name}</div>
+                <div style={{ fontSize: 12, color: '#8e8e96', marginTop: 3, fontFamily: 'monospace' }}>{k.key}</div>
+                <div style={{ fontSize: 11, color: '#b5b5bb', marginTop: 3 }}>Criada em {k.created}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => navigator.clipboard.writeText(k.key)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 7, border: '1px solid rgba(20,20,23,0.06)',
+                    background: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                    fontSize: 11.5, fontWeight: 500, color: '#5a5a60', fontFamily: 'inherit',
+                  }}
+                ><Copy size={14} /> Copiar</button>
+                <button
+                  onClick={() => deleteKey(k.id)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 7, border: '1px solid rgba(239,68,68,0.2)',
+                    background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    color: '#EF4444',
+                  }}
+                ><Trash2 size={14} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <button style={{
+          padding: '10px 22px', borderRadius: 9, border: '1.5px solid #ff713d',
+          background: '#FFF0EA', color: '#ff713d', fontSize: 13, fontWeight: 600,
+          cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
+        }}><Plus size={15} /> Nova API Key</button>
+      </div>
+    );
+
+    return null;
   };
 
-  const removeFont = (f: string) => setBrandFonts((prev) => prev.filter((x) => x !== f));
-  const deleteKey = (id: string) => setApiKeys((prev) => prev.filter((k) => k.id !== id));
-
   return (
-    <div className="min-h-full px-6 py-7 max-w-5xl mx-auto">
-      <div className="animate-fade-up mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">{t('settings.title')}</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{t('settings.subtitle')}</p>
+    <div style={{
+      fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
+      minHeight: '100%', color: '#141417', display: 'flex',
+    }}>
+      <style>{`
+        @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        input:focus{border-color:#ff713d !important;box-shadow:0 0 0 2px rgba(255,113,61,0.15)}
+        input::placeholder{color:#b5b5bb}
+        select:focus{outline:none}
+      `}</style>
+
+      {/* Settings sub-sidebar */}
+      <div style={{
+        width: 220, minWidth: 220, borderRight: '1px solid rgba(20,20,23,0.06)',
+        padding: '28px 16px',
+        background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+      }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#141417', marginBottom: 20, padding: '0 8px' }}>Configurações</h2>
+        {TABS.map(tab => {
+          const active = activeTab === tab.id;
+          return (
+            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+              padding: '9px 12px', borderRadius: 8, marginBottom: 2, cursor: 'pointer',
+              background: active ? '#FFF0EA' : 'transparent',
+              border: active ? '1px solid rgba(255,113,61,0.2)' : '1px solid transparent',
+              color: active ? '#ff713d' : '#5a5a60', fontWeight: active ? 600 : 400,
+              fontSize: 13.5, fontFamily: 'inherit', transition: 'all 150ms',
+            }}
+              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(20,20,23,0.03)'; }}
+              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            >
+              <tab.Icon size={18} />{tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="flex gap-6 animate-fade-up" style={{ animationDelay: '60ms' }}>
-        {/* ── Left sub-sidebar ─────────────────────── */}
-        <aside className="hidden sm:flex flex-col gap-1 w-52 shrink-0">
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 text-left ${
-                activeTab === tab.id
-                  ? 'bg-creatyng-accent-pale text-creatyng-accent'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-              }`}
-            >
-              <tab.Icon className="w-4 h-4 shrink-0" />
-              {t(tab.labelKey)}
-            </button>
-          ))}
-        </aside>
-
-        {/* Mobile tab pills */}
-        <div className="sm:hidden flex gap-1.5 overflow-x-auto scrollbar-none pb-1 absolute">
-          {TABS.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeTab === tab.id ? 'bg-creatyng-accent-pale text-creatyng-accent' : 'bg-muted text-muted-foreground'}`}>
-              <tab.Icon className="w-3.5 h-3.5" />{t(tab.labelKey)}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Right content ────────────────────────── */}
-        <div className="flex-1 min-w-0">
-
-          {/* ── Profile tab ─────────────────────────── */}
-          {activeTab === 'profile' && (
-            <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
-              {/* Avatar */}
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-400 to-rose-500 flex items-center justify-center text-white text-xl font-bold">
-                    {name.charAt(0) || user?.email?.charAt(0)?.toUpperCase() || 'U'}
-                  </div>
-                  <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-card border border-border flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shadow-sm">
-                    <Camera className="w-3 h-3" />
-                  </button>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{name || t('settings.no_name')}</p>
-                  <p className="text-xs text-muted-foreground">{user?.email}</p>
-                </div>
-              </div>
-
-              {/* Fields */}
-              <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">{t('settings.name')}</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full h-9 px-3 text-sm bg-background border border-border rounded-xl text-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">{t('settings.email')}</label>
-                  <input
-                    type="email"
-                    value={user?.email || ''}
-                    disabled
-                    className="w-full h-9 px-3 text-sm bg-muted border border-border rounded-xl text-muted-foreground cursor-not-allowed"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">{t('settings.phone')}</label>
-                  <input
-                    type="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+1 (555) 000-0000"
-                    className="w-full h-9 px-3 text-sm bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                  />
-                </div>
-              </div>
-
-              <Button variant="primary" size="sm" onClick={() => toast.success('Configurações salvas!')}>{t('common.save')}</Button>
-
-              {/* Danger zone */}
-              <div className="pt-4 border-t border-border space-y-3">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('settings.danger_zone')}</p>
-                <Button variant="danger" size="sm" onClick={() => setConfirmDeleteAccount(true)}>
-                  {t('settings.delete_account')}
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Preferences tab ─────────────────────── */}
-          {activeTab === 'preferences' && (
-            <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
-              {/* Language */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">{t('settings.pref.language')}</h3>
-                <LocaleDropdown />
-              </div>
-
-              <div className="h-px bg-border" />
-
-              {/* Theme */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">{t('settings.theme')}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{t('settings.theme_hint')}</p>
-                </div>
-                <ThemeToggle />
-              </div>
-
-              <div className="h-px bg-border" />
-
-              {/* Notifications */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-foreground">{t('settings.pref.notifications')}</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-foreground">{t('settings.pref.email_notif')}</p>
-                      <p className="text-xs text-muted-foreground">{t('settings.pref.email_notif_desc')}</p>
-                    </div>
-                    <Toggle checked={emailNotif} onChange={setEmailNotif} />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-foreground">{t('settings.pref.push_notif')}</p>
-                      <p className="text-xs text-muted-foreground">{t('settings.pref.push_notif_desc')}</p>
-                    </div>
-                    <Toggle checked={pushNotif} onChange={setPushNotif} />
-                  </div>
-                </div>
-              </div>
-
-              <Button variant="primary" size="sm" onClick={() => toast.success('Preferências salvas!')}>{t('settings.save_preferences')}</Button>
-            </div>
-          )}
-
-          {/* ── Brand Kit tab ────────────────────────── */}
-          {activeTab === 'brandkit' && (
-            <div className="bg-card border border-border rounded-2xl p-6 space-y-6">
-              {/* Logo upload */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">{t('settings.brand.logo')}</h3>
-                <div className="border-2 border-dashed border-border rounded-2xl p-8 flex flex-col items-center gap-2.5 hover:border-primary/40 transition-colors cursor-pointer group">
-                  <div className="w-10 h-10 rounded-xl bg-muted group-hover:bg-primary/10 flex items-center justify-center transition-colors">
-                    <Upload className="w-5 h-5 text-muted-foreground group-hover:text-primary" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">{t('settings.brand.logo_hint')}</p>
-                  <p className="text-xs text-muted-foreground/60">PNG, SVG · max 5 MB</p>
-                </div>
-              </div>
-
-              <div className="h-px bg-border" />
-
-              {/* Color palette */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">{t('settings.brand.colors')}</h3>
-                <div className="flex gap-3 flex-wrap">
-                  {brandColors.map((color, i) => (
-                    <div key={i} className="flex flex-col items-center gap-1.5">
-                      <div
-                        className="w-10 h-10 rounded-xl border-2 border-border cursor-pointer hover:scale-110 transition-transform"
-                        style={{ backgroundColor: color }}
-                      />
-                      <span className="text-[10px] text-muted-foreground font-mono">{color}</span>
-                    </div>
-                  ))}
-                  <div className="flex flex-col items-center gap-1.5">
-                    <button
-                      onClick={() => setBrandColors((c) => [...c, '#000000'])}
-                      className="w-10 h-10 rounded-xl border-2 border-dashed border-border flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary transition-all"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                    <span className="text-[10px] text-muted-foreground">Add</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-px bg-border" />
-
-              {/* Fonts */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground">{t('settings.brand.fonts')}</h3>
-                <div className="flex flex-wrap gap-2">
-                  {brandFonts.map((f) => (
-                    <div key={f} className="flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-sm text-foreground">
-                      {f}
-                      <button onClick={() => removeFont(f)} className="text-muted-foreground hover:text-foreground transition-colors">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={fontInput}
-                    onChange={(e) => setFontInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addFont()}
-                    placeholder={t('settings.brand.add_font_placeholder')}
-                    className="flex-1 h-9 px-3 text-sm bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
-                  />
-                  <Button variant="outline" size="sm" onClick={addFont}>
-                    {t('settings.brand.add_font')}
-                  </Button>
-                </div>
-              </div>
-
-              <Button variant="primary" size="sm" onClick={() => toast.success('Brand Kit atualizado!')}>{t('settings.save_brand_kit')}</Button>
-            </div>
-          )}
-
-          {/* ── API Keys tab ─────────────────────────── */}
-          {activeTab === 'apikeys' && (
-            <div className="bg-card border border-border rounded-2xl p-6 space-y-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">{t('settings.apikeys.title')}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{t('settings.apikeys.subtitle')}</p>
-                </div>
-                <Button variant="outline" size="sm">
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  {t('settings.apikeys.new')}
-                </Button>
-              </div>
-
-              <div className="space-y-2">
-                {apiKeys.map((k) => (
-                  <div key={k.id} className="flex items-center gap-4 p-4 bg-background border border-border rounded-xl">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{k.name}</p>
-                      <p className="text-xs text-muted-foreground font-mono mt-0.5">{k.key}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground hidden sm:block">{k.date}</span>
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={() => navigator.clipboard.writeText(k.key)}
-                        className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-all"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => deleteKey(k.id)}
-                        className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-creatyng-error hover:bg-red-50 transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {apiKeys.length === 0 && (
-                <p className="text-center text-sm text-muted-foreground py-8">{t('settings.apikeys.empty')}</p>
-              )}
-            </div>
-          )}
-        </div>
+      {/* Tab content */}
+      <div style={{ flex: 1, padding: '28px 36px 48px', overflowY: 'auto' }}>
+        {renderTab()}
       </div>
 
       <ConfirmModal

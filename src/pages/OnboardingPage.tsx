@@ -1,415 +1,407 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Palette,
-  Code2,
-  TrendingUp,
-  Briefcase,
-  Video,
-  Share2,
-  Camera,
-  User,
-  Utensils,
-  ShoppingBag,
-  Pizza,
-  Shirt,
-  Dumbbell,
-  BookOpen,
-  Car,
-  Home,
-  Image,
-  Megaphone,
-  Star,
-  Package,
-  Globe,
-  Lightbulb,
-  Check,
-  ChevronRight,
-  ChevronLeft,
-  Upload,
-  Sparkles,
-  Zap,
+  Palette, Code2, Target, Briefcase, Play, Megaphone, Camera, Sparkles,
+  Utensils, Shirt, ShoppingBag, BookOpen, BarChart2, Video, Mic, Monitor,
+  Hash, Globe, Image, Package, Upload, Check, ChevronRight, ChevronLeft, Zap,
 } from 'lucide-react';
 import { useI18n } from '@/i18n';
-import logoLight from '@/assets/logo-light.png';
 
 /* ─── Types ──────────────────────────────────────────── */
-type ProfileId =
-  | 'designer'
-  | 'webdev'
-  | 'traffic'
-  | 'business'
-  | 'youtuber'
-  | 'social'
-  | 'photographer'
-  | 'other';
-
-type ObjectiveId =
-  | 'social_posts'
-  | 'promotions'
-  | 'ads'
-  | 'thumbnails'
-  | 'brand'
-  | 'product_photos';
-
-interface OnboardingState {
-  profile: ProfileId | null;
-  subcategory: string | null;
-  objectives: ObjectiveId[];
-  plan: 'free' | 'pro';
-}
+type ProfileId = 'designer' | 'webdev' | 'traffic' | 'business' | 'creator' | 'social' | 'photographer' | 'other';
+type ObjectiveId = 'social_posts' | 'promotions' | 'ads' | 'thumbnails' | 'brand' | 'product_photos';
 
 /* ─── Data ───────────────────────────────────────────── */
-const PROFILES: { id: ProfileId; labelKey: string; Icon: React.FC<{ className?: string }>; color: string }[] = [
-  { id: 'designer', labelKey: 'onboarding.profile.designer', Icon: Palette, color: 'from-violet-500 to-purple-500' },
-  { id: 'webdev', labelKey: 'onboarding.profile.webdev', Icon: Code2, color: 'from-blue-500 to-cyan-400' },
-  { id: 'traffic', labelKey: 'onboarding.profile.traffic', Icon: TrendingUp, color: 'from-orange-500 to-amber-400' },
-  { id: 'business', labelKey: 'onboarding.profile.business', Icon: Briefcase, color: 'from-emerald-500 to-teal-400' },
-  { id: 'youtuber', labelKey: 'onboarding.profile.youtuber', Icon: Video, color: 'from-red-500 to-rose-400' },
-  { id: 'social', labelKey: 'onboarding.profile.social', Icon: Share2, color: 'from-pink-500 to-fuchsia-400' },
-  { id: 'photographer', labelKey: 'onboarding.profile.photographer', Icon: Camera, color: 'from-sky-500 to-blue-400' },
-  { id: 'other', labelKey: 'onboarding.profile.other', Icon: User, color: 'from-gray-500 to-slate-400' },
+const PROFILES: { id: ProfileId; label: string; sub: string; Icon: React.FC<{ size?: number; stroke?: string }>; color: string }[] = [
+  { id: 'designer', label: 'Designer / Criativo', sub: 'Freelancer ou agência de design', Icon: Palette, color: '#7C3AED' },
+  { id: 'webdev', label: 'Web Designer / Dev', sub: 'Sites, landing pages, UI/UX', Icon: Code2, color: '#06B6D4' },
+  { id: 'traffic', label: 'Gestor de Tráfego', sub: 'Criativos para campanhas pagas', Icon: Target, color: '#F59E0B' },
+  { id: 'business', label: 'Empresário / Dono de Negócio', sub: 'Restaurante, loja, serviços', Icon: Briefcase, color: '#ff713d' },
+  { id: 'creator', label: 'YouTuber / Creator', sub: 'Thumbnails, banners, social media', Icon: Play, color: '#EF4444' },
+  { id: 'social', label: 'Social Media Manager', sub: 'Gestão de conteúdo e posts', Icon: Megaphone, color: '#10B981' },
+  { id: 'photographer', label: 'Fotógrafo / Produtor', sub: 'Fotos de produto e ensaios', Icon: Camera, color: '#8B5CF6' },
+  { id: 'other', label: 'Outro', sub: 'Nenhum dos acima', Icon: Sparkles, color: '#8e8e96' },
 ];
 
-const SUBCATEGORIES: Record<ProfileId, { id: string; labelKey: string; Icon: React.FC<{ className?: string }> }[]> = {
-  designer: [
-    { id: 'branding', labelKey: 'onboarding.sub.branding', Icon: Star },
-    { id: 'ui_ux', labelKey: 'onboarding.sub.ui_ux', Icon: Globe },
-    { id: 'print', labelKey: 'onboarding.sub.print', Icon: BookOpen },
-    { id: 'social_media', labelKey: 'onboarding.sub.social_media', Icon: Share2 },
+const SUBCATEGORIES: Record<ProfileId, { id: string; label: string; Icon: React.FC<{ size?: number; stroke?: string }> }[]> = {
+  business: [
+    { id: 'restaurant', label: 'Restaurante / Lanchonete', Icon: Utensils },
+    { id: 'acai', label: 'Açaiteria / Sucos / Sorvetes', Icon: Utensils },
+    { id: 'pizzaria', label: 'Pizzaria / Sushi / Japonesa', Icon: Utensils },
+    { id: 'bakery', label: 'Confeitaria / Padaria / Café', Icon: Utensils },
+    { id: 'fashion', label: 'Moda / Vestuário / Acessórios', Icon: Shirt },
+    { id: 'beauty', label: 'Beleza / Estética / Saúde', Icon: Sparkles },
+    { id: 'ecommerce', label: 'E-commerce / Loja Virtual', Icon: ShoppingBag },
+    { id: 'services', label: 'Serviços em geral', Icon: Briefcase },
   ],
-  webdev: [
-    { id: 'agency', labelKey: 'onboarding.sub.agency', Icon: Globe },
-    { id: 'saas', labelKey: 'onboarding.sub.saas', Icon: Zap },
-    { id: 'ecommerce', labelKey: 'onboarding.sub.ecommerce', Icon: ShoppingBag },
-    { id: 'freelance', labelKey: 'onboarding.sub.freelance', Icon: User },
+  designer: [
+    { id: 'freelancer', label: 'Freelancer independente', Icon: Palette },
+    { id: 'agency', label: 'Agência de design', Icon: Monitor },
+    { id: 'branding', label: 'Branding / Identidade visual', Icon: Image },
+    { id: 'social-design', label: 'Social media design', Icon: Hash },
   ],
   traffic: [
-    { id: 'ecommerce', labelKey: 'onboarding.sub.ecommerce', Icon: ShoppingBag },
-    { id: 'infoproducts', labelKey: 'onboarding.sub.infoproducts', Icon: BookOpen },
-    { id: 'local_biz', labelKey: 'onboarding.sub.local_biz', Icon: Home },
-    { id: 'agency', labelKey: 'onboarding.sub.agency', Icon: Globe },
+    { id: 'meta-ads', label: 'Meta Ads (Facebook/Instagram)', Icon: Target },
+    { id: 'google-ads', label: 'Google Ads / Display', Icon: Globe },
+    { id: 'multi-channel', label: 'Multi-canal / Full stack', Icon: BarChart2 },
   ],
-  business: [
-    { id: 'restaurant', labelKey: 'onboarding.sub.restaurant', Icon: Utensils },
-    { id: 'acai', labelKey: 'onboarding.sub.acai', Icon: Pizza },
-    { id: 'fashion', labelKey: 'onboarding.sub.fashion', Icon: Shirt },
-    { id: 'gym', labelKey: 'onboarding.sub.gym', Icon: Dumbbell },
-    { id: 'car_dealer', labelKey: 'onboarding.sub.car_dealer', Icon: Car },
-    { id: 'real_estate', labelKey: 'onboarding.sub.real_estate', Icon: Home },
+  creator: [
+    { id: 'youtube', label: 'YouTube (thumbnails, banners)', Icon: Play },
+    { id: 'tiktok', label: 'TikTok / Reels / Shorts', Icon: Video },
+    { id: 'podcast', label: 'Podcast / Áudio', Icon: Mic },
+    { id: 'streaming', label: 'Streaming / Live', Icon: Monitor },
   ],
-  youtuber: [
-    { id: 'gaming', labelKey: 'onboarding.sub.gaming', Icon: Zap },
-    { id: 'education', labelKey: 'onboarding.sub.education', Icon: BookOpen },
-    { id: 'lifestyle', labelKey: 'onboarding.sub.lifestyle', Icon: Star },
-    { id: 'tech', labelKey: 'onboarding.sub.tech', Icon: Code2 },
+  webdev: [
+    { id: 'landing', label: 'Landing pages / Sites', Icon: Monitor },
+    { id: 'uiux', label: 'UI/UX Design', Icon: Monitor },
+    { id: 'saas', label: 'SaaS / Produto digital', Icon: Code2 },
   ],
   social: [
-    { id: 'fashion', labelKey: 'onboarding.sub.fashion', Icon: Shirt },
-    { id: 'food', labelKey: 'onboarding.sub.food', Icon: Utensils },
-    { id: 'fitness', labelKey: 'onboarding.sub.fitness', Icon: Dumbbell },
-    { id: 'travel', labelKey: 'onboarding.sub.travel', Icon: Globe },
+    { id: 'instagram', label: 'Instagram / Facebook', Icon: Hash },
+    { id: 'multi-social', label: 'Multi-plataforma', Icon: Globe },
+    { id: 'influencer', label: 'Influencer marketing', Icon: Megaphone },
   ],
   photographer: [
-    { id: 'product', labelKey: 'onboarding.sub.product', Icon: Package },
-    { id: 'portrait', labelKey: 'onboarding.sub.portrait', Icon: User },
-    { id: 'food', labelKey: 'onboarding.sub.food', Icon: Utensils },
-    { id: 'fashion', labelKey: 'onboarding.sub.fashion', Icon: Shirt },
+    { id: 'product-photo', label: 'Fotografia de produto', Icon: Camera },
+    { id: 'food-photo', label: 'Fotografia gastronômica', Icon: Utensils },
+    { id: 'portrait', label: 'Retratos / Ensaios', Icon: Camera },
   ],
   other: [
-    { id: 'marketing', labelKey: 'onboarding.sub.marketing', Icon: Megaphone },
-    { id: 'ecommerce', labelKey: 'onboarding.sub.ecommerce', Icon: ShoppingBag },
-    { id: 'creative', labelKey: 'onboarding.sub.creative', Icon: Palette },
-    { id: 'other', labelKey: 'onboarding.sub.other', Icon: Lightbulb },
+    { id: 'curious', label: 'Só quero explorar', Icon: Sparkles },
   ],
 };
 
-const OBJECTIVES: { id: ObjectiveId; labelKey: string; Icon: React.FC<{ className?: string }> }[] = [
-  { id: 'social_posts', labelKey: 'onboarding.obj.social_posts', Icon: Share2 },
-  { id: 'promotions', labelKey: 'onboarding.obj.promotions', Icon: Megaphone },
-  { id: 'ads', labelKey: 'onboarding.obj.ads', Icon: TrendingUp },
-  { id: 'thumbnails', labelKey: 'onboarding.obj.thumbnails', Icon: Image },
-  { id: 'brand', labelKey: 'onboarding.obj.brand', Icon: Star },
-  { id: 'product_photos', labelKey: 'onboarding.obj.product_photos', Icon: Package },
+const GOALS: { id: ObjectiveId; label: string; desc: string; Icon: React.FC<{ size?: number; stroke?: string }> }[] = [
+  { id: 'social_posts', label: 'Posts para redes sociais', desc: 'Instagram, Facebook, TikTok', Icon: Hash },
+  { id: 'promotions', label: 'Promoções e ofertas', desc: 'Destaque de preços, combos, descontos', Icon: Megaphone },
+  { id: 'ads', label: 'Criativos para anúncios', desc: 'Meta Ads, Google Display, TikTok Ads', Icon: Target },
+  { id: 'thumbnails', label: 'Thumbnails e banners', desc: 'YouTube, blog, apresentações', Icon: Image },
+  { id: 'brand', label: 'Identidade visual consistente', desc: 'Logo, cores, tipografia unificada', Icon: Palette },
+  { id: 'product_photos', label: 'Fotos de produto profissionais', desc: 'E-commerce, catálogo, cardápio', Icon: Camera },
 ];
 
-/* ─── Progress bar ───────────────────────────────────── */
-function ProgressBar({ step, total }: { step: number; total: number }) {
-  return (
-    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
-      <div
-        className="h-full bg-[#ff713d] rounded-full transition-all duration-500"
-        style={{ width: `${((step) / total) * 100}%` }}
-      />
-    </div>
-  );
-}
+const QUICK_CREATE_MAP: Record<string, { title: string; desc: string; suggestions: string[] }> = {
+  business: { title: 'Criativo para seu negócio', desc: 'Suba a foto do seu produto e escolha o estilo.', suggestions: ['Food / Pop', 'Pop Design'] },
+  designer: { title: 'Criativo de portfólio', desc: 'Gere uma peça profissional para mostrar ao cliente.', suggestions: ['Pop Design', 'Editorial'] },
+  traffic: { title: 'Criativo para campanha', desc: 'Crie um anúncio de alta conversão agora.', suggestions: ['Food / Pop', 'Pop Design'] },
+  creator: { title: 'Thumbnail para seu conteúdo', desc: 'Gere uma thumb que atrai cliques.', suggestions: ['Pop Design', 'Neon Glow'] },
+  webdev: { title: 'Mockup ou visual', desc: 'Gere um visual para seu projeto web.', suggestions: ['Pop Design', 'Editorial'] },
+  social: { title: 'Post para o feed', desc: 'Crie um post profissional em segundos.', suggestions: ['Food / Pop', 'Pop Design'] },
+  photographer: { title: 'Composição fotográfica', desc: 'Transforme sua foto em criativo de agência.', suggestions: ['Food / Pop', 'Editorial'] },
+  other: { title: 'Seu primeiro criativo', desc: 'Escolha um estilo e comece a criar.', suggestions: ['Food / Pop', 'Pop Design'] },
+};
 
 /* ─── Main component ─────────────────────────────────── */
 export default function OnboardingPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
+  const [profile, setProfile] = useState<ProfileId | null>(null);
+  const [subcat, setSubcat] = useState<string | null>(null);
+  const [selectedGoals, setSelectedGoals] = useState<ObjectiveId[]>([]);
+  const [plan, setPlan] = useState<'free' | 'pro' | null>(null);
+  const [ready, setReady] = useState(false);
+  const [trans, setTrans] = useState(false);
+
+  useEffect(() => { setReady(true); }, []);
+
   const TOTAL_STEPS = 5;
+  const progress = ((step + 1) / TOTAL_STEPS) * 100;
+  const profileColor = PROFILES.find(p => p.id === profile)?.color || '#ff713d';
 
-  const [state, setState] = useState<OnboardingState>({
-    profile: null,
-    subcategory: null,
-    objectives: [],
-    plan: 'free',
-  });
+  const go = (dir: number) => {
+    setTrans(true);
+    setTimeout(() => { setStep(s => s + dir); setTrans(false); }, 180);
+  };
 
-  const canContinue = (): boolean => {
-    if (step === 1) return !!state.profile;
-    if (step === 2) return !!state.subcategory;
-    if (step === 3) return state.objectives.length > 0;
+  const canNext = () => {
+    if (step === 0) return !!profile;
+    if (step === 1) return !!subcat;
+    if (step === 2) return selectedGoals.length > 0;
+    if (step === 3) return !!plan;
     return true;
   };
 
-  const handleContinue = () => {
-    if (step < TOTAL_STEPS) setStep((s) => s + 1);
-    else finish();
-  };
-
   const finish = () => {
-    try {
-      localStorage.setItem('creatyng_onboarding', JSON.stringify({ ...state, completed: true }));
-    } catch { /* ignore */ }
+    try { localStorage.setItem('creatyng_onboarding', JSON.stringify({ profile, subcat, goals: selectedGoals, plan, completed: true })); } catch { /* ignore */ }
     navigate('/app/dashboard', { replace: true });
   };
 
-  const toggleObjective = (id: ObjectiveId) => {
-    setState((s) => ({
-      ...s,
-      objectives: s.objectives.includes(id)
-        ? s.objectives.filter((o) => o !== id)
-        : [...s.objectives, id],
-    }));
-  };
+  const STEP_INFO = [
+    { title: 'Qual seu perfil?', sub: 'Vamos personalizar tudo pra você.' },
+    { title: 'Mais sobre o que faz', sub: `Conte mais sobre sua atuação como ${PROFILES.find(p => p.id === profile)?.label || ''}.` },
+    { title: 'O que quer criar?', sub: 'Selecione seus objetivos principais.' },
+    { title: 'Escolha seu plano', sub: 'Comece grátis ou desbloqueie tudo com o Pro.' },
+    { title: QUICK_CREATE_MAP[profile || 'other']?.title || 'Crie agora!', sub: QUICK_CREATE_MAP[profile || 'other']?.desc || '' },
+  ];
 
-  const subs = state.profile ? SUBCATEGORIES[state.profile] : [];
+  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
+
+  const subs = profile ? SUBCATEGORIES[profile] || [] : [];
 
   return (
-    <div className="min-h-screen bg-[#141417] flex flex-col items-center px-4 py-8">
-      {/* Logo */}
-      <div className="w-full max-w-lg mb-8">
-        <img src={logoLight} alt="Creatyng" className="h-7 w-auto" />
+    <div style={{
+      fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
+      minHeight: '100vh',
+      background: `radial-gradient(ellipse 700px 500px at 50% 8%, rgba(255,113,61,0.07) 0%, transparent 60%), ${gridSvg}, #f5f5f3`,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      color: '#141417',
+    }}>
+      <style>{`
+        @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes scIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+        .ob-btn{transition:all 150ms}
+      `}</style>
+
+      {/* Header */}
+      <div style={{ width: '100%', maxWidth: 680, padding: '28px 24px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <span style={{ color: '#fff', fontWeight: 800, fontSize: 13 }}>C</span>
+            </div>
+            <span style={{ fontWeight: 700, fontSize: 16 }}>Creatyng</span>
+          </div>
+          <span style={{ fontSize: 12, color: '#8e8e96', fontWeight: 500 }}>Passo {step + 1} de {TOTAL_STEPS}</span>
+        </div>
+        {/* Progress bar */}
+        <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'rgba(20,20,23,0.06)', marginBottom: 32 }}>
+          <div style={{ width: `${progress}%`, height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, #ff713d, #FF9B70)', transition: 'width 400ms ease' }} />
+        </div>
       </div>
 
-      {/* Card */}
-      <div className="w-full max-w-lg">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-white/40 text-xs">
-              {t('onboarding.step_counter', { step: String(step), total: String(TOTAL_STEPS) })}
-            </span>
-            <button
-              onClick={finish}
-              className="text-white/30 text-xs hover:text-white/60 transition-colors"
-            >
-              {t('onboarding.skip')}
-            </button>
-          </div>
-          <ProgressBar step={step} total={TOTAL_STEPS} />
-        </div>
+      {/* Content */}
+      <div style={{
+        width: '100%', maxWidth: 680, padding: '0 24px', flex: 1,
+        opacity: trans ? 0 : 1, transform: trans ? 'translateY(6px)' : '', transition: 'all 180ms ease',
+      }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{STEP_INFO[step].title}</h1>
+        <p style={{ fontSize: 14, color: '#5a5a60', marginBottom: 24 }}>{STEP_INFO[step].sub}</p>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 min-h-[420px] flex flex-col">
-          {/* Step 1: Profile */}
-          {step === 1 && (
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-white mb-1">{t('onboarding.step1.title')}</h2>
-              <p className="text-white/40 text-sm mb-6">{t('onboarding.step1.subtitle')}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {PROFILES.map(({ id, labelKey, Icon, color }) => (
-                  <button
-                    key={id}
-                    onClick={() => setState((s) => ({ ...s, profile: id, subcategory: null }))}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-150 ${
-                      state.profile === id
-                        ? 'border-[#ff713d]/60 bg-[#ff713d]/10'
-                        : 'border-white/8 bg-white/3 hover:bg-white/6 hover:border-white/15'
-                    }`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center shrink-0`}>
-                      <Icon className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-white text-sm font-medium leading-tight">{t(labelKey)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Step 2: Subcategory */}
-          {step === 2 && (
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-white mb-1">{t('onboarding.step2.title')}</h2>
-              <p className="text-white/40 text-sm mb-6">{t('onboarding.step2.subtitle')}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {subs.map(({ id, labelKey, Icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => setState((s) => ({ ...s, subcategory: id }))}
-                    className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-150 ${
-                      state.subcategory === id
-                        ? 'border-[#ff713d]/60 bg-[#ff713d]/10'
-                        : 'border-white/8 bg-white/3 hover:bg-white/6 hover:border-white/15'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-white/8 flex items-center justify-center shrink-0">
-                      <Icon className="w-4 h-4 text-white/70" />
-                    </div>
-                    <span className="text-white text-sm font-medium">{t(labelKey)}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Step 3: Objectives */}
-          {step === 3 && (
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-white mb-1">{t('onboarding.step3.title')}</h2>
-              <p className="text-white/40 text-sm mb-6">{t('onboarding.step3.subtitle')}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {OBJECTIVES.map(({ id, labelKey, Icon }) => {
-                  const selected = state.objectives.includes(id);
-                  return (
-                    <button
-                      key={id}
-                      onClick={() => toggleObjective(id)}
-                      className={`flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-150 ${
-                        selected
-                          ? 'border-[#ff713d]/60 bg-[#ff713d]/10'
-                          : 'border-white/8 bg-white/3 hover:bg-white/6 hover:border-white/15'
-                      }`}
-                    >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all ${
-                        selected ? 'bg-[#ff713d]' : 'bg-white/8'
-                      }`}>
-                        {selected
-                          ? <Check className="w-4 h-4 text-white" />
-                          : <Icon className="w-4 h-4 text-white/60" />
-                        }
-                      </div>
-                      <span className="text-white text-sm font-medium">{t(labelKey)}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Step 4: Plan */}
-          {step === 4 && (
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-white mb-1">{t('onboarding.step4.title')}</h2>
-              <p className="text-white/40 text-sm mb-6">{t('onboarding.step4.subtitle')}</p>
-              <div className="grid grid-cols-2 gap-3">
-                {/* Free */}
-                <button
-                  onClick={() => setState((s) => ({ ...s, plan: 'free' }))}
-                  className={`p-4 rounded-xl border text-left transition-all duration-150 ${
-                    state.plan === 'free'
-                      ? 'border-[#ff713d]/60 bg-[#ff713d]/10'
-                      : 'border-white/10 bg-white/3 hover:bg-white/6'
-                  }`}
-                >
-                  <div className="text-white font-semibold text-base mb-1">{t('onboarding.plan.free')}</div>
-                  <div className="text-white/40 text-xs mb-3">{t('onboarding.plan.free_price')}</div>
-                  <ul className="space-y-1.5">
-                    {['10 credits/mo', 'HD export', 'Core templates'].map((f) => (
-                      <li key={f} className="flex items-center gap-1.5 text-white/60 text-xs">
-                        <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </button>
-
-                {/* Pro */}
-                <button
-                  onClick={() => setState((s) => ({ ...s, plan: 'pro' }))}
-                  className={`p-4 rounded-xl border text-left transition-all duration-150 relative overflow-hidden ${
-                    state.plan === 'pro'
-                      ? 'border-[#ff713d]/80 bg-gradient-to-br from-[#ff713d]/15 to-[#ff713d]/5'
-                      : 'border-white/10 bg-white/3 hover:bg-white/6'
-                  }`}
-                >
-                  <div className="absolute top-2.5 right-2.5">
-                    <span className="text-[10px] bg-[#ff713d] text-white px-2 py-0.5 rounded-full font-medium">
-                      {t('onboarding.plan.popular')}
-                    </span>
+        {/* STEP 0: Profile */}
+        {step === 0 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            {PROFILES.map((p, i) => {
+              const selected = profile === p.id;
+              return (
+                <button key={p.id} className="ob-btn" onClick={() => { setProfile(p.id); setSubcat(null); }} style={{
+                  padding: '14px 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+                  border: selected ? `2px solid ${p.color}` : '1px solid rgba(20,20,23,0.06)',
+                  background: selected ? `${p.color}0A` : '#ffffff', color: '#141417',
+                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', width: '100%',
+                  animation: ready ? `scIn 280ms ${i * 35}ms ease both` : 'none',
+                }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                    background: selected ? `${p.color}14` : 'rgba(20,20,23,0.03)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: selected ? p.color : '#8e8e96',
+                  }}>
+                    <p.Icon size={18} />
                   </div>
-                  <div className="text-white font-semibold text-base mb-1">{t('onboarding.plan.pro')}</div>
-                  <div className="text-[#ff713d] text-xs mb-3">{t('onboarding.plan.pro_price')}</div>
-                  <ul className="space-y-1.5">
-                    {['500 credits/mo', '4K export', 'All templates', 'BYOK'].map((f) => (
-                      <li key={f} className="flex items-center gap-1.5 text-white/60 text-xs">
-                        <Check className="w-3 h-3 text-emerald-400 shrink-0" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: selected ? 600 : 500 }}>{p.label}</div>
+                    <div style={{ fontSize: 11.5, color: '#8e8e96', marginTop: 1 }}>{p.sub}</div>
+                  </div>
+                  {selected && <Check size={16} color={p.color} />}
                 </button>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Quick Create */}
-          {step === 5 && (
-            <div className="flex-1">
-              <h2 className="text-xl font-bold text-white mb-1">{t('onboarding.step5.title')}</h2>
-              <p className="text-white/40 text-sm mb-6">{t('onboarding.step5.subtitle')}</p>
-
-              {/* Dropzone */}
-              <div className="border-2 border-dashed border-white/15 rounded-xl p-8 flex flex-col items-center gap-3 mb-4 hover:border-[#ff713d]/40 transition-colors cursor-pointer group">
-                <div className="w-12 h-12 rounded-xl bg-white/8 group-hover:bg-[#ff713d]/15 flex items-center justify-center transition-all">
-                  <Upload className="w-6 h-6 text-white/40 group-hover:text-[#ff713d]" />
-                </div>
-                <div className="text-center">
-                  <p className="text-white/70 text-sm font-medium">{t('onboarding.step5.dropzone')}</p>
-                  <p className="text-white/30 text-xs mt-0.5">{t('onboarding.step5.dropzone_hint')}</p>
-                </div>
-              </div>
-
-              {/* Suggested template */}
-              <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-500 to-rose-500 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-white text-sm font-medium">{t('onboarding.step5.suggestion_label')}</p>
-                  <p className="text-white/40 text-xs">{t('onboarding.step5.suggestion_hint')}</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-white/30" />
-              </div>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/8">
-            <button
-              onClick={() => setStep((s) => Math.max(1, s - 1))}
-              disabled={step === 1}
-              className="flex items-center gap-1.5 text-white/40 text-sm hover:text-white/70 disabled:opacity-0 disabled:pointer-events-none transition-all"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              {t('common.back')}
-            </button>
-
-            <button
-              onClick={handleContinue}
-              disabled={!canContinue()}
-              className="flex items-center gap-2 h-9 px-5 rounded-xl bg-[#ff713d] text-white text-sm font-semibold hover:brightness-110 active:scale-[0.98] transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shadow-[0_3px_10px_rgba(255,113,61,0.30)]"
-            >
-              {step === TOTAL_STEPS ? t('onboarding.finish') : t('common.next')}
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              );
+            })}
           </div>
-        </div>
+        )}
+
+        {/* STEP 1: Subcategory */}
+        {step === 1 && profile && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {subs.map((s, i) => {
+              const selected = subcat === s.id;
+              return (
+                <button key={s.id} className="ob-btn" onClick={() => setSubcat(s.id)} style={{
+                  padding: '13px 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+                  border: selected ? `2px solid ${profileColor}` : '1px solid rgba(20,20,23,0.06)',
+                  background: selected ? `${profileColor}0A` : '#ffffff', color: '#141417',
+                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', width: '100%',
+                  animation: ready ? `scIn 280ms ${i * 35}ms ease both` : 'none',
+                }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                    background: selected ? `${profileColor}14` : 'rgba(20,20,23,0.03)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: selected ? profileColor : '#8e8e96',
+                  }}>
+                    <s.Icon size={18} />
+                  </div>
+                  <div style={{ fontSize: 13.5, fontWeight: selected ? 600 : 500 }}>{s.label}</div>
+                  {selected && <Check size={16} color={profileColor} style={{ marginLeft: 'auto', flexShrink: 0 }} />}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* STEP 2: Goals (multi-select) */}
+        {step === 2 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {GOALS.map((g, i) => {
+              const sel = selectedGoals.includes(g.id);
+              return (
+                <button key={g.id} className="ob-btn" onClick={() => setSelectedGoals(prev => sel ? prev.filter(x => x !== g.id) : [...prev, g.id])} style={{
+                  padding: '13px 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+                  border: sel ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
+                  background: sel ? '#FFF0EA' : '#ffffff', color: '#141417',
+                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', width: '100%',
+                  animation: ready ? `scIn 280ms ${i * 40}ms ease both` : 'none',
+                }}>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                    border: sel ? '2px solid #ff713d' : '2px solid rgba(20,20,23,0.1)',
+                    background: sel ? '#ff713d' : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {sel && <Check size={13} color="#fff" />}
+                  </div>
+                  <div style={{
+                    width: 34, height: 34, borderRadius: 8, flexShrink: 0,
+                    background: sel ? 'rgba(255,113,61,0.12)' : 'rgba(20,20,23,0.03)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: sel ? '#ff713d' : '#8e8e96',
+                  }}>
+                    <g.Icon size={16} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13.5, fontWeight: sel ? 600 : 500 }}>{g.label}</div>
+                    <div style={{ fontSize: 11.5, color: '#8e8e96', marginTop: 1 }}>{g.desc}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* STEP 3: Plan upsell */}
+        {step === 3 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            {([
+              { id: 'free' as const, name: 'Grátis', price: 'R$ 0', credits: '50 créditos', feats: ['2 templates', 'Export PNG', "Marca d'água Creatyng"], cta: 'Começar grátis', outline: true },
+              { id: 'pro' as const, name: 'Pro', price: 'R$ 49', period: '/mês', credits: '500 créditos', badge: 'Recomendado', feats: ['Todos os templates', "Sem marca d'água", 'Chat AI ilimitado', 'Brand Kit', 'Multi-formato'], cta: 'Assinar Pro', outline: false },
+            ]).map((p, i) => (
+              <div key={p.id} onClick={() => setPlan(p.id)} style={{
+                background: '#ffffff', borderRadius: 14, padding: '22px 20px', cursor: 'pointer',
+                border: plan === p.id ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
+                transition: 'all 150ms', position: 'relative',
+                animation: ready ? `scIn 300ms ${i * 60}ms ease both` : 'none',
+              }}>
+                {p.badge && (
+                  <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 6, background: '#ff713d', color: '#fff', fontSize: 10, fontWeight: 700 }}>{p.badge}</div>
+                )}
+                <div style={{ fontSize: 12, fontWeight: 600, color: p.outline ? '#8e8e96' : '#ff713d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>{p.name}</div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: 2 }}>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: p.outline ? '#141417' : '#ff713d' }}>{p.price}</span>
+                  {p.period && <span style={{ fontSize: 13, color: '#8e8e96' }}>{p.period}</span>}
+                </div>
+                <div style={{ fontSize: 13, color: '#8e8e96', marginBottom: 18 }}>{p.credits} / mês</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+                  {p.feats.map((f, j) => (
+                    <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: '#5a5a60' }}>
+                      <Check size={16} color="#10B981" />{f}
+                    </div>
+                  ))}
+                </div>
+                <button style={{
+                  width: '100%', padding: '10px 0', borderRadius: 9, marginTop: 18, fontFamily: 'inherit',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  ...(p.outline
+                    ? { border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#141417' }
+                    : { border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', boxShadow: '0 3px 12px rgba(255,113,61,0.27)' }
+                  ),
+                }}>{p.cta}</button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* STEP 4: Quick create */}
+        {step === 4 && (
+          <div style={{ textAlign: 'center', animation: 'fdUp 400ms ease both' }}>
+            <div style={{
+              width: 300, height: 190, borderRadius: 16, margin: '0 auto 24px',
+              border: '2px dashed rgba(20,20,23,0.1)', background: '#ffffff',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', transition: 'all 180ms', gap: 8, color: '#8e8e96',
+            }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#8e8e96'; }}
+            >
+              <Upload size={28} />
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Arraste sua imagem aqui</div>
+              <div style={{ fontSize: 12 }}>PNG, JPG ou WebP · Máx 10MB</div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 20, flexWrap: 'wrap' }}>
+              {(QUICK_CREATE_MAP[profile || 'other']?.suggestions || ['Food / Pop', 'Pop Design']).map((s, i) => (
+                <div key={i} style={{
+                  padding: '10px 20px', borderRadius: 10, border: '1px solid rgba(20,20,23,0.06)',
+                  background: '#ffffff', cursor: 'pointer', transition: 'all 150ms',
+                }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = profileColor; (e.currentTarget as HTMLElement).style.background = `${profileColor}08`; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.06)'; (e.currentTarget as HTMLElement).style.background = '#ffffff'; }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 600, color: profileColor }}>{s}</div>
+                </div>
+              ))}
+            </div>
+
+            <p style={{ fontSize: 13, color: '#8e8e96', maxWidth: 400, margin: '0 auto' }}>
+              {QUICK_CREATE_MAP[profile || 'other']?.desc || 'Escolha um estilo e comece a criar.'}
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Navigation */}
+      <div style={{ width: '100%', maxWidth: 680, padding: '20px 24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {step > 0 ? (
+          <button onClick={() => go(-1)} style={{
+            padding: '9px 18px', borderRadius: 9, border: '1px solid rgba(20,20,23,0.1)',
+            background: '#ffffff', color: '#5a5a60', fontSize: 13, fontWeight: 500,
+            cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
+          }}>
+            <ChevronLeft size={18} /> Voltar
+          </button>
+        ) : <div />}
+
+        {step < 4 ? (
+          <button onClick={() => canNext() && go(1)} disabled={!canNext()} style={{
+            padding: '9px 22px', borderRadius: 9, border: 'none',
+            background: 'linear-gradient(135deg,#ff713d,#FF9B70)',
+            color: '#fff', fontSize: 13, fontWeight: 600, cursor: canNext() ? 'pointer' : 'default',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
+            boxShadow: '0 3px 12px rgba(255,113,61,0.27)', opacity: canNext() ? 1 : 0.4, transition: 'all 180ms',
+          }}>
+            Continuar <ChevronRight size={18} />
+          </button>
+        ) : (
+          <button onClick={finish} style={{
+            padding: '10px 26px', borderRadius: 9, border: 'none',
+            background: 'linear-gradient(135deg,#ff713d,#FF9B70)',
+            color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 7,
+            boxShadow: '0 3px 14px rgba(255,113,61,0.27)', animation: 'pulse 2s infinite',
+          }}>
+            <Sparkles size={18} /> Gerar meu primeiro criativo
+          </button>
+        )}
+      </div>
+
+      {step < 4 && (
+        <button onClick={finish} style={{
+          background: 'none', border: 'none', color: '#b5b5bb', fontSize: 12,
+          cursor: 'pointer', fontFamily: 'inherit', paddingBottom: 20,
+        }}>Pular configuração</button>
+      )}
     </div>
   );
 }
