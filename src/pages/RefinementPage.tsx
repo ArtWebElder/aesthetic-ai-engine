@@ -85,6 +85,7 @@ export default function RefinementPage() {
   const [refinementOverrides, setRefinementOverrides] = useState<RefinementOverrides>({});
   const [isRecomposing, setIsRecomposing] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [pillMessage, setPillMessage] = useState<string | null>(null);
 
   // We keep a local composition ref so the chat can edit it
   const htmlCompositionRef = useRef<CreatygnComposition | null>(null);
@@ -249,7 +250,7 @@ export default function RefinementPage() {
             {QUICK_ACTIONS.map((action) => {
               const color = QUICK_ACTION_COLORS[action] || '#8e8e96';
               return (
-                <button key={action} style={{
+                <button key={action} onClick={() => setPillMessage(action)} style={{
                   flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 500,
                   border: `1px solid ${color}20`, background: `${color}0A`, color, cursor: 'pointer', fontFamily: 'inherit',
                 }}>
@@ -269,6 +270,8 @@ export default function RefinementPage() {
                 onRegenerate={() => navigate("/app/create")}
                 composition={htmlCompositionRef.current}
                 onCompositionChange={(updated) => handleCompositionChange(updated, "Chat AI")}
+                externalMessage={pillMessage}
+                onExternalMessageConsumed={() => setPillMessage(null)}
               />
             </div>
           </div>

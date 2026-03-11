@@ -1,10 +1,8 @@
 // src/features/editor/wizard/RefinementChat.tsx
 // CREATYNG — Chat de refinamento pós-geração.
-// Path primário: Gemini Flash via Edge Function (chat-edit) — opera diretamente no JSON de composição.
-// Path fallback: parseChat() regex local → applyChatToComposition().
-// Path AI sem composition: qualquer comando desconhecido → Gemini Flash direto.
+// Light theme, contraste correto. Aceita mensagens externas (pill clicks).
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { parseChat } from "../engine/chatParser";
 import { applyCommand, type RefinementOverrides } from "../engine/chatApply";
 import { applyCommandWithAI } from "../engine/chatCompositionAI";
@@ -12,10 +10,6 @@ import type { CreatygnComposition } from "@/types/composition";
 
 const GEMINI_API_KEY = (import.meta as { env: Record<string, string> }).env.VITE_GEMINI_API_KEY ?? "";
 
-/**
- * Chama Gemini Flash sem composition — retorna resposta de texto livre.
- * Usado quando regex=unknown e não há JSON de composição disponível.
- */
 async function callGeminiForHelp(command: string): Promise<string> {
   if (!GEMINI_API_KEY) {
     console.warn('[Chat] VITE_GEMINI_API_KEY não configurado — IA indisponível');
@@ -27,15 +21,12 @@ async function callGeminiForHelp(command: string): Promise<string> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `Você é assistente de design do Creatyng. O usuário quer ajustar um criativo visual e enviou: "${command}". Responda em 1-2 linhas em PT-BR, explicando o que faria para atender ao pedido ou pedindo mais detalhes se necessário.` }] }],
+        contents: [{ parts: [{ text: `Você é assistente de design do Creatyng. O usuário quer ajustar um criativo visual e enviou: "${command}". Responda em 1-2 linhas em PT-BR.` }] }],
         generationConfig: { temperature: 0.3, maxOutputTokens: 200 },
       }),
       signal: AbortSignal.timeout(15_000),
     });
-    if (!res.ok) {
-      console.warn('[Chat] Gemini respondeu', res.status);
-      return `IA indisponível (${res.status}). Tente novamente.`;
-    }
+    if (!res.ok) return `IA indisponível (${res.status}). Tente novamente.`;
     const data = await res.json();
     return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "Sem resposta da IA.";
   } catch (e) {
@@ -53,9 +44,12 @@ interface RefinementChatProps {
   overrides: RefinementOverrides;
   onOverridesChange: (overrides: RefinementOverrides) => void;
   onRegenerate: () => void;
-  /** Quando fornecido, ativa o path IA que opera diretamente no JSON de composição. */
   composition?: CreatygnComposition | null;
   onCompositionChange?: (c: CreatygnComposition) => void;
+  /** Mensagem externa (pill click) — quando muda para string não-vazia, é enviada como mensagem do user. */
+  externalMessage?: string | null;
+  /** Chamado após consumir externalMessage para resetar o estado no pai. */
+  onExternalMessageConsumed?: () => void;
 }
 
 export function RefinementChat({
@@ -64,6 +58,8 @@ export function RefinementChat({
   onRegenerate,
   composition,
   onCompositionChange,
+  externalMessage,
+  onExternalMessageConsumed,
 }: RefinementChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -79,41 +75,24 @@ export function RefinementChat({
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function handleSend() {
-    if (!input.trim() || aiLoading) return;
+  const processMessage = useCallback(async (commandText: string) => {
+    if (!commandText.trim()) return;
 
-    const commandText = input.trim();
     const userMsg: ChatMessage = { role: "user", text: commandText };
-    setInput("");
 
-    console.log('[Chat] composition available:', !!composition);
-    console.log('[Chat] onCompositionChange available:', !!onCompositionChange);
-
-    // Comandos de regeneração sempre vão para onRegenerate
     const parsedCheck = parseChat(commandText);
     if (parsedCheck.type === "regenerate_image") {
-      setMessages((prev) => [
-        ...prev,
-        userMsg,
-        { role: "system", text: "🔄 Regenerando imagem..." },
-      ]);
+      setMessages((prev) => [...prev, userMsg, { role: "system", text: "🔄 Regenerando imagem..." }]);
       onRegenerate();
       return;
     }
 
-    // ── Path primário: AI opera diretamente no JSON de composição ──────────────
     if (composition && onCompositionChange) {
-      const thinkingMsg: ChatMessage = { role: "system", text: "✨ Processando..." };
-      setMessages((prev) => [...prev, userMsg, thinkingMsg]);
+      setMessages((prev) => [...prev, userMsg, { role: "system", text: "✨ Processando..." }]);
       setAiLoading(true);
-
       try {
         const result = await applyCommandWithAI(composition, commandText);
-
-        if (result.description.startsWith("✅")) {
-          onCompositionChange(result.composition);
-        }
-
+        if (result.description.startsWith("✅")) onCompositionChange(result.composition);
         setMessages((prev) => {
           const msgs = [...prev];
           msgs[msgs.length - 1] = { role: "system", text: result.description };
@@ -131,7 +110,6 @@ export function RefinementChat({
       return;
     }
 
-    // ── Path fallback com regex: comando reconhecido sem composition JSON ──────
     if (parsedCheck.type !== "unknown") {
       const newOverrides = applyCommand(parsedCheck, overrides);
       onOverridesChange(newOverrides);
@@ -139,12 +117,9 @@ export function RefinementChat({
       return;
     }
 
-    // ── Path Gemini direto: regex=unknown, sem composition → chama IA mesmo assim ──
-    console.log('[Chat] regex=unknown, sem composition — enviando para Gemini Flash direto');
-    const thinkingMsg: ChatMessage = { role: "system", text: "✨ Consultando IA..." };
-    setMessages((prev) => [...prev, userMsg, thinkingMsg]);
+    console.log('[Chat] regex=unknown — enviando para Gemini Flash direto');
+    setMessages((prev) => [...prev, userMsg, { role: "system", text: "✨ Consultando IA..." }]);
     setAiLoading(true);
-
     try {
       const aiResponse = await callGeminiForHelp(commandText);
       setMessages((prev) => {
@@ -161,6 +136,21 @@ export function RefinementChat({
     } finally {
       setAiLoading(false);
     }
+  }, [composition, onCompositionChange, onRegenerate, onOverridesChange, overrides]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Handle pill clicks from parent
+  useEffect(() => {
+    if (externalMessage && externalMessage.trim()) {
+      processMessage(externalMessage);
+      onExternalMessageConsumed?.();
+    }
+  }, [externalMessage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleSend() {
+    if (!input.trim() || aiLoading) return;
+    const text = input.trim();
+    setInput("");
+    await processMessage(text);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -171,19 +161,41 @@ export function RefinementChat({
   }
 
   return (
-    <div className="flex flex-col border border-white/10 rounded-lg bg-black/20 backdrop-blur-sm w-full max-h-72">
+    <div style={{
+      display: "flex", flexDirection: "column", width: "100%", height: "100%",
+      background: "#f5f5f3", borderRadius: 10, overflow: "hidden",
+      border: "1px solid rgba(20,20,23,0.08)",
+    }}>
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
         {messages.map((msg, i) => (
-          <div key={i} className={`text-sm ${msg.role === "user" ? "text-right" : "text-left"}`}>
+          <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
             {msg.role === "user" ? (
-              <span className="inline-block bg-white/10 rounded-lg px-3 py-1.5 max-w-[85%] text-white/90">
+              <div style={{
+                maxWidth: "85%", padding: "8px 12px", borderRadius: "12px 12px 2px 12px",
+                background: "linear-gradient(135deg, #ff713d, #FF9B70)",
+                color: "#ffffff", fontSize: 13, lineHeight: 1.45, fontFamily: "inherit",
+              }}>
                 {msg.text}
-              </span>
+              </div>
+            ) : msg.text.startsWith("✨") || msg.text.startsWith("🔄") || msg.text.startsWith("🤖") || msg.text.startsWith("✅") || msg.text.startsWith("❌") ? (
+              // System/AI bubble
+              <div style={{
+                maxWidth: "85%", padding: "8px 12px", borderRadius: "12px 12px 12px 2px",
+                background: "#ffffff", color: "#141417", fontSize: 13, lineHeight: 1.45,
+                border: "1px solid rgba(20,20,23,0.06)", whiteSpace: "pre-line", fontFamily: "inherit",
+              }}>
+                {msg.text}
+              </div>
             ) : (
-              <span className="inline-block bg-white/5 rounded-lg px-3 py-1.5 max-w-[85%] text-white/60 whitespace-pre-line">
+              // Initial system message (help tips) — cyan style
+              <div style={{
+                maxWidth: "90%", padding: "8px 12px", borderRadius: 9,
+                background: "rgba(6,182,212,0.04)", border: "1px solid rgba(6,182,212,0.12)",
+                color: "#0891b2", fontSize: 12.5, lineHeight: 1.5, whiteSpace: "pre-line", fontFamily: "inherit",
+              }}>
                 {msg.text}
-              </span>
+              </div>
             )}
           </div>
         ))}
@@ -191,19 +203,36 @@ export function RefinementChat({
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 p-3 border-t border-white/10">
+      <div style={{
+        flexShrink: 0, display: "flex", gap: 8, padding: "10px 12px",
+        borderTop: "1px solid rgba(20,20,23,0.08)",
+        background: "#f5f5f3",
+      }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={aiLoading}
           placeholder='"muda headline pra OFERTA ESPECIAL"'
-          className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-1.5 text-white placeholder:text-white/30 text-sm outline-none focus:border-purple-500/50 transition-colors disabled:opacity-40"
+          style={{
+            flex: 1, background: "#ffffff", border: "1px solid rgba(20,20,23,0.1)",
+            borderRadius: 8, padding: "8px 12px", color: "#141417",
+            fontSize: 13, outline: "none", fontFamily: "inherit",
+            opacity: aiLoading ? 0.5 : 1,
+          }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "#ff713d"; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(20,20,23,0.1)"; }}
         />
         <button
           onClick={handleSend}
           disabled={aiLoading}
-          className="px-4 py-1.5 rounded-md bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-colors disabled:opacity-40"
+          style={{
+            padding: "8px 14px", borderRadius: 8, border: "none",
+            background: aiLoading ? "rgba(20,20,23,0.08)" : "linear-gradient(135deg, #ff713d, #FF9B70)",
+            color: aiLoading ? "#8e8e96" : "#ffffff", fontSize: 13, fontWeight: 600,
+            cursor: aiLoading ? "default" : "pointer", fontFamily: "inherit",
+            transition: "all 150ms",
+          }}
         >
           {aiLoading ? "..." : "Enviar"}
         </button>

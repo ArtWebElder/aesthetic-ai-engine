@@ -376,6 +376,21 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
   }
 
   const startedAt = Date.now();
+
+  // Debug log — inputs being sent to generation
+  console.log('[Generate] Inputs:', {
+    subject: !!state.subjectBase64,
+    preset: state.selectedImagePresetId,
+    texts: {
+      headline: state.headline,
+      subheadline: state.subheadline,
+      cta: state.cta,
+      price: state.price?.value,
+      whatsapp: state.whatsapp,
+      instagram: state.instagram,
+    },
+  });
+
   const isPopDesign = state.selectedImagePresetId === "sys-img-pop-design";
   const isFoodPop =
     !isPopDesign &&

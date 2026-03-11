@@ -139,11 +139,11 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#f5f5f3' }}>
+    <div className="h-screen overflow-hidden flex" style={{ background: '#f5f5f3' }}>
       {/* ── Left panel (light) ───────────────────────────── */}
       <div
         className="flex flex-col items-center justify-center relative z-10 overflow-y-auto"
-        style={{ minWidth: 0, width: '100%', maxWidth: 480, padding: '48px', background: '#f5f5f3' }}
+        style={{ minWidth: 0, width: '100%', maxWidth: 480, padding: '48px', background: '#f5f5f3', height: '100%' }}
       >
         {/* Logo */}
         <div className="mb-8 self-start flex items-center gap-2.5">

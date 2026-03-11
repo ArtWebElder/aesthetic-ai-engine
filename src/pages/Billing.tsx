@@ -3,6 +3,7 @@ import {
   Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp,
 } from 'lucide-react';
 import { mockCredits } from '@/lib/mocks/data';
+import Modal from '@/components/creatyng/Modal';
 
 /* ── Plans ───────────────────────────────────────────── */
 const PLANS = [
@@ -51,6 +52,7 @@ const HISTORY = [
 const Billing = () => {
   const [tab, setTab] = useState<'plans' | 'usage'>('plans');
   const [ready, setReady] = useState(false);
+  const [showReloadModal, setShowReloadModal] = useState(false);
   useEffect(() => { setReady(true); }, []);
 
   const totalCredits = 500;
@@ -124,11 +126,14 @@ const Billing = () => {
                 <div style={{ fontSize: 20, fontWeight: 700, color: '#141417' }}>22 dias</div>
               </div>
             </div>
-            <button style={{
-              padding: '9px 20px', borderRadius: 9, border: '1.5px solid #ff713d',
-              background: '#FFF0EA', color: '#ff713d', fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
-            }}>
+            <button
+              onClick={() => setShowReloadModal(true)}
+              style={{
+                padding: '9px 20px', borderRadius: 9, border: '1.5px solid #ff713d',
+                background: '#FFF0EA', color: '#ff713d', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
               <Plus size={15} /> Recarregar créditos
             </button>
           </div>
@@ -271,6 +276,21 @@ const Billing = () => {
           </div>
         </div>
       )}
+      <Modal open={showReloadModal} onClose={() => setShowReloadModal(false)} title="Recarregar Créditos" size="sm">
+        <p style={{ fontSize: 14, color: '#5a5a60', lineHeight: 1.6, marginBottom: 20 }}>
+          Em breve! O sistema de recarga estará disponível em breve. Enquanto isso, mantenha seu plano ativo para continuar gerando criativos incríveis.
+        </p>
+        <button
+          onClick={() => setShowReloadModal(false)}
+          style={{
+            width: '100%', padding: '10px 0', borderRadius: 9, border: 'none',
+            background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+            fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+          }}
+        >
+          Entendi
+        </button>
+      </Modal>
     </div>
   );
 };
