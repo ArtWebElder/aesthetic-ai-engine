@@ -33,7 +33,7 @@ function CreditsBar() {
   const navigate = useNavigate();
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       top: 14,
       right: 14,
       zIndex: 200,
@@ -207,9 +207,9 @@ export function StudioPage() {
 
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       inset: 0,
-      zIndex: 50,
+      zIndex: 0,
       background: '#F0F0EE',
       overflow: 'hidden',
     }}>

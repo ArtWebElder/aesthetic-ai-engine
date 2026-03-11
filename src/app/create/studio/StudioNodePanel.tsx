@@ -85,7 +85,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
 
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       left: 62,
       top: 60,
       bottom: 60,

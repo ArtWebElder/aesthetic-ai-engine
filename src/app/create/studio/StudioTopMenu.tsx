@@ -56,7 +56,7 @@ export function StudioTopMenu({
   return (
     <div
       ref={menuRef}
-      style={{ position: 'fixed', top: 14, left: 14, zIndex: 200 }}
+      style={{ position: 'absolute', top: 14, left: 14, zIndex: 200 }}
     >
       {/* Trigger button */}
       <button

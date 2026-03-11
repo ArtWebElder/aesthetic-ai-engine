@@ -35,7 +35,7 @@ export function StudioToolbar({ toolMode, zoom, onToolChange, onZoomChange }: St
 
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       bottom: 14,
       left: '50%',
       transform: 'translateX(-50%)',

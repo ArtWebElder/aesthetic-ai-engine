@@ -46,9 +46,9 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
 
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       right: 0,
-      top: 48,
+      top: 0,
       bottom: 0,
       width: 224,
       zIndex: 90,

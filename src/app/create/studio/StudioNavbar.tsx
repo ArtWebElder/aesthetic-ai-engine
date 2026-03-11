@@ -46,7 +46,7 @@ export function StudioNavbar({ openPanel, chatOpen, onPanelChange, onChatToggle 
 
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       left: 14,
       top: '50%',
       transform: 'translateY(-50%)',

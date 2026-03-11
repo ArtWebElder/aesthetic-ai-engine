@@ -57,12 +57,12 @@ export function StudioChat({ open, onClose }: StudioChatProps) {
 
   return (
     <div style={{
-      position: 'fixed',
+      position: 'absolute',
       bottom: 68,
       left: '50%',
       transform: 'translateX(-50%)',
       width: 480,
-      maxWidth: 'calc(100vw - 140px)',
+      maxWidth: 'calc(100% - 140px)',
       zIndex: 150,
       background: '#1e1e24',
       border: '1px solid rgba(255,255,255,0.12)',
