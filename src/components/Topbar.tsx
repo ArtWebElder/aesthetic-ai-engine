@@ -4,6 +4,7 @@ import { mockCredits } from '@/lib/mocks/data';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { LocaleDropdown } from '@/components/LocaleDropdown';
+import { useNavigate } from 'react-router-dom';
 
 interface TopbarProps {
   onMenuToggle?: () => void;
@@ -12,6 +13,7 @@ interface TopbarProps {
 const Topbar = ({ onMenuToggle }: TopbarProps) => {
   const { user } = useAuth();
   const { t } = useI18n();
+  const navigate = useNavigate();
 
   const initials = (
     user?.user_metadata?.full_name?.charAt(0) ||
@@ -82,6 +84,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
       {/* Upgrade button */}
       <button
         className="hidden sm:flex items-center gap-1.5 transition-opacity hover:opacity-80"
+        onClick={() => navigate('/app/billing')}
         style={{
           padding: '5px 14px',
           borderRadius: 8,

@@ -5,7 +5,6 @@ import {
   FolderOpen, Plus, Image,
 } from 'lucide-react';
 import { EmptyState } from '@/components/creatyng';
-import ProjectWizard from '@/components/ProjectWizard';
 import { listProjects } from '@/features/projects/store';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
@@ -305,13 +304,12 @@ const Dashboard = () => {
   const { user } = useAuth();
 
   const [projects, setProjects] = useState<Project[]>(() => listProjects());
-  const [wizardOpen, setWizardOpen] = useState(false);
   const [discoverTab, setDiscoverTab] = useState<'explore' | 'templates'>('explore');
 
   const featureScrollRef = useRef<HTMLDivElement>(null);
   const projectScrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setProjects(listProjects()); }, [wizardOpen]);
+  useEffect(() => { setProjects(listProjects()); }, []);
 
   const firstName =
     user?.user_metadata?.full_name?.split(' ')[0] ||
@@ -358,14 +356,14 @@ const Dashboard = () => {
               title={t('projects.empty_title')}
               description={t('dashboard.empty_description')}
               ctaLabel={t('projects.new_project')}
-              onCta={() => setWizardOpen(true)}
+              onCta={() => navigate('/app/create')}
             />
           </div>
         ) : (
           <div ref={projectScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
             {/* New project button */}
             <button
-              onClick={() => setWizardOpen(true)}
+              onClick={() => navigate('/app/create')}
               className="shrink-0 flex flex-col items-center justify-center gap-2 transition-all"
               style={{
                 width: 180,
@@ -461,7 +459,6 @@ const Dashboard = () => {
         </div>
       </section>
 
-      <ProjectWizard open={wizardOpen} onOpenChange={setWizardOpen} />
     </div>
   );
 };

@@ -62,17 +62,25 @@ const AppShell = () => {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        <Topbar onMenuToggle={() => setMobileOpen(true)} />
-        <main className="flex-1 overflow-auto bg-[#f5f5f3]" style={{
-          backgroundImage: [
-            'radial-gradient(ellipse 700px 500px at 10% 4%, rgba(255,113,61,0.12) 0%, transparent 65%)',
-            'radial-gradient(ellipse 600px 400px at 80% 8%, rgba(255,155,112,0.09) 0%, transparent 65%)',
-            'radial-gradient(ellipse 500px 350px at 45% 2%, rgba(255,180,136,0.07) 0%, transparent 65%)',
-          ].join(','),
-        }}>
-          <div key={pathname} className="animate-fade-up">
+        {pathname !== '/app/create/studio' && (
+          <Topbar onMenuToggle={() => setMobileOpen(true)} />
+        )}
+        <main className="flex-1 overflow-auto bg-[#f5f5f3]" style={
+          pathname === '/app/create/studio' ? { overflow: 'hidden', background: 'none' } : {
+            backgroundImage: [
+              'radial-gradient(ellipse 700px 500px at 10% 4%, rgba(255,113,61,0.12) 0%, transparent 65%)',
+              'radial-gradient(ellipse 600px 400px at 80% 8%, rgba(255,155,112,0.09) 0%, transparent 65%)',
+              'radial-gradient(ellipse 500px 350px at 45% 2%, rgba(255,180,136,0.07) 0%, transparent 65%)',
+            ].join(','),
+          }
+        }>
+          {pathname === '/app/create/studio' ? (
             <Outlet />
-          </div>
+          ) : (
+            <div key={pathname} className="animate-fade-up">
+              <Outlet />
+            </div>
+          )}
         </main>
       </div>
 

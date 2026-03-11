@@ -30,6 +30,7 @@ import { useI18n } from '@/i18n';
 // Credits badge top-right
 function CreditsBar() {
   const { t } = useI18n();
+  const navigate = useNavigate();
   return (
     <div style={{
       position: 'fixed',
@@ -56,16 +57,19 @@ function CreditsBar() {
         <Sparkles size={13} />
         <span>120</span>
       </div>
-      <button style={{
-        padding: '5px 12px',
-        background: 'rgba(255,113,61,0.1)',
-        border: '1px solid rgba(255,113,61,0.4)',
-        borderRadius: 8,
-        color: '#ff713d',
-        fontSize: 11,
-        fontWeight: 700,
-        cursor: 'pointer',
-      }}>
+      <button
+        onClick={() => navigate('/app/billing')}
+        style={{
+          padding: '5px 12px',
+          background: 'rgba(255,113,61,0.1)',
+          border: '1px solid rgba(255,113,61,0.4)',
+          borderRadius: 8,
+          color: '#ff713d',
+          fontSize: 11,
+          fontWeight: 700,
+          cursor: 'pointer',
+        }}
+      >
         {t('studio.credits.upgrade')}
       </button>
     </div>
