@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   User, Settings2, Palette, Key,
-  Camera, Upload, Plus, X, Copy, Trash2, Check,
+  Camera, Upload, Plus, X, Copy, Trash2, Check, ChevronDown,
 } from 'lucide-react';
+import { HexColorPicker } from 'react-colorful';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { useToast } from '@/features/toast/useToast';
+import { FONT_OPTIONS } from '@/features/editor/font-presets';
 
 type SettingsTab = 'profile' | 'preferences' | 'brandkit' | 'apikeys';
 
@@ -81,21 +83,35 @@ const Settings = () => {
   const [apiKeys, setApiKeys] = useState(MOCK_KEYS);
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
   const [addingFont, setAddingFont] = useState(false);
-  const [newFontInput, setNewFontInput] = useState('');
-  const fontInputRef = useRef<HTMLInputElement>(null);
+  const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
+  const [activeColorIdx, setActiveColorIdx] = useState<number | null>(null);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+  const fontDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setReady(true); }, []);
+
+  // Close color picker / font dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setActiveColorIdx(null);
+      }
+      if (fontDropdownRef.current && !fontDropdownRef.current.contains(e.target as Node)) {
+        setFontDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const email = user?.email || 'rodrigo@creatyng.com';
   const avatarLetter = name.charAt(0).toUpperCase() || email.charAt(0).toUpperCase() || 'U';
 
   const deleteKey = (id: string) => setApiKeys(prev => prev.filter(k => k.id !== id));
   const removeFont = (f: string) => setBrandFonts(prev => prev.filter(x => x !== f));
-  const commitFont = () => {
-    const name = newFontInput.trim();
-    if (name) setBrandFonts(prev => [...prev, name]);
-    setNewFontInput('');
-    setAddingFont(false);
+  const addFont = (fontLabel: string) => {
+    if (!brandFonts.includes(fontLabel)) setBrandFonts(prev => [...prev, fontLabel]);
+    setFontDropdownOpen(false);
   };
 
   /* ─── Tab Content ────────────────────────────────────── */
@@ -234,62 +250,113 @@ const Settings = () => {
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Brand Kit</h2>
         <p style={{ fontSize: 13, color: '#8e8e96', marginBottom: 28 }}>Configure a identidade visual da sua marca para aplicar nos criativos.</p>
 
-        {/* Logo upload */}
+        {/* Logo upload — max 100px wide */}
         <div style={{ marginBottom: 28 }}>
           <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 8, display: 'block' }}>Logo da marca</label>
-          <div style={{
-            border: '2px dashed rgba(20,20,23,0.1)', borderRadius: 12, height: 72,
-            display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', background: '#ffffff', transition: 'all 150ms', color: '#b5b5bb', gap: 12,
-          }}
+          <div
+            style={{
+              border: '2px dashed rgba(20,20,23,0.1)', borderRadius: 12,
+              width: 100, height: 100,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              cursor: 'pointer', background: '#ffffff', transition: 'all 150ms', color: '#b5b5bb', gap: 6,
+            }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
           >
-            <Upload size={18} />
-            <div>
-              <span style={{ fontSize: 13, fontWeight: 500, display: 'block' }}>Arraste ou clique para fazer upload</span>
-              <span style={{ fontSize: 11, color: '#b5b5bb' }}>PNG, SVG ou JPG · Max 2MB</span>
-            </div>
+            <Upload size={20} />
+            <span style={{ fontSize: 10, textAlign: 'center', lineHeight: 1.3 }}>PNG / SVG{'\n'}Max 2MB</span>
           </div>
         </div>
 
-        {/* Brand colors */}
-        <div style={{ marginBottom: 28 }}>
+        {/* Brand colors — modern color picker modal */}
+        <div style={{ marginBottom: 28, position: 'relative' }}>
           <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 10, display: 'block' }}>Cores da marca</label>
-          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             {brandColors.map((color, i) => (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: '50%', background: color,
-                  border: '2px solid #ffffff', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
-                  cursor: 'pointer', transition: 'transform 150ms',
-                }}
-                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.08)'}
-                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = ''}
+                <button
+                  onClick={() => setActiveColorIdx(activeColorIdx === i ? null : i)}
+                  style={{
+                    width: 40, height: 40, borderRadius: '50%', background: color,
+                    border: activeColorIdx === i ? '3px solid #141417' : '3px solid #ffffff',
+                    boxShadow: activeColorIdx === i
+                      ? '0 0 0 2px #ff713d, 0 4px 12px rgba(0,0,0,0.2)'
+                      : '0 2px 8px rgba(0,0,0,0.15)',
+                    cursor: 'pointer', transition: 'all 200ms',
+                  }}
                 />
-                <span style={{ fontSize: 10, color: '#8e8e96', textAlign: 'center' }}>{color}</span>
+                <span style={{ fontSize: 9.5, color: '#8e8e96', textAlign: 'center', fontFamily: 'monospace' }}>{color}</span>
               </div>
             ))}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
               <button
-                onClick={() => setBrandColors(c => [...c, '#000000'])}
+                onClick={() => setBrandColors(c => [...c, '#888888'])}
                 style={{
-                  width: 36, height: 36, borderRadius: '50%', border: '2px dashed rgba(20,20,23,0.1)',
+                  width: 40, height: 40, borderRadius: '50%', border: '2px dashed rgba(20,20,23,0.1)',
                   background: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', color: '#b5b5bb', transition: 'all 150ms',
                 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
-              ><Plus size={16} /></button>
-              <span style={{ fontSize: 10, color: '#b5b5bb' }}>Add</span>
+              ><Plus size={15} /></button>
+              <span style={{ fontSize: 9.5, color: '#b5b5bb' }}>Add</span>
             </div>
           </div>
+
+          {/* Color picker popover */}
+          {activeColorIdx !== null && (
+            <div
+              ref={colorPickerRef}
+              style={{
+                position: 'absolute', top: 80, left: 0, zIndex: 50,
+                background: '#ffffff', borderRadius: 16,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+                border: '1px solid rgba(20,20,23,0.08)',
+                padding: 16, minWidth: 230,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#141417' }}>Editar cor</span>
+                <button
+                  onClick={() => {
+                    const updated = brandColors.filter((_, idx) => idx !== activeColorIdx);
+                    setBrandColors(updated);
+                    setActiveColorIdx(null);
+                  }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', display: 'flex', padding: 2 }}
+                ><X size={14} /></button>
+              </div>
+              <HexColorPicker
+                color={brandColors[activeColorIdx]}
+                onChange={(c) => setBrandColors(prev => prev.map((col, idx) => idx === activeColorIdx ? c : col))}
+                style={{ width: '100%', height: 160 }}
+              />
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginTop: 12,
+                padding: '8px 10px', borderRadius: 8,
+                border: '1px solid rgba(20,20,23,0.1)', background: '#f5f5f3',
+              }}>
+                <div style={{ width: 20, height: 20, borderRadius: 6, background: brandColors[activeColorIdx], flexShrink: 0 }} />
+                <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#141417', fontWeight: 600 }}>
+                  {brandColors[activeColorIdx].toUpperCase()}
+                </span>
+              </div>
+              <button
+                onClick={() => setActiveColorIdx(null)}
+                style={{
+                  marginTop: 10, width: '100%', padding: '8px 0', borderRadius: 8, border: 'none',
+                  background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >Aplicar</button>
+            </div>
+          )}
         </div>
 
-        {/* Brand fonts */}
+        {/* Brand fonts — dropdown with preset options */}
         <div style={{ marginBottom: 28 }}>
           <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 10, display: 'block' }}>Fontes da marca</label>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             {brandFonts.map((f, i) => (
               <div key={i} style={{
                 padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.06)',
@@ -301,42 +368,52 @@ const Settings = () => {
                 </button>
               </div>
             ))}
-            {addingFont ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <input
-                  ref={fontInputRef}
-                  autoFocus
-                  value={newFontInput}
-                  onChange={e => setNewFontInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') commitFont(); if (e.key === 'Escape') { setAddingFont(false); setNewFontInput(''); } }}
-                  placeholder="Ex: Roboto, Poppins..."
-                  style={{
-                    padding: '5px 10px', borderRadius: 6, fontSize: 13, fontFamily: 'inherit',
-                    border: '1.5px solid #ff713d', outline: 'none', width: 180,
-                    background: '#ffffff', color: '#141417',
-                  }}
-                />
-                <button onClick={commitFont} style={{
-                  padding: '5px 10px', borderRadius: 6, border: 'none',
-                  background: '#ff713d', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                }}><Check size={14} /></button>
-                <button onClick={() => { setAddingFont(false); setNewFontInput(''); }} style={{
-                  padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.1)',
-                  background: '#ffffff', color: '#8e8e96', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                }}><X size={14} /></button>
-              </div>
-            ) : (
+            {/* Font dropdown */}
+            <div ref={fontDropdownRef} style={{ position: 'relative' }}>
               <button
-                onClick={() => setAddingFont(true)}
+                onClick={() => setFontDropdownOpen(v => !v)}
                 style={{
-                  padding: '6px 14px', borderRadius: 6, border: '2px dashed rgba(20,20,23,0.1)',
-                  background: '#ffffff', cursor: 'pointer', color: '#b5b5bb', fontSize: 12.5, fontWeight: 500,
+                  padding: '6px 14px', borderRadius: 6, border: fontDropdownOpen ? '1.5px solid #ff713d' : '2px dashed rgba(20,20,23,0.1)',
+                  background: fontDropdownOpen ? '#FFF0EA' : '#ffffff', cursor: 'pointer',
+                  color: fontDropdownOpen ? '#ff713d' : '#b5b5bb', fontSize: 12.5, fontWeight: 500,
                   fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, transition: 'all 150ms',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
-              ><Plus size={14} /> Adicionar fonte</button>
-            )}
+              >
+                <Plus size={14} /> Adicionar fonte
+                <ChevronDown size={13} style={{ transition: 'transform 200ms', transform: fontDropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
+              </button>
+              {fontDropdownOpen && (
+                <div style={{
+                  position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 50,
+                  background: '#ffffff', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+                  border: '1px solid rgba(20,20,23,0.08)', minWidth: 200, maxHeight: 220,
+                  overflowY: 'auto', padding: '6px 0',
+                }}>
+                  {FONT_OPTIONS.map(opt => {
+                    const alreadyAdded = brandFonts.includes(opt.label);
+                    return (
+                      <button
+                        key={opt.value}
+                        onClick={() => !alreadyAdded && addFont(opt.label)}
+                        disabled={alreadyAdded}
+                        style={{
+                          width: '100%', padding: '8px 14px', background: 'none', border: 'none',
+                          textAlign: 'left', cursor: alreadyAdded ? 'default' : 'pointer',
+                          fontSize: 13, color: alreadyAdded ? '#b5b5bb' : '#141417', fontFamily: 'inherit',
+                          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                          transition: 'background 100ms',
+                        }}
+                        onMouseEnter={e => { if (!alreadyAdded) (e.currentTarget as HTMLElement).style.background = '#f5f5f3'; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; }}
+                      >
+                        <span>{opt.label}</span>
+                        {alreadyAdded && <Check size={13} style={{ color: '#10B981' }} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

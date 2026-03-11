@@ -1,7 +1,8 @@
 // src/features/editor/wizard/WizardStep3Text.tsx
 // CREATYNG — MASTER SPEC DIFF 9.3 (FontSelector integrado) + Food/Pop fields
 
-import { useDeferredValue } from "react";
+import { useDeferredValue, useState, useRef, useEffect } from "react";
+import { HexColorPicker } from "react-colorful";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { TextStylePicker } from "@/components/TextStylePicker";
 import { FontSelector } from "@/components/FontSelector";
@@ -55,6 +56,24 @@ export function WizardStep3Text() {
   const deferredHeadline = useDeferredValue(headline);
 
   const colors: ColorConfig = activePresetConfig.colors ?? DEFAULT_COLORS;
+
+  // ── Color palette state ────────────────────────────────────────────────────
+  const [paletteColors, setPaletteColors] = useState({
+    primary: colors.primary || "#7B2FFF",
+    accent: colors.secondary || "#FF5500",
+  });
+  const [activeColorKey, setActiveColorKey] = useState<"primary" | "accent" | null>(null);
+  const colorPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
+        setActiveColorKey(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   function handleSelectTextPreset(preset: CreatygnPreset) {
     selectTextPreset(preset.id);
@@ -130,6 +149,78 @@ export function WizardStep3Text() {
 
       {/* Preview canvas — zona de texto + sujeito */}
       <PreviewCanvas />
+
+      {/* ── Paleta de cores ──────────────────────────────────────────────────── */}
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Paleta de cores
+        </p>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', position: 'relative' }}>
+          {(["primary", "accent"] as const).map((key) => {
+            const color = paletteColors[key];
+            const isOpen = activeColorKey === key;
+            const label = key === "primary" ? "Principal" : "Destaque";
+            return (
+              <div key={key} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={() => setActiveColorKey(isOpen ? null : key)}
+                  style={{
+                    width: 48, height: 48, borderRadius: 99, background: color,
+                    border: isOpen ? '3px solid #141417' : '3px solid rgba(255,255,255,0.9)',
+                    boxShadow: isOpen
+                      ? '0 0 0 2px #ff713d, 0 4px 12px rgba(0,0,0,0.2)'
+                      : '0 2px 8px rgba(0,0,0,0.15)',
+                    cursor: 'pointer', transition: 'all 200ms',
+                  }}
+                  title={label}
+                />
+                <span style={{ fontSize: 10.5, color: '#8e8e96', fontWeight: 500 }}>{label}</span>
+              </div>
+            );
+          })}
+
+          {/* Modern color picker popover */}
+          {activeColorKey && (
+            <div
+              ref={colorPickerRef}
+              style={{
+                position: 'absolute', top: 64, left: 0, zIndex: 50,
+                background: '#ffffff', borderRadius: 16,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
+                border: '1px solid rgba(20,20,23,0.08)',
+                padding: 16, minWidth: 220,
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#8e8e96', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {activeColorKey === "primary" ? "Cor principal" : "Cor de destaque"}
+              </div>
+              <HexColorPicker
+                color={paletteColors[activeColorKey]}
+                onChange={(c) => setPaletteColors(prev => ({ ...prev, [activeColorKey!]: c }))}
+                style={{ width: '100%', height: 160 }}
+              />
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8, marginTop: 12,
+                padding: '8px 10px', borderRadius: 8,
+                border: '1px solid rgba(20,20,23,0.1)', background: '#f5f5f3',
+              }}>
+                <div style={{ width: 20, height: 20, borderRadius: 6, background: paletteColors[activeColorKey], flexShrink: 0 }} />
+                <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#141417', fontWeight: 600 }}>
+                  {paletteColors[activeColorKey].toUpperCase()}
+                </span>
+              </div>
+              <button
+                onClick={() => setActiveColorKey(null)}
+                style={{
+                  marginTop: 10, width: '100%', padding: '8px 0', borderRadius: 8, border: 'none',
+                  background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                }}
+              >Aplicar</button>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* FontSelector — override da fonte do preset ativo */}
       {mode === "advanced" && (

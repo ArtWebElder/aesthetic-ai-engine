@@ -48,10 +48,12 @@ const AppShell = () => {
 
   return (
     <div className="min-h-screen flex w-full noise-overlay">
-      {/* Desktop sidebar — sticky so bottom nav items are always visible */}
-      <aside className="hidden lg:block shrink-0 sticky top-0 h-screen z-20" style={{ overflow: 'visible' }}>
-        <SidebarNav />
-      </aside>
+      {/* Desktop sidebar — hidden on studio to prevent overlapping studio navbar */}
+      {pathname !== '/app/create/studio' && (
+        <aside className="hidden lg:block shrink-0 sticky top-0 h-screen z-20" style={{ overflow: 'visible' }}>
+          <SidebarNav />
+        </aside>
+      )}
 
       {/* Mobile sidebar */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -76,7 +78,7 @@ const AppShell = () => {
         }>
           {pathname === '/app/create/studio' ? (
             <Outlet />
-          ) : ['/app/projects', '/app/templates', '/app/billing'].some(p => pathname.startsWith(p)) ? (
+          ) : ['/app/projects', '/app/billing'].some(p => pathname.startsWith(p)) ? (
             <div key={pathname} className="animate-fade-up max-w-6xl mx-auto w-full px-6 py-2">
               <Outlet />
             </div>

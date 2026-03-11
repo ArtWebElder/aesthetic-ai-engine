@@ -317,7 +317,7 @@ const Dashboard = () => {
     t('dashboard.fallback_name');
 
   return (
-    <div className="min-h-full px-8 py-7 max-w-6xl mx-auto space-y-10">
+    <div className="min-h-full px-8 py-7 space-y-10">
 
       {/* ── 1. Greeting ─────────────────────────────── */}
       <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>

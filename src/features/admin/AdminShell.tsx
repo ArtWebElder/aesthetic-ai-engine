@@ -52,7 +52,9 @@ export function AdminShell() {
 
         {/* Content */}
         <main style={{ flex: 1, overflowY: 'auto', padding: '24px 32px 48px', background: `${gridSvg}, #f5f5f3` }}>
-          <Outlet />
+          <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

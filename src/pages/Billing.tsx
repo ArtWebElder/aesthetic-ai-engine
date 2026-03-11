@@ -276,20 +276,67 @@ const Billing = () => {
           </div>
         </div>
       )}
-      <Modal open={showReloadModal} onClose={() => setShowReloadModal(false)} title="Recarregar Créditos" size="sm">
-        <p style={{ fontSize: 14, color: '#5a5a60', lineHeight: 1.6, marginBottom: 20 }}>
-          Em breve! O sistema de recarga estará disponível em breve. Enquanto isso, mantenha seu plano ativo para continuar gerando criativos incríveis.
+      <Modal open={showReloadModal} onClose={() => setShowReloadModal(false)} title="" size="sm">
+        {/* Header */}
+        <div style={{ textAlign: 'center', paddingBottom: 24, borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: 16, margin: '0 auto 14px',
+            background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Zap style={{ width: 24, height: 24, color: '#fff' }} />
+          </div>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#141417', marginBottom: 4 }}>Recarregar Créditos</h2>
+          <p style={{ fontSize: 13, color: '#8e8e96' }}>Escolha um pacote e continue criando</p>
+        </div>
+
+        {/* Credit packages */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '20px 0' }}>
+          {[
+            { credits: 100, price: 'R$ 9,90', bonus: null, popular: false },
+            { credits: 300, price: 'R$ 24,90', bonus: '+10% bônus', popular: true },
+            { credits: 700, price: 'R$ 49,90', bonus: '+20% bônus', popular: false },
+          ].map((pkg) => (
+            <button
+              key={pkg.credits}
+              onClick={() => setShowReloadModal(false)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
+                border: pkg.popular ? '2px solid #ff713d' : '1.5px solid rgba(20,20,23,0.08)',
+                background: pkg.popular ? 'linear-gradient(135deg, rgba(255,113,61,0.04), rgba(255,155,112,0.04))' : '#ffffff',
+                transition: 'all 150ms', position: 'relative',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.background = 'rgba(255,113,61,0.03)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = pkg.popular ? '#ff713d' : 'rgba(20,20,23,0.08)'; (e.currentTarget as HTMLElement).style.background = pkg.popular ? 'linear-gradient(135deg, rgba(255,113,61,0.04), rgba(255,155,112,0.04))' : '#ffffff'; }}
+            >
+              {pkg.popular && (
+                <span style={{
+                  position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
+                  background: '#ff713d', color: '#fff', fontSize: 10, fontWeight: 700,
+                  padding: '2px 10px', borderRadius: 99,
+                }}>MAIS POPULAR</span>
+              )}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 38, height: 38, borderRadius: 10, background: 'rgba(255,113,61,0.08)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Sparkles style={{ width: 16, height: 16, color: '#ff713d' }} />
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#141417' }}>{pkg.credits} créditos</div>
+                  {pkg.bonus && <div style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>{pkg.bonus}</div>}
+                </div>
+              </div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: pkg.popular ? '#ff713d' : '#141417' }}>{pkg.price}</div>
+            </button>
+          ))}
+        </div>
+
+        <p style={{ fontSize: 11.5, color: '#b5b5bb', textAlign: 'center', marginBottom: 4 }}>
+          Créditos não expiram · Integração via Stripe em breve
         </p>
-        <button
-          onClick={() => setShowReloadModal(false)}
-          style={{
-            width: '100%', padding: '10px 0', borderRadius: 9, border: 'none',
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          Entendi
-        </button>
       </Modal>
     </div>
   );

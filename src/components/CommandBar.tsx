@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ImagePlus,
-  ShoppingBag,
-  Camera,
   FolderOpen,
   CreditCard,
   Settings,
@@ -25,9 +22,6 @@ import {
 import { useI18n } from '@/i18n';
 
 const createActions = [
-  { labelKey: 'command.new_social_ad', icon: ImagePlus, route: '/app/create', shortcut: 'S' },
-  { labelKey: 'command.new_ecom_banner', icon: ShoppingBag, route: '/app/create', shortcut: 'E' },
-  { labelKey: 'command.new_photoshoot', icon: Camera, route: '/app/create', shortcut: 'P' },
   { label: 'Nova criação', icon: Plus, route: '/app/create', shortcut: 'N' },
 ];
 

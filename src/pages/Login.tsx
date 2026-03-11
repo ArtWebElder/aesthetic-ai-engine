@@ -140,10 +140,47 @@ const Login = () => {
 
   return (
     <div className="h-screen overflow-hidden flex" style={{ background: '#f5f5f3' }}>
-      {/* ── Left panel (light) ───────────────────────────── */}
+      {/* ── Left panel (dark carousel) — 70% ────────────── */}
+      <div className="hidden lg:flex flex-1 relative overflow-hidden" style={{ background: '#141417' }}>
+        {/* Top fade */}
+        <div
+          className="absolute inset-x-0 top-0 z-10 pointer-events-none"
+          style={{ height: '18%', background: 'linear-gradient(to bottom, #141417, transparent)' }}
+        />
+        {/* Bottom fade */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
+          style={{ height: '18%', background: 'linear-gradient(to top, #141417, transparent)' }}
+        />
+
+        {/* Carousel columns */}
+        <div className="flex gap-3 px-6 pt-4 w-full h-full overflow-hidden">
+          <CarouselColumn cards={CARDS.slice(0, 3)} />
+          <CarouselColumn cards={CARDS.slice(3, 6)} reverse />
+          <CarouselColumn cards={CARDS.slice(6, 9)} />
+        </div>
+
+        {/* Floating badge */}
+        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
+          <div
+            className="flex items-center gap-2 rounded-full"
+            style={{
+              padding: '8px 18px',
+              background: 'rgba(255,255,255,0.08)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            <Sparkles className="w-3.5 h-3.5" style={{ color: '#ff713d' }} />
+            <span className="text-white font-semibold" style={{ fontSize: 13 }}>{t('auth.generated_badge')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Right panel (login form) — 30% ───────────────── */}
       <div
         className="flex flex-col items-center justify-center relative z-10 overflow-y-auto"
-        style={{ minWidth: 0, width: '100%', maxWidth: 480, padding: '48px', background: '#f5f5f3', height: '100%' }}
+        style={{ minWidth: 360, width: '30%', padding: '48px 40px', background: '#f5f5f3', height: '100%', flexShrink: 0 }}
       >
         {/* Logo */}
         <div className="mb-8 self-start flex items-center gap-2.5">
@@ -370,42 +407,6 @@ const Login = () => {
         </div>
       </div>
 
-      {/* ── Right panel (dark carousel) ─────────────────── */}
-      <div className="hidden lg:flex flex-1 relative overflow-hidden" style={{ background: '#141417' }}>
-        {/* Top fade */}
-        <div
-          className="absolute inset-x-0 top-0 z-10 pointer-events-none"
-          style={{ height: '18%', background: 'linear-gradient(to bottom, #141417, transparent)' }}
-        />
-        {/* Bottom fade */}
-        <div
-          className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
-          style={{ height: '18%', background: 'linear-gradient(to top, #141417, transparent)' }}
-        />
-
-        {/* Carousel columns */}
-        <div className="flex gap-3 px-6 pt-4 w-full h-full overflow-hidden">
-          <CarouselColumn cards={CARDS.slice(0, 3)} />
-          <CarouselColumn cards={CARDS.slice(3, 6)} reverse />
-          <CarouselColumn cards={CARDS.slice(6, 9)} />
-        </div>
-
-        {/* Floating badge */}
-        <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
-          <div
-            className="flex items-center gap-2 rounded-full"
-            style={{
-              padding: '8px 18px',
-              background: 'rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          >
-            <Sparkles className="w-3.5 h-3.5" style={{ color: '#ff713d' }} />
-            <span className="text-white font-semibold" style={{ fontSize: 13 }}>{t('auth.generated_badge')}</span>
-          </div>
-        </div>
-      </div>
 
       {/* Carousel CSS animations */}
       <style>{`

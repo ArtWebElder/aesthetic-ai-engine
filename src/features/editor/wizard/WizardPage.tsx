@@ -131,9 +131,9 @@ function StepIndicator({ current }: { current: number }) {
                 width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontSize: 10, fontWeight: 700,
                 transition: 'all 300ms',
-                background: isDone ? '#ff713d' : isActive ? '#141417' : 'rgba(20,20,23,0.06)',
+                background: isDone ? '#ff713d' : isActive ? '#ff713d' : 'rgba(20,20,23,0.06)',
                 border: `1.5px solid ${isDone || isActive ? '#ff713d' : 'rgba(20,20,23,0.12)'}`,
-                color: isDone ? '#fff' : isActive ? '#ff713d' : '#8e8e96',
+                color: isDone || isActive ? '#fff' : '#8e8e96',
               }}>
                 {isDone ? (
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
