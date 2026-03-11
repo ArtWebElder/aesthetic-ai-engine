@@ -49,6 +49,11 @@ const QUICK_ACTIONS = [
   "Auto-melhorar",
 ];
 
+const QUICK_ACTION_COLORS: Record<string, string> = {
+  "Trocar cor": "#ff713d", "Editar headline": "#7C3AED", "Mudar fonte": "#06B6D4",
+  "Ajustar preço": "#10B981", "Trocar fundo": "#F59E0B", "Auto-melhorar": "#EF4444",
+};
+
 // ── RefinementPage ────────────────────────────────────────────────────────────
 
 export default function RefinementPage() {
@@ -133,124 +138,90 @@ export default function RefinementPage() {
   }
 
   const hasContent = Boolean(displayImage);
+  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex flex-col">
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f5f5f3', color: '#141417', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
+      <style>{`
+        @keyframes rfPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+        @keyframes rfDot1 { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-5px); } }
+        @keyframes rfDot2 { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-5px); } }
+        @keyframes rfDot3 { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-5px); } }
+      `}</style>
+
       {/* Top bar */}
-      <header className="shrink-0 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-1.5 rounded-lg border border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500 transition-colors"
-          >
-            ←
-          </button>
+      <header style={{
+        flexShrink: 0, height: 52, display: 'flex', alignItems: 'center', gap: 12, padding: '0 16px',
+        borderBottom: '1px solid rgba(20,20,23,0.06)', background: 'rgba(245,245,243,0.9)',
+        backdropFilter: 'blur(8px)', position: 'sticky', top: 0, zIndex: 10,
+      }}>
+        <button
+          onClick={() => navigate(-1)}
+          style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#5a5a60', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+        >←</button>
 
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">Refinamento</p>
-            <p className="text-xs text-zinc-500 truncate">{headline || "Criativo sem título"}</p>
-          </div>
+        <div style={{ width: 1, height: 20, background: 'rgba(20,20,23,0.08)' }} />
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowExportModal(true)}
-              disabled={!hasContent}
-              className="px-4 py-1.5 rounded-lg text-sm font-semibold text-white disabled:opacity-40 transition-colors"
-              style={{ background: "linear-gradient(135deg, #f97316, #a855f7)" }}
-            >
-              ↓ Exportar
-            </button>
-          </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#141417', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headline || "Criativo sem título"}</p>
         </div>
+
+        <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: '#ff713d', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>Food/Pop</span>
+
+        <button
+          onClick={() => setShowExportModal(true)}
+          disabled={!hasContent}
+          style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : 0.4, fontFamily: 'inherit' }}
+        >↓ Exportar</button>
       </header>
 
       {/* Main split */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+      <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
 
-        {/* ── LEFT: Preview ──────────────────────────────────────────────── */}
-        <div className="flex flex-col lg:w-[55%] border-b lg:border-b-0 lg:border-r border-zinc-800 bg-zinc-950">
+        {/* ── LEFT: Preview 55% ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', width: '55%', borderRight: '1px solid rgba(20,20,23,0.06)', background: `${gridSvg}, #f5f5f3` }}>
           {/* Zoom controls */}
-          <div className="flex items-center gap-2 px-4 py-2 border-b border-zinc-800 bg-zinc-900/50">
-            <span className="text-xs text-zinc-500">Zoom</span>
-            <button
-              onClick={() => setZoom((z) => Math.max(25, z - 25))}
-              className="w-6 h-6 rounded flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors text-sm font-bold"
-            >
-              −
-            </button>
-            <span className="text-xs text-zinc-300 w-12 text-center">{zoom}%</span>
-            <button
-              onClick={() => setZoom((z) => Math.min(200, z + 25))}
-              className="w-6 h-6 rounded flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors text-sm font-bold"
-            >
-              +
-            </button>
-            <button
-              onClick={() => setZoom(100)}
-              className="text-xs text-zinc-600 hover:text-zinc-400 ml-1 transition-colors"
-            >
-              Reset
-            </button>
-            {isRecomposing && (
-              <span className="ml-auto text-xs text-orange-400 animate-pulse">Atualizando...</span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)', background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(4px)', flexShrink: 0 }}>
+            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500 }}>Zoom</span>
+            <button onClick={() => setZoom((z) => Math.max(25, z - 25))} style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#5a5a60', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+            <span style={{ fontSize: 11.5, color: '#141417', width: 48, textAlign: 'center', fontWeight: 500 }}>{zoom}%</span>
+            <button onClick={() => setZoom((z) => Math.min(200, z + 25))} style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#5a5a60', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+            <button onClick={() => setZoom(100)} style={{ fontSize: 11, color: '#b5b5bb', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Reset</button>
+            {isRecomposing && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#ff713d', animation: 'rfPulse 1s ease-in-out infinite' }}>Atualizando...</span>}
           </div>
 
           {/* Preview area */}
-          <div className="flex-1 overflow-auto flex items-center justify-center p-6 bg-zinc-950/50">
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
             {hasContent && displayImage ? (
               <img
                 src={displayImage}
                 alt="Criativo"
-                className="rounded-xl shadow-2xl border border-zinc-800 object-contain transition-all duration-300"
                 style={{
-                  maxWidth: `${zoom}%`,
-                  maxHeight: "70vh",
+                  borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
+                  border: '1px solid rgba(20,20,23,0.06)', objectFit: 'contain',
+                  transition: 'all 300ms', maxWidth: `${zoom}%`, maxHeight: '70vh',
                 }}
               />
             ) : (
-              <div className="flex flex-col items-center gap-3 text-center">
-                <div className="w-16 h-16 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-2xl">
-                  ✦
-                </div>
-                <p className="text-zinc-500 text-sm">Nenhum criativo carregado.</p>
-                <button
-                  onClick={() => navigate("/app/create")}
-                  className="text-orange-500 hover:text-orange-400 text-sm underline underline-offset-2"
-                >
-                  Criar um criativo
-                </button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>✦</div>
+                <p style={{ fontSize: 13.5, color: '#8e8e96' }}>Nenhum criativo carregado.</p>
+                <button onClick={() => navigate("/app/create")} style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, textDecoration: 'underline' }}>Criar um criativo</button>
               </div>
             )}
           </div>
 
           {/* Version timeline */}
           {versions.length > 1 && (
-            <div className="shrink-0 border-t border-zinc-800 p-3 bg-zinc-900/50">
-              <p className="text-xs text-zinc-500 uppercase tracking-widest mb-2">Histórico de versões</p>
-              <div className="flex gap-2 overflow-x-auto pb-1">
+            <div style={{ flexShrink: 0, borderTop: '1px solid rgba(20,20,23,0.06)', padding: '10px 14px', background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(4px)' }}>
+              <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontWeight: 600 }}>Histórico de versões</p>
+              <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
                 {versions.map((v, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => selectVersion(idx)}
-                    className="shrink-0 flex flex-col items-center gap-1.5 group"
-                  >
-                    <div
-                      className="w-14 h-14 rounded-lg overflow-hidden border-2 transition-colors"
-                      style={{ borderColor: selectedVersionIdx === idx ? "#f97316" : "#3f3f46" }}
-                    >
-                      <img
-                        src={v.imageBase64}
-                        alt={v.label}
-                        className="w-full h-full object-cover"
-                      />
+                  <button key={idx} onClick={() => selectVersion(idx)} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${selectedVersionIdx === idx ? '#ff713d' : 'rgba(20,20,23,0.1)'}`, background: selectedVersionIdx === idx ? '#FFF0EA' : '#ffffff' }}>
+                      <img src={v.imageBase64} alt={v.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                    <span
-                      className="text-[10px] font-medium max-w-[56px] truncate transition-colors"
-                      style={{ color: selectedVersionIdx === idx ? "#f97316" : "#71717a" }}
-                    >
-                      {v.label}
-                    </span>
+                    <span style={{ fontSize: 9.5, fontWeight: 500, maxWidth: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selectedVersionIdx === idx ? '#ff713d' : '#8e8e96' }}>{v.label}</span>
                   </button>
                 ))}
               </div>
@@ -258,41 +229,40 @@ export default function RefinementPage() {
           )}
         </div>
 
-        {/* ── RIGHT: Chat ──────────────────────────────────────────────────── */}
-        <div className="flex flex-col lg:w-[45%] bg-zinc-900/30">
+        {/* ── RIGHT: Chat 45% ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', width: '45%', background: '#ffffff' }}>
           {/* Chat header */}
-          <div className="shrink-0 flex items-center gap-3 px-4 py-3 border-b border-zinc-800">
-            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-sm font-bold shrink-0">
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0, position: 'relative' }}>
               ✦
+              <div style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: '#10B981', border: '1.5px solid #ffffff' }} />
             </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">Assistente de Refinamento</p>
-              <p className="text-xs text-green-500">● Online</p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 13.5, fontWeight: 600, color: '#141417' }}>Assistente de Refinamento</p>
+              <p style={{ fontSize: 11, color: '#10B981' }}>● Online</p>
             </div>
-            <button
-              onClick={() => navigate("/app/create")}
-              className="text-xs text-zinc-500 hover:text-zinc-300 border border-zinc-800 hover:border-zinc-600 px-2 py-1 rounded transition-colors"
-            >
-              ↺ Regerar tudo
-            </button>
+            <button onClick={() => navigate("/app/create")} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#5a5a60', fontSize: 11.5, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>↺ Regerar tudo</button>
           </div>
 
           {/* Quick actions */}
-          <div className="shrink-0 flex gap-2 overflow-x-auto px-4 py-2.5 border-b border-zinc-800">
-            {QUICK_ACTIONS.map((action) => (
-              <button
-                key={action}
-                className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border border-zinc-700 text-zinc-400 hover:border-orange-500/50 hover:text-orange-400 transition-colors bg-zinc-900"
-              >
-                {action}
-              </button>
-            ))}
+          <div style={{ flexShrink: 0, display: 'flex', gap: 6, overflowX: 'auto', padding: '10px 14px', borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
+            {QUICK_ACTIONS.map((action) => {
+              const color = QUICK_ACTION_COLORS[action] || '#8e8e96';
+              return (
+                <button key={action} style={{
+                  flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 500,
+                  border: `1px solid ${color}20`, background: `${color}0A`, color, cursor: 'pointer', fontFamily: 'inherit',
+                }}>
+                  {action}
+                </button>
+              );
+            })}
           </div>
 
           {/* Chat component */}
-          <div className="flex-1 overflow-hidden flex flex-col p-4 gap-2">
-            <p className="text-xs text-zinc-600 text-center">1 crédito por mensagem de ajuste</p>
-            <div className="flex-1 min-h-0">
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '12px 14px', gap: 8 }}>
+            <p style={{ fontSize: 11, color: '#b5b5bb', textAlign: 'center' }}>1 crédito por mensagem de ajuste</p>
+            <div style={{ flex: 1, minHeight: 0 }}>
               <RefinementChat
                 overrides={refinementOverrides}
                 onOverridesChange={handleOverridesChange}

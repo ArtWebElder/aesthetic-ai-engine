@@ -206,7 +206,7 @@ export function StudioPage() {
       position: 'fixed',
       inset: 0,
       zIndex: 50,
-      background: '#141417',
+      background: '#F0F0EE',
       overflow: 'hidden',
     }}>
       {/* Canvas fills entire screen */}

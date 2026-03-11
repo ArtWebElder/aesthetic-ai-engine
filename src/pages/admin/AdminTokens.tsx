@@ -8,7 +8,11 @@ import { Skeleton } from '@/components/creatyng';
 type Provider = typeof MOCK_PROVIDERS[number];
 type TopUser = typeof MOCK_TOP_USERS[number];
 
-const CHART_STYLE = { fontSize: 11, fill: 'rgba(255,255,255,0.3)' };
+const CHART_STYLE = { fontSize: 11, fill: '#8e8e96' };
+const tooltipStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', borderRadius: 8, color: '#141417', fontSize: 12, boxShadow: '0 4px 16px rgba(20,20,23,0.08)' };
+
+const thStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 16px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
+const tdStyle: React.CSSProperties = { padding: '9px 16px', fontSize: 12, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
 
 export default function AdminTokens() {
   const [loading, setLoading] = useState(true);
@@ -43,43 +47,36 @@ export default function AdminTokens() {
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Provider Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
         {providers.map((p) => {
           const usePct = Math.round((p.tokensToday / p.totalCapacity) * 100);
           return (
-            <div key={p.name} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-white/[0.05] flex items-center justify-center text-lg">
-                  {p.icon}
-                </div>
+            <div key={p.name} style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(20,20,23,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{p.icon}</div>
                 <div>
-                  <p className="text-white/80 text-sm font-semibold">{p.name}</p>
-                  <p className="text-white/30 text-[10px]">Provider de IA</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>{p.name}</p>
+                  <p style={{ fontSize: 10.5, color: '#8e8e96' }}>Provider de IA</p>
                 </div>
               </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-white/40 text-[10px]">Tokens hoje</span>
-                  <span className="text-white/70 text-xs font-medium">{p.tokensToday.toLocaleString()}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 10.5, color: '#8e8e96' }}>Tokens hoje</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: '#141417' }}>{p.tokensToday.toLocaleString()}</span>
                 </div>
-                <div className="w-full h-1.5 rounded-full bg-white/10 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-[#ff713d] transition-all"
-                    style={{ width: `${usePct}%` }}
-                  />
+                <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(20,20,23,0.06)', overflow: 'hidden' }}>
+                  <div style={{ width: `${usePct}%`, height: '100%', borderRadius: 3, background: '#ff713d', transition: 'width 600ms ease' }} />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-white/25 text-[10px]">{usePct}% do limite</span>
-                  <span className="text-white/25 text-[10px]">Max: {p.totalCapacity.toLocaleString()}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 10, color: '#b5b5bb' }}>{usePct}% do limite</span>
+                  <span style={{ fontSize: 10, color: '#b5b5bb' }}>Max: {p.totalCapacity.toLocaleString()}</span>
                 </div>
               </div>
-
-              <div className="flex items-center justify-between border-t border-white/[0.04] pt-3">
-                <span className="text-white/30 text-[10px]">Custo estimado hoje</span>
-                <span className="text-emerald-400 text-xs font-medium">${p.costEstimate.toFixed(2)}</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(20,20,23,0.06)', paddingTop: 12 }}>
+                <span style={{ fontSize: 10.5, color: '#8e8e96' }}>Custo estimado hoje</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981' }}>${p.costEstimate.toFixed(2)}</span>
               </div>
             </div>
           );
@@ -87,53 +84,48 @@ export default function AdminTokens() {
       </div>
 
       {/* Bottom row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         {/* Stacked Bar Chart */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
-          <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-5">Consumo diário por provedor</h3>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>Consumo diário por provedor</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={dailyData}>
               <XAxis dataKey="day" tick={CHART_STYLE} axisLine={false} tickLine={false} />
               <YAxis tick={CHART_STYLE} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#fff' }}
-              />
-              <Legend wrapperStyle={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }} />
-              <Bar dataKey="geminiPro" name="Gemini Pro" stackId="a" fill="#60a5fa" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="geminiFlash" name="Gemini Flash" stackId="a" fill="#818cf8" radius={[0, 0, 0, 0]} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Legend wrapperStyle={{ fontSize: 10, color: '#8e8e96' }} />
+              <Bar dataKey="geminiPro" name="Gemini Pro" stackId="a" fill="#60a5fa" />
+              <Bar dataKey="geminiFlash" name="Gemini Flash" stackId="a" fill="#818cf8" />
               <Bar dataKey="replicate" name="Replicate" stackId="a" fill="#c084fc" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Top Users Ranking */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-white/[0.06]">
-            <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider">Top 10 por consumo</h3>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/[0.04]">
-                {['#', 'Usuário', 'Tokens', 'Gerações', 'Custo'].map((h) => (
-                  <th key={h} className="text-left px-4 py-2 text-white/25 text-[10px] font-medium">{h}</th>
-                ))}
-              </tr>
-            </thead>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Top 10 por consumo</div>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead><tr>
+              {['#', 'Usuário', 'Tokens', 'Gerações', 'Custo'].map((h) => (
+                <th key={h} style={thStyle}>{h}</th>
+              ))}
+            </tr></thead>
             <tbody>
               {topUsers.map((u, i) => (
-                <tr key={u.name} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors">
-                  <td className="px-4 py-2 text-white/20 text-[10px]">{i + 1}</td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-white/10 flex items-center justify-center text-[9px] text-white/50 font-semibold shrink-0">
-                        {u.name.charAt(0)}
-                      </div>
-                      <span className="text-white/60 text-[11px]">{u.name}</span>
+                <tr key={u.name} style={{ transition: 'background 100ms' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
+                >
+                  <td style={{ ...tdStyle, fontWeight: 700, color: i === 0 ? '#ff713d' : '#b5b5bb' }}>{i + 1}</td>
+                  <td style={tdStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(20,20,23,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: '#5a5a60', flexShrink: 0 }}>{u.name.charAt(0)}</div>
+                      <span style={{ color: '#5a5a60', fontSize: 11 }}>{u.name}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-white/50 text-[11px]">{u.tokens.toLocaleString()}</td>
-                  <td className="px-4 py-2 text-white/40 text-[11px]">{u.generations}</td>
-                  <td className="px-4 py-2 text-emerald-400/80 text-[11px]">${u.cost.toFixed(2)}</td>
+                  <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 11 }}>{u.tokens.toLocaleString()}</td>
+                  <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 11 }}>{u.generations}</td>
+                  <td style={{ ...tdStyle, color: '#10B981', fontSize: 11, fontWeight: 500 }}>${u.cost.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>

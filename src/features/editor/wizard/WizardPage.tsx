@@ -111,38 +111,39 @@ function getFoodPalette(
 
 function StepIndicator({ current }: { current: number }) {
   return (
-    <div className="flex items-center justify-center">
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
       {STEP_LABELS.map((label, idx) => {
         const step = idx + 1;
         const isDone = current > step;
         const isActive = current === step;
         return (
-          <div key={step} className="flex items-center">
+          <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
             {idx > 0 && (
-              <div
-                className="h-px w-6 sm:w-10 transition-all duration-500"
-                style={{ background: isDone || isActive ? "#f97316" : "#3f3f46" }}
-              />
+              <div style={{
+                height: 1, width: 32,
+                background: isDone || isActive ? '#ff713d' : 'rgba(20,20,23,0.12)',
+                transition: 'background 500ms',
+              }} />
             )}
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 border-2"
-                style={{
-                  background: isDone ? "#f97316" : isActive ? "#1c1917" : "#18181b",
-                  borderColor: isDone || isActive ? "#f97316" : "#3f3f46",
-                  color: isDone ? "#fff" : isActive ? "#f97316" : "#52525b",
-                }}
-              >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 10, fontWeight: 700,
+                transition: 'all 300ms',
+                background: isDone ? '#ff713d' : isActive ? '#141417' : 'rgba(20,20,23,0.06)',
+                border: `1.5px solid ${isDone || isActive ? '#ff713d' : 'rgba(20,20,23,0.12)'}`,
+                color: isDone ? '#fff' : isActive ? '#ff713d' : '#8e8e96',
+              }}>
                 {isDone ? (
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 ) : step}
               </div>
-              <span
-                className="text-[10px] font-medium hidden sm:block"
-                style={{ color: isActive ? "#f97316" : isDone ? "#a1a1aa" : "#52525b" }}
-              >
+              <span style={{
+                fontSize: 10, fontWeight: 500,
+                color: isActive ? '#ff713d' : isDone ? '#8e8e96' : '#b5b5bb',
+              }}>
                 {label}
               </span>
             </div>
@@ -619,27 +620,52 @@ export function WizardPage() {
   const displayBase64 = composedBase64 ?? currentGeneration?.imageBase64;
   const isWorking = generating || composing;
 
+  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
+
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 text-white">
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, #f5f5f3`, color: '#141417', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
+      <style>{`
+        @keyframes wizSpin { to { transform: rotate(360deg); } }
+        @keyframes wizPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+        @keyframes wizFdUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+      `}</style>
+
       {/* Header + StepIndicator */}
-      <header className="shrink-0 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-4">
+      <header style={{
+        flexShrink: 0, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 24px', borderBottom: '1px solid rgba(20,20,23,0.06)',
+        background: 'rgba(245,245,243,0.9)', backdropFilter: 'blur(8px)',
+        position: 'sticky', top: 0, zIndex: 10,
+      }}>
+        {/* Logo + breadcrumb */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 26, height: 26, borderRadius: 6, background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#fff', fontWeight: 800, fontSize: 11 }}>C</span>
+          </div>
+          <span style={{ fontSize: 13, color: '#8e8e96' }}>Creatyng</span>
+          <span style={{ fontSize: 13, color: '#b5b5bb' }}>/</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>Nova Criação</span>
+        </div>
+        {/* Step indicator centered */}
+        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
           <StepIndicator current={uiStep} />
+        </div>
+        {/* Credits badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', fontSize: 12, fontWeight: 600, color: '#ff713d' }}>
+          ✦ <span>221</span> <span style={{ fontWeight: 400, color: '#8e8e96' }}>créditos</span>
         </div>
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 py-8">
+      <main style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
 
           {/* Step 1: Upload */}
           {uiStep === 1 && (
-            <div>
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-white">Envie sua imagem</h1>
-                <p className="text-zinc-400 text-sm mt-1">
-                  Foto do produto, pessoa ou marca. O motor analisa e sugere o melhor estilo.
-                </p>
+            <div style={{ animation: 'wizFdUp 350ms ease both' }}>
+              <div style={{ marginBottom: 24 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417', marginBottom: 4 }}>Envie sua imagem</h1>
+                <p style={{ fontSize: 13.5, color: '#5a5a60' }}>Foto do produto, pessoa ou marca. O motor analisa e sugere o melhor estilo.</p>
               </div>
               <WizardStep1Subject />
             </div>
@@ -647,12 +673,10 @@ export function WizardPage() {
 
           {/* Step 2: Preset */}
           {uiStep === 2 && (
-            <div>
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-white">Escolha o estilo</h1>
-                <p className="text-zinc-400 text-sm mt-1">
-                  O preset define a atmosfera, iluminação e composição do criativo.
-                </p>
+            <div style={{ animation: 'wizFdUp 350ms ease both' }}>
+              <div style={{ marginBottom: 24 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417', marginBottom: 4 }}>Escolha o estilo</h1>
+                <p style={{ fontSize: 13.5, color: '#5a5a60' }}>O preset define a atmosfera, iluminação e composição do criativo.</p>
               </div>
               <WizardStep2Style />
             </div>
@@ -660,12 +684,10 @@ export function WizardPage() {
 
           {/* Step 3: Texts */}
           {uiStep === 3 && (
-            <div>
-              <div className="mb-6">
-                <h1 className="text-2xl font-bold text-white">Adicione os textos</h1>
-                <p className="text-zinc-400 text-sm mt-1">
-                  Headline, preço, CTA e contato. A tipografia é renderizada em alta qualidade.
-                </p>
+            <div style={{ animation: 'wizFdUp 350ms ease both' }}>
+              <div style={{ marginBottom: 24 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417', marginBottom: 4 }}>Adicione os textos</h1>
+                <p style={{ fontSize: 13.5, color: '#5a5a60' }}>Headline, preço, CTA e contato. A tipografia é renderizada em alta qualidade.</p>
               </div>
               <WizardStep3Text />
             </div>
@@ -673,87 +695,62 @@ export function WizardPage() {
 
           {/* Step 4: Generating */}
           {uiStep === 4 && (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] gap-8 py-12">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 32, padding: '48px 0', animation: 'wizFdUp 350ms ease both' }}>
               {generationError ? (
-                <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-                  <div className="w-16 h-16 rounded-full bg-red-950 border border-red-800 flex items-center justify-center text-2xl">
-                    ✕
-                  </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center', maxWidth: 320 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>✕</div>
                   <div>
-                    <p className="text-red-400 font-semibold text-lg">Erro na geração</p>
-                    <p className="text-zinc-400 text-sm mt-1">{generationError}</p>
+                    <p style={{ color: '#EF4444', fontWeight: 600, fontSize: 16 }}>Erro na geração</p>
+                    <p style={{ color: '#5a5a60', fontSize: 13, marginTop: 4 }}>{generationError}</p>
                   </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => { setGenerationError(null); setUiStep(3); }}
-                      className="px-4 py-2 rounded-lg border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-500 transition-colors"
-                    >
-                      Voltar
-                    </button>
-                    <button
-                      onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(4); handleGenerate(); }}
-                      className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-400 text-white font-semibold text-sm transition-colors"
-                    >
-                      Tentar novamente
-                    </button>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button onClick={() => { setGenerationError(null); setUiStep(3); }} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#5a5a60', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Voltar</button>
+                    <button onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(4); handleGenerate(); }} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: '#ff713d', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Tentar novamente</button>
                   </div>
                 </div>
               ) : (
                 <>
                   {/* Animated orb */}
-                  <div className="relative flex items-center justify-center">
-                    <div
-                      className="absolute w-48 h-48 rounded-full blur-2xl opacity-40 animate-pulse"
-                      style={{ background: "conic-gradient(from 0deg, #f97316, #a855f7, #3b82f6, #f97316)" }}
-                    />
-                    <div
-                      className="relative w-32 h-32 rounded-full animate-spin"
-                      style={{ background: "conic-gradient(from 0deg, #f97316, #a855f7, #3b82f6, #f97316)", animationDuration: "3s" }}
-                    />
-                    <div className="absolute w-24 h-24 rounded-full bg-zinc-950 flex items-center justify-center">
-                      <span className="text-2xl">✦</span>
-                    </div>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', width: 180, height: 180, borderRadius: '50%', filter: 'blur(32px)', opacity: 0.25, background: 'conic-gradient(from 0deg, #ff713d, #a855f7, #3b82f6, #ff713d)', animation: 'wizPulse 2s ease-in-out infinite' }} />
+                    <div style={{ position: 'relative', width: 120, height: 120, borderRadius: '50%', background: 'conic-gradient(from 0deg, #ff713d, #FF9B70, #ff713d)', animation: 'wizSpin 3s linear infinite' }} />
+                    <div style={{ position: 'absolute', width: 90, height: 90, borderRadius: '50%', background: '#f5f5f3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>✦</div>
                   </div>
 
-                  <div className="text-center">
-                    <h2 className="text-xl font-bold text-white">Criando seu criativo...</h2>
-                    <p className="text-zinc-500 text-sm mt-1">Isso leva alguns segundos</p>
+                  <div style={{ textAlign: 'center' }}>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, color: '#141417' }}>Criando seu criativo...</h2>
+                    <p style={{ color: '#8e8e96', fontSize: 13, marginTop: 4 }}>Isso leva alguns segundos</p>
                   </div>
 
                   {/* Stage checklist */}
-                  <div className="flex flex-col gap-3 w-full max-w-xs">
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 300 }}>
                     {GENERATION_STAGES.map((stage, idx) => {
                       const isDone = stageIndex > idx;
                       const isActive = stageIndex === idx;
                       return (
-                        <div key={idx} className="flex items-center gap-3">
-                          <div
-                            className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-300"
-                            style={{
-                              background: isDone ? "#22c55e" : isActive ? "#f97316" : "#27272a",
-                              border: `1.5px solid ${isDone ? "#22c55e" : isActive ? "#f97316" : "#3f3f46"}`,
-                            }}
-                          >
+                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{
+                            width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            transition: 'all 300ms',
+                            background: isDone ? '#10B981' : isActive ? '#ff713d' : 'rgba(20,20,23,0.06)',
+                            border: `1.5px solid ${isDone ? '#10B981' : isActive ? '#ff713d' : 'rgba(20,20,23,0.12)'}`,
+                          }}>
                             {isDone ? (
                               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                                 <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                             ) : isActive ? (
-                              <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite' }} />
                             ) : null}
                           </div>
-                          <span
-                            className="text-sm transition-colors"
-                            style={{ color: isDone ? "#4ade80" : isActive ? "#f97316" : "#52525b" }}
-                          >
-                            {stage}
-                          </span>
+                          <span style={{ fontSize: 13, transition: 'color 300ms', color: isDone ? '#10B981' : isActive ? '#ff713d' : '#8e8e96' }}>{stage}</span>
                         </div>
                       );
                     })}
                   </div>
 
-                  <p className="text-xs text-zinc-600">−5 créditos desta geração</p>
+                  <p style={{ fontSize: 11.5, color: '#b5b5bb' }}>−5 créditos desta geração</p>
                 </>
               )}
             </div>
@@ -761,14 +758,14 @@ export function WizardPage() {
 
           {/* Step 5: Result */}
           {uiStep === 5 && currentGeneration && (
-            <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+            <div style={{ display: 'flex', gap: 24, animation: 'wizFdUp 350ms ease both', flexWrap: 'wrap' }}>
               {/* Preview */}
-              <div className="flex flex-col items-center gap-4 lg:w-[55%]">
-                <div className="flex items-center justify-between w-full">
-                  <p className="text-xs text-zinc-500 uppercase tracking-widest font-medium">
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: '1 1 300px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <p style={{ fontSize: 10.5, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
                     {composing ? "Compondo criativo..." : "Criativo gerado!"}
                   </p>
-                  <div className="flex items-center gap-2 text-xs text-zinc-600">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#b5b5bb' }}>
                     <span>via {currentGeneration.meta.provider}</span>
                     <span>·</span>
                     <span>{Math.round(currentGeneration.meta.generationMs / 1000)}s</span>
@@ -779,35 +776,34 @@ export function WizardPage() {
                   <img
                     src={displayBase64}
                     alt="Criativo gerado"
-                    className="w-full max-h-[55vh] rounded-xl object-contain border border-zinc-800 shadow-2xl bg-zinc-900"
+                    style={{ width: '100%', maxHeight: '55vh', borderRadius: 12, objectFit: 'contain', border: '1px solid rgba(20,20,23,0.06)', boxShadow: '0 8px 32px rgba(20,20,23,0.1)', background: '#ffffff' }}
                   />
                 )}
 
                 {composing && popDesignStep && (
-                  <p className="text-xs text-orange-400 animate-pulse font-medium">{popDesignStep}</p>
+                  <p style={{ fontSize: 11.5, color: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite', fontWeight: 500 }}>{popDesignStep}</p>
                 )}
                 {composing && !popDesignStep && (
-                  <p className="text-xs text-zinc-500 animate-pulse">Aplicando tipografia...</p>
+                  <p style={{ fontSize: 11.5, color: '#8e8e96', animation: 'wizPulse 1s ease-in-out infinite' }}>Aplicando tipografia...</p>
                 )}
 
                 {!isWorking && (
-                  <div className="flex flex-wrap gap-2 w-full">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%' }}>
                     <button
                       onClick={() => setShowExportModal(true)}
-                      className="flex-1 min-w-[110px] py-2.5 rounded-xl text-white text-sm font-semibold transition-colors"
-                      style={{ background: "linear-gradient(135deg, #f97316, #a855f7)" }}
+                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       ↓ Exportar
                     </button>
                     <button
                       onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)}
-                      className="flex-1 min-w-[110px] py-2.5 rounded-xl border border-zinc-700 text-zinc-300 text-sm hover:border-zinc-500 hover:text-white transition-colors"
+                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#5a5a60', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       ↗ Expandir
                     </button>
                     <button
                       onClick={handleRegenerateFromResult}
-                      className="flex-1 min-w-[110px] py-2.5 rounded-xl border border-zinc-800 text-zinc-500 text-sm hover:border-zinc-600 hover:text-zinc-300 transition-colors"
+                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid rgba(20,20,23,0.08)', background: 'transparent', color: '#8e8e96', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       ↺ Regerar
                     </button>
@@ -817,17 +813,13 @@ export function WizardPage() {
 
               {/* Mini chat */}
               {!isWorking && (
-                <div className="flex flex-col lg:w-[45%] gap-3">
-                  <div className="flex items-center gap-2 pb-2 border-b border-zinc-800">
-                    <div className="w-6 h-6 rounded-full bg-orange-500 flex items-center justify-center text-xs font-bold shrink-0">
-                      ✦
-                    </div>
-                    <p className="text-sm font-semibold text-white">Creatyng AI</p>
-                    <span className="text-xs text-green-500 ml-auto">● Online</span>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 260px', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12, borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0 }}>✦</div>
+                    <p style={{ fontSize: 13.5, fontWeight: 600, color: '#141417' }}>Creatyng AI</p>
+                    <span style={{ fontSize: 11, color: '#10B981', marginLeft: 'auto' }}>● Online</span>
                   </div>
-                  <p className="text-xs text-zinc-500">
-                    Peça ajustes em linguagem natural. 1 crédito por mensagem.
-                  </p>
+                  <p style={{ fontSize: 11.5, color: '#8e8e96' }}>Peça ajustes em linguagem natural. 1 crédito por mensagem.</p>
                   <RefinementChat
                     overrides={refinementOverrides}
                     onOverridesChange={(newOverrides) => {
@@ -848,11 +840,11 @@ export function WizardPage() {
                       }
                     }}
                   />
-                  <p className="text-xs text-zinc-700 text-center mt-1">
+                  <p style={{ fontSize: 11, color: '#b5b5bb', textAlign: 'center', marginTop: 4 }}>
                     Edições avançadas com histórico →{" "}
                     <button
                       onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)}
-                      className="text-orange-500 hover:text-orange-400 underline underline-offset-2"
+                      style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, textDecoration: 'underline' }}
                     >
                       Expandir chat
                     </button>
@@ -866,23 +858,34 @@ export function WizardPage() {
 
       {/* Footer navigation (steps 1-3) */}
       {uiStep <= 3 && (
-        <footer className="shrink-0 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur sticky bottom-0">
-          <div className="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
+        <footer style={{
+          flexShrink: 0, borderTop: '1px solid rgba(20,20,23,0.06)',
+          background: 'rgba(245,245,243,0.9)', backdropFilter: 'blur(8px)',
+          position: 'sticky', bottom: 0,
+        }}>
+          <div style={{ maxWidth: 680, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <button
               onClick={handleBack}
               disabled={uiStep === 1}
-              className="px-5 py-2.5 rounded-xl border border-zinc-700 text-zinc-400 text-sm font-medium disabled:opacity-30 hover:border-zinc-500 hover:text-white transition-colors"
+              style={{
+                padding: '9px 20px', borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)',
+                background: '#ffffff', color: '#5a5a60', fontSize: 13, fontWeight: 500,
+                cursor: uiStep === 1 ? 'default' : 'pointer', opacity: uiStep === 1 ? 0.3 : 1,
+                fontFamily: 'inherit', transition: 'all 150ms',
+              }}
             >
               ← Voltar
             </button>
             <button
               onClick={handleNext}
               disabled={!canAdvance}
-              className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
-                background: canAdvance ? "linear-gradient(135deg, #f97316, #a855f7)" : "#27272a",
-                color: canAdvance ? "#fff" : "#52525b",
-                boxShadow: canAdvance ? "0 0 20px rgba(249,115,22,0.25)" : "none",
+                padding: '9px 24px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 600,
+                cursor: canAdvance ? 'pointer' : 'default',
+                background: canAdvance ? 'linear-gradient(135deg,#ff713d,#FF9B70)' : 'rgba(20,20,23,0.06)',
+                color: canAdvance ? '#fff' : '#8e8e96',
+                boxShadow: canAdvance ? '0 4px 16px rgba(255,113,61,0.3)' : 'none',
+                opacity: canAdvance ? 1 : 0.6, fontFamily: 'inherit', transition: 'all 200ms',
               }}
             >
               {uiStep === 3 ? "✦ Gerar criativo — 5 créditos" : "Continuar →"}
@@ -893,9 +896,9 @@ export function WizardPage() {
 
       {/* Error toast (not on step 4 which has its own error UI) */}
       {error && uiStep !== 4 && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-red-950/95 text-red-200 text-sm px-5 py-3 rounded-xl border border-red-800 max-w-sm text-center shadow-xl">
+        <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 50, background: '#FEF2F2', color: '#EF4444', fontSize: 13, padding: '12px 20px', borderRadius: 10, border: '1px solid #FECACA', maxWidth: 360, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
           {error}
-          <button onClick={() => setError(null)} className="ml-3 text-red-400 hover:text-red-200 font-bold">×</button>
+          <button onClick={() => setError(null)} style={{ marginLeft: 10, color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>×</button>
         </div>
       )}
 

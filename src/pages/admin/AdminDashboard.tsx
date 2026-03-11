@@ -33,18 +33,16 @@ function KPICard({ icon: Icon, label, numericValue, prefix = '', suffix = '', de
     : animated.toLocaleString('pt-BR');
 
   return (
-    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5 flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <span className="text-white/40 text-xs font-medium uppercase tracking-wider">{label}</span>
-        <div className="w-8 h-8 rounded-lg bg-white/[0.05] flex items-center justify-center">
-          <Icon className="h-4 w-4 text-white/40" />
+    <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ color: '#8e8e96', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(20,20,23,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon style={{ width: 15, height: 15, color: '#8e8e96' }} />
         </div>
       </div>
-      <div className="flex items-end justify-between">
-        <span className="text-2xl font-bold text-white">{prefix}{display}{suffix}</span>
-        <span className={`text-xs font-medium ${positive ? 'text-emerald-400' : 'text-red-400'}`}>
-          {change}
-        </span>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>{prefix}{display}{suffix}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: positive ? '#10B981' : '#EF4444' }}>{change}</span>
       </div>
     </div>
   );
@@ -52,7 +50,7 @@ function KPICard({ icon: Icon, label, numericValue, prefix = '', suffix = '', de
 
 const CHART_STYLE = {
   fontSize: 11,
-  fill: 'rgba(255,255,255,0.3)',
+  fill: '#8e8e96',
 };
 
 export default function AdminDashboard() {
@@ -96,147 +94,108 @@ export default function AdminDashboard() {
     );
   }
 
+  const tooltipStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', borderRadius: 8, color: '#141417', fontSize: 12, boxShadow: '0 4px 16px rgba(20,20,23,0.08)' };
+  const cardStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' };
+  const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
+  const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          icon={TrendingUp}
-          label="MRR"
-          numericValue={stats.mrr}
-          prefix="R$ "
-          change="+12.5% este mês"
-          positive
-        />
-        <KPICard
-          icon={Users}
-          label="Usuários Ativos"
-          numericValue={stats.activeUsers}
-          change="+8 esta semana"
-          positive
-        />
-        <KPICard
-          icon={Image}
-          label="Gerações Hoje"
-          numericValue={stats.gensToday}
-          change="+15% vs ontem"
-          positive
-        />
-        <KPICard
-          icon={AlertTriangle}
-          label="Taxa de Erro"
-          numericValue={Math.round(stats.errorRate * 10)}
-          suffix="%"
-          decimals={1}
-          change="-0.3% vs ontem"
-          positive
-        />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+        <KPICard icon={TrendingUp} label="MRR" numericValue={stats.mrr} prefix="R$ " change="+12.5% este mês" positive />
+        <KPICard icon={Users} label="Usuários Ativos" numericValue={stats.activeUsers} change="+8 esta semana" positive />
+        <KPICard icon={Image} label="Gerações Hoje" numericValue={stats.gensToday} change="+15% vs ontem" positive />
+        <KPICard icon={AlertTriangle} label="Taxa de Erro" numericValue={Math.round(stats.errorRate * 10)} suffix="%" decimals={1} change="-0.3% vs ontem" positive />
       </div>
 
       {/* Charts row */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-        {/* MRR Area Chart — 50% width = 2/4 */}
-        <div className="lg:col-span-2 bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
-          <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-4">Receita Mensal (MRR)</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 14 }}>
+        {/* MRR Area Chart */}
+        <div style={cardStyle}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>Receita Mensal (MRR)</div>
           <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={mrrData}>
               <defs>
                 <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ff713d" stopOpacity={0.3} />
+                  <stop offset="5%" stopColor="#ff713d" stopOpacity={0.15} />
                   <stop offset="95%" stopColor="#ff713d" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="month" tick={CHART_STYLE} axisLine={false} tickLine={false} />
               <YAxis tick={CHART_STYLE} axisLine={false} tickLine={false} width={45} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip
-                contentStyle={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#fff' }}
-                formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, 'MRR']}
-              />
-              <Area type="monotone" dataKey="mrr" stroke="#ff713d" fill="url(#mrrGrad)" strokeWidth={2} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, 'MRR']} />
+              <Area type="monotone" dataKey="mrr" stroke="#ff713d" fill="url(#mrrGrad)" strokeWidth={2.5} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Pie Chart — 25% = 1/4 */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
-          <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-4">Features mais usadas</h3>
+        {/* Pie Chart */}
+        <div style={cardStyle}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 10 }}>Features mais usadas</div>
           <ResponsiveContainer width="100%" height={120}>
             <PieChart>
-              <Pie data={featureData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" paddingAngle={3}>
-                {featureData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color} />
-                ))}
+              <Pie data={featureData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" paddingAngle={3} strokeWidth={0}>
+                {featureData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
               </Pie>
-              <Tooltip
-                contentStyle={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#fff' }}
-                formatter={(v: number) => [`${v}%`, '']}
-              />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v}%`, '']} />
             </PieChart>
           </ResponsiveContainer>
-          <div className="space-y-1 mt-2">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
             {featureData.map((f) => (
-              <div key={f.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: f.color }} />
-                  <span className="text-white/40 text-[10px]">{f.name}</span>
+              <div key={f.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: f.color, display: 'inline-block', flexShrink: 0 }} />
+                  <span style={{ fontSize: 10.5, color: '#5a5a60' }}>{f.name}</span>
                 </div>
-                <span className="text-white/60 text-[10px] font-medium">{f.value}%</span>
+                <span style={{ fontSize: 10.5, fontWeight: 500, color: '#141417' }}>{f.value}%</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Bar Chart — 25% = 1/4 */}
-        <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5">
-          <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-4">Gerações por dia</h3>
+        {/* Bar Chart */}
+        <div style={cardStyle}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>Gerações por dia</div>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={dailyData}>
               <XAxis dataKey="day" tick={CHART_STYLE} axisLine={false} tickLine={false} />
               <YAxis tick={CHART_STYLE} axisLine={false} tickLine={false} width={28} />
-              <Tooltip
-                contentStyle={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#fff' }}
-              />
-              <Bar dataKey="count" fill="#818cf8" radius={[3, 3, 0, 0]} />
+              <Tooltip contentStyle={tooltipStyle} />
+              <Bar dataKey="count" fill="#ff713d" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Latest generations table */}
-      <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/[0.06]">
-          <h3 className="text-white/60 text-xs font-semibold uppercase tracking-wider">Últimas gerações</h3>
-        </div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-white/[0.04]">
-              {['Usuário', 'Feature', 'Status', 'Créditos', 'Duração', 'Hora'].map((h) => (
-                <th key={h} className="text-left px-5 py-3 text-white/30 text-xs font-medium">{h}</th>
-              ))}
-            </tr>
-          </thead>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Últimas gerações</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            {['Usuário', 'Feature', 'Status', 'Créditos', 'Duração', 'Hora'].map((h) => (
+              <th key={h} style={thStyle}>{h}</th>
+            ))}
+          </tr></thead>
           <tbody>
             {logs.map((log) => (
-              <tr key={log.id} className="border-b border-white/[0.02] hover:bg-white/[0.02] transition-colors">
-                <td className="px-5 py-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] text-white/60 font-semibold">
+              <tr key={log.id} style={{ transition: 'background 100ms' }}
+                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
+              >
+                <td style={tdStyle}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(20,20,23,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#5a5a60' }}>
                       {log.userName.charAt(0)}
                     </div>
-                    <span className="text-white/70 text-xs">{log.userName}</span>
+                    <span style={{ color: '#5a5a60', fontSize: 12 }}>{log.userName}</span>
                   </div>
                 </td>
-                <td className="px-5 py-3">
-                  <span className="px-2 py-0.5 rounded-full bg-[#ff713d]/10 text-[#ff713d] text-[10px] font-medium">{log.feature}</span>
-                </td>
-                <td className="px-5 py-3">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                    log.status === 'success' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'
-                  }`}>{log.status === 'success' ? 'Sucesso' : 'Erro'}</span>
-                </td>
-                <td className="px-5 py-3 text-white/50 text-xs">{log.credits > 0 ? log.credits : '—'}</td>
-                <td className="px-5 py-3 text-white/50 text-xs">{log.duration}</td>
-                <td className="px-5 py-3 text-white/30 text-xs">{log.time}</td>
+                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, background: 'rgba(255,113,61,0.08)', color: '#ff713d', fontSize: 10.5, fontWeight: 600 }}>{log.feature}</span></td>
+                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: log.status === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', color: log.status === 'success' ? '#10B981' : '#EF4444' }}>{log.status === 'success' ? 'Sucesso' : 'Erro'}</span></td>
+                <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 12 }}>{log.credits > 0 ? log.credits : '—'}</td>
+                <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 12 }}>{log.duration}</td>
+                <td style={{ ...tdStyle, color: '#b5b5bb', fontSize: 12 }}>{log.time}</td>
               </tr>
             ))}
           </tbody>

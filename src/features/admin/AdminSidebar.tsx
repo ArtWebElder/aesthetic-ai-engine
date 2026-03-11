@@ -37,38 +37,43 @@ export function AdminSidebar() {
   };
 
   return (
-    <div className="flex flex-col h-full w-[220px] bg-[#141417] border-r border-white/[0.06]">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: 210, background: '#ffffff', borderRight: '1px solid rgba(20,20,23,0.06)', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
       {/* Brand */}
-      <div className="p-4 flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff713d] to-[#FF9B70] flex items-center justify-center shrink-0">
-          <span className="text-white font-extrabold text-sm">C</span>
+      <div style={{ padding: '16px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <span style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>C</span>
         </div>
-        <div className="flex flex-col leading-tight">
-          <span className="text-white font-semibold text-sm">Creatyng</span>
-          <span className="text-[10px] font-bold tracking-wider text-red-400 uppercase">Super Admin</span>
+        <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
+          <span style={{ fontWeight: 700, fontSize: 14, color: '#141417' }}>Creatyng</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: '#EF4444', textTransform: 'uppercase' }}>Super Admin</span>
         </div>
       </div>
 
-      <div className="mx-4 h-px bg-white/[0.06]" />
+      <div style={{ height: 1, background: 'rgba(20,20,23,0.06)', margin: '0 12px' }} />
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-0.5 mt-2">
+      <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4 }}>
         {adminNavItems.map((item) => {
           const active = isActive(item.path);
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors duration-150 text-left relative ${
-                active
-                  ? 'bg-white/[0.06] text-white font-medium'
-                  : 'text-white/50 hover:bg-white/[0.03] hover:text-white/80'
-              }`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                padding: '9px 12px', borderRadius: 8, cursor: 'pointer',
+                background: active ? '#FFF0EA' : 'transparent',
+                border: active ? '1px solid rgba(255,113,61,0.2)' : '1px solid transparent',
+                color: active ? '#ff713d' : '#5a5a60', fontWeight: active ? 600 : 400,
+                fontSize: 13, fontFamily: 'inherit', transition: 'all 150ms', position: 'relative', textAlign: 'left',
+              }}
+              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(20,20,23,0.03)'; }}
+              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
             >
               {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-[#ff713d] rounded-r-full" />
+                <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 18, background: '#ff713d', borderRadius: '0 3px 3px 0' }} />
               )}
-              <item.icon className="h-4 w-4 shrink-0" />
+              <item.icon style={{ width: 15, height: 15, flexShrink: 0 }} />
               {LABELS[item.labelKey]}
             </button>
           );
@@ -76,19 +81,23 @@ export function AdminSidebar() {
       </nav>
 
       {/* Bottom actions */}
-      <div className="p-3 border-t border-white/[0.06] space-y-1">
+      <div style={{ padding: '10px', borderTop: '1px solid rgba(20,20,23,0.06)', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <button
           onClick={() => navigate('/app/dashboard')}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-white/40 hover:text-white/70 hover:bg-white/[0.03] transition-colors duration-150"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: '#8e8e96', transition: 'all 150ms' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(20,20,23,0.03)'; (e.currentTarget as HTMLButtonElement).style.color = '#5a5a60'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96'; }}
         >
-          <ArrowLeft className="h-4 w-4 shrink-0" />
+          <ArrowLeft style={{ width: 14, height: 14, flexShrink: 0 }} />
           Voltar ao App
         </button>
         <button
           onClick={() => { signOut(); navigate('/login'); }}
-          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-white/30 hover:text-white/60 hover:bg-white/[0.03] transition-colors duration-150"
+          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '8px 12px', borderRadius: 8, border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, color: '#b5b5bb', transition: 'all 150ms' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(20,20,23,0.03)'; (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#b5b5bb'; }}
         >
-          <LogOut className="h-4 w-4 shrink-0" />
+          <LogOut style={{ width: 14, height: 14, flexShrink: 0 }} />
           Sair
         </button>
       </div>
