@@ -44,12 +44,12 @@ function NodeContent({
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    background: 'rgba(255,255,255,0.05)',
-    border: '1px solid rgba(255,255,255,0.1)',
+    background: 'rgba(0,0,0,0.04)',
+    border: '1px solid rgba(0,0,0,0.1)',
     borderRadius: 6,
     padding: '5px 8px',
     fontSize: 11,
-    color: '#e5e7eb',
+    color: '#111827',
     outline: 'none',
     resize: 'none' as const,
   };
@@ -63,7 +63,7 @@ function NodeContent({
         width: '100%',
         padding: '5px 0',
         borderRadius: 6,
-        background: isRunning ? 'rgba(255,255,255,0.05)' : def.color,
+        background: isRunning ? 'rgba(0,0,0,0.05)' : def.color,
         color: '#fff',
         fontSize: 11,
         fontWeight: 600,
@@ -112,12 +112,12 @@ function NodeContent({
       return (
         <div style={{ padding: '6px 10px' }}>
           <div style={{
-            border: '1.5px dashed rgba(255,255,255,0.15)',
+            border: '1.5px dashed rgba(0,0,0,0.2)',
             borderRadius: 8,
             padding: '18px 8px',
             textAlign: 'center',
             fontSize: 10,
-            color: 'rgba(255,255,255,0.4)',
+            color: 'rgba(0,0,0,0.45)',
             cursor: 'pointer',
           }}>
             {t('studio.node.upload_hint')}
@@ -141,11 +141,11 @@ function NodeContent({
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{
-            background: 'rgba(0,0,0,0.3)',
+            background: 'rgba(0,0,0,0.04)',
             borderRadius: 6,
             padding: '6px 8px',
             fontSize: 10,
-            color: isDone ? '#e5e7eb' : 'rgba(255,255,255,0.3)',
+            color: isDone ? '#111827' : 'rgba(0,0,0,0.4)',
             minHeight: 52,
             fontFamily: 'monospace',
           }}>
@@ -169,10 +169,10 @@ function NodeContent({
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{
-            background: 'rgba(0,0,0,0.3)',
+            background: 'rgba(0,0,0,0.04)',
             borderRadius: 6,
             fontSize: 10,
-            color: 'rgba(255,255,255,0.3)',
+            color: 'rgba(0,0,0,0.4)',
             minHeight: 90,
             display: 'flex',
             alignItems: 'center',
@@ -211,7 +211,7 @@ function NodeContent({
             onMouseDown={e => e.stopPropagation()}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>Threshold</span>
+            <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}>Threshold</span>
             <input type="range" min={0} max={100} defaultValue={50} style={{ flex: 1, accentColor: def.color }}
               onMouseDown={e => e.stopPropagation()} />
           </div>
@@ -288,13 +288,13 @@ export function StudioNode({
     ? '#10b981'
     : isSelected
     ? def.color
-    : 'rgba(255,255,255,0.08)';
+    : 'rgba(0,0,0,0.1)';
 
   const boxShadow = isRunning
     ? `0 0 16px ${def.color}60, 0 0 32px ${def.color}20`
     : isSelected
     ? `0 0 12px ${def.color}40`
-    : '0 4px 12px rgba(0,0,0,0.4)';
+    : '0 2px 8px rgba(0,0,0,0.1)';
 
   return (
     <div
@@ -303,7 +303,7 @@ export function StudioNode({
         left: node.x,
         top: node.y,
         width: def.defaultWidth,
-        background: '#1a1a1f',
+        background: '#ffffff',
         border: `1.5px solid ${borderColor}`,
         borderRadius: 10,
         boxShadow,
@@ -325,7 +325,7 @@ export function StudioNode({
           height: 13,
           borderRadius: '50%',
           border: `2px solid ${def.color}`,
-          background: '#1a1a1f',
+          background: '#ffffff',
           zIndex: 30,
         }}
       />
@@ -353,7 +353,7 @@ export function StudioNode({
           alignItems: 'center',
           gap: 7,
           padding: '8px 10px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: '1px solid rgba(0,0,0,0.07)',
           cursor: 'grab',
           borderRadius: '8px 8px 0 0',
         }}
@@ -370,15 +370,15 @@ export function StudioNode({
         }}>
           <IconComp size={13} style={{ color: def.color }} />
         </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#e5e7eb', flex: 1, letterSpacing: 0.1 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', flex: 1, letterSpacing: 0.1 }}>
           {def.label}
         </span>
         {def.aiProvider && (
           <span style={{
             fontSize: 9,
             fontWeight: 700,
-            color: def.aiProvider === 'Gemini' ? '#a78bfa' : '#fb923c',
-            background: def.aiProvider === 'Gemini' ? '#7c3aed20' : '#f9731620',
+            color: def.aiProvider === 'Gemini' ? '#7c3aed' : '#ea6e0b',
+            background: def.aiProvider === 'Gemini' ? '#7c3aed18' : '#f9731618',
             padding: '1px 5px',
             borderRadius: 4,
             letterSpacing: 0.3,

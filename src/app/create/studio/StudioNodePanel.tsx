@@ -91,13 +91,13 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
       bottom: 60,
       width: 260,
       zIndex: 90,
-      background: '#1a1a1f',
-      border: '1px solid rgba(255,255,255,0.1)',
+      background: '#ffffff',
+      border: '1px solid rgba(0,0,0,0.1)',
       borderRadius: 12,
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
-      boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
       animation: 'fadeIn 0.15s ease',
     }}>
       {/* Panel header */}
@@ -106,9 +106,9 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
         alignItems: 'center',
         gap: 8,
         padding: '10px 12px',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        borderBottom: '1px solid rgba(0,0,0,0.08)',
       }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#e5e7eb' }}>
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#111827' }}>
           {tab === 'nodes' && t('studio.nav.add_node')}
           {tab === 'assets' && t('studio.nav.assets')}
           {tab === 'templates' && t('studio.nav.templates')}
@@ -116,7 +116,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
         </span>
         <button
           onClick={onClose}
-          style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'rgba(0,0,0,0.45)', cursor: 'pointer', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <X size={12} />
         </button>
@@ -129,12 +129,12 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(0,0,0,0.04)',
+            border: '1px solid rgba(0,0,0,0.08)',
             borderRadius: 7,
             padding: '5px 8px',
           }}>
-            <Search size={11} style={{ color: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+            <Search size={11} style={{ color: 'rgba(0,0,0,0.35)', flexShrink: 0 }} />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -145,7 +145,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                 border: 'none',
                 outline: 'none',
                 fontSize: 11,
-                color: '#e5e7eb',
+                color: '#111827',
                 fontFamily: 'inherit',
               }}
             />
@@ -164,7 +164,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
               if (unique.length === 0) return null;
               return (
                 <div key={gi} style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.3)', letterSpacing: 0.8, padding: '6px 4px 4px' }}>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(0,0,0,0.4)', letterSpacing: 0.8, padding: '6px 4px 4px' }}>
                     {t(group.labelKey)}
                   </div>
                   {unique.map(typeId => {
@@ -204,9 +204,9 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                           <CategoryIcon category={def.category} size={12} />
                         </div>
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb' }}>{def.label}</div>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: '#111827' }}>{def.label}</div>
                           {def.aiProvider && (
-                            <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)' }}>{def.aiProvider}</div>
+                            <div style={{ fontSize: 9, color: 'rgba(0,0,0,0.45)' }}>{def.aiProvider}</div>
                           )}
                         </div>
                         {def.creditCost && (
@@ -251,8 +251,8 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                   e.currentTarget.style.border = '1px solid transparent';
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#e5e7eb' }}>{tpl.name}</span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{tpl.desc}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#111827' }}>{tpl.name}</span>
+                <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.5)' }}>{tpl.desc}</span>
               </button>
             ))}
           </div>
@@ -271,25 +271,25 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                   borderRadius: 7,
                   cursor: 'pointer',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 <div style={{
                   width: 32,
                   height: 32,
                   borderRadius: 7,
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.08)',
+                  background: 'rgba(0,0,0,0.05)',
+                  border: '1px solid rgba(0,0,0,0.08)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: 'rgba(255,255,255,0.5)',
+                  color: 'rgba(0,0,0,0.5)',
                 }}>
                   <AssetTypeIcon type={asset.type} size={14} />
                 </div>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb' }}>{asset.name}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>{asset.type} · {asset.size}</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: '#111827' }}>{asset.name}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.45)' }}>{asset.type} · {asset.size}</div>
                 </div>
               </div>
             ))}
@@ -304,16 +304,16 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                 style={{
                   padding: '10px 12px',
                   borderRadius: 8,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.07)',
+                  background: 'rgba(0,0,0,0.03)',
+                  border: '1px solid rgba(0,0,0,0.08)',
                   cursor: 'pointer',
                   transition: 'border-color 0.1s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,113,61,0.3)')}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)')}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,113,61,0.4)')}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(0,0,0,0.08)')}
               >
-                <div style={{ fontSize: 12, fontWeight: 600, color: '#e5e7eb', marginBottom: 3 }}>{item.title}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{item.desc}</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: '#111827', marginBottom: 3 }}>{item.title}</div>
+                <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.5)' }}>{item.desc}</div>
               </div>
             ))}
           </div>

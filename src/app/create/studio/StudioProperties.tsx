@@ -20,12 +20,12 @@ interface StudioPropertiesProps {
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  background: 'rgba(255,255,255,0.05)',
-  border: '1px solid rgba(255,255,255,0.1)',
+  background: 'rgba(0,0,0,0.04)',
+  border: '1px solid rgba(0,0,0,0.1)',
   borderRadius: 7,
   padding: '6px 9px',
   fontSize: 11,
-  color: '#e5e7eb',
+  color: '#111827',
   outline: 'none',
   boxSizing: 'border-box',
 };
@@ -34,7 +34,7 @@ const inputStyle: React.CSSProperties = {
 const labelStyle: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 600,
-  color: 'rgba(255,255,255,0.4)',
+  color: 'rgba(0,0,0,0.5)',
   marginBottom: 4,
   letterSpacing: 0.5,
 };
@@ -54,8 +54,8 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
       bottom: 0,
       width: 224,
       zIndex: 90,
-      background: '#1a1a1f',
-      borderLeft: '1px solid rgba(255,255,255,0.08)',
+      background: '#ffffff',
+      borderLeft: '1px solid rgba(0,0,0,0.08)',
       display: 'flex',
       flexDirection: 'column',
       overflow: 'hidden',
@@ -66,7 +66,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
         alignItems: 'center',
         gap: 8,
         padding: '10px 12px',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        borderBottom: '1px solid rgba(0,0,0,0.08)',
       }}>
         <div style={{
           width: 22,
@@ -83,14 +83,14 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           <CategoryIcon category={def.category} size={11} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {def.label}
           </div>
-          <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>{def.category}</div>
+          <div style={{ fontSize: 9, color: 'rgba(0,0,0,0.45)' }}>{def.category}</div>
         </div>
         <button
           onClick={onClose}
-          style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'rgba(0,0,0,0.45)', cursor: 'pointer', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
         >
           <X size={12} />
         </button>
@@ -98,7 +98,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
 
       {/* Status badge */}
       {execState !== 'idle' && (
-        <div style={{ padding: '6px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ padding: '6px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -129,7 +129,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           <div style={labelStyle}>{t('studio.props.position')}</div>
           <div style={{ display: 'flex', gap: 6 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginBottom: 2 }}>X</div>
+              <div style={{ fontSize: 9, color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>X</div>
               <input
                 style={inputStyle}
                 value={Math.round(node.x)}
@@ -137,7 +137,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
               />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', marginBottom: 2 }}>Y</div>
+              <div style={{ fontSize: 9, color: 'rgba(0,0,0,0.4)', marginBottom: 2 }}>Y</div>
               <input
                 style={inputStyle}
                 value={Math.round(node.y)}
@@ -259,7 +259,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
                 <Sparkles style={{ width: 14, height: 14, color: '#ff713d' }} />
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#ff713d' }}>{def.creditCost} {t('studio.props.credits')}</div>
-                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>{t('studio.props.per_run')}</div>
+                  <div style={{ fontSize: 9, color: 'rgba(0,0,0,0.5)' }}>{t('studio.props.per_run')}</div>
                 </div>
               </div>
             )}

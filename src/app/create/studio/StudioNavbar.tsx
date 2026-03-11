@@ -73,28 +73,28 @@ export function StudioNavbar({ openPanel, chatOpen, onPanelChange, onChatToggle 
                 width: 38,
                 height: 38,
                 borderRadius: 10,
-                border: '1px solid rgba(255,255,255,0.12)',
+                border: '1px solid rgba(0,0,0,0.1)',
                 background: active
                   ? item.accent
                     ? '#ff713d'
-                    : 'rgba(255,113,61,0.15)'
+                    : 'rgba(255,113,61,0.12)'
                   : item.accent
                   ? '#ff713d'
-                  : '#1e1e24',
+                  : '#ffffff',
                 color: active && !item.accent
                   ? '#ff713d'
                   : item.accent
                   ? '#fff'
                   : active
                   ? '#ff713d'
-                  : 'rgba(255,255,255,0.6)',
+                  : 'rgba(0,0,0,0.55)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: active
                   ? '0 4px 12px rgba(255,113,61,0.3)'
-                  : '0 2px 6px rgba(0,0,0,0.4)',
+                  : '0 2px 6px rgba(0,0,0,0.08)',
                 transition: 'all 0.15s',
                 flexShrink: 0,
               }}
@@ -109,15 +109,15 @@ export function StudioNavbar({ openPanel, chatOpen, onPanelChange, onChatToggle 
                 left: 46,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                background: '#2a2a32',
-                color: '#e5e7eb',
+                background: '#ffffff',
+                color: '#111827',
                 fontSize: 11,
                 fontWeight: 500,
                 padding: '4px 8px',
                 borderRadius: 6,
-                border: '1px solid rgba(255,255,255,0.1)',
+                border: '1px solid rgba(0,0,0,0.1)',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 pointerEvents: 'none',
                 animation: 'fadeIn 0.1s ease',
               }}>
