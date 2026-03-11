@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Search, Command, Menu, Sparkles, Zap, Plus } from 'lucide-react';
+import { Search, Command, Menu, Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { mockCredits } from '@/lib/mocks/data';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { LocaleDropdown } from '@/components/LocaleDropdown';
-import Modal from '@/components/creatyng/Modal';
+import RechargeCreditsModal from '@/components/creatyng/RechargeCreditsModal';
 
 interface TopbarProps {
   onMenuToggle?: () => void;
@@ -118,44 +118,12 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
       >
         {initials}
       </div>
-      <Modal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} title="Recarregar Créditos" size="sm">
-        <p style={{ fontSize: 14, color: '#5a5a60', lineHeight: 1.6, marginBottom: 20 }}>
-          Escolha um pacote de créditos para continuar gerando criativos incríveis sem interrupção.
-        </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-          {[
-            { label: '100 créditos', price: 'R$ 9,90', highlight: false },
-            { label: '300 créditos', price: 'R$ 24,90', highlight: true },
-            { label: '700 créditos', price: 'R$ 49,90', highlight: false },
-          ].map((pkg) => (
-            <button
-              key={pkg.label}
-              style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '12px 16px', borderRadius: 10, cursor: 'pointer',
-                fontFamily: 'inherit', transition: 'all 150ms',
-                border: pkg.highlight ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.08)',
-                background: pkg.highlight ? '#FFF0EA' : '#ffffff',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13.5, fontWeight: 600, color: '#141417' }}>
-                <Plus size={14} color="#ff713d" /> {pkg.label}
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: pkg.highlight ? '#ff713d' : '#5a5a60' }}>{pkg.price}</span>
-            </button>
-          ))}
-        </div>
-        <button
-          onClick={() => setShowUpgradeModal(false)}
-          style={{
-            width: '100%', padding: '10px 0', borderRadius: 9, border: 'none',
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          }}
-        >
-          Confirmar recarga
-        </button>
-      </Modal>
+      <RechargeCreditsModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        currentCredits={mockCredits.current}
+        totalCredits={500}
+      />
     </header>
   );
 };
