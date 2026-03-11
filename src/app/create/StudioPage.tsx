@@ -28,31 +28,34 @@ import { StudioProperties } from './studio/StudioProperties';
 import { useI18n } from '@/i18n';
 
 // Credits badge top-right
-function CreditsBar() {
+function CreditsBar({ propertiesOpen }: { propertiesOpen: boolean }) {
   const { t } = useI18n();
   const navigate = useNavigate();
+  // Shift left by properties panel width (224px) + gap when it's open
+  const rightPos = propertiesOpen ? 14 + 224 + 10 : 14;
   return (
     <div style={{
       position: 'absolute',
       top: 14,
-      right: 14,
+      right: rightPos,
       zIndex: 200,
       display: 'flex',
       alignItems: 'center',
       gap: 8,
+      transition: 'right 0.15s ease',
     }}>
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 5,
         padding: '5px 10px',
-        background: '#1e1e24',
-        border: '1px solid rgba(255,255,255,0.1)',
+        background: '#ffffff',
+        border: '1px solid rgba(20,20,23,0.08)',
         borderRadius: 8,
         fontSize: 12,
         fontWeight: 600,
         color: '#ff713d',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
       }}>
         <Sparkles size={13} />
         <span>120</span>
@@ -61,13 +64,14 @@ function CreditsBar() {
         onClick={() => navigate('/app/billing')}
         style={{
           padding: '5px 12px',
-          background: 'rgba(255,113,61,0.1)',
-          border: '1px solid rgba(255,113,61,0.4)',
+          background: '#FFF0EA',
+          border: '1.5px solid #ff713d',
           borderRadius: 8,
           color: '#ff713d',
           fontSize: 11,
           fontWeight: 700,
           cursor: 'pointer',
+          fontFamily: 'inherit',
         }}
       >
         {t('studio.credits.upgrade')}
@@ -238,7 +242,7 @@ export function StudioPage() {
         onDeleteFlow={handleDeleteFlow}
       />
 
-      <CreditsBar />
+      <CreditsBar propertiesOpen={showProperties} />
 
       <StudioNavbar
         openPanel={openPanel}

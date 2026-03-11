@@ -29,6 +29,19 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
+const selectStyle: React.CSSProperties = {
+  ...inputStyle,
+  height: 30,
+  padding: '5px 24px 5px 9px',
+  appearance: 'none',
+  WebkitAppearance: 'none',
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'right 7px center',
+  backgroundSize: '10px',
+  cursor: 'pointer',
+};
+
 const labelStyle: React.CSSProperties = {
   fontSize: 10,
   fontWeight: 600,
@@ -174,7 +187,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <div style={labelStyle}>{t('studio.props.method')}</div>
-              <select style={{ ...inputStyle, height: 30 }}>
+              <select style={selectStyle}>
                 <option value="onnx">ONNX (local)</option>
                 <option value="api">API (cloud)</option>
               </select>
@@ -189,7 +202,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
         {node.type === 'color_grade' && (
           <div>
             <div style={labelStyle}>{t('studio.props.preset')}</div>
-            <select style={{ ...inputStyle, height: 30 }}>
+            <select style={selectStyle}>
               <option value="warm">Warm</option>
               <option value="cold">Cold</option>
               <option value="vivid">Vivid</option>
@@ -202,7 +215,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <div style={labelStyle}>{t('studio.props.format')}</div>
-              <select style={{ ...inputStyle, height: 30 }}>
+              <select style={selectStyle}>
                 <option value="png">PNG</option>
                 <option value="jpg">JPG</option>
                 <option value="webp">WebP</option>
@@ -210,7 +223,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
             </div>
             <div>
               <div style={labelStyle}>{t('studio.props.dimension')}</div>
-              <select style={{ ...inputStyle, height: 30 }}>
+              <select style={selectStyle}>
                 <option value="1080x1080">1080×1080 (Square)</option>
                 <option value="1080x1350">1080×1350 (Feed)</option>
                 <option value="1080x1920">1080×1920 (Story)</option>
@@ -224,7 +237,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <div style={labelStyle}>{t('studio.props.model')}</div>
-              <select style={{ ...inputStyle, height: 30 }}>
+              <select style={selectStyle}>
                 <option value="gemini">Gemini 2.0 Flash</option>
                 <option value="replicate">Replicate FLUX</option>
               </select>
