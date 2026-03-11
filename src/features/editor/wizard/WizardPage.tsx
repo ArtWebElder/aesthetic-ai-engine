@@ -3,7 +3,7 @@
 // REGRA: handleGenerate e recomposeWithOverrides são idênticos à versão anterior.
 // Apenas o shell visual e navegação foram redesenhados.
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/features/toast/useToast";
 import { useWizardStore } from "@/stores/useWizardStore";
@@ -151,6 +151,33 @@ function StepIndicator({ current }: { current: number }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ── Credit tooltip ────────────────────────────────────────────────────────────
+
+function WizCredTooltip({ credits, children }: { credits: number; children: React.ReactNode }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ position: 'relative', display: 'inline-flex' }} onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+      {children}
+      {show && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+          padding: '6px 12px', borderRadius: 8, background: '#141417', color: '#fff',
+          fontSize: 11.5, fontWeight: 500, whiteSpace: 'nowrap',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 50, pointerEvents: 'none',
+        }}>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
+              <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
+            </svg>
+            {credits} créditos restantes
+          </span>
+          <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #141417' }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -664,10 +691,15 @@ export function WizardPage() {
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
           <StepIndicator current={uiStep} />
         </div>
-        {/* Credits badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', fontSize: 12, fontWeight: 600, color: '#ff713d' }}>
-          ✦ <span>221</span> <span style={{ fontWeight: 400, color: '#8e8e96' }}>créditos</span>
-        </div>
+        {/* Credits badge with tooltip */}
+        <WizCredTooltip credits={221}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', fontSize: 12, fontWeight: 600, color: '#ff713d', cursor: 'default' }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
+              <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
+            </svg>
+            <span>221</span> <span style={{ fontWeight: 400, color: '#8e8e96' }}>créditos</span>
+          </div>
+        </WizCredTooltip>
       </header>
 
       {/* Content */}
