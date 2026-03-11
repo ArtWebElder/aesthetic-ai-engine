@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, NodeTypeId, StudioNode as StudioNodeType } from './types';
 import { useI18n } from '@/i18n';
+import { StudioSelect } from './StudioSelect';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
@@ -53,18 +54,6 @@ function NodeContent({
     resize: 'none' as const,
   };
 
-  const selectStyle: React.CSSProperties = {
-    ...inputStyle,
-    height: 28,
-    padding: '5px 24px 5px 8px',
-    appearance: 'none',
-    WebkitAppearance: 'none',
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 7px center',
-    backgroundSize: '10px',
-    cursor: 'pointer',
-  };
 
   const runBtn = isRunnable && (
     <button
@@ -164,13 +153,14 @@ function NodeContent({
               ? 'A vibrant product photo with warm cinematic lighting, bokeh background, editorial quality...'
               : t('studio.node.output_placeholder')}
           </div>
-          <select
-            style={selectStyle}
+          <StudioSelect
+            defaultValue="gemini"
+            options={[
+              { value: 'gemini', label: 'Gemini 2.0 Flash' },
+              { value: 'gpt4', label: 'GPT-4o' },
+            ]}
             onMouseDown={e => e.stopPropagation()}
-          >
-            <option value="gemini">Gemini 2.0 Flash</option>
-            <option value="gpt4">GPT-4o</option>
-          </select>
+          />
           {runBtn}
         </div>
       );
@@ -212,10 +202,14 @@ function NodeContent({
     case 'bg_removal':
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <select style={selectStyle} onMouseDown={e => e.stopPropagation()}>
-            <option value="onnx">ONNX (local)</option>
-            <option value="api">API (cloud)</option>
-          </select>
+          <StudioSelect
+            defaultValue="onnx"
+            options={[
+              { value: 'onnx', label: 'ONNX (local)' },
+              { value: 'api', label: 'API (cloud)' },
+            ]}
+            onMouseDown={e => e.stopPropagation()}
+          />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', whiteSpace: 'nowrap' }}>Threshold</span>
             <input type="range" min={0} max={100} defaultValue={50} style={{ flex: 1, accentColor: def.color }}
@@ -234,28 +228,40 @@ function NodeContent({
     case 'color_grade':
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <select style={selectStyle} onMouseDown={e => e.stopPropagation()}>
-            <option value="warm">Warm</option>
-            <option value="cold">Cold</option>
-            <option value="vivid">Vivid</option>
-            <option value="muted">Muted</option>
-          </select>
+          <StudioSelect
+            defaultValue="warm"
+            options={[
+              { value: 'warm', label: 'Warm' },
+              { value: 'cold', label: 'Cold' },
+              { value: 'vivid', label: 'Vivid' },
+              { value: 'muted', label: 'Muted' },
+            ]}
+            onMouseDown={e => e.stopPropagation()}
+          />
         </div>
       );
     case 'export':
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <select style={selectStyle} onMouseDown={e => e.stopPropagation()}>
-            <option value="png">PNG</option>
-            <option value="jpg">JPG</option>
-            <option value="webp">WebP</option>
-          </select>
-          <select style={selectStyle} onMouseDown={e => e.stopPropagation()}>
-            <option value="1080x1080">1080×1080 (Square)</option>
-            <option value="1080x1350">1080×1350 (Feed)</option>
-            <option value="1080x1920">1080×1920 (Story)</option>
-            <option value="1920x1080">1920×1080 (Banner)</option>
-          </select>
+          <StudioSelect
+            defaultValue="png"
+            options={[
+              { value: 'png', label: 'PNG' },
+              { value: 'jpg', label: 'JPG' },
+              { value: 'webp', label: 'WebP' },
+            ]}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          <StudioSelect
+            defaultValue="1080x1080"
+            options={[
+              { value: '1080x1080', label: '1080×1080 (Square)' },
+              { value: '1080x1350', label: '1080×1350 (Feed)' },
+              { value: '1080x1920', label: '1080×1920 (Story)' },
+              { value: '1920x1080', label: '1920×1080 (Banner)' },
+            ]}
+            onMouseDown={e => e.stopPropagation()}
+          />
         </div>
       );
     default:

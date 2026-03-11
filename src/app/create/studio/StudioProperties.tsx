@@ -1,6 +1,7 @@
 import { X, Download, Upload, Sparkles, Settings } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, StudioNode } from './types';
 import { useI18n } from '@/i18n';
+import { StudioSelect } from './StudioSelect';
 
 function CategoryIcon({ category, size = 11 }: { category: string; size?: number }) {
   const s = { width: size, height: size };
@@ -29,18 +30,6 @@ const inputStyle: React.CSSProperties = {
   boxSizing: 'border-box',
 };
 
-const selectStyle: React.CSSProperties = {
-  ...inputStyle,
-  height: 30,
-  padding: '5px 24px 5px 9px',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.4)' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`,
-  backgroundRepeat: 'no-repeat',
-  backgroundPosition: 'right 7px center',
-  backgroundSize: '10px',
-  cursor: 'pointer',
-};
 
 const labelStyle: React.CSSProperties = {
   fontSize: 10,
@@ -187,10 +176,13 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <div style={labelStyle}>{t('studio.props.method')}</div>
-              <select style={selectStyle}>
-                <option value="onnx">ONNX (local)</option>
-                <option value="api">API (cloud)</option>
-              </select>
+              <StudioSelect
+                defaultValue="onnx"
+                options={[
+                  { value: 'onnx', label: 'ONNX (local)' },
+                  { value: 'api', label: 'API (cloud)' },
+                ]}
+              />
             </div>
             <div>
               <div style={labelStyle}>{t('studio.props.threshold')}</div>
@@ -202,12 +194,15 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
         {node.type === 'color_grade' && (
           <div>
             <div style={labelStyle}>{t('studio.props.preset')}</div>
-            <select style={selectStyle}>
-              <option value="warm">Warm</option>
-              <option value="cold">Cold</option>
-              <option value="vivid">Vivid</option>
-              <option value="muted">Muted</option>
-            </select>
+            <StudioSelect
+              defaultValue="warm"
+              options={[
+                { value: 'warm', label: 'Warm' },
+                { value: 'cold', label: 'Cold' },
+                { value: 'vivid', label: 'Vivid' },
+                { value: 'muted', label: 'Muted' },
+              ]}
+            />
           </div>
         )}
 
@@ -215,20 +210,26 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <div style={labelStyle}>{t('studio.props.format')}</div>
-              <select style={selectStyle}>
-                <option value="png">PNG</option>
-                <option value="jpg">JPG</option>
-                <option value="webp">WebP</option>
-              </select>
+              <StudioSelect
+                defaultValue="png"
+                options={[
+                  { value: 'png', label: 'PNG' },
+                  { value: 'jpg', label: 'JPG' },
+                  { value: 'webp', label: 'WebP' },
+                ]}
+              />
             </div>
             <div>
               <div style={labelStyle}>{t('studio.props.dimension')}</div>
-              <select style={selectStyle}>
-                <option value="1080x1080">1080×1080 (Square)</option>
-                <option value="1080x1350">1080×1350 (Feed)</option>
-                <option value="1080x1920">1080×1920 (Story)</option>
-                <option value="1920x1080">1920×1080 (Banner)</option>
-              </select>
+              <StudioSelect
+                defaultValue="1080x1080"
+                options={[
+                  { value: '1080x1080', label: '1080×1080 (Square)' },
+                  { value: '1080x1350', label: '1080×1350 (Feed)' },
+                  { value: '1080x1920', label: '1080×1920 (Story)' },
+                  { value: '1920x1080', label: '1920×1080 (Banner)' },
+                ]}
+              />
             </div>
           </div>
         )}
@@ -237,10 +238,13 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <div>
               <div style={labelStyle}>{t('studio.props.model')}</div>
-              <select style={selectStyle}>
-                <option value="gemini">Gemini 2.0 Flash</option>
-                <option value="replicate">Replicate FLUX</option>
-              </select>
+              <StudioSelect
+                defaultValue="gemini"
+                options={[
+                  { value: 'gemini', label: 'Gemini 2.0 Flash' },
+                  { value: 'replicate', label: 'Replicate FLUX' },
+                ]}
+              />
             </div>
             {def.creditCost && (
               <div style={{
