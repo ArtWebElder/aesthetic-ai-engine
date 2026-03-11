@@ -1,4 +1,5 @@
 import { ReactNode, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
@@ -29,8 +30,10 @@ const Modal = ({ open, onClose, title, children, size = "md", className }: Modal
 
   if (!open) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  // Use createPortal to escape any ancestor stacking context
+  // (e.g. backdrop-filter on the Topbar header creates a new containing block for fixed elements)
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
@@ -68,7 +71,8 @@ const Modal = ({ open, onClose, title, children, size = "md", className }: Modal
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

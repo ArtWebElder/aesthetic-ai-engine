@@ -22,6 +22,7 @@ import { WizardStep1Subject } from "./WizardStep1Subject";
 import { WizardStep2Style } from "./WizardStep2Style";
 import { WizardStep3Text } from "./WizardStep3Text";
 import { ExportModal } from "./ExportModal";
+import { ConfettiEffect } from "@/components/creatyng/ConfettiEffect";
 
 // ── Constants (idênticos ao original) ─────────────────────────────────────────
 
@@ -165,6 +166,8 @@ export function WizardPage() {
   const [generationDone, setGenerationDone] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const confettiTriggered = useRef(false);
 
   // existing generation state (idênticos ao original)
   const [generating, setGenerating] = useState(false);
@@ -219,7 +222,16 @@ export function WizardPage() {
     setStageIndex(3);
     const t1 = setTimeout(() => setStageIndex(4), 600);
     const t2 = setTimeout(() => setStageIndex(5), 1200);
-    const t3 = setTimeout(() => { setUiStep(5); window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, 1800);
+    const t3 = setTimeout(() => {
+      setUiStep(5);
+      window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      // Confetti on first-ever generation
+      if (!confettiTriggered.current && !localStorage.getItem('creatyng:confetti_shown')) {
+        confettiTriggered.current = true;
+        localStorage.setItem('creatyng:confetti_shown', '1');
+        setShowConfetti(true);
+      }
+    }, 1800);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [generationDone, uiStep]);
 
@@ -625,6 +637,7 @@ export function WizardPage() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, #f5f5f3`, color: '#141417', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
+      <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} count={80} duration={3500} />
       <style>{`
         @keyframes wizSpin { to { transform: rotate(360deg); } }
         @keyframes wizPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }

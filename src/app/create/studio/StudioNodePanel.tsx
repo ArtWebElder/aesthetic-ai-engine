@@ -1,7 +1,23 @@
 import { useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Search, X, Download, Upload, Sparkles, Settings, Image, Type, Palette, Folder } from 'lucide-react';
 import { NodeTypeId, NODE_TYPE_DEFS, PanelTab } from './types';
 import { useI18n } from '@/i18n';
+
+function CategoryIcon({ category, size = 12 }: { category: string; size?: number }) {
+  const s = { width: size, height: size };
+  if (category === 'input') return <Download style={s} />;
+  if (category === 'ai') return <Sparkles style={s} />;
+  if (category === 'output') return <Upload style={s} />;
+  return <Settings style={s} />;
+}
+
+function AssetTypeIcon({ type, size = 14 }: { type: string; size?: number }) {
+  const s = { width: size, height: size };
+  if (type === 'PNG') return <Image style={s} />;
+  if (type === 'TTF') return <Type style={s} />;
+  if (type === 'JSON') return <Palette style={s} />;
+  return <Folder style={s} />;
+}
 
 interface NodeCategoryGroup {
   labelKey: string;
@@ -183,10 +199,9 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
+                          color: def.color,
                         }}>
-                          <span style={{ fontSize: 12 }}>
-                            {def.category === 'input' ? '📥' : def.category === 'ai' ? '✨' : def.category === 'output' ? '📤' : '⚙️'}
-                          </span>
+                          <CategoryIcon category={def.category} size={12} />
                         </div>
                         <div>
                           <div style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb' }}>{def.label}</div>
@@ -268,9 +283,9 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: 14,
+                  color: 'rgba(255,255,255,0.5)',
                 }}>
-                  {asset.type === 'PNG' ? '🖼️' : asset.type === 'TTF' ? '🔤' : asset.type === 'JSON' ? '🎨' : '📁'}
+                  <AssetTypeIcon type={asset.type} size={14} />
                 </div>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: '#e5e7eb' }}>{asset.name}</div>

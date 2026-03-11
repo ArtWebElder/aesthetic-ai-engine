@@ -3,6 +3,7 @@
 // DIFF 16.5: opção "Usar Avatar" se usuário tem avatar criado
 
 import { useEffect } from "react";
+import { UploadCloud, Image, Check } from "lucide-react";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { useBrandKitStore } from "@/stores/useBrandKitStore";
 import { suggestPresetForSubject } from "@/lib/presetSuggestion";
@@ -84,36 +85,46 @@ export function WizardStep1Subject() {
           <div className="flex gap-2">
             <button
               onClick={handleUseAvatar}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
                 subjectThumbnail === avatar.bestReference
                   ? "bg-purple-600 text-white"
                   : "border border-purple-700 text-purple-400 hover:bg-purple-600 hover:text-white"
               }`}
             >
-              {subjectThumbnail === avatar.bestReference ? "✓ Usando" : "Usar"}
+              {subjectThumbnail === avatar.bestReference ? (
+                <><Check className="w-3 h-3" /> Usando</>
+              ) : "Usar"}
             </button>
           </div>
         </div>
       )}
 
-      {/* Upload */}
-      <label className="flex flex-col items-center justify-center w-full aspect-square max-h-72 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary transition-colors overflow-hidden relative bg-muted/30">
+      {/* Upload — compact */}
+      <label className="flex items-center gap-4 w-full px-4 py-3 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary transition-colors bg-muted/30">
         {subjectThumbnail ? (
-          <img src={subjectThumbnail} alt="Subject" className="w-full h-full object-contain" />
+          <img
+            src={subjectThumbnail}
+            alt="Subject"
+            className="w-16 h-16 rounded-lg object-contain bg-white border border-border shrink-0"
+          />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-muted-foreground py-8">
-            <span className="text-5xl">📷</span>
-            <span className="text-sm font-medium">Clique para enviar</span>
-            <span className="text-xs">PNG, JPG ou WEBP</span>
+          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-dashed border-border">
+            <UploadCloud className="w-7 h-7 text-muted-foreground" />
           </div>
         )}
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-foreground">
+            {subjectThumbnail ? "Trocar imagem" : "Clique para enviar"}
+          </span>
+          <span className="text-xs text-muted-foreground">PNG, JPG ou WEBP</span>
+        </div>
         <input type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
       </label>
 
       {/* Modo quick: mostra apenas indicador se há subject */}
       {mode === "quick" && subjectThumbnail && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="text-green-500">✓</span>
+          <Check className="w-4 h-4 text-green-500" />
           Sujeito carregado. Próximo passo: escolher estilo.
           {subjectProfile && (
             <span className="ml-1 text-xs opacity-60">
@@ -171,7 +182,7 @@ export function WizardStep1Subject() {
               <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
             </label>
             <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-border cursor-pointer hover:border-primary transition-colors">
-              <span className="text-2xl">🖼</span>
+              <Image className="w-6 h-6 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-sm">Enviar imagem de referência</p>
                 <p className="text-xs text-muted-foreground">O estilo será extraído automaticamente</p>

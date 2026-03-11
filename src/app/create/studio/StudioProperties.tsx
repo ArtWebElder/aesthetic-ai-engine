@@ -1,6 +1,14 @@
-import { X } from 'lucide-react';
+import { X, Download, Upload, Sparkles, Settings } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, StudioNode } from './types';
 import { useI18n } from '@/i18n';
+
+function CategoryIcon({ category, size = 11 }: { category: string; size?: number }) {
+  const s = { width: size, height: size };
+  if (category === 'input') return <Download style={s} />;
+  if (category === 'ai') return <Sparkles style={s} />;
+  if (category === 'output') return <Upload style={s} />;
+  return <Settings style={s} />;
+}
 
 interface StudioPropertiesProps {
   node: StudioNode | null;
@@ -67,10 +75,10 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 11,
           flexShrink: 0,
+          color: def.color,
         }}>
-          {def.category === 'input' ? '📥' : def.category === 'ai' ? '✨' : def.category === 'output' ? '📤' : '⚙️'}
+          <CategoryIcon category={def.category} size={11} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -231,7 +239,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
                 background: 'rgba(255,113,61,0.1)',
                 border: '1px solid rgba(255,113,61,0.2)',
               }}>
-                <span style={{ fontSize: 14 }}>✨</span>
+                <Sparkles style={{ width: 14, height: 14, color: '#ff713d' }} />
                 <div>
                   <div style={{ fontSize: 10, fontWeight: 700, color: '#ff713d' }}>{def.creditCost} {t('studio.props.credits')}</div>
                   <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)' }}>{t('studio.props.per_run')}</div>

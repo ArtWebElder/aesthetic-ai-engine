@@ -2,13 +2,32 @@
 // CREATYNG — Chat de refinamento pós-geração.
 // Light theme, contraste correto. Aceita mensagens externas (pill clicks).
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, type ReactNode } from "react";
+import { Sparkles, RefreshCw, Bot, CheckCircle2, XCircle } from "lucide-react";
 import { parseChat } from "../engine/chatParser";
 import { applyCommand, type RefinementOverrides } from "../engine/chatApply";
 import { applyCommandWithAI } from "../engine/chatCompositionAI";
 import type { CreatygnComposition } from "@/types/composition";
 
 const GEMINI_API_KEY = (import.meta as { env: Record<string, string> }).env.VITE_GEMINI_API_KEY ?? "";
+
+// Map emoji prefix to lucide icon + strip emoji from displayed text
+const EMOJI_PREFIX_MAP: Array<{ prefix: string; icon: ReactNode; color: string }> = [
+  { prefix: "✨", icon: <Sparkles style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#ff713d" },
+  { prefix: "🔄", icon: <RefreshCw style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#8e8e96" },
+  { prefix: "🤖", icon: <Bot style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#7C3AED" },
+  { prefix: "✅", icon: <CheckCircle2 style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#10B981" },
+  { prefix: "❌", icon: <XCircle style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#EF4444" },
+];
+
+function parseSystemMessage(text: string): { icon: ReactNode | null; color: string; body: string } {
+  for (const { prefix, icon, color } of EMOJI_PREFIX_MAP) {
+    if (text.startsWith(prefix)) {
+      return { icon, color, body: text.slice(prefix.length).trimStart() };
+    }
+  }
+  return { icon: null, color: "#141417", body: text };
+}
 
 async function callGeminiForHelp(command: string): Promise<string> {
   if (!GEMINI_API_KEY) {
@@ -168,27 +187,38 @@ export function RefinementChat({
     }}>
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
-        {messages.map((msg, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-            {msg.role === "user" ? (
-              <div style={{
-                maxWidth: "85%", padding: "8px 12px", borderRadius: "12px 12px 2px 12px",
-                background: "linear-gradient(135deg, #ff713d, #FF9B70)",
-                color: "#ffffff", fontSize: 13, lineHeight: 1.45, fontFamily: "inherit",
-              }}>
-                {msg.text}
+        {messages.map((msg, i) => {
+          if (msg.role === "user") {
+            return (
+              <div key={i} style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div style={{
+                  maxWidth: "85%", padding: "8px 12px", borderRadius: "12px 12px 2px 12px",
+                  background: "linear-gradient(135deg, #ff713d, #FF9B70)",
+                  color: "#ffffff", fontSize: 13, lineHeight: 1.45, fontFamily: "inherit",
+                }}>
+                  {msg.text}
+                </div>
               </div>
-            ) : msg.text.startsWith("✨") || msg.text.startsWith("🔄") || msg.text.startsWith("🤖") || msg.text.startsWith("✅") || msg.text.startsWith("❌") ? (
-              // System/AI bubble
-              <div style={{
-                maxWidth: "85%", padding: "8px 12px", borderRadius: "12px 12px 12px 2px",
-                background: "#ffffff", color: "#141417", fontSize: 13, lineHeight: 1.45,
-                border: "1px solid rgba(20,20,23,0.06)", whiteSpace: "pre-line", fontFamily: "inherit",
-              }}>
-                {msg.text}
+            );
+          }
+          const parsed = parseSystemMessage(msg.text);
+          if (parsed.icon) {
+            return (
+              <div key={i} style={{ display: "flex", justifyContent: "flex-start" }}>
+                <div style={{
+                  maxWidth: "85%", padding: "8px 12px", borderRadius: "12px 12px 12px 2px",
+                  background: "#ffffff", color: "#141417", fontSize: 13, lineHeight: 1.45,
+                  border: "1px solid rgba(20,20,23,0.06)", whiteSpace: "pre-line", fontFamily: "inherit",
+                  display: "flex", alignItems: "flex-start", gap: 6,
+                }}>
+                  <span style={{ color: parsed.color, marginTop: 2, flexShrink: 0 }}>{parsed.icon}</span>
+                  <span>{parsed.body}</span>
+                </div>
               </div>
-            ) : (
-              // Initial system message (help tips) — cyan style
+            );
+          }
+          return (
+            <div key={i} style={{ display: "flex", justifyContent: "flex-start" }}>
               <div style={{
                 maxWidth: "90%", padding: "8px 12px", borderRadius: 9,
                 background: "rgba(6,182,212,0.04)", border: "1px solid rgba(6,182,212,0.12)",
@@ -196,9 +226,9 @@ export function RefinementChat({
               }}>
                 {msg.text}
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          );
+        })}
         <div ref={chatEndRef} />
       </div>
 

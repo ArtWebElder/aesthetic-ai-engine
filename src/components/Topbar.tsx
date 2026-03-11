@@ -67,20 +67,24 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
 
       <LocaleDropdown compact />
 
-      {/* Credits badge */}
-      <div
-        className="flex items-center gap-1.5"
+      {/* Credits badge — clickable to open recharge modal */}
+      <button
+        className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
+        onClick={() => setShowUpgradeModal(true)}
+        title="Recarregar créditos"
         style={{
           padding: '5px 12px',
           borderRadius: 8,
           border: '1px solid rgba(20,20,23,0.06)',
           background: '#ffffff',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
         }}
       >
         <Sparkles style={{ width: 15, height: 15, color: '#ff713d' }} />
         <span style={{ fontSize: 14, fontWeight: 700, color: '#ff713d' }}>{mockCredits.current}</span>
         <span style={{ fontSize: 11.5, color: '#8e8e96' }}>créditos</span>
-      </div>
+      </button>
 
       {/* Upgrade button */}
       <button
