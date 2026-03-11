@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   User, Settings2, Palette, Key,
-  Camera, Upload, Plus, X, Copy, Trash2,
+  Camera, Upload, Plus, X, Copy, Trash2, Check,
 } from 'lucide-react';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -80,6 +80,9 @@ const Settings = () => {
   const [brandFonts, setBrandFonts] = useState(['Instrument Sans', 'Inter']);
   const [apiKeys, setApiKeys] = useState(MOCK_KEYS);
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
+  const [addingFont, setAddingFont] = useState(false);
+  const [newFontInput, setNewFontInput] = useState('');
+  const fontInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setReady(true); }, []);
 
@@ -88,6 +91,12 @@ const Settings = () => {
 
   const deleteKey = (id: string) => setApiKeys(prev => prev.filter(k => k.id !== id));
   const removeFont = (f: string) => setBrandFonts(prev => prev.filter(x => x !== f));
+  const commitFont = () => {
+    const name = newFontInput.trim();
+    if (name) setBrandFonts(prev => [...prev, name]);
+    setNewFontInput('');
+    setAddingFont(false);
+  };
 
   /* ─── Tab Content ────────────────────────────────────── */
   const renderTab = () => {
@@ -229,16 +238,18 @@ const Settings = () => {
         <div style={{ marginBottom: 28 }}>
           <label style={{ fontSize: 12.5, fontWeight: 500, color: '#5a5a60', marginBottom: 8, display: 'block' }}>Logo da marca</label>
           <div style={{
-            border: '2px dashed rgba(20,20,23,0.1)', borderRadius: 12, height: 120,
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', background: '#ffffff', transition: 'all 150ms', color: '#b5b5bb', gap: 8,
+            border: '2px dashed rgba(20,20,23,0.1)', borderRadius: 12, height: 72,
+            display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', background: '#ffffff', transition: 'all 150ms', color: '#b5b5bb', gap: 12,
           }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
           >
-            <Upload size={24} />
-            <span style={{ fontSize: 13, fontWeight: 500 }}>Arraste ou clique para fazer upload</span>
-            <span style={{ fontSize: 11, color: '#b5b5bb' }}>PNG, SVG ou JPG · Max 2MB</span>
+            <Upload size={18} />
+            <div>
+              <span style={{ fontSize: 13, fontWeight: 500, display: 'block' }}>Arraste ou clique para fazer upload</span>
+              <span style={{ fontSize: 11, color: '#b5b5bb' }}>PNG, SVG ou JPG · Max 2MB</span>
+            </div>
           </div>
         </div>
 
@@ -290,14 +301,42 @@ const Settings = () => {
                 </button>
               </div>
             ))}
-            <button style={{
-              padding: '6px 14px', borderRadius: 6, border: '2px dashed rgba(20,20,23,0.1)',
-              background: '#ffffff', cursor: 'pointer', color: '#b5b5bb', fontSize: 12.5, fontWeight: 500,
-              fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, transition: 'all 150ms',
-            }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
-            ><Plus size={14} /> Adicionar fonte</button>
+            {addingFont ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <input
+                  ref={fontInputRef}
+                  autoFocus
+                  value={newFontInput}
+                  onChange={e => setNewFontInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') commitFont(); if (e.key === 'Escape') { setAddingFont(false); setNewFontInput(''); } }}
+                  placeholder="Ex: Roboto, Poppins..."
+                  style={{
+                    padding: '5px 10px', borderRadius: 6, fontSize: 13, fontFamily: 'inherit',
+                    border: '1.5px solid #ff713d', outline: 'none', width: 180,
+                    background: '#ffffff', color: '#141417',
+                  }}
+                />
+                <button onClick={commitFont} style={{
+                  padding: '5px 10px', borderRadius: 6, border: 'none',
+                  background: '#ff713d', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                }}><Check size={14} /></button>
+                <button onClick={() => { setAddingFont(false); setNewFontInput(''); }} style={{
+                  padding: '5px 8px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.1)',
+                  background: '#ffffff', color: '#8e8e96', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                }}><X size={14} /></button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAddingFont(true)}
+                style={{
+                  padding: '6px 14px', borderRadius: 6, border: '2px dashed rgba(20,20,23,0.1)',
+                  background: '#ffffff', cursor: 'pointer', color: '#b5b5bb', fontSize: 12.5, fontWeight: 500,
+                  fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, transition: 'all 150ms',
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLElement).style.color = '#b5b5bb'; }}
+              ><Plus size={14} /> Adicionar fonte</button>
+            )}
           </div>
         </div>
 
@@ -363,7 +402,7 @@ const Settings = () => {
   return (
     <div style={{
       fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
-      minHeight: '100%', color: '#141417', display: 'flex',
+      minHeight: '100vh', color: '#141417', display: 'flex', alignItems: 'stretch',
     }}>
       <style>{`
         @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -375,8 +414,8 @@ const Settings = () => {
       {/* Settings sub-sidebar */}
       <div style={{
         width: 220, minWidth: 220, borderRight: '1px solid rgba(20,20,23,0.06)',
-        padding: '28px 16px',
-        background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+        padding: '28px 16px', alignSelf: 'stretch',
+        background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: '#141417', marginBottom: 20, padding: '0 8px' }}>Configurações</h2>
         {TABS.map(tab => {

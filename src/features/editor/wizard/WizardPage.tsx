@@ -204,6 +204,7 @@ export function WizardPage() {
   // Stage animation when entering step 4
   useEffect(() => {
     if (uiStep !== 4) return;
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     setStageIndex(0);
     setGenerationDone(false);
     setGenerationError(null);
@@ -218,7 +219,7 @@ export function WizardPage() {
     setStageIndex(3);
     const t1 = setTimeout(() => setStageIndex(4), 600);
     const t2 = setTimeout(() => setStageIndex(5), 1200);
-    const t3 = setTimeout(() => setUiStep(5), 1800);
+    const t3 = setTimeout(() => { setUiStep(5); window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }); }, 1800);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [generationDone, uiStep]);
 

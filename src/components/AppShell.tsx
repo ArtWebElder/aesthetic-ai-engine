@@ -48,8 +48,8 @@ const AppShell = () => {
 
   return (
     <div className="min-h-screen flex w-full noise-overlay">
-      {/* Desktop sidebar */}
-      <aside className="hidden lg:block shrink-0 relative z-20" style={{ overflow: 'visible' }}>
+      {/* Desktop sidebar — sticky so bottom nav items are always visible */}
+      <aside className="hidden lg:block shrink-0 sticky top-0 h-screen z-20" style={{ overflow: 'visible' }}>
         <SidebarNav />
       </aside>
 
@@ -76,6 +76,10 @@ const AppShell = () => {
         }>
           {pathname === '/app/create/studio' ? (
             <Outlet />
+          ) : ['/app/projects', '/app/templates', '/app/billing'].some(p => pathname.startsWith(p)) ? (
+            <div key={pathname} className="animate-fade-up max-w-6xl mx-auto w-full px-6 py-2">
+              <Outlet />
+            </div>
           ) : (
             <div key={pathname} className="animate-fade-up">
               <Outlet />
