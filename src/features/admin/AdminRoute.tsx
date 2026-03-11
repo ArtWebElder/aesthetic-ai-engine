@@ -49,7 +49,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (!devAdmin && !user) return <Navigate to="/login" replace />;
   if (!devAdmin && role !== 'superadmin') return <Navigate to="/app/dashboard" replace />;
 
   return <>{children}</>;

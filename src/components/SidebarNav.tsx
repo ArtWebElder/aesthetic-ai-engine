@@ -76,7 +76,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
   const { signOut, user } = useAuth();
   const { t } = useI18n();
   const devAdmin = import.meta.env.VITE_DEV_ADMIN === 'true';
-  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(devAdmin);
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -245,14 +245,28 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
           ))}
 
           {isSuperAdmin && (
-            <NavItem
-              icon={Shield}
-              label="Super Admin"
-              isActive={false}
-              collapsed={collapsed}
-              onClick={() => { navigate('/admin'); onClose?.(); }}
-              color="#EF4444"
-            />
+            <div style={{ position: 'relative' }}>
+              <NavItem
+                icon={Shield}
+                label="Super Admin"
+                isActive={location.pathname.startsWith('/admin')}
+                collapsed={collapsed}
+                onClick={() => { navigate('/admin'); onClose?.(); }}
+                color="#EF4444"
+              />
+              {/* Red badge dot */}
+              <div style={{
+                position: 'absolute',
+                top: 8,
+                right: collapsed ? 8 : 14,
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: '#EF4444',
+                border: '1.5px solid #ffffff',
+                pointerEvents: 'none',
+              }} />
+            </div>
           )}
 
           <LogoutButton collapsed={collapsed} onLogout={() => { signOut(); navigate('/login'); }} label={t('nav.sign_out')} />
