@@ -167,8 +167,8 @@ export function StudioCanvas({
         inset: 0,
         overflow: 'hidden',
         cursor: toolMode === 'hand' ? 'grab' : 'default',
-        background: '#F0F0EE',
-        backgroundImage: 'radial-gradient(circle, rgba(20,20,23,0.09) 1.2px, transparent 1.2px)',
+        background: 'hsl(var(--background))',
+        backgroundImage: 'radial-gradient(circle, hsl(var(--foreground) / 0.09) 1.2px, transparent 1.2px)',
         backgroundSize: `${bgPatternSize}px ${bgPatternSize}px`,
         backgroundPosition: `${bgOffsetX}px ${bgOffsetY}px`,
       }}

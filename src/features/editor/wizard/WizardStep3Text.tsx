@@ -166,7 +166,7 @@ export function WizardStep3Text() {
                   onClick={() => setActiveColorKey(isOpen ? null : key)}
                   style={{
                     width: 48, height: 48, borderRadius: 99, background: color,
-                    border: isOpen ? '3px solid #141417' : '3px solid rgba(255,255,255,0.9)',
+                    border: isOpen ? '3px solid hsl(var(--foreground))' : '3px solid hsl(var(--border))',
                     boxShadow: isOpen
                       ? '0 0 0 2px #ff713d, 0 4px 12px rgba(0,0,0,0.2)'
                       : '0 2px 8px rgba(0,0,0,0.15)',
@@ -174,7 +174,7 @@ export function WizardStep3Text() {
                   }}
                   title={label}
                 />
-                <span style={{ fontSize: 10.5, color: '#8e8e96', fontWeight: 500 }}>{label}</span>
+                <span style={{ fontSize: 10.5, color: 'hsl(var(--muted-foreground))', fontWeight: 500 }}>{label}</span>
               </div>
             );
           })}
@@ -185,13 +185,13 @@ export function WizardStep3Text() {
               ref={colorPickerRef}
               style={{
                 position: 'absolute', top: 64, left: 0, zIndex: 50,
-                background: '#ffffff', borderRadius: 16,
+                background: 'hsl(var(--card))', borderRadius: 16,
                 boxShadow: '0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)',
-                border: '1px solid rgba(20,20,23,0.08)',
+                border: '1px solid hsl(var(--border))',
                 padding: 16, minWidth: 220,
               }}
             >
-              <div style={{ fontSize: 11, fontWeight: 600, color: '#8e8e96', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--muted-foreground))', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {activeColorKey === "primary" ? "Cor principal" : "Cor de destaque"}
               </div>
               <HexColorPicker
@@ -202,10 +202,10 @@ export function WizardStep3Text() {
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 8, marginTop: 12,
                 padding: '8px 10px', borderRadius: 8,
-                border: '1px solid rgba(20,20,23,0.1)', background: '#f5f5f3',
+                border: '1px solid hsl(var(--border))', background: 'hsl(var(--muted))',
               }}>
                 <div style={{ width: 20, height: 20, borderRadius: 6, background: paletteColors[activeColorKey], flexShrink: 0 }} />
-                <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#141417', fontWeight: 600 }}>
+                <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'hsl(var(--foreground))', fontWeight: 600 }}>
                   {paletteColors[activeColorKey].toUpperCase()}
                 </span>
               </div>

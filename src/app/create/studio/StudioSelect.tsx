@@ -70,13 +70,13 @@ export function StudioSelect({
           display: 'flex',
           alignItems: 'center',
           gap: 6,
-          background: open ? 'rgba(0,0,0,0.06)' : 'rgba(0,0,0,0.04)',
-          border: `1px solid ${open ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.1)'}`,
+          background: open ? 'hsl(var(--muted))' : 'hsl(var(--muted))',
+          border: `1px solid hsl(var(--border))`,
           borderRadius: 7,
           padding: '0 8px',
           height: 28,
           fontSize: 11,
-          color: '#111827',
+          color: 'hsl(var(--foreground))',
           cursor: 'pointer',
           fontFamily: 'inherit',
           outline: 'none',
@@ -96,7 +96,7 @@ export function StudioSelect({
         <ChevronDown
           size={10}
           style={{
-            color: 'rgba(0,0,0,0.4)',
+            color: 'hsl(var(--muted-foreground))',
             flexShrink: 0,
             transform: open ? 'rotate(180deg)' : 'none',
             transition: 'transform 0.15s',
@@ -113,8 +113,8 @@ export function StudioSelect({
             top: rect.bottom + 4,
             left: rect.left,
             width: rect.width,
-            background: '#ffffff',
-            border: '1px solid rgba(0,0,0,0.1)',
+            background: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
             borderRadius: 8,
             padding: 3,
             zIndex: 99999,
@@ -134,7 +134,7 @@ export function StudioSelect({
                   gap: 7,
                   padding: '6px 8px',
                   fontSize: 11,
-                  color: isSelected ? '#ff713d' : 'rgba(0,0,0,0.8)',
+                  color: isSelected ? '#ff713d' : 'hsl(var(--foreground))',
                   background: isSelected ? 'rgba(255,113,61,0.1)' : 'transparent',
                   border: 'none',
                   borderRadius: 5,
@@ -145,7 +145,7 @@ export function StudioSelect({
                 }}
                 onMouseEnter={e => {
                   if (!isSelected)
-                    (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.05)';
+                    (e.currentTarget as HTMLElement).style.background = 'hsl(var(--muted))';
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.background = isSelected

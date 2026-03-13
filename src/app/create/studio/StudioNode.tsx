@@ -44,16 +44,15 @@ function NodeContent({
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    background: 'rgba(0,0,0,0.04)',
-    border: '1px solid rgba(0,0,0,0.1)',
+    background: 'hsl(var(--muted))',
+    border: '1px solid hsl(var(--border))',
     borderRadius: 6,
     padding: '5px 8px',
     fontSize: 11,
-    color: '#111827',
+    color: 'hsl(var(--foreground))',
     outline: 'none',
     resize: 'none' as const,
   };
-
 
   const runBtn = isRunnable && (
     <button
@@ -63,7 +62,7 @@ function NodeContent({
         width: '100%',
         padding: '5px 0',
         borderRadius: 6,
-        background: isRunning ? 'rgba(0,0,0,0.05)' : def.color,
+        background: isRunning ? 'hsl(var(--muted))' : def.color,
         color: '#fff',
         fontSize: 11,
         fontWeight: 600,
@@ -112,12 +111,12 @@ function NodeContent({
       return (
         <div style={{ padding: '6px 10px' }}>
           <div style={{
-            border: '1.5px dashed rgba(0,0,0,0.2)',
+            border: '1.5px dashed hsl(var(--border))',
             borderRadius: 8,
             padding: '18px 8px',
             textAlign: 'center',
             fontSize: 10,
-            color: 'rgba(0,0,0,0.45)',
+            color: 'hsl(var(--muted-foreground))',
             cursor: 'pointer',
           }}>
             {t('studio.node.upload_hint')}
@@ -141,11 +140,11 @@ function NodeContent({
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{
-            background: 'rgba(0,0,0,0.04)',
+            background: 'hsl(var(--muted))',
             borderRadius: 6,
             padding: '6px 8px',
             fontSize: 10,
-            color: isDone ? '#111827' : 'rgba(0,0,0,0.4)',
+            color: isDone ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
             minHeight: 52,
             fontFamily: 'monospace',
           }}>
@@ -169,10 +168,10 @@ function NodeContent({
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{
-            background: 'rgba(0,0,0,0.04)',
+            background: 'hsl(var(--muted))',
             borderRadius: 6,
             fontSize: 10,
-            color: 'rgba(0,0,0,0.4)',
+            color: 'hsl(var(--muted-foreground))',
             minHeight: 90,
             display: 'flex',
             alignItems: 'center',
@@ -211,7 +210,7 @@ function NodeContent({
             onMouseDown={e => e.stopPropagation()}
           />
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 10, color: 'rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}>Threshold</span>
+            <span style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>Threshold</span>
             <input type="range" min={0} max={100} defaultValue={50} style={{ flex: 1, accentColor: def.color }}
               onMouseDown={e => e.stopPropagation()} />
           </div>
@@ -288,7 +287,7 @@ export function StudioNode({
     ? '#10b981'
     : isSelected
     ? def.color
-    : 'rgba(0,0,0,0.1)';
+    : 'hsl(var(--border))';
 
   const boxShadow = isRunning
     ? `0 0 16px ${def.color}60, 0 0 32px ${def.color}20`
@@ -303,7 +302,7 @@ export function StudioNode({
         left: node.x,
         top: node.y,
         width: def.defaultWidth,
-        background: '#ffffff',
+        background: 'hsl(var(--card))',
         border: `1.5px solid ${borderColor}`,
         borderRadius: 10,
         boxShadow,
@@ -325,7 +324,7 @@ export function StudioNode({
           height: 13,
           borderRadius: '50%',
           border: `2px solid ${def.color}`,
-          background: '#ffffff',
+          background: 'hsl(var(--card))',
           zIndex: 30,
         }}
       />
@@ -353,7 +352,7 @@ export function StudioNode({
           alignItems: 'center',
           gap: 7,
           padding: '8px 10px',
-          borderBottom: '1px solid rgba(0,0,0,0.07)',
+          borderBottom: '1px solid hsl(var(--border))',
           cursor: 'grab',
           borderRadius: '8px 8px 0 0',
         }}
@@ -370,7 +369,7 @@ export function StudioNode({
         }}>
           <IconComp size={13} style={{ color: def.color }} />
         </div>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#111827', flex: 1, letterSpacing: 0.1 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--foreground))', flex: 1, letterSpacing: 0.1 }}>
           {def.label}
         </span>
         {def.aiProvider && (

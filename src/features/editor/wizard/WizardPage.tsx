@@ -122,7 +122,7 @@ function StepIndicator({ current }: { current: number }) {
             {idx > 0 && (
               <div style={{
                 height: 1, width: 32,
-                background: isDone || isActive ? '#ff713d' : 'rgba(20,20,23,0.12)',
+                background: isDone || isActive ? '#ff713d' : 'hsl(var(--border))',
                 transition: 'background 500ms',
               }} />
             )}
@@ -131,9 +131,9 @@ function StepIndicator({ current }: { current: number }) {
                 width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontSize: 10, fontWeight: 700,
                 transition: 'all 300ms',
-                background: isDone ? '#ff713d' : isActive ? '#ff713d' : 'rgba(20,20,23,0.06)',
-                border: `1.5px solid ${isDone || isActive ? '#ff713d' : 'rgba(20,20,23,0.12)'}`,
-                color: isDone || isActive ? '#fff' : '#8e8e96',
+                background: isDone ? '#ff713d' : isActive ? '#ff713d' : 'hsl(var(--muted))',
+                border: `1.5px solid ${isDone || isActive ? '#ff713d' : 'hsl(var(--border))'}`,
+                color: isDone || isActive ? '#fff' : 'hsl(var(--muted-foreground))',
               }}>
                 {isDone ? (
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -143,7 +143,7 @@ function StepIndicator({ current }: { current: number }) {
               </div>
               <span style={{
                 fontSize: 10, fontWeight: 500,
-                color: isActive ? '#ff713d' : isDone ? '#8e8e96' : '#b5b5bb',
+                color: isActive ? '#ff713d' : isDone ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))',
               }}>
                 {label}
               </span>
@@ -165,7 +165,7 @@ function WizCredTooltip({ credits, children }: { credits: number; children: Reac
       {show && (
         <div style={{
           position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
-          padding: '6px 12px', borderRadius: 8, background: '#141417', color: '#fff',
+          padding: '6px 12px', borderRadius: 8, background: 'hsl(var(--popover))', color: 'hsl(var(--popover-foreground))',
           fontSize: 11.5, fontWeight: 500, whiteSpace: 'nowrap',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 50, pointerEvents: 'none',
         }}>
@@ -175,7 +175,7 @@ function WizCredTooltip({ credits, children }: { credits: number; children: Reac
             </svg>
             {credits} créditos restantes
           </span>
-          <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #141417' }} />
+          <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid hsl(var(--popover))' }} />
         </div>
       )}
     </div>
@@ -663,7 +663,7 @@ export function WizardPage() {
   const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, #f5f5f3`, color: '#141417', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, hsl(var(--background))`, color: 'hsl(var(--foreground))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
       <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} count={80} duration={3500} />
       <style>{`
         @keyframes wizSpin { to { transform: rotate(360deg); } }
@@ -674,8 +674,8 @@ export function WizardPage() {
       {/* Header + StepIndicator */}
       <header style={{
         flexShrink: 0, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px', borderBottom: '1px solid rgba(20,20,23,0.06)',
-        background: 'rgba(245,245,243,0.9)', backdropFilter: 'blur(8px)',
+        padding: '0 24px', borderBottom: '1px solid hsl(var(--border))',
+        background: 'hsl(var(--background) / 0.9)', backdropFilter: 'blur(8px)',
         position: 'sticky', top: 0, zIndex: 10,
       }}>
         {/* Logo + breadcrumb */}
@@ -683,9 +683,9 @@ export function WizardPage() {
           <div style={{ width: 26, height: 26, borderRadius: 6, background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: '#fff', fontWeight: 800, fontSize: 11 }}>C</span>
           </div>
-          <span style={{ fontSize: 13, color: '#8e8e96' }}>Creatyng</span>
-          <span style={{ fontSize: 13, color: '#b5b5bb' }}>/</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>Nova Criação</span>
+          <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Creatyng</span>
+          <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>/</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Nova Criação</span>
         </div>
         {/* Step indicator centered */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
@@ -693,11 +693,11 @@ export function WizardPage() {
         </div>
         {/* Credits badge with tooltip */}
         <WizCredTooltip credits={221}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', fontSize: 12, fontWeight: 600, color: '#ff713d', cursor: 'default' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontSize: 12, fontWeight: 600, color: '#ff713d', cursor: 'default' }}>
             <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
               <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
             </svg>
-            <span>221</span> <span style={{ fontWeight: 400, color: '#8e8e96' }}>créditos</span>
+            <span>221</span> <span style={{ fontWeight: 400, color: 'hsl(var(--muted-foreground))' }}>créditos</span>
           </div>
         </WizCredTooltip>
       </header>
@@ -710,8 +710,8 @@ export function WizardPage() {
           {uiStep === 1 && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417', marginBottom: 4 }}>Envie sua imagem</h1>
-                <p style={{ fontSize: 13.5, color: '#5a5a60' }}>Foto do produto, pessoa ou marca. O motor analisa e sugere o melhor estilo.</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Envie sua imagem</h1>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Foto do produto, pessoa ou marca. O motor analisa e sugere o melhor estilo.</p>
               </div>
               <WizardStep1Subject />
             </div>
@@ -721,8 +721,8 @@ export function WizardPage() {
           {uiStep === 2 && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417', marginBottom: 4 }}>Escolha o estilo</h1>
-                <p style={{ fontSize: 13.5, color: '#5a5a60' }}>O preset define a atmosfera, iluminação e composição do criativo.</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Escolha o estilo</h1>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>O preset define a atmosfera, iluminação e composição do criativo.</p>
               </div>
               <WizardStep2Style />
             </div>
@@ -732,8 +732,8 @@ export function WizardPage() {
           {uiStep === 3 && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417', marginBottom: 4 }}>Adicione os textos</h1>
-                <p style={{ fontSize: 13.5, color: '#5a5a60' }}>Headline, preço, CTA e contato. A tipografia é renderizada em alta qualidade.</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Adicione os textos</h1>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Headline, preço, CTA e contato. A tipografia é renderizada em alta qualidade.</p>
               </div>
               <WizardStep3Text />
             </div>
@@ -747,10 +747,10 @@ export function WizardPage() {
                   <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>✕</div>
                   <div>
                     <p style={{ color: '#EF4444', fontWeight: 600, fontSize: 16 }}>Erro na geração</p>
-                    <p style={{ color: '#5a5a60', fontSize: 13, marginTop: 4 }}>{generationError}</p>
+                    <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: 13, marginTop: 4 }}>{generationError}</p>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button onClick={() => { setGenerationError(null); setUiStep(3); }} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#5a5a60', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Voltar</button>
+                    <button onClick={() => { setGenerationError(null); setUiStep(3); }} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Voltar</button>
                     <button onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(4); handleGenerate(); }} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: '#ff713d', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Tentar novamente</button>
                   </div>
                 </div>
@@ -760,12 +760,12 @@ export function WizardPage() {
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <div style={{ position: 'absolute', width: 180, height: 180, borderRadius: '50%', filter: 'blur(32px)', opacity: 0.25, background: 'conic-gradient(from 0deg, #ff713d, #a855f7, #3b82f6, #ff713d)', animation: 'wizPulse 2s ease-in-out infinite' }} />
                     <div style={{ position: 'relative', width: 120, height: 120, borderRadius: '50%', background: 'conic-gradient(from 0deg, #ff713d, #FF9B70, #ff713d)', animation: 'wizSpin 3s linear infinite' }} />
-                    <div style={{ position: 'absolute', width: 90, height: 90, borderRadius: '50%', background: '#f5f5f3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>✦</div>
+                    <div style={{ position: 'absolute', width: 90, height: 90, borderRadius: '50%', background: 'hsl(var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>✦</div>
                   </div>
 
                   <div style={{ textAlign: 'center' }}>
-                    <h2 style={{ fontSize: 18, fontWeight: 700, color: '#141417' }}>Criando seu criativo...</h2>
-                    <p style={{ color: '#8e8e96', fontSize: 13, marginTop: 4 }}>Isso leva alguns segundos</p>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, color: 'hsl(var(--foreground))' }}>Criando seu criativo...</h2>
+                    <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: 13, marginTop: 4 }}>Isso leva alguns segundos</p>
                   </div>
 
                   {/* Stage checklist */}
@@ -779,8 +779,8 @@ export function WizardPage() {
                             width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             transition: 'all 300ms',
-                            background: isDone ? '#10B981' : isActive ? '#ff713d' : 'rgba(20,20,23,0.06)',
-                            border: `1.5px solid ${isDone ? '#10B981' : isActive ? '#ff713d' : 'rgba(20,20,23,0.12)'}`,
+                            background: isDone ? '#10B981' : isActive ? '#ff713d' : 'hsl(var(--muted))',
+                            border: `1.5px solid ${isDone ? '#10B981' : isActive ? '#ff713d' : 'hsl(var(--border))'}`,
                           }}>
                             {isDone ? (
                               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -790,13 +790,13 @@ export function WizardPage() {
                               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite' }} />
                             ) : null}
                           </div>
-                          <span style={{ fontSize: 13, transition: 'color 300ms', color: isDone ? '#10B981' : isActive ? '#ff713d' : '#8e8e96' }}>{stage}</span>
+                          <span style={{ fontSize: 13, transition: 'color 300ms', color: isDone ? '#10B981' : isActive ? '#ff713d' : 'hsl(var(--muted-foreground))' }}>{stage}</span>
                         </div>
                       );
                     })}
                   </div>
 
-                  <p style={{ fontSize: 11.5, color: '#b5b5bb' }}>−5 créditos desta geração</p>
+                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>−5 créditos desta geração</p>
                 </>
               )}
             </div>
@@ -808,10 +808,10 @@ export function WizardPage() {
               {/* Preview */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: '1 1 300px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <p style={{ fontSize: 10.5, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
+                  <p style={{ fontSize: 10.5, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
                     {composing ? "Compondo criativo..." : "Criativo gerado!"}
                   </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#b5b5bb' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>
                     <span>via {currentGeneration.meta.provider}</span>
                     <span>·</span>
                     <span>{Math.round(currentGeneration.meta.generationMs / 1000)}s</span>
@@ -822,7 +822,7 @@ export function WizardPage() {
                   <img
                     src={displayBase64}
                     alt="Criativo gerado"
-                    style={{ width: '100%', maxHeight: '55vh', borderRadius: 12, objectFit: 'contain', border: '1px solid rgba(20,20,23,0.06)', boxShadow: '0 8px 32px rgba(20,20,23,0.1)', background: '#ffffff' }}
+                    style={{ width: '100%', maxHeight: '55vh', borderRadius: 12, objectFit: 'contain', border: '1px solid hsl(var(--border))', boxShadow: '0 8px 32px rgba(20,20,23,0.1)', background: 'hsl(var(--card))' }}
                   />
                 )}
 
@@ -843,13 +843,13 @@ export function WizardPage() {
                     </button>
                     <button
                       onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)}
-                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#5a5a60', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       ↗ Expandir
                     </button>
                     <button
                       onClick={handleRegenerateFromResult}
-                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid rgba(20,20,23,0.08)', background: 'transparent', color: '#8e8e96', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       ↺ Regerar
                     </button>
@@ -860,12 +860,12 @@ export function WizardPage() {
               {/* Mini chat */}
               {!isWorking && (
                 <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 260px', gap: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12, borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12, borderBottom: '1px solid hsl(var(--border))' }}>
                     <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0 }}>✦</div>
-                    <p style={{ fontSize: 13.5, fontWeight: 600, color: '#141417' }}>Creatyng AI</p>
+                    <p style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Creatyng AI</p>
                     <span style={{ fontSize: 11, color: '#10B981', marginLeft: 'auto' }}>● Online</span>
                   </div>
-                  <p style={{ fontSize: 11.5, color: '#8e8e96' }}>Peça ajustes em linguagem natural. 1 crédito por mensagem.</p>
+                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>Peça ajustes em linguagem natural. 1 crédito por mensagem.</p>
                   <RefinementChat
                     overrides={refinementOverrides}
                     onOverridesChange={(newOverrides) => {
@@ -886,7 +886,7 @@ export function WizardPage() {
                       }
                     }}
                   />
-                  <p style={{ fontSize: 11, color: '#b5b5bb', textAlign: 'center', marginTop: 4 }}>
+                  <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 4 }}>
                     Edições avançadas com histórico →{" "}
                     <button
                       onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)}
@@ -905,8 +905,8 @@ export function WizardPage() {
       {/* Footer navigation (steps 1-3) */}
       {uiStep <= 3 && (
         <footer style={{
-          flexShrink: 0, borderTop: '1px solid rgba(20,20,23,0.06)',
-          background: 'rgba(245,245,243,0.9)', backdropFilter: 'blur(8px)',
+          flexShrink: 0, borderTop: '1px solid hsl(var(--border))',
+          background: 'hsl(var(--background) / 0.9)', backdropFilter: 'blur(8px)',
           position: 'sticky', bottom: 0,
         }}>
           <div style={{ maxWidth: 680, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -914,8 +914,8 @@ export function WizardPage() {
               onClick={handleBack}
               disabled={uiStep === 1}
               style={{
-                padding: '9px 20px', borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)',
-                background: '#ffffff', color: '#5a5a60', fontSize: 13, fontWeight: 500,
+                padding: '9px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))',
+                background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 500,
                 cursor: uiStep === 1 ? 'default' : 'pointer', opacity: uiStep === 1 ? 0.3 : 1,
                 fontFamily: 'inherit', transition: 'all 150ms',
               }}
@@ -928,8 +928,8 @@ export function WizardPage() {
               style={{
                 padding: '9px 24px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 600,
                 cursor: canAdvance ? 'pointer' : 'default',
-                background: canAdvance ? 'linear-gradient(135deg,#ff713d,#FF9B70)' : 'rgba(20,20,23,0.06)',
-                color: canAdvance ? '#fff' : '#8e8e96',
+                background: canAdvance ? 'linear-gradient(135deg,#ff713d,#FF9B70)' : 'hsl(var(--muted))',
+                color: canAdvance ? '#fff' : 'hsl(var(--muted-foreground))',
                 boxShadow: canAdvance ? '0 4px 16px rgba(255,113,61,0.3)' : 'none',
                 opacity: canAdvance ? 1 : 0.6, fontFamily: 'inherit', transition: 'all 200ms',
               }}

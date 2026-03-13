@@ -27,7 +27,7 @@ export function StudioConnection({ connection, nodes, execStates }: StudioConnec
   const isDone = fromExec === 'done' && toExec === 'done';
   const isRunning = fromExec === 'running' || toExec === 'running';
 
-  const stroke = isDone ? '#10b981' : isRunning ? '#ff713d' : 'rgba(255,255,255,0.2)';
+  const stroke = isDone ? '#10b981' : isRunning ? '#ff713d' : 'hsl(var(--border))';
   const strokeWidth = isDone ? 2 : 1.5;
   const strokeDasharray = isDone ? 'none' : isRunning ? '6 3' : '4 4';
 

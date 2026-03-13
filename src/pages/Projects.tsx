@@ -31,23 +31,26 @@ function ActionMenu({ open, onClose, onAction }: { open: boolean; onClose: () =>
   ];
   return (
     <div style={{
-      position: 'absolute', top: '100%', right: 0, marginTop: 4, width: 160, background: '#ffffff',
-      borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)', boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
+      position: 'absolute', top: '100%', right: 0, marginTop: 4, width: 160,
+      background: 'hsl(var(--card))',
+      borderRadius: 10, border: '1px solid hsl(var(--border))',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
       padding: 4, zIndex: 20, animation: 'fdUp 120ms ease both',
     }}>
       {items.map((item, i) => item === null ? (
-        <div key={i} style={{ height: 1, background: 'rgba(20,20,23,0.06)', margin: '3px 0' }} />
+        <div key={i} style={{ height: 1, background: 'hsl(var(--border))', margin: '3px 0' }} />
       ) : (
         <button key={i} onClick={() => { onAction(item.id); onClose(); }} style={{
           width: '100%', padding: '7px 10px', borderRadius: 6, border: 'none', background: 'transparent',
           cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, textAlign: 'left',
-          color: item.danger ? '#EF4444' : '#141417', display: 'flex', alignItems: 'center', gap: 8,
+          color: item.danger ? '#EF4444' : 'hsl(var(--foreground))',
+          display: 'flex', alignItems: 'center', gap: 8,
           transition: 'background 80ms',
         }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = item.danger ? 'rgba(239,68,68,0.05)' : 'rgba(20,20,23,0.03)'}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = item.danger ? 'rgba(239,68,68,0.05)' : 'hsl(var(--muted))'}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
         >
-          <item.Icon size={14} color={item.danger ? '#EF4444' : '#8e8e96'} />{item.label}
+          <item.Icon size={14} color={item.danger ? '#EF4444' : 'hsl(var(--muted-foreground))'} />{item.label}
         </button>
       ))}
     </div>
@@ -101,11 +104,9 @@ const Projects = () => {
 
   const totalVersions = projects.length * 2; // approximate
 
-  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.14)' stroke-width='0.6'/%3E%3C/svg%3E")`;
-
   return (
     <div style={{
-      fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", minHeight: '100%', color: '#141417',
+      fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", minHeight: '100%', color: 'hsl(var(--foreground))',
       padding: '24px 32px 48px',
     }}>
       <style>{`
@@ -121,7 +122,7 @@ const Projects = () => {
       }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 2 }}>Meus Projetos</h1>
-          <p style={{ fontSize: 13, color: '#8e8e96' }}>{projects.length} projetos · {totalVersions} versões</p>
+          <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>{projects.length} projetos · {totalVersions} versões</p>
         </div>
         <button
           onClick={() => navigate('/app/create')}
@@ -145,22 +146,22 @@ const Projects = () => {
           {/* Search */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7, padding: '7px 13px',
-            background: '#ffffff', borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', width: 220,
+            background: 'hsl(var(--card))', borderRadius: 8, border: '1px solid hsl(var(--border))', width: 220,
           }}>
-            <Search size={14} color="#b5b5bb" />
+            <Search size={14} color="hsl(var(--muted-foreground))" />
             <input
               value={search} onChange={e => setSearch(e.target.value)}
               placeholder="Buscar projeto..."
-              style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12.5, fontFamily: 'inherit', color: '#141417' }}
+              style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12.5, fontFamily: 'inherit', color: 'hsl(var(--foreground))' }}
             />
           </div>
           {/* Filter pills */}
           {(['all', 'Food/Pop', 'Pop Design'] as FilterType[]).map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
               padding: '6px 13px', borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12,
-              border: filter === f ? '1.5px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
-              background: filter === f ? '#FFF0EA' : '#ffffff',
-              color: filter === f ? '#ff713d' : '#5a5a60', fontWeight: filter === f ? 600 : 400,
+              border: filter === f ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+              background: filter === f ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))',
+              color: filter === f ? '#ff713d' : 'hsl(var(--muted-foreground))', fontWeight: filter === f ? 600 : 400,
               transition: 'all 150ms',
             }}>{f === 'all' ? 'Todos' : f}</button>
           ))}
@@ -171,23 +172,23 @@ const Projects = () => {
             value={sort}
             onChange={e => setSort(e.target.value as SortMode)}
             style={{
-              padding: '6px 10px', borderRadius: 7, border: '1px solid rgba(20,20,23,0.1)',
-              background: '#ffffff', fontSize: 12, fontFamily: 'inherit', color: '#5a5a60', cursor: 'pointer',
+              padding: '6px 10px', borderRadius: 7, border: '1px solid hsl(var(--border))',
+              background: 'hsl(var(--card))', fontSize: 12, fontFamily: 'inherit', color: 'hsl(var(--muted-foreground))', cursor: 'pointer',
             }}
           >
             <option value="recent">Mais recentes</option>
             <option value="name">Nome A-Z</option>
           </select>
           {/* View toggle */}
-          <div style={{ display: 'flex', background: 'rgba(20,20,23,0.04)', borderRadius: 7, padding: 2 }}>
+          <div style={{ display: 'flex', background: 'hsl(var(--muted))', borderRadius: 7, padding: 2 }}>
             {([
               { m: 'grid' as ViewMode, Icon: LayoutGrid },
               { m: 'list' as ViewMode, Icon: List },
             ] as const).map(({ m, Icon }) => (
               <button key={m} onClick={() => setView(m)} style={{
                 width: 30, height: 28, borderRadius: 5, border: 'none', cursor: 'pointer',
-                background: view === m ? '#ffffff' : 'transparent',
-                color: view === m ? '#141417' : '#b5b5bb',
+                background: view === m ? 'hsl(var(--card))' : 'transparent',
+                color: view === m ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 boxShadow: view === m ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
               }}>
@@ -207,10 +208,10 @@ const Projects = () => {
             const isHov = hovId === p.id;
             return (
               <div key={p.id} style={{
-                background: '#ffffff', borderRadius: 12, overflow: 'hidden',
-                border: isHov ? '1.5px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
-                boxShadow: '0 1px 3px rgba(20,20,23,0.04)', cursor: 'pointer', transition: 'all 180ms', position: 'relative',
-                ...(isHov ? { background: 'linear-gradient(180deg, #FFF0EA 0%, #ffffff 40%)' } : {}),
+                background: isHov ? `linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, hsl(var(--card)) 40%)` : 'hsl(var(--card))',
+                borderRadius: 12, overflow: 'hidden',
+                border: isHov ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 180ms', position: 'relative',
                 animation: ready ? `scIn 320ms ${40 + i * 35}ms ease both` : 'none',
               }}
                 onMouseEnter={() => setHovId(p.id)}
@@ -263,14 +264,14 @@ const Projects = () => {
                 </div>
                 {/* Info */}
                 <div style={{ padding: '12px 14px' }}>
-                  <div style={{ fontWeight: 600, fontSize: 13.5, color: '#141417', marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {p.name}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: '#5a5a60', background: '#f5f5f3', padding: '2px 8px', borderRadius: 4, fontWeight: 500 }}>
+                    <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--muted))', padding: '2px 8px', borderRadius: 4, fontWeight: 500 }}>
                       {(p.spec as any)?.module?.replace('_', ' ') || 'project'}
                     </span>
-                    <span style={{ fontSize: 11, color: '#b5b5bb' }}>
+                    <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>
                       {new Date(p.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
@@ -283,11 +284,11 @@ const Projects = () => {
 
       {/* LIST VIEW */}
       {view === 'list' && filtered.length > 0 && (
-        <div style={{ background: '#ffffff', borderRadius: 14, border: '1px solid rgba(20,20,23,0.06)', overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+        <div style={{ background: 'hsl(var(--card))', borderRadius: 14, border: '1px solid hsl(var(--border))', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           {/* Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '10px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '10px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
             {['Projeto', 'Template', 'Versões', 'Data', ''].map((h, i) => (
-              <span key={i} style={{ fontSize: 10.5, fontWeight: 600, color: '#b5b5bb', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
+              <span key={i} style={{ fontSize: 10.5, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
             ))}
           </div>
           {filtered.map((p, i) => {
@@ -295,11 +296,11 @@ const Projects = () => {
             return (
               <div key={p.id} style={{
                 display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '11px 16px',
-                borderBottom: i < filtered.length - 1 ? '1px solid rgba(20,20,23,0.06)' : 'none',
+                borderBottom: i < filtered.length - 1 ? '1px solid hsl(var(--border))' : 'none',
                 cursor: 'pointer', transition: 'background 100ms', alignItems: 'center',
                 animation: ready ? `fdUp 300ms ${i * 30}ms ease both` : 'none',
               }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(20,20,23,0.015)'}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--muted))'}
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                 onClick={() => navigate(`/app/projects/${p.id}`)}
               >
@@ -311,11 +312,11 @@ const Projects = () => {
                   }}>
                     <Image size={14} color={color} />
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>{p.name}</span>
+                  <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
                 </div>
-                <span style={{ fontSize: 12, color: '#5a5a60' }}>{(p.spec as any)?.module?.replace('_', ' ') || 'project'}</span>
-                <span style={{ fontSize: 12, color: '#5a5a60' }}>1</span>
-                <span style={{ fontSize: 12, color: '#8e8e96' }}>{new Date(p.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{(p.spec as any)?.module?.replace('_', ' ') || 'project'}</span>
+                <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>1</span>
+                <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{new Date(p.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 <div style={{ display: 'flex', gap: 3, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
                   {[
                     { Icon: Edit2, danger: false },
@@ -323,12 +324,12 @@ const Projects = () => {
                     { Icon: Trash2, danger: true },
                   ].map(({ Icon, danger }, j) => (
                     <button key={j} style={{
-                      width: 26, height: 26, borderRadius: 5, border: '1px solid rgba(20,20,23,0.06)',
-                      background: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', color: danger ? '#EF4444' : '#8e8e96', transition: 'all 100ms',
+                      width: 26, height: 26, borderRadius: 5, border: '1px solid hsl(var(--border))',
+                      background: 'hsl(var(--card))', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', color: danger ? '#EF4444' : 'hsl(var(--muted-foreground))', transition: 'all 100ms',
                     }}
-                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = danger ? 'rgba(239,68,68,0.05)' : '#f5f5f3'}
-                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#ffffff'}
+                      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = danger ? 'rgba(239,68,68,0.05)' : 'hsl(var(--muted))'}
+                      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--card))'}
                       onClick={() => { if (danger) setConfirmDelete(p.id); else if (j === 1) handleDuplicate(p); }}
                     >
                       <Icon size={14} />
@@ -345,7 +346,7 @@ const Projects = () => {
       {filtered.length === 0 && (
         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}>
           <div style={{
-            background: '#ffffff', borderRadius: 18, border: '1px solid rgba(20,20,23,0.06)',
+            background: 'hsl(var(--card))', borderRadius: 18, border: '1px solid hsl(var(--border))',
             padding: '44px 32px', textAlign: 'center', width: 340, position: 'relative', overflow: 'hidden',
           }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(180deg, rgba(255,113,61,0.06), transparent)' }} />
@@ -359,7 +360,7 @@ const Projects = () => {
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, position: 'relative' }}>
               {search ? 'Nenhum projeto encontrado' : 'Nenhum projeto ainda'}
             </h3>
-            <p style={{ fontSize: 12.5, color: '#8e8e96', lineHeight: 1.5, marginBottom: 20, position: 'relative' }}>
+            <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, marginBottom: 20, position: 'relative' }}>
               {search ? 'Tente ajustar os filtros ou o termo de busca.' : 'Crie seu primeiro criativo profissional e ele aparecerá aqui.'}
             </p>
             {!search && (
