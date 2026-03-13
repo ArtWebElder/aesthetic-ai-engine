@@ -19,8 +19,10 @@ import type { CreatygnComposition } from "@/types/composition";
 import { getPresetById } from "@/lib/presetUtils";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 import { WizardStep1Subject } from "./WizardStep1Subject";
+import { WizardStep2Reference } from "./WizardStep2Reference";
 import { WizardStep2Style } from "./WizardStep2Style";
 import { WizardStep3Text } from "./WizardStep3Text";
+import { analyzeReference } from "@/services/referenceAnalyzer";
 import { ExportModal } from "./ExportModal";
 import { ConfettiEffect } from "@/components/creatyng/ConfettiEffect";
 
