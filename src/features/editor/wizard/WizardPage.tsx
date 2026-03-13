@@ -50,7 +50,7 @@ const DEFAULT_FORMAT_ID = "instagram_feed";
 
 // ── Step labels ───────────────────────────────────────────────────────────────
 
-const STEP_LABELS = ["Upload", "Estilo", "Textos", "Gerando", "Resultado"];
+const STEP_LABELS = ["Upload", "Referência", "Estilo", "Textos", "Gerando", "Resultado"];
 
 // ── Generation stages ─────────────────────────────────────────────────────────
 
@@ -190,7 +190,7 @@ export function WizardPage() {
   const navigate = useNavigate();
   const toast = useToast();
 
-  const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [stageIndex, setStageIndex] = useState(0);
   const [generationDone, setGenerationDone] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -215,6 +215,9 @@ export function WizardPage() {
     whatsapp,
     instagram,
     price,
+    referenceBase64,
+    referenceAnalysis,
+    setReferenceAnalysis,
     currentGeneration,
     setGeneration,
     clearGeneration,
@@ -233,9 +236,9 @@ export function WizardPage() {
   const isFoodPopRef        = useRef<boolean>(false);
   const htmlCompositionRef  = useRef<CreatygnComposition | null>(null);
 
-  // Stage animation when entering step 4
+  // Stage animation when entering step 5 (generating)
   useEffect(() => {
-    if (uiStep !== 4) return;
+    if (uiStep !== 5) return;
     window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     setStageIndex(0);
     setGenerationDone(false);
@@ -245,14 +248,14 @@ export function WizardPage() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [uiStep]);
 
-  // Auto-advance to step 5 when generation completes
+  // Auto-advance to step 6 when generation completes
   useEffect(() => {
-    if (!generationDone || uiStep !== 4) return;
+    if (!generationDone || uiStep !== 5) return;
     setStageIndex(3);
     const t1 = setTimeout(() => setStageIndex(4), 600);
     const t2 = setTimeout(() => setStageIndex(5), 1200);
     const t3 = setTimeout(() => {
-      setUiStep(5);
+      setUiStep(6);
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       // Confetti on first-ever generation
       if (!confettiTriggered.current && !localStorage.getItem('creatyng:confetti_shown')) {
@@ -370,6 +373,22 @@ export function WizardPage() {
     htmlCompositionRef.current = null;
 
     try {
+      // ── Analyze reference (if present, before any pipeline) ─────────────────
+      const hasRef = Boolean(state.referenceBase64 && !state.referenceBase64.startsWith("gallery:"));
+      if (hasRef && !state.referenceAnalysis) {
+        setPopDesignStep("Analisando referência visual...");
+        try {
+          const analysis = await analyzeReference(
+            state.referenceBase64!,
+            state.subjectBase64,
+            { headline: state.headline, cta: state.cta },
+          );
+          setReferenceAnalysis(analysis);
+        } catch (e) {
+          console.warn("[Reference] Analysis failed, proceeding without:", e);
+        }
+      }
+
       // ── Pop Design pipeline ─────────────────────────────────────────────────
       if (state.selectedImagePresetId === "sys-img-pop-design") {
         if (!state.subjectBase64) {
@@ -620,32 +639,33 @@ export function WizardPage() {
   // Navigation
   const canAdvance =
     uiStep === 1 ? Boolean(subjectBase64) :
-    uiStep === 2 ? Boolean(selectedImagePresetId) :
-    uiStep === 3 ? Boolean(headline?.trim()) :
+    uiStep === 2 ? true :                         // reference is optional
+    uiStep === 3 ? Boolean(selectedImagePresetId) :
+    uiStep === 4 ? Boolean(headline?.trim()) :
     false;
 
   function handleNext() {
-    if (uiStep < 3 && canAdvance) {
-      setUiStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5);
-    } else if (uiStep === 3 && canAdvance) {
-      setUiStep(4);
+    if (uiStep < 4 && canAdvance) {
+      setUiStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5 | 6);
+    } else if (uiStep === 4 && canAdvance) {
+      setUiStep(5);
       handleGenerate();
     }
   }
 
   function handleBack() {
-    if (uiStep === 2 || uiStep === 3) {
-      setUiStep((s) => (s - 1) as 1 | 2 | 3);
-    } else if (uiStep === 5) {
+    if (uiStep >= 2 && uiStep <= 4) {
+      setUiStep((s) => (s - 1) as 1 | 2 | 3 | 4);
+    } else if (uiStep === 6) {
       clearGeneration();
       setComposedBase64(null);
       setGenerationDone(false);
-      setUiStep(3);
-    } else if (uiStep === 4 && generationError) {
+      setUiStep(4);
+    } else if (uiStep === 5 && generationError) {
       setGenerationError(null);
       setGenerating(false);
       setComposing(false);
-      setUiStep(3);
+      setUiStep(4);
     }
   }
 
@@ -655,7 +675,7 @@ export function WizardPage() {
     setGenerationDone(false);
     setRefinementOverrides({});
     htmlCompositionRef.current = null;
-    setUiStep(4);
+    setUiStep(5);
     handleGenerate();
   }
 
@@ -719,8 +739,15 @@ export function WizardPage() {
             </div>
           )}
 
-          {/* Step 2: Preset */}
+          {/* Step 2: Reference */}
           {uiStep === 2 && (
+            <div style={{ animation: 'wizFdUp 350ms ease both' }}>
+              <WizardStep2Reference />
+            </div>
+          )}
+
+          {/* Step 3: Preset */}
+          {uiStep === 3 && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
                 <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Escolha o estilo</h1>
@@ -730,8 +757,8 @@ export function WizardPage() {
             </div>
           )}
 
-          {/* Step 3: Texts */}
-          {uiStep === 3 && (
+          {/* Step 4: Texts */}
+          {uiStep === 4 && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
                 <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Adicione os textos</h1>
@@ -741,8 +768,8 @@ export function WizardPage() {
             </div>
           )}
 
-          {/* Step 4: Generating */}
-          {uiStep === 4 && (
+          {/* Step 5: Generating */}
+          {uiStep === 5 && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 32, padding: '48px 0', animation: 'wizFdUp 350ms ease both' }}>
               {generationError ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center', maxWidth: 320 }}>
@@ -752,8 +779,8 @@ export function WizardPage() {
                     <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: 13, marginTop: 4 }}>{generationError}</p>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button onClick={() => { setGenerationError(null); setUiStep(3); }} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Voltar</button>
-                    <button onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(4); handleGenerate(); }} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: '#ff713d', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Tentar novamente</button>
+                    <button onClick={() => { setGenerationError(null); setUiStep(4); }} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Voltar</button>
+                    <button onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(5); handleGenerate(); }} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: '#ff713d', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Tentar novamente</button>
                   </div>
                 </div>
               ) : (
@@ -804,8 +831,8 @@ export function WizardPage() {
             </div>
           )}
 
-          {/* Step 5: Result */}
-          {uiStep === 5 && currentGeneration && (
+          {/* Step 6: Result */}
+          {uiStep === 6 && currentGeneration && (
             <div style={{ display: 'flex', gap: 24, animation: 'wizFdUp 350ms ease both', flexWrap: 'wrap' }}>
               {/* Preview */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: '1 1 300px' }}>
@@ -904,8 +931,8 @@ export function WizardPage() {
         </div>
       </main>
 
-      {/* Footer navigation (steps 1-3) */}
-      {uiStep <= 3 && (
+      {/* Footer navigation (steps 1-4) */}
+      {uiStep <= 4 && (
         <footer style={{
           flexShrink: 0, borderTop: '1px solid hsl(var(--border))',
           background: 'hsl(var(--background) / 0.9)', backdropFilter: 'blur(8px)',
@@ -936,14 +963,14 @@ export function WizardPage() {
                 opacity: canAdvance ? 1 : 0.6, fontFamily: 'inherit', transition: 'all 200ms',
               }}
             >
-              {uiStep === 3 ? "✦ Gerar criativo — 5 créditos" : "Continuar →"}
+              {uiStep === 4 ? "✦ Gerar criativo — 5 créditos" : "Continuar →"}
             </button>
           </div>
         </footer>
       )}
 
-      {/* Error toast (not on step 4 which has its own error UI) */}
-      {error && uiStep !== 4 && (
+      {/* Error toast (not on step 5 which has its own error UI) */}
+      {error && uiStep !== 5 && (
         <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', zIndex: 50, background: '#FEF2F2', color: '#EF4444', fontSize: 13, padding: '12px 20px', borderRadius: 10, border: '1px solid #FECACA', maxWidth: 360, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
           {error}
           <button onClick={() => setError(null)} style={{ marginLeft: 10, color: '#EF4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 14 }}>×</button>
