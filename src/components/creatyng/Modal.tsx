@@ -1,0 +1,79 @@
+import { ReactNode, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
+
+interface ModalProps {
+  open: boolean;
+  onClose: () => void;
+  title?: string;
+  children: ReactNode;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}
+
+const sizeClasses = {
+  sm: "max-w-sm",
+  md: "max-w-lg",
+  lg: "max-w-2xl",
+};
+
+const Modal = ({ open, onClose, title, children, size = "md", className }: ModalProps) => {
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  // Use createPortal to escape any ancestor stacking context
+  // (e.g. backdrop-filter on the Topbar header creates a new containing block for fixed elements)
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm animate-fade-in"
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <div
+        className={cn(
+          "relative w-full bg-card rounded-2xl shadow-[0_24px_80px_rgba(0,0,0,0.14)] dark:shadow-[0_16px_56px_rgba(0,0,0,0.28)]",
+          "animate-modal-in",
+          sizeClasses[size],
+          className
+        )}
+      >
+        {title && (
+          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+            <h2 className="text-base font-semibold text-foreground">{title}</h2>
+            <button
+              onClick={onClose}
+              className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        <div className={cn(!title && "relative", "p-6")}>
+          {!title && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+          {children}
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+};
+
+export default Modal;

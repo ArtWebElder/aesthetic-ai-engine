@@ -1,0 +1,145 @@
+import { useEffect, useState } from 'react';
+import { adminService, MOCK_LOGS } from '@/services/adminService';
+import { CheckCircle2, AlertCircle, Clock } from 'lucide-react';
+import { Skeleton } from '@/components/creatyng';
+import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
+
+type Log = typeof MOCK_LOGS[number];
+
+const FEATURE_STYLES: Record<string, React.CSSProperties> = {
+  'Ecom Banner': { background: 'rgba(255,113,61,0.08)', color: '#ff713d' },
+  'Social Post': { background: 'rgba(99,102,241,0.08)', color: '#6366f1' },
+  'Photoshoot': { background: 'rgba(245,158,11,0.08)', color: '#F59E0B' },
+};
+
+const PROVIDER_STYLES: Record<string, React.CSSProperties> = {
+  'Gemini Pro': { background: 'rgba(96,165,250,0.08)', color: '#60a5fa' },
+  'Gemini Flash': { background: 'rgba(14,165,233,0.08)', color: '#0EA5E9' },
+  'Replicate': { background: 'rgba(192,132,252,0.08)', color: '#c084fc' },
+};
+
+const thStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 16px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
+const tdStyle: React.CSSProperties = { padding: '10px 16px', fontSize: 12, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+
+export default function AdminGenerations() {
+  const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState<Log[]>([]);
+  const [total, setTotal] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'error'>('all');
+
+  useEffect(() => {
+    adminService.getGenerationLogs().then(({ logs, total }) => {
+      setLogs(logs);
+      setTotal(total);
+      setTimeout(() => setLoading(false), 600);
+    });
+  }, []);
+
+  const filtered = logs.filter((l) => statusFilter === 'all' || l.status === statusFilter);
+  const successCount = logs.filter((l) => l.status === 'success').length;
+  const errorCount = logs.filter((l) => l.status === 'error').length;
+  const avgDurationRaw = logs
+    .filter((l) => l.duration !== '—')
+    .map((l) => parseFloat(l.duration))
+    .reduce((a, b, _, arr) => a + b / arr.length, 0);
+
+  const totalCount = useAnimatedCounter(total);
+  const successPct = useAnimatedCounter(logs.length > 0 ? Math.round((successCount / logs.length) * 100) : 0);
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-3 gap-4">
+          {[0,1,2].map((i) => <Skeleton key={i} height="80px" rounded className="rounded-xl" />)}
+        </div>
+        <Skeleton height="40px" rounded className="rounded-lg w-64" />
+        <Skeleton height="400px" rounded className="rounded-xl" />
+      </div>
+    );
+  }
+
+  const kpiCard: React.CSSProperties = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 3px rgba(20,20,23,0.04)' };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      {/* KPI Row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+        <div style={kpiCard}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(20,20,23,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock style={{ width: 16, height: 16, color: '#8e8e96' }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Total hoje</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{totalCount.toLocaleString('pt-BR')}</p>
+          </div>
+        </div>
+        <div style={kpiCard}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(16,185,129,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <CheckCircle2 style={{ width: 16, height: 16, color: '#10B981' }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Sucesso %</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{successPct}%</p>
+          </div>
+        </div>
+        <div style={kpiCard}>
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(99,102,241,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <AlertCircle style={{ width: 16, height: 16, color: '#6366f1' }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Tempo médio</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{avgDurationRaw.toFixed(1)}s</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        {(['all', 'success', 'error'] as const).map((f) => (
+          <button key={f} onClick={() => setStatusFilter(f)} style={{
+            padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
+            background: statusFilter === f ? '#FFF0EA' : 'transparent',
+            border: statusFilter === f ? '1px solid rgba(255,113,61,0.2)' : '1px solid transparent',
+            color: statusFilter === f ? '#ff713d' : '#8e8e96',
+          }}>
+            {f === 'all' ? `Todos (${logs.length})` : f === 'success' ? `Sucesso (${successCount})` : `Erro (${errorCount})`}
+          </button>
+        ))}
+      </div>
+
+      {/* Logs Table */}
+      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            {['ID', 'Usuário', 'Feature', 'Status', 'Créditos', 'Tokens', 'Provider', 'Duração', 'Hora'].map((h) => (
+              <th key={h} style={thStyle}>{h}</th>
+            ))}
+          </tr></thead>
+          <tbody>
+            {filtered.map((log) => (
+              <tr key={log.id} style={{ transition: 'background 100ms' }}
+                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
+              >
+                <td style={{ ...tdStyle, color: '#b5b5bb', fontFamily: 'monospace', fontSize: 10 }}>{log.id}</td>
+                <td style={tdStyle}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(20,20,23,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#5a5a60' }}>{log.userName.charAt(0)}</div>
+                    <span style={{ color: '#5a5a60', fontSize: 12 }}>{log.userName}</span>
+                  </div>
+                </td>
+                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, ...(FEATURE_STYLES[log.feature] ?? { background: 'rgba(20,20,23,0.06)', color: '#8e8e96' }) }}>{log.feature}</span></td>
+                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, background: log.status === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', color: log.status === 'success' ? '#10B981' : '#EF4444' }}>{log.status === 'success' ? 'Sucesso' : 'Erro'}</span></td>
+                <td style={{ ...tdStyle, color: '#8e8e96' }}>{log.credits > 0 ? log.credits : '—'}</td>
+                <td style={{ ...tdStyle, color: '#8e8e96' }}>{log.tokens > 0 ? log.tokens.toLocaleString() : '—'}</td>
+                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, ...(PROVIDER_STYLES[log.provider] ?? { background: 'rgba(20,20,23,0.06)', color: '#8e8e96' }) }}>{log.provider}</span></td>
+                <td style={{ ...tdStyle, color: '#8e8e96' }}>{log.duration}</td>
+                <td style={{ ...tdStyle, color: '#b5b5bb', fontSize: 11 }}>{log.time}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

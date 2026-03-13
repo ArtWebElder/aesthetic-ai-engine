@@ -4,6 +4,27 @@
 
 ---
 
+## DECISÃO ARQUITETURAL — 2026-03-06
+
+### Preprocess movido para frontend (Canvas API)
+
+**Contexto:** O preprocess pixel-level (alpha composite, upscale, padding) era feito na Edge Function via `npm:imagescript@1.3.0`, que usa binários nativos incompatíveis com o runtime Deno/Supabase Edge Functions. Resultado: erro `preprocess_base64_decode_failed unsupported arch/platform` em todo request com subject.
+
+**Decisão:** Preprocess movido para o frontend via Canvas API. A Edge Function simplificada recebe o subject já preprocessado — sem dependências nativas.
+
+**Arquivos modificados:**
+| Arquivo | Mudança |
+|---|---|
+| `src/lib/preprocessSubject.ts` | **CRIADO** — Canvas API: alpha composite (#808080), resize ≥1024px, padding 12% |
+| `src/features/editor/wizard/WizardStep1Subject.tsx` | `compressImage` substituído por `preprocessSubject` |
+| `supabase/functions/generate-image/preprocess/subject.ts` | `imagescript` removido — passthrough com SHA-256 hash |
+
+**Variável de ambiente:** `PREPROCESS_DECODE_ENABLED=false` (imagescript não é mais chamado, env não tem efeito).
+
+**Build:** `npm run build` ✅ sem erros TypeScript.
+
+---
+
 ## STATUS GERAL — FASE 1 COMPLETA
 
 | Diff       | Status      | Commit     | Arquivos criados/modificados |

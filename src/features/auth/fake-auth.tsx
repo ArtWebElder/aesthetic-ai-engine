@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useMemo, useState } from "react";
 
 type User = { email: string; name?: string };
 
@@ -11,20 +11,20 @@ type AuthCtx = {
 
 const KEY = "mi_auth_user_v1";
 
+function readStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem(KEY);
+    return raw ? (JSON.parse(raw) as User) : null;
+  } catch {
+    return null;
+  }
+}
+
 const Ctx = createContext<AuthCtx | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  // ✅ rehidrata do localStorage quando o app abre
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch {
-      // ignore
-    }
-  }, []);
+  // Leitura síncrona: evita flash de "não autenticado" no hard refresh
+  const [user, setUser] = useState<User | null>(readStoredUser);
 
   const login = (email: string) => {
     const next: User = { email: (email || "").trim() || "demo@local" };

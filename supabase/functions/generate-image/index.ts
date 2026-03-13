@@ -503,6 +503,11 @@ function isAlreadyExistsError(message: string) {
   return m.includes("already") && m.includes("exist");
 }
 
+function isRateLimitError(message: string) {
+  const m = message.toLowerCase();
+  return m.includes("429") || m.includes("rate_limit") || m.includes("retry_after");
+}
+
 async function ensurePrivateBucket(supabase: any, bucket: string): Promise<string | null> {
   const { error: getError } = await supabase.storage.getBucket(bucket);
   if (!getError) return null;
@@ -563,6 +568,17 @@ Deno.serve(async (req: Request) => {
     const aspectRatio = pickClosestAspectRatio(input.width, input.height);
     const selectedProvider = selectProvider({ strictIdentity: input.strictIdentity });
     const modeUsed = input.strictIdentity ? "strict_identity" : "legacy";
+
+    // ── DEBUG LOG TEMPORÁRIO ──────────────────────────────────────────────────
+    console.log("[DEBUG] provider_selected:", selectedProvider.name);
+    console.log("[DEBUG] strictIdentity:", input.strictIdentity);
+    console.log("[DEBUG] subjectImageUrl:", input.subjectImageUrl ?? "null");
+    console.log("[DEBUG] subjectBase64_present:", input.subjectBase64 ? `YES (${input.subjectBase64.length} chars)` : "null");
+    console.log("[DEBUG] referenceImages_count:", input.referenceImages.length);
+    console.log("[DEBUG] negativePrompt:", input.negativePrompt ?? "null");
+    console.log("[DEBUG] prompt_length:", input.prompt.length);
+    console.log("[DEBUG] prompt_full:\n---\n" + input.prompt + "\n---");
+    // ─────────────────────────────────────────────────────────────────────────
 
     const GCP_PROJECT_ID = Deno.env.get("GCP_PROJECT_ID") ?? "";
     const GCP_LOCATION = Deno.env.get("GCP_LOCATION") ?? "us-central1";
@@ -813,6 +829,32 @@ Deno.serve(async (req: Request) => {
         if (!strictBase64.trim()) {
           const strictDetails = JSON.stringify(strictProviderErrors).slice(0, 1200);
           await updateGenerationError(supabase, generationId, startedAt, `strict_provider_unavailable: ${strictDetails}`, input.prompt.length, input.negativePrompt ?? null);
+          if (strictProviderErrors.some((err) => isRateLimitError(err.details))) {
+            return json(
+              {
+                error: "replicate_rate_limit",
+                details: "Limite de requisições atingido. Tente novamente em alguns segundos.",
+                provider: lastProviderName,
+                meta: {
+                  providerName: lastProviderName,
+                  modeUsed: "strict_identity",
+                  strictIdentity: true,
+                  identityStrength: input.identityStrength,
+                  styleStrength: input.styleStrength,
+                  payloadKind: "strict_both_failed",
+                  gemini_failed_then_replicate: fallbackAttempted,
+                  preprocess: {
+                    flags: preprocessedSubject.flags,
+                    hash: preprocessedSubject.hash,
+                    width: preprocessedSubject.width,
+                    height: preprocessedSubject.height,
+                  },
+                },
+              },
+              429,
+              headers,
+            );
+          }
           return json(
             {
               error: "strict_identity_provider_unavailable",
@@ -1047,6 +1089,9 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
       await updateGenerationError(supabase, generationId, startedAt, `t2i_error: ${details}`, input.prompt.length, input.negativePrompt ?? null);
+      if (isRateLimitError(details)) {
+        return json({ error: "replicate_rate_limit", details: "Limite de requisições atingido. Tente novamente em alguns segundos.", provider: t2iProviderName }, 429, headers);
+      }
       return json({ error: "t2i_provider_failed", details, provider: t2iProviderName }, 500, headers);
     }
 

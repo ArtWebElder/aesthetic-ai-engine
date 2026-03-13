@@ -4,8 +4,19 @@
 // Multi-formato: crop inteligente por proporção.
 
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
-import { renderTextOnCanvas, type TextRenderConfig } from "./textRenderer";
+import { renderTextOnCanvas, renderPriceBadge, renderContactBar, chooseBadgeVariant, type TextRenderConfig } from "./textRenderer";
 import { drawTextOverlay } from "./overlayIntegration";
+
+// ─── FOOD POP: PALETA CONTEXTUAL ──────────────────────────────────────────────
+
+export interface FoodPalette {
+  accent: string;       // cor principal de destaque (hex)
+  accentLight: string;  // versão clara do accent
+  badgeBg: string;      // fundo do badge (rgba)
+  badgeText: string;    // texto do badge
+  ctaBg: string;        // fundo do CTA
+  ctaText: string;      // texto do CTA
+}
 
 // ─── FORMATOS ─────────────────────────────────────────────────────────────────
 
@@ -90,6 +101,252 @@ function applyWatermark(ctx: CanvasRenderingContext2D, w: number, h: number): vo
   ctx.restore();
 }
 
+// ─── FOOD POP: GRADIENTE DUPLO ────────────────────────────────────────────────
+
+function drawFoodPopOverlay(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number
+): void {
+  // Gradiente inferior — zona de preço + contato (mais suave)
+  const bottomGrad = ctx.createLinearGradient(0, ch * 0.55, 0, ch);
+  bottomGrad.addColorStop(0,   "rgba(0,0,0,0)");
+  bottomGrad.addColorStop(0.35,"rgba(0,0,0,0.38)");
+  bottomGrad.addColorStop(0.75,"rgba(0,0,0,0.68)");
+  bottomGrad.addColorStop(1,   "rgba(0,0,0,0.88)");
+  ctx.fillStyle = bottomGrad;
+  ctx.fillRect(0, ch * 0.55, cw, ch * 0.45);
+
+  // Gradiente superior — zona de headline (mais suave)
+  const topGrad = ctx.createLinearGradient(0, 0, 0, ch * 0.38);
+  topGrad.addColorStop(0,   "rgba(0,0,0,0.50)");
+  topGrad.addColorStop(0.45,"rgba(0,0,0,0.18)");
+  topGrad.addColorStop(1,   "rgba(0,0,0,0)");
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, cw, ch * 0.38);
+
+  // Vinheta lateral esquerda (0 → 15%)
+  const leftVig = ctx.createLinearGradient(0, 0, cw * 0.15, 0);
+  leftVig.addColorStop(0,   "rgba(0,0,0,0.25)");
+  leftVig.addColorStop(1,   "rgba(0,0,0,0)");
+  ctx.fillStyle = leftVig;
+  ctx.fillRect(0, 0, cw * 0.15, ch);
+
+  // Vinheta lateral direita (85% → 100%)
+  const rightVig = ctx.createLinearGradient(cw * 0.85, 0, cw, 0);
+  rightVig.addColorStop(0,   "rgba(0,0,0,0)");
+  rightVig.addColorStop(1,   "rgba(0,0,0,0.25)");
+  ctx.fillStyle = rightVig;
+  ctx.fillRect(cw * 0.85, 0, cw * 0.15, ch);
+}
+
+// ─── FOOD POP: BOKEH PARTICLES ────────────────────────────────────────────────
+
+function renderBokehParticles(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  count = 15,
+  accentColor = "#FFFFFF"
+): void {
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+
+  for (let i = 0; i < count; i++) {
+    const x = Math.random() * cw;
+    const y = Math.random() * ch;
+    const size = 4 + Math.random() * 36;
+    const opacity = 0.05 + Math.random() * 0.18;
+    const blur = 1 + Math.random() * 5;
+
+    // Evitar zona central do subject
+    const inSubjectZone =
+      x > cw * 0.25 && x < cw * 0.75 &&
+      y > ch * 0.3 && y < ch * 0.65;
+    if (inSubjectZone && (size > 12 || opacity > 0.1)) continue;
+
+    ctx.save();
+    ctx.filter = `blur(${blur}px)`;
+    ctx.globalAlpha = opacity;
+
+    const color = Math.random() > 0.7 ? accentColor : "#FFFFFF";
+    const gradient = ctx.createRadialGradient(x, y, 0, x, y, size / 2);
+    gradient.addColorStop(0, color);
+    gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+
+    ctx.beginPath();
+    ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+// ─── FOOD POP: LINHA DECORATIVA ───────────────────────────────────────────────
+
+function renderDecorativeLine(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  y: number,
+  accentColor: string
+): void {
+  const lineW = cw * 0.55;
+  const lineX = (cw - lineW) / 2;
+  const grad = ctx.createLinearGradient(lineX, y, lineX + lineW, y);
+  grad.addColorStop(0,    "rgba(255,255,255,0)");
+  grad.addColorStop(0.2,  accentColor);
+  grad.addColorStop(0.8,  accentColor);
+  grad.addColorStop(1,    "rgba(255,255,255,0)");
+
+  ctx.save();
+  ctx.globalAlpha = 0.55;
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = Math.max(1, cw * 0.002);
+  ctx.beginPath();
+  ctx.moveTo(lineX, y);
+  ctx.lineTo(lineX + lineW, y);
+  ctx.stroke();
+  ctx.restore();
+}
+
+// ─── FOOD POP: TEXTO DECORATIVO ───────────────────────────────────────────────
+
+const DECO_SKIP = new Set([
+  "DO", "DA", "DE", "DAS", "DOS", "EM", "NO", "NA", "NOS", "NAS",
+  "COM", "SEM", "POR", "PARA", "E", "OU", "QUE", "SEU", "SUA",
+  "O", "A", "OS", "AS", "UM", "UMA", "AO", "À",
+  "THE", "OF", "AND", "FOR", "TO", "IN", "YOUR", "OUR",
+]);
+
+export function extractDecorativeWord(headline: string): string {
+  const words = headline.toUpperCase().trim().split(/\s+/);
+  for (const word of words) {
+    if (!DECO_SKIP.has(word) && word.length >= 3) return word;
+  }
+  return words[0] || "";
+}
+
+function calculateDecorativeFontSize(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  text: string
+): number {
+  // Target: ~110% of canvas width so text naturally bleeds past edges
+  const targetWidth = canvas.width * 1.1;
+  let fontSize = canvas.width * 0.5;
+  ctx.font = `900 ${fontSize}px Montserrat, sans-serif`;
+  const measured = ctx.measureText(text).width;
+  fontSize = fontSize * (targetWidth / measured);
+  return Math.max(canvas.width * 0.2, Math.min(fontSize, canvas.width * 0.6));
+}
+
+type DecorativeStyle    = "outline" | "filled" | "shadow-only";
+type DecorativePosition = "center" | "top" | "bottom";
+
+interface DecorativeConfig {
+  style:    DecorativeStyle;
+  position: DecorativePosition;
+  opacity:  number;
+  rotation: number;
+}
+
+export function chooseDecorativeConfig(headline: string): DecorativeConfig {
+  let hash = 0;
+  const text = headline.toLowerCase();
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash) + text.charCodeAt(i);
+    hash |= 0;
+  }
+  const configs: DecorativeConfig[] = [
+    { style: "outline", position: "center", opacity: 0.12, rotation:  0 },
+    { style: "outline", position: "center", opacity: 0.10, rotation: -3 },
+    { style: "filled",  position: "center", opacity: 0.08, rotation:  0 },
+    { style: "outline", position: "top",    opacity: 0.13, rotation:  2 },
+    { style: "filled",  position: "bottom", opacity: 0.07, rotation: -2 },
+  ];
+  return configs[Math.abs(hash) % configs.length];
+}
+
+/**
+ * Renderiza texto decorativo gigante com baixa opacidade — camada de fundo visual.
+ * Deve ser chamada ANTES do gradiente overlay para que o gradiente o cubra nas bordas.
+ */
+function renderDecorativeText(
+  ctx: CanvasRenderingContext2D,
+  canvas: { width: number; height: number },
+  text: string,
+  options?: {
+    opacity?:  number;
+    style?:    DecorativeStyle;
+    position?: DecorativePosition;
+    color?:    string;
+    rotation?: number;
+  }
+): void {
+  if (!text || !text.trim()) return;
+
+  const opts = {
+    opacity:  options?.opacity  ?? 0.07,
+    style:    options?.style    ?? ("outline" as DecorativeStyle),
+    position: options?.position ?? ("center"  as DecorativePosition),
+    color:    options?.color    ?? "#FFFFFF",
+    rotation: options?.rotation ?? 0,
+  };
+
+  ctx.save();
+
+  const decorWord = extractDecorativeWord(text);
+  const fontSize  = calculateDecorativeFontSize(ctx, canvas, decorWord);
+
+  let centerY: number;
+  switch (opts.position) {
+    case "top":    centerY = canvas.height * 0.25; break;
+    case "bottom": centerY = canvas.height * 0.70; break;
+    default:       centerY = canvas.height * 0.48; break;
+  }
+
+  if (opts.rotation !== 0) {
+    ctx.translate(canvas.width / 2, centerY);
+    ctx.rotate((opts.rotation * Math.PI) / 180);
+    ctx.translate(-canvas.width / 2, -centerY);
+  }
+
+  ctx.font         = `900 ${fontSize}px Montserrat, sans-serif`;
+  ctx.textAlign    = "center";
+  ctx.textBaseline = "middle";
+  const centerX    = canvas.width / 2;
+
+  switch (opts.style) {
+    case "outline":
+      ctx.globalAlpha  = opts.opacity;
+      ctx.strokeStyle  = opts.color;
+      ctx.lineWidth    = Math.max(2, fontSize * 0.015);
+      ctx.lineJoin     = "round";
+      ctx.strokeText(decorWord, centerX, centerY);
+      break;
+    case "filled":
+      ctx.globalAlpha = opts.opacity * 0.6;
+      ctx.fillStyle   = opts.color;
+      ctx.fillText(decorWord, centerX, centerY);
+      break;
+    case "shadow-only":
+      ctx.globalAlpha  = opts.opacity;
+      ctx.shadowColor  = opts.color;
+      ctx.shadowBlur   = fontSize * 0.05;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle    = "rgba(0,0,0,0)";
+      ctx.fillText(decorWord, centerX, centerY);
+      break;
+  }
+
+  ctx.restore();
+}
+
 // ─── COMPOSIÇÃO PRINCIPAL ─────────────────────────────────────────────────────
 
 export interface ComposeOptions {
@@ -102,6 +359,16 @@ export interface ComposeOptions {
   watermark?: boolean;
   quality?: "2k" | "4k";           // 4k = escalar canvas x2 (Pro only)
   outputFormat?: "png" | "jpg";
+  /** Food/Pop: gradiente duplo (topo + base) quando true */
+  foodPopOverlay?: boolean;
+  /** Food/Pop: dados para price badge e contact bar */
+  foodPopData?: {
+    price?: { value: string; prefix: string; suffix: string } | null;
+    whatsapp?: string;
+    instagram?: string;
+    accentColor?: string;
+    palette?: FoodPalette;
+  };
 }
 
 /**
@@ -112,6 +379,7 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
   const {
     imageBase64, texts, presetConfig, colors, composition,
     targetFormat, watermark, quality = "2k", outputFormat = "png",
+    foodPopOverlay = false, foodPopData,
   } = opts;
 
   const scale = quality === "4k" ? 2 : 1;
@@ -129,8 +397,24 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
   const img = await base64ToImage(imageBase64);
   drawWithSmartCrop(ctx, img, cw, ch);
 
-  // 2. Overlay de integração (gradiente adaptativo)
-  if (texts.headline || texts.cta) {
+  // 2. Overlay de integração
+  if (foodPopOverlay) {
+    // 2a. Texto decorativo — camada de fundo, ANTES do gradiente
+    // O gradiente cobre parcialmente as bordas, criando profundidade
+    if (texts.headline) {
+      const decoConfig = chooseDecorativeConfig(texts.headline);
+      renderDecorativeText(ctx, { width: cw, height: ch }, texts.headline, decoConfig);
+    }
+    // 2b. Gradiente duplo (topo + base) — cobre parcialmente o texto decorativo
+    drawFoodPopOverlay(ctx, cw, ch);
+    // 2c. Partículas bokeh (entre gradiente e texto informativo)
+    const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
+    renderBokehParticles(ctx, cw, ch, 15, accentColor);
+    // Linha decorativa desativada — polui sobre o subject
+    // TODO: reativar com detecção de espaço disponível
+    // renderDecorativeLine(ctx, cw, ch, ch * 0.27, accentColor);
+  } else if (texts.headline || texts.cta) {
+    // Preset padrão: gradiente adaptativo
     drawTextOverlay(ctx, composition, cw, ch);
   }
 
@@ -142,10 +426,35 @@ export async function exportComposed(opts: ComposeOptions): Promise<string> {
     composition,
     canvasWidth: cw,
     canvasHeight: ch,
+    foodPopOverlay,
+    // CTA já está dentro do price badge — não renderizar standalone
+    skipCta: foodPopOverlay && Boolean(foodPopData?.price?.value),
   };
   renderTextOnCanvas(ctx, textConfig);
 
-  // 4. Marca d'água se plano free
+  // 4. Food Pop: price badge + contact bar (após o texto padrão)
+  console.log('[Creatyng] exportComposed foodPop:', {
+    foodPopOverlay,
+    price: foodPopData?.price,
+    whatsapp: foodPopData?.whatsapp,
+    instagram: foodPopData?.instagram,
+  });
+  if (foodPopOverlay && foodPopData) {
+    const accentColor = foodPopData.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFD700";
+    if (foodPopData.price?.value) {
+      renderPriceBadge(ctx, { width: cw, height: ch }, foodPopData.price, texts.cta, accentColor, foodPopData.palette, texts.headline);
+    }
+    if (foodPopData.whatsapp || foodPopData.instagram) {
+      // DIFF 4: pill-bottom badge at ch*0.83 conflicts with bar-center/inline-badge — force bar-left
+      const badgeVariant = foodPopData.price?.value
+        ? chooseBadgeVariant(texts.headline ?? "", foodPopData.price.value)
+        : null;
+      const forceContact = badgeVariant === "pill-bottom" ? "bar-left" as const : undefined;
+      renderContactBar(ctx, { width: cw, height: ch }, foodPopData.whatsapp, foodPopData.instagram, foodPopData.palette?.accent, foodPopData.palette, forceContact);
+    }
+  }
+
+  // 5. Marca d'água se plano free
   if (watermark) {
     applyWatermark(ctx, cw, ch);
   }
@@ -166,7 +475,13 @@ export async function recomposeForFormat(
   colors: ColorConfig,
   composition: CompositionConfig,
   targetFormat: ExportFormat,
-  opts: { watermark?: boolean; quality?: "2k" | "4k"; outputFormat?: "png" | "jpg" } = {}
+  opts: {
+    watermark?: boolean;
+    quality?: "2k" | "4k";
+    outputFormat?: "png" | "jpg";
+    foodPopOverlay?: boolean;
+    foodPopData?: ComposeOptions["foodPopData"];
+  } = {}
 ): Promise<string> {
   return exportComposed({
     imageBase64,
@@ -189,7 +504,9 @@ export async function renderFormatPreview(
   colors: ColorConfig,
   composition: CompositionConfig,
   targetFormat: ExportFormat,
-  previewSize = 360
+  previewSize = 360,
+  foodPopOverlay = false,
+  foodPopData?: ComposeOptions["foodPopData"]
 ): Promise<string> {
   const { w, h } = targetFormat;
   const ratio = w / h;
@@ -205,14 +522,38 @@ export async function renderFormatPreview(
   const img = await base64ToImage(imageBase64);
   drawWithSmartCrop(ctx, img, pw, ph);
 
-  if (texts.headline || texts.cta) {
+  if (foodPopOverlay) {
+    if (texts.headline) {
+      const decoConfig = chooseDecorativeConfig(texts.headline);
+      renderDecorativeText(ctx, { width: pw, height: ph }, texts.headline, decoConfig);
+    }
+    drawFoodPopOverlay(ctx, pw, ph);
+    const accentColor = foodPopData?.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFFFFF";
+    renderBokehParticles(ctx, pw, ph, 8, accentColor);
+  } else if (texts.headline || texts.cta) {
     drawTextOverlay(ctx, composition, pw, ph);
   }
 
   renderTextOnCanvas(ctx, {
     texts, presetConfig, colors, composition,
     canvasWidth: pw, canvasHeight: ph,
+    foodPopOverlay,
+    skipCta: foodPopOverlay && Boolean(foodPopData?.price?.value),
   });
+
+  if (foodPopOverlay && foodPopData) {
+    const accentColor = foodPopData.accentColor ?? colors.accentWord ?? colors.primary ?? "#FFD700";
+    if (foodPopData.price?.value) {
+      renderPriceBadge(ctx, { width: pw, height: ph }, foodPopData.price, texts.cta, accentColor, foodPopData.palette, texts.headline);
+    }
+    if (foodPopData.whatsapp || foodPopData.instagram) {
+      const badgeVariant = foodPopData.price?.value
+        ? chooseBadgeVariant(texts.headline ?? "", foodPopData.price.value)
+        : null;
+      const forceContact = badgeVariant === "pill-bottom" ? "bar-left" as const : undefined;
+      renderContactBar(ctx, { width: pw, height: ph }, foodPopData.whatsapp, foodPopData.instagram, foodPopData.palette?.accent, foodPopData.palette, forceContact);
+    }
+  }
 
   return canvas.toDataURL("image/jpeg", 0.85);
 }

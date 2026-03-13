@@ -43,6 +43,23 @@ interface WizardStore extends WizardState {
   setGeneration: (gen: CachedGeneration) => void;
   clearGeneration: () => void;
 
+  // ── Food/Pop ─────────────────────────────────────────────────────────────────
+  setCategory: (cat: "food" | "person" | "product" | "general") => void;
+  setWhatsapp: (val: string) => void;
+  setInstagram: (val: string) => void;
+  setPrice: (price: { value: string; prefix: string; suffix: string } | null) => void;
+  setExtraText: (val: string) => void;
+  setFreeInstructions: (val: string) => void;
+  setLogoBase64: (val: string | null) => void;
+
+  // ── Pop Design ───────────────────────────────────────────────────────────────
+  /** Subject isolado (PNG transparente) — cache do resultado de bg removal. */
+  setSubjectIsolated: (val: string | null) => void;
+
+  // ── Composed image (final render com texto overlay) ───────────────────────
+  composedImageBase64?: string | null;
+  setComposedImage: (val: string | null) => void;
+
   // ── Reset ────────────────────────────────────────────────────────────────────
   reset: () => void;
 }
@@ -55,6 +72,13 @@ const DEFAULT_WIZARD_STATE: WizardState = {
   subheadline: "",
   cta: "",
   mode: "quick",
+  category: "general",
+  whatsapp: "",
+  instagram: "",
+  price: null,
+  extraText: "",
+  freeInstructions: "",
+  logoBase64: null,
 };
 
 function loadMode(): "quick" | "advanced" {
@@ -156,6 +180,19 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
   setGeneration: (gen) => set({ currentGeneration: gen }),
 
   clearGeneration: () => set({ currentGeneration: undefined }),
+
+  // ── Food/Pop ─────────────────────────────────────────────────────────────────
+
+  setCategory: (cat) => set({ category: cat }),
+  setWhatsapp: (val) => set({ whatsapp: val }),
+  setInstagram: (val) => set({ instagram: val }),
+  setPrice: (price) => set({ price }),
+  setExtraText: (val) => set({ extraText: val }),
+  setFreeInstructions: (val) => set({ freeInstructions: val }),
+  setLogoBase64: (val) => set({ logoBase64: val }),
+  setSubjectIsolated: (val) => set({ subjectIsolatedBase64: val }),
+
+  setComposedImage: (val) => set({ composedImageBase64: val }),
 
   // ── Reset ────────────────────────────────────────────────────────────────────
 

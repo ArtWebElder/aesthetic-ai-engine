@@ -6,6 +6,11 @@ import { PresetGrid } from "@/components/PresetGrid";
 import { SYSTEM_IMAGE_PRESETS } from "@/data/systemPresets";
 import type { CreatygnPreset, ImagePresetConfig } from "@/types/preset";
 
+// TODO: Campos de atmosfera/iluminação são resquícios do editor antigo.
+// Remover da UI quando o novo Step 2 for implementado (Fase 3).
+// Esses campos (ImagePresetConfig.atmosphere / .lighting) NÃO alimentam o prompt-compiler atual.
+// O prompt-compiler lê builder.lightingSetup e builder.sceneMood — não esses overrides.
+
 // ── Opções de atmosfera e iluminação (overrides sobre o preset base) ─────────
 
 const ATMOSPHERE_OPTIONS: Array<{ value: ImagePresetConfig["atmosphere"]; label: string }> = [

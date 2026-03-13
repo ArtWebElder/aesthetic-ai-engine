@@ -170,9 +170,9 @@ export interface PresetConfig {
 }
 
 export interface ImagePresetConfig {
-  preset: "drama" | "clean" | "dark" | "editorial" | "neon";
-  atmosphere: "fog" | "particles" | "glass_shards" | "rain" | "none";
-  lighting: "rim_purple" | "rim_blue" | "natural" | "studio" | "neon" | "none";
+  preset: "drama" | "clean" | "dark" | "editorial" | "neon" | "food-pop" | "pop-design";
+  atmosphere: "fog" | "particles" | "glass_shards" | "rain" | "none" | string;
+  lighting: "rim_purple" | "rim_blue" | "natural" | "studio" | "neon" | "none" | string;
   sceneKeywords: string[];
   negativeKeywords: string[];
   visualDNA?: VisualDNA;             // DNA extraído de referência real (Vision First)
@@ -183,6 +183,8 @@ export interface TextPresetConfig {
   headlineFont: string;              // Google Font name
   bodyFont: string;                  // Google Font name
   headlineWeight: number;            // 400-900
+  /** Weight used for the "context" segment in composed typography (food-pop). Defaults to 300. */
+  bodyWeight?: number;               // 100-400, used in segmentHeadline context segment
   headlineTracking: string;          // '-0.02em', '0.05em', etc
   headlineLineHeight: number;        // 0.85-1.3
   headlineTransform: "uppercase" | "none" | "capitalize";
@@ -200,7 +202,9 @@ export type TextStylePreset =
   | "street"         // T5 — Black Han Sans, spray
   | "luxury"         // T6 — Cormorant, dourado
   | "sport"          // T7 — Teko, bold máximo
-  | "minimal";       // T8 — Inter, Swiss design
+  | "minimal"        // T8 — Inter, Swiss design
+  | "food-pop"       // T9 — Montserrat bold italic, food energy
+  | "pop-design";    // T10 — Montserrat 900 dark, Pop Design paradigm B
 
 export type TextBlendMode =
   | "normal" | "screen" | "overlay" | "soft-light" | "luminosity";
@@ -290,6 +294,18 @@ export interface WizardState {
 
   // META
   lastGenerationId?: string;
+
+  // FOOD/POP — campos opcionais para criativos de food/delivery
+  category?: "food" | "person" | "product" | "general";
+  whatsapp?: string;
+  instagram?: string;
+  price?: { value: string; prefix: string; suffix: string } | null;
+  extraText?: string;
+  freeInstructions?: string;
+  logoBase64?: string | null;
+
+  // POP DESIGN — subject isolado (cache do resultado de bg removal)
+  subjectIsolatedBase64?: string | null;
 }
 
 // ─── GERAÇÃO E CACHE ───────────────────────────────────────────────────────────
