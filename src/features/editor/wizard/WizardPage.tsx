@@ -5,14 +5,16 @@
 import { useState } from "react";
 import { WizardLayout } from "./WizardLayout";
 import { WizardStep1Subject } from "./WizardStep1Subject";
-import { WizardStep2Style } from "./WizardStep2Style";
+import { WizardStep2Reference } from "./WizardStep2Reference";
 import { WizardStep3Text } from "./WizardStep3Text";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { generateFromWizard, GenerateError } from "@/services/generateService";
+import { analyzeReference } from "@/services/referenceAnalyzer";
 
 export function WizardPage() {
-  const { setGeneration, clearGeneration, currentGeneration } = useWizardStore();
+  const { setGeneration, clearGeneration, currentGeneration, setReferenceAnalysis } = useWizardStore();
   const [generating, setGenerating] = useState(false);
+  const [generationStage, setGenerationStage] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   async function handleGenerate() {
@@ -22,14 +24,35 @@ export function WizardPage() {
     clearGeneration();
 
     try {
-      const gen = await generateFromWizard(state);
+      // Stage 1: Analisar referência (se tiver)
+      const hasRef = Boolean(
+        state.referenceBase64 &&
+          !state.referenceBase64.startsWith("gallery:") &&
+          state.subjectBase64,
+      );
+      if (hasRef) {
+        setGenerationStage("Analisando sua referência...");
+        const analysis = await analyzeReference(state.referenceBase64!, state.subjectBase64!, {
+          headline: state.headline,
+          cta: state.cta,
+        });
+        setReferenceAnalysis(analysis);
+        setGenerationStage("Extraindo layout, cores e composição...");
+      }
+
+      // Stage 2: Gerar imagem
+      setGenerationStage("Gerando cena com Nano Banana...");
+      const freshState = useWizardStore.getState(); // re-read to include analysis
+      const gen = await generateFromWizard(freshState);
       setGeneration(gen);
+      setGenerationStage("");
     } catch (e) {
       if (e instanceof GenerateError) {
         setError(e.message);
       } else {
         setError("Erro inesperado. Tente novamente.");
       }
+      setGenerationStage("");
     } finally {
       setGenerating(false);
     }
@@ -43,10 +66,11 @@ export function WizardPage() {
       <div className={hasResult ? "lg:w-1/2 lg:border-r lg:border-border" : "w-full"}>
         <WizardLayout
           step1={<WizardStep1Subject />}
-          step2={<WizardStep2Style />}
+          step2={<WizardStep2Reference />}
           step3={<WizardStep3Text />}
           onGenerate={handleGenerate}
           generating={generating}
+          generationStage={generationStage}
         />
       </div>
 

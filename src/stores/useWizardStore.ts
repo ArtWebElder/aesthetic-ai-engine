@@ -4,7 +4,7 @@
 // NUNCA criar estado paralelo ao WizardState aqui.
 
 import { create } from "zustand";
-import type { WizardState, PresetConfig, SubjectProfile, VisualDNA, CachedGeneration } from "@/types/preset";
+import type { WizardState, PresetConfig, SubjectProfile, VisualDNA, CachedGeneration, ReferenceAnalysis } from "@/types/preset";
 import { buildActiveConfig, applyPresetOverride, getSuggestedTextPreset } from "@/lib/presetUtils";
 
 interface WizardStore extends WizardState {
@@ -30,7 +30,9 @@ interface WizardStore extends WizardState {
   setCta: (text: string) => void;
 
   // ── Referência ───────────────────────────────────────────────────────────────
-  setReference: (base64: string) => void;
+  setReference: (base64: string, source?: "upload" | "gallery", id?: string) => void;
+  setReferenceAnalysis: (analysis: ReferenceAnalysis | null) => void;
+  clearReference: () => void;
   setVisualDNA: (dna: VisualDNA) => void;
 
   // ── Modo ─────────────────────────────────────────────────────────────────────
@@ -131,7 +133,11 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
 
   // ── Referência ───────────────────────────────────────────────────────────────
 
-  setReference: (base64) => set({ referenceBase64: base64 }),
+  setReference: (base64, source, id) =>
+    set({ referenceBase64: base64, referenceSource: source ?? "upload", referenceId: id ?? null, referenceAnalysis: null }),
+  setReferenceAnalysis: (analysis) => set({ referenceAnalysis: analysis }),
+  clearReference: () =>
+    set({ referenceBase64: undefined, referenceSource: null, referenceId: null, referenceAnalysis: null }),
   setVisualDNA: (dna) => set({ visualDNA: dna }),
 
   // ── Modo ─────────────────────────────────────────────────────────────────────

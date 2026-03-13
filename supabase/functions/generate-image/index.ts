@@ -108,6 +108,7 @@ type GenerateBody = {
   subjectImageUrl?: string;
   subjectBase64?: string;      // data URI ou base64 raw — alternativa ao URL
   styleRefImageUrl?: string;
+  styleReferenceBase64?: string;  // inline base64 style reference (from frontend)
   referenceImages?: Array<{
     url?: string;
     role?: string;
@@ -711,6 +712,24 @@ Deno.serve(async (req: Request) => {
           }),
         )
       ).filter((r): r is StyleRef => r !== null);
+
+      // Inline style reference from frontend (styleReferenceBase64)
+      const inlineStyleRef = typeof (bodyRaw as Record<string, unknown>)?.styleReferenceBase64 === "string"
+        ? String((bodyRaw as Record<string, unknown>).styleReferenceBase64).trim()
+        : "";
+      if (inlineStyleRef) {
+        const cleanInline = inlineStyleRef.startsWith("data:")
+          ? inlineStyleRef.replace(/^data:image\/\w+;base64,/, "")
+          : inlineStyleRef;
+        if (cleanInline.length > 0) {
+          styleReferences.push({
+            base64: cleanInline,
+            mime: "image/jpeg",
+            weight: input.styleStrength ?? 70,
+            url: "inline:styleReferenceBase64",
+          });
+        }
+      }
 
       const strictProviderErrors: Array<{ providerName: string; details: string }> = [];
       let fallbackProvider: ReplicateFluxKontextProvider | null = null;

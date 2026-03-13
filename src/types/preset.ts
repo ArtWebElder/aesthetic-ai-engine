@@ -93,6 +93,36 @@ export interface SubjectProfile {
   preservationInstructions: string;
 }
 
+// ─── REFERENCE ANALYSIS (Gemini 2.5 Pro) ──────────────────────────────────────
+
+export interface ReferenceAnalysis {
+  layout: {
+    productPosition: string;
+    productSize: string;
+    textPosition: string;
+    hasPrice: boolean;
+    priceBadgeStyle: string;
+  };
+  style: {
+    mood: string;
+    lighting: string;
+    colorScheme: string[];
+    backgroundType: string;
+    backgroundDescription: string;
+  };
+  typography: {
+    headlineStyle: string;
+    headlineSize: string;
+    headlineColor: string;
+    ctaStyle: string;
+  };
+  composition: {
+    description: string;
+    sceneElements: string[];
+    decorativeElements: string[];
+  };
+}
+
 // ─── PRESET UNIVERSAL ────────────────────────────────────────────────────────
 
 export interface CreatygnPreset {
@@ -245,6 +275,9 @@ export interface WizardState {
 
   // REFERÊNCIA
   referenceBase64?: string;
+  referenceSource?: "upload" | "gallery" | null;
+  referenceId?: string | null;               // ID se veio da galeria
+  referenceAnalysis?: ReferenceAnalysis | null; // JSON da análise Gemini
   visualDNA?: VisualDNA;             // resultado do Vision AI na referência
 
   // PASSO 3 — TEXTOS

@@ -12,11 +12,12 @@ interface WizardLayoutProps {
   step3: React.ReactNode;
   onGenerate?: () => void;
   generating?: boolean;
+  generationStage?: string;
 }
 
-const STEP_LABELS = ["Sujeito", "Estilo", "Textos"];
+const STEP_LABELS = ["Sujeito", "Referência", "Textos"];
 
-export function WizardLayout({ step1, step2, step3, onGenerate, generating }: WizardLayoutProps) {
+export function WizardLayout({ step1, step2, step3, onGenerate, generating, generationStage }: WizardLayoutProps) {
   const { currentStep, mode, goNext, goBack, goToStep, setMode } = useWizardStore();
 
   // Navegação por teclado
@@ -139,7 +140,7 @@ export function WizardLayout({ step1, step2, step3, onGenerate, generating }: Wi
           >
             {generating ? (
               <>
-                <span className="animate-spin">◌</span> Gerando...
+                <span className="animate-spin">◌</span> {generationStage || "Gerando..."}
               </>
             ) : (
               <>✦ Gerar Criativo</>

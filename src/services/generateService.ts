@@ -2,8 +2,9 @@
 // CREATYNG — Fase 2 — Conecta useWizardStore ao motor de geração (Edge Function)
 // Uma chamada: generateFromWizard(wizardState) → CachedGeneration
 
-import type { WizardState, CachedGeneration } from "@/types/preset";
+import type { WizardState, CachedGeneration, ReferenceAnalysis } from "@/types/preset";
 import { SYSTEM_IMAGE_PRESETS } from "@/data/systemPresets";
+import { buildGenerationPrompt } from "@/services/referenceAnalyzer";
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string) ?? "";
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ?? "";
@@ -137,10 +138,30 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
   }
 
   const startedAt = Date.now();
-  const { prompt, negativePrompt } = buildPrompt(state);
   const { width, height } = resolveAspectRatio(state);
 
-  const body = {
+  const hasReference = Boolean(state.referenceBase64 && state.referenceAnalysis);
+  let prompt: string;
+  let negativePrompt: string;
+  let styleReferenceBase64: string | null = null;
+
+  if (hasReference && state.referenceAnalysis) {
+    prompt = buildGenerationPrompt(state.referenceAnalysis, {
+      headline: state.headline,
+      price: undefined,
+      cta: state.cta,
+    });
+    negativePrompt = "text, typography, watermark, logo, words, letters, blurry, low quality";
+    styleReferenceBase64 = state.referenceBase64 ?? null;
+    console.log("[Generate] Mode: REFERENCE-BASED");
+  } else {
+    const built = buildPrompt(state);
+    prompt = built.prompt;
+    negativePrompt = built.negativePrompt;
+    console.log("[Generate] Mode: PRESET-BASED");
+  }
+
+  const body: Record<string, unknown> = {
     prompt,
     negativePrompt,
     width,
@@ -148,9 +169,13 @@ export async function generateFromWizard(state: WizardState): Promise<CachedGene
     subjectBase64: state.subjectBase64,
     strictIdentity: true,
     identityStrength: 90,
-    styleStrength: 45,
+    styleStrength: hasReference ? 70 : 45,
     module: state.selectedImagePresetId ?? "wizard",
   };
+
+  if (styleReferenceBase64) {
+    body.styleReferenceBase64 = styleReferenceBase64;
+  }
 
   const resp = await fetch(`${SUPABASE_URL}/functions/v1/generate-image`, {
     method: "POST",
