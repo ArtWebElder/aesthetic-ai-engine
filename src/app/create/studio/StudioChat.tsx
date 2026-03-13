@@ -56,101 +56,67 @@ export function StudioChat({ open, onClose }: StudioChatProps) {
   };
 
   return (
-    <div style={{
-      position: 'absolute',
-      bottom: 68,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: 480,
-      maxWidth: 'calc(100% - 140px)',
-      zIndex: 150,
-      background: '#1e1e24',
-      border: '1px solid rgba(255,255,255,0.12)',
-      borderRadius: 16,
-      boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      animation: 'fadeIn 0.15s ease',
-    }}>
+    <div
+      className="absolute flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-[0_12px_40px_rgba(0,0,0,0.10)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.22)]"
+      style={{
+        bottom: 68,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 480,
+        maxWidth: 'calc(100% - 140px)',
+        zIndex: 150,
+        animation: 'fadeIn 0.15s ease',
+      }}
+    >
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '10px 14px',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-      }}>
-        <div style={{
-          width: 26,
-          height: 26,
-          borderRadius: 7,
-          background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-        }}>
-          <Sparkles size={13} color="#fff" />
+      <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border">
+        <div className="flex-shrink-0 flex items-center justify-center w-[26px] h-[26px] rounded-[7px] bg-gradient-to-br from-[#ff713d] to-[#FF9B70]">
+          <Sparkles size={13} className="text-white" />
         </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#e5e7eb' }}>{t('studio.chat.title')}</div>
-          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{t('studio.chat.subtitle')}</div>
+        <div className="flex-1">
+          <div className="text-xs font-bold text-foreground">{t('studio.chat.title')}</div>
+          <div className="text-[10px] text-muted-foreground">{t('studio.chat.subtitle')}</div>
         </div>
         <button
           onClick={onClose}
-          style={{ width: 26, height: 26, borderRadius: 7, border: 'none', background: 'rgba(255,255,255,0.06)', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          className="w-[26px] h-[26px] rounded-[7px] border-none bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground cursor-pointer flex items-center justify-center transition-colors"
         >
           <X size={13} />
         </button>
       </div>
 
       {/* Messages */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '10px 12px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 8,
-        maxHeight: 300,
-        minHeight: 160,
-      }}>
+      <div
+        className="flex-1 overflow-y-auto flex flex-col gap-2 p-3"
+        style={{ maxHeight: 300, minHeight: 160 }}
+      >
         {messages.map(msg => (
           <div
             key={msg.id}
-            style={{
-              display: 'flex',
-              justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            }}
+            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div style={{
-              maxWidth: '80%',
-              padding: '7px 11px',
-              borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-              background: msg.role === 'user'
-                ? 'linear-gradient(135deg, #ff713d, #FF9B70)'
-                : 'rgba(255,255,255,0.08)',
-              color: msg.role === 'user' ? '#fff' : '#d1d5db',
-              fontSize: 12,
-              lineHeight: 1.5,
-            }}>
+            <div
+              className={`max-w-[80%] px-3 py-[7px] text-xs leading-relaxed ${
+                msg.role === 'user'
+                  ? 'rounded-[12px_12px_2px_12px] bg-gradient-to-br from-[#ff713d] to-[#FF9B70] text-white'
+                  : 'rounded-[12px_12px_12px_2px] bg-muted text-foreground'
+              }`}
+            >
               {msg.text}
             </div>
           </div>
         ))}
 
         {isTyping && (
-          <div style={{ display: 'flex', gap: 4, padding: '4px 2px', alignItems: 'center' }}>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>{t('studio.chat.thinking')}</span>
-            <div style={{ display: 'flex', gap: 3 }}>
+          <div className="flex gap-1 items-center px-0.5 py-1">
+            <span className="text-[10px] text-muted-foreground">{t('studio.chat.thinking')}</span>
+            <div className="flex gap-[3px]">
               {[0, 1, 2].map(i => (
-                <div key={i} style={{
-                  width: 5, height: 5, borderRadius: '50%',
-                  background: '#ff713d',
-                  opacity: 0.7,
-                  animation: `pulse 1s ease-in-out ${i * 0.2}s infinite`,
-                }} />
+                <div
+                  key={i}
+                  className="w-[5px] h-[5px] rounded-full bg-primary opacity-70"
+                  style={{ animation: `pulse 1s ease-in-out ${i * 0.2}s infinite` }}
+                />
               ))}
             </div>
           </div>
@@ -159,50 +125,23 @@ export function StudioChat({ open, onClose }: StudioChatProps) {
       </div>
 
       {/* Input */}
-      <div style={{
-        padding: '8px 10px',
-        borderTop: '1px solid rgba(255,255,255,0.08)',
-        display: 'flex',
-        gap: 6,
-        alignItems: 'flex-end',
-      }}>
+      <div className="flex gap-1.5 items-end px-2.5 py-2 border-t border-border">
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
           placeholder={t('studio.chat.placeholder')}
           rows={1}
-          style={{
-            flex: 1,
-            background: 'rgba(255,255,255,0.06)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 8,
-            padding: '7px 10px',
-            fontSize: 12,
-            color: '#e5e7eb',
-            resize: 'none',
-            outline: 'none',
-            fontFamily: 'inherit',
-            lineHeight: 1.4,
-          }}
+          className="flex-1 bg-muted border border-border rounded-lg px-2.5 py-[7px] text-xs text-foreground placeholder:text-muted-foreground resize-none outline-none font-inherit leading-[1.4] focus:ring-1 focus:ring-ring transition-shadow"
         />
         <button
           onClick={sendMessage}
           disabled={!input.trim() || isTyping}
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            border: 'none',
-            background: input.trim() && !isTyping ? '#ff713d' : 'rgba(255,255,255,0.06)',
-            color: input.trim() && !isTyping ? '#fff' : 'rgba(255,255,255,0.3)',
-            cursor: input.trim() && !isTyping ? 'pointer' : 'not-allowed',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'all 0.15s',
-            flexShrink: 0,
-          }}
+          className={`w-8 h-8 rounded-lg border-none flex items-center justify-center flex-shrink-0 transition-all ${
+            input.trim() && !isTyping
+              ? 'bg-primary text-white cursor-pointer hover:opacity-90'
+              : 'bg-muted text-muted-foreground cursor-not-allowed'
+          }`}
         >
           <Send size={13} />
         </button>

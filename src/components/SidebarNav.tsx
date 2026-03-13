@@ -56,15 +56,15 @@ const NavItem = ({
         gap: collapsed ? 0 : 12,
         fontSize: 13.5,
         fontWeight: isActive ? 600 : 400,
-        color: color || (isActive ? '#ff713d' : '#5a5a60'),
+        color: color || (isActive ? '#ff713d' : 'hsl(var(--sidebar-foreground))'),
         background: isActive
-          ? 'rgba(255,113,61,0.08)'
+          ? 'hsl(var(--sidebar-primary) / 0.08)'
           : hovered
-          ? 'rgba(20,20,23,0.03)'
+          ? 'hsl(var(--foreground) / 0.04)'
           : 'transparent',
       }}
     >
-      <Icon style={{ width: 19, height: 19, flexShrink: 0, color: color || (isActive ? '#ff713d' : '#8e8e96') }} />
+      <Icon style={{ width: 19, height: 19, flexShrink: 0, color: color || (isActive ? '#ff713d' : 'hsl(var(--sidebar-foreground))') }} />
       {!collapsed && <span>{label}</span>}
     </button>
   );
@@ -98,10 +98,11 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
 
   return (
     <div
-      className="flex flex-col h-full bg-white"
+      className="flex flex-col h-full"
       style={{
         width: collapsed ? 68 : 244,
-        borderRight: '1px solid rgba(20,20,23,0.06)',
+        background: 'hsl(var(--sidebar-background))',
+        borderRight: '1px solid hsl(var(--sidebar-border))',
         transition: 'width 260ms cubic-bezier(.4,0,.2,1)',
         overflow: 'visible',
         position: 'relative',
@@ -111,19 +112,20 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
       {/* Collapse toggle button — floats outside sidebar */}
       <button
         onClick={() => setCollapsed((v) => !v)}
-        className="absolute z-50 flex items-center justify-center bg-white rounded-full"
+        className="absolute z-50 flex items-center justify-center rounded-full"
         style={{
           width: 28,
           height: 28,
           right: -14,
           top: 72,
-          border: '1px solid rgba(20,20,23,0.1)',
+          border: '1px solid hsl(var(--sidebar-border))',
+          background: 'hsl(var(--sidebar-background))',
           boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
         }}
       >
         {collapsed
-          ? <ChevronRight className="text-[#5a5a60]" style={{ width: 14, height: 14 }} />
-          : <ChevronLeft className="text-[#5a5a60]" style={{ width: 14, height: 14 }} />
+          ? <ChevronRight style={{ width: 14, height: 14, color: 'hsl(var(--sidebar-foreground))' }} />
+          : <ChevronLeft style={{ width: 14, height: 14, color: 'hsl(var(--sidebar-foreground))' }} />
         }
       </button>
 
@@ -142,7 +144,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
           C
         </div>
         {!collapsed && (
-          <span className="whitespace-nowrap overflow-hidden" style={{ fontSize: 17, fontWeight: 700, color: '#141417' }}>
+          <span className="whitespace-nowrap overflow-hidden" style={{ fontSize: 17, fontWeight: 700, color: 'hsl(var(--foreground))' }}>
             Creatyng
           </span>
         )}
@@ -171,14 +173,17 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
         <div style={{ marginLeft: 14, marginRight: 14, marginBottom: 8 }}>
           <button
             onClick={() => handleNav('/app/create/studio')}
-            className="w-full flex items-center justify-center gap-2 rounded-[10px] transition-colors hover:bg-[rgba(20,20,23,0.04)]"
+            className="w-full flex items-center justify-center gap-2 rounded-[10px] transition-colors"
             style={{
               padding: '7px 0',
               fontSize: 13.5,
               fontWeight: 500,
-              color: '#5a5a60',
-              border: '1px solid rgba(20,20,23,0.08)',
+              color: 'hsl(var(--sidebar-foreground))',
+              border: '1px solid hsl(var(--sidebar-border))',
+              background: 'transparent',
             }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--foreground) / 0.04)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
           >
             <Workflow style={{ width: 15, height: 15 }} />
             <span>{t('nav.studio')}</span>
@@ -190,13 +195,16 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
           <button
             onClick={() => handleNav('/app/create/studio')}
             title={t('nav.studio')}
-            className="w-full flex items-center justify-center rounded-[10px] transition-colors hover:bg-[rgba(20,20,23,0.04)]"
+            className="w-full flex items-center justify-center rounded-[10px] transition-colors"
             style={{
               padding: '8px 0',
-              border: '1px solid rgba(20,20,23,0.08)',
+              border: '1px solid hsl(var(--sidebar-border))',
+              background: 'transparent',
             }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--foreground) / 0.04)'}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
           >
-            <Workflow style={{ width: 17, height: 17, color: '#8e8e96' }} />
+            <Workflow style={{ width: 17, height: 17, color: 'hsl(var(--sidebar-foreground))' }} />
           </button>
         </div>
       )}
@@ -219,7 +227,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
           <div className="mt-5 mb-2">
             <p
               className="px-[18px] mb-2 uppercase tracking-[0.1em]"
-              style={{ fontSize: 10, fontWeight: 600, color: '#8e8e96' }}
+              style={{ fontSize: 10, fontWeight: 600, color: 'hsl(var(--sidebar-foreground))' }}
             >
               Recentes
             </p>
@@ -231,7 +239,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
       </nav>
 
       {/* Bottom section */}
-      <div style={{ borderTop: '1px solid rgba(20,20,23,0.06)' }}>
+      <div style={{ borderTop: '1px solid hsl(var(--sidebar-border))' }}>
         <div className="px-2 py-2">
           {bottomNavItems.map((item) => (
             <NavItem
@@ -263,7 +271,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
                 height: 6,
                 borderRadius: '50%',
                 background: '#EF4444',
-                border: '1.5px solid #ffffff',
+                border: '1.5px solid hsl(var(--sidebar-background))',
                 pointerEvents: 'none',
               }} />
             </div>
@@ -281,7 +289,7 @@ function RecentItem({ name, color }: { name: string; color: string }) {
   return (
     <button
       className="w-full flex items-center gap-2 py-1.5 px-[18px] rounded-[6px] text-left"
-      style={{ color: hovered ? '#141417' : '#5a5a60', fontSize: 13 }}
+      style={{ color: 'hsl(var(--sidebar-foreground))', fontSize: 13, opacity: hovered ? 1 : 0.7 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >

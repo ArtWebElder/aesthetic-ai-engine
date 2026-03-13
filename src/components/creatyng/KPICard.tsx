@@ -18,14 +18,14 @@ const KPICard = ({ label, value, trend, icon, className }: KPICardProps) => {
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 p-4 bg-white rounded-2xl border border-[rgba(20,20,23,0.06)]",
-        "shadow-[0_1px_3px_rgba(20,20,23,0.04)] hover:shadow-[0_8px_24px_rgba(20,20,23,0.08)]",
+        "flex flex-col gap-3 p-4 bg-card rounded-2xl border border-border",
+        "shadow-[0_1px_3px_hsl(var(--foreground)/0.04)] hover:shadow-[0_8px_24px_hsl(var(--foreground)/0.08)]",
         "transition-shadow duration-200",
         className
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs text-[#8e8e96]">{label}</span>
+        <span className="text-xs text-muted-foreground">{label}</span>
         {icon && (
           <div className="h-8 w-8 rounded-xl bg-creatyng-accent-pale flex items-center justify-center text-creatyng-accent">
             {icon}
@@ -33,14 +33,14 @@ const KPICard = ({ label, value, trend, icon, className }: KPICardProps) => {
         )}
       </div>
       <div className="flex items-end justify-between">
-        <span className="text-2xl font-semibold text-[#141417]">{value}</span>
+        <span className="text-2xl font-semibold text-foreground">{value}</span>
         {trend !== undefined && (
           <div
             className={cn(
               "flex items-center gap-0.5 text-xs font-medium",
               isPositive && "text-creatyng-success",
               isNegative && "text-creatyng-error",
-              isNeutral && "text-[#8e8e96]"
+              isNeutral && "text-muted-foreground"
             )}
           >
             {isPositive && <TrendingUp className="h-3 w-3" />}

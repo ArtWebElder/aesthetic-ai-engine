@@ -65,7 +65,7 @@ const AppShell = () => {
         {pathname !== '/app/create/studio' && (
           <Topbar onMenuToggle={() => setMobileOpen(true)} />
         )}
-        <main className="flex-1 overflow-auto bg-[#f5f5f3]" style={
+        <main className="flex-1 overflow-auto bg-background" style={
           pathname === '/app/create/studio' ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
             backgroundImage: [
               'radial-gradient(ellipse 700px 500px at 10% 4%, rgba(255,113,61,0.12) 0%, transparent 65%)',
