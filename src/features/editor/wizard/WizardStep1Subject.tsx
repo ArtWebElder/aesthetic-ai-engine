@@ -3,10 +3,12 @@
 // DIFF 16.5: opção "Usar Avatar" se usuário tem avatar criado
 
 import { useEffect } from "react";
+import { UploadCloud, Image, Check } from "lucide-react";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { useBrandKitStore } from "@/stores/useBrandKitStore";
 import { suggestPresetForSubject } from "@/lib/presetSuggestion";
 import { FEATURES } from "@/lib/featureFlags";
+import { preprocessSubject } from "@/lib/preprocessSubject";
 
 const FRAMING_OPTIONS = [
   { value: "face" as const, label: "Rosto" },
@@ -50,29 +52,11 @@ export function WizardStep1Subject() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const raw = (ev.target?.result as string) ?? "";
-      compressImage(raw, 1248, 0.88).then((compressed) => {
-        setSubject(compressed, compressed);
-      });
+      preprocessSubject(raw)
+        .then((result) => setSubject(result.dataUrl, result.dataUrl))
+        .catch(() => setSubject(raw, raw));
     };
     reader.readAsDataURL(file);
-  }
-
-  function compressImage(dataUrl: string, maxSide: number, quality: number): Promise<string> {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.onerror = () => resolve(dataUrl);
-      img.src = dataUrl;
-    });
   }
 
   return (
@@ -101,36 +85,46 @@ export function WizardStep1Subject() {
           <div className="flex gap-2">
             <button
               onClick={handleUseAvatar}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${
                 subjectThumbnail === avatar.bestReference
                   ? "bg-purple-600 text-white"
                   : "border border-purple-700 text-purple-400 hover:bg-purple-600 hover:text-white"
               }`}
             >
-              {subjectThumbnail === avatar.bestReference ? "✓ Usando" : "Usar"}
+              {subjectThumbnail === avatar.bestReference ? (
+                <><Check className="w-3 h-3" /> Usando</>
+              ) : "Usar"}
             </button>
           </div>
         </div>
       )}
 
-      {/* Upload */}
-      <label className="flex flex-col items-center justify-center w-full aspect-square max-h-72 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary transition-colors overflow-hidden relative bg-muted/30">
+      {/* Upload — compact */}
+      <label className="flex items-center gap-4 w-full px-4 py-3 border-2 border-dashed border-border rounded-xl cursor-pointer hover:border-primary transition-colors bg-muted/30">
         {subjectThumbnail ? (
-          <img src={subjectThumbnail} alt="Subject" className="w-full h-full object-contain" />
+          <img
+            src={subjectThumbnail}
+            alt="Subject"
+            className="w-16 h-16 rounded-lg object-contain bg-white border border-border shrink-0"
+          />
         ) : (
-          <div className="flex flex-col items-center gap-2 text-muted-foreground py-8">
-            <span className="text-5xl">📷</span>
-            <span className="text-sm font-medium">Clique para enviar</span>
-            <span className="text-xs">PNG, JPG ou WEBP</span>
+          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center shrink-0 border border-dashed border-border">
+            <UploadCloud className="w-7 h-7 text-muted-foreground" />
           </div>
         )}
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-foreground">
+            {subjectThumbnail ? "Trocar imagem" : "Clique para enviar"}
+          </span>
+          <span className="text-xs text-muted-foreground">PNG, JPG ou WEBP</span>
+        </div>
         <input type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
       </label>
 
       {/* Modo quick: mostra apenas indicador se há subject */}
       {mode === "quick" && subjectThumbnail && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="text-green-500">✓</span>
+          <Check className="w-4 h-4 text-green-500" />
           Sujeito carregado. Próximo passo: escolher estilo.
           {subjectProfile && (
             <span className="ml-1 text-xs opacity-60">
@@ -188,7 +182,7 @@ export function WizardStep1Subject() {
               <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
             </label>
             <label className="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed border-border cursor-pointer hover:border-primary transition-colors">
-              <span className="text-2xl">🖼</span>
+              <Image className="w-6 h-6 text-muted-foreground shrink-0" />
               <div>
                 <p className="text-sm">Enviar imagem de referência</p>
                 <p className="text-xs text-muted-foreground">O estilo será extraído automaticamente</p>

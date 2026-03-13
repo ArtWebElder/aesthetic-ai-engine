@@ -79,25 +79,46 @@ function getMoodTier(mood: string): MoodTier {
   return "neutral";
 }
 
+function getTypographyStyle(moodTier: MoodTier): string {
+  switch (moodTier) {
+    case "drama_impact":
+      return "bold display typeface with metallic grunge texture integrated into the image; headline accent word in vivid accent color (purple, orange, or cyan); text interacts with scene rim lighting and particles; letterforms cast visible shadows in the scene";
+    case "clean_premium":
+      return "bold geometric sans-serif, clean and sharp; black or white letterforms with high legibility; left-aligned hierarchy; CTA styled as an outline button element integrated into the scene composition";
+    case "dark_cinematic":
+      return "gothic or heavy serif typeface in pure white or metallic gold/silver; letterforms with subtle glow or inner light consistent with the scene neon/cold lighting; title positioned at upper area, credits/CTA at base";
+    default:
+      return "professional bold sans-serif; high contrast against background; clean legible letterforms consistent with the scene atmosphere";
+  }
+}
 
-const TEXT_POSITION_INSTRUCTIONS: Record<string, string> = {
-  top:    "Keep upper 35% of frame dark and visually clean for text overlay. Subject must be placed in lower 2/3 of the frame.",
-  bottom: "Keep lower 35% of frame dark and visually clean for text overlay. Subject must be placed in upper 2/3 of the frame.",
-  left:   "Keep left 45% of frame dark and visually clean for text overlay. Subject must be right-aligned in the frame.",
-  right:  "Keep right 45% of frame dark and visually clean for text overlay. Subject must be left-aligned in the frame.",
-  over:   "Subject centered. Ensure the subject area has contrast variation — dark and light zones — so text can be readable over it.",
+
+const TEXT_POSITION_LABELS: Record<string, string> = {
+  top:    "upper third of the frame",
+  bottom: "lower third of the frame",
+  left:   "left side of the frame",
+  right:  "right side of the frame",
+  over:   "centered over the subject",
 };
 
-/** Returns composition instruction for text safe area.
+const TEXT_COMPOSITION_ZONE: Record<string, string> = {
+  top:    "Subject placed in lower 2/3 of frame; upper third has atmospheric depth for text integration.",
+  bottom: "Subject placed in upper 2/3 of frame; lower third has atmospheric depth for text integration.",
+  left:   "Subject right-aligned; left side has atmospheric depth for text integration.",
+  right:  "Subject left-aligned; right side has atmospheric depth for text integration.",
+  over:   "Subject centered with contrast variation — dark and light zones — so text integrates naturally over it.",
+};
+
+/** Returns text position label and composition zone instruction.
  *  Uses builder.safeSpace if set, falls back to per-module default. */
-function resolveTextPosition(safeSpace: string | undefined, module: string): string {
+function resolveTextPosition(safeSpace: string | undefined, module: string): { label: string; zone: string } {
   const key = safeSpace?.trim().toLowerCase();
-  if (key && TEXT_POSITION_INSTRUCTIONS[key]) {
-    return TEXT_POSITION_INSTRUCTIONS[key];
+  if (key && TEXT_POSITION_LABELS[key]) {
+    return { label: TEXT_POSITION_LABELS[key], zone: TEXT_COMPOSITION_ZONE[key] };
   }
   // Per-module defaults
-  if (module === "ecom_banner") return TEXT_POSITION_INSTRUCTIONS["bottom"];
-  return TEXT_POSITION_INSTRUCTIONS["bottom"];
+  if (module === "ecom_banner") return { label: TEXT_POSITION_LABELS["bottom"], zone: TEXT_COMPOSITION_ZONE["bottom"] };
+  return { label: TEXT_POSITION_LABELS["bottom"], zone: TEXT_COMPOSITION_ZONE["bottom"] };
 }
 
 function toLabel(value: string, options: Array<{ value: string; label: string }>): string {
@@ -282,40 +303,46 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
   const sceneBlock = sceneParts.length > 1 ? sceneParts.join(" ") : null;
 
   // ── [TYPOGRAPHY_BLOCK] ────────────────────────────────────────────────────
-  // When text content is provided, the AI integrates it into the image (Stage 4b IA-first).
-  // When no text: reserve a clean safe area for the empty composition.
-  const hasText = Boolean(headline?.trim() || subheadline?.trim() || cta?.trim());
-
+  // IA-first approach: when headline is provided, the AI INTEGRATES typography
+  // directly into the image. Text is part of the scene — NOT pasted on top.
   const typographyBlock = (() => {
     if (module === "photoshoot") return null;
+    const { label: posLabel, zone: posZone } = resolveTextPosition(safeSpace, module);
+    const cleanHeadline = headline?.trim() ?? "";
+    const cleanSubheadline = subheadline?.trim() ?? "";
+    const cleanCta = (content.ctaText ?? builder?.cta ?? "").trim();
 
-    if (hasText) {
-      const textPosition = resolveTextPosition(safeSpace, module);
-      const lines: string[] = [
-        "TYPOGRAPHY (integrated into the image — part of the scene, not an overlay):",
-      ];
-      if (headline?.trim()) lines.push(`Headline: "${headline.trim()}" — large, bold, dominant typeface, high contrast against background.`);
-      if (subheadline?.trim()) lines.push(`Subheadline: "${subheadline.trim()}" — medium weight, legible, secondary hierarchy.`);
-      if (cta?.trim()) lines.push(`CTA: "${cta.trim()}" — button-style or strong callout treatment.`);
-      lines.push(
-        `Text placement: ${textPosition}`,
-        "Render the text with texture, ambient lighting blend, and depth consistent with the scene. The typography must feel painted into the scene — not floating on top.",
-        "Letterforms must be sharp, correctly spelled, and readable."
-      );
-      return lines.join(" ");
+    if (!cleanHeadline) {
+      // No text to render — only give compositional guidance, do NOT block text generation
+      return `COMPOSITION: ${posZone} Leave balanced negative space in the scene for breathing room. No forced text elements needed.`;
     }
 
-    // No text — reserve compositional space
-    return `TEXT SAFE AREA: No text in the image. ${resolveTextPosition(safeSpace, module)} Keep this zone visually clean with low complexity for future text overlay.`;
+    const typographyStyle = getTypographyStyle(moodTier);
+    const parts = [
+      `TYPOGRAPHY (integrated into the scene, NOT pasted on top):`,
+      `Headline: "${cleanHeadline}" — ${typographyStyle}.`,
+      cleanSubheadline ? `Subheadline: "${cleanSubheadline}" — smaller, lighter weight, secondary hierarchy.` : null,
+      cleanCta ? `CTA: "${cleanCta}" — styled as a button or accent text element.` : null,
+      `Positioned at ${posLabel}. ${posZone}`,
+      `All text MUST be correctly spelled, fully legible, properly kerned, and visually integrated with the scene lighting and atmosphere.`,
+      `Typography is part of the image — letterforms interact with light, shadow, and environment. Not a flat overlay.`,
+    ].filter(Boolean).join(" ");
+
+    return parts;
   })();
 
   // ── [QUALITY_BLOCK] ───────────────────────────────────────────────────────
+  const hasHeadlineText = Boolean((headline?.trim() ?? "") && module !== "photoshoot");
   const qualityParts: string[] = [
     "QUALITY REQUIREMENTS: No plastic skin. No dead eyes. No distorted hands or extra fingers. Anatomically correct proportions.",
     "Consistent lighting — the light direction on the subject must match the scene light source. No contradictory dual lighting.",
     "No white halo or edge fringe around the subject. No JPEG artifacts. No pixelation. No over-compression.",
     "No watermarks. No logos from other tools.",
-    !hasText ? "No text, no letters, no words, no numbers anywhere in the image." : null,
+    hasHeadlineText
+      ? "All text in the image must be correctly spelled, fully legible, and properly integrated with the scene. No garbled letters. No placeholder text."
+      : module !== "photoshoot"
+      ? "No random text, letters, words, or numbers in the image unless explicitly specified above."
+      : null,
     "Print-ready quality. The result must be directly usable in a paid advertising campaign without any additional editing.",
   ];
 
@@ -328,14 +355,18 @@ export function compilePrompt(spec: ProjectSpec): CompiledPrompt {
     .join("\n\n");
 
   // ── Negative prompt ───────────────────────────────────────────────────────
+  // When headline is provided, we DON'T block text — the AI integrates typography.
+  // When no headline, we block unintended text generation.
+  const textNegative = hasHeadlineText
+    ? "garbled text, misspelled words, illegible letters, Lorem ipsum, placeholder text, watermark"
+    : "text, letters, words, numbers, typography, watermark, written text, captions, labels, signs, any writing";
+
   const coreNegative = [
+    textNegative,
     "plastic skin, waxy face, dead eyes, distorted hands, extra fingers, wrong anatomy, disfigured body",
     "stock photo generic background, inconsistent lighting, two suns, dual contradictory light sources",
     "white halo around subject, edge fringe, cutout artifact, JPEG noise, pixelated, over-compressed",
     "watermark, tool logo, brand logo overlay, copyright stamp",
-    module !== "photoshoot" && !hasText
-      ? "text, letters, words, numbers, typography, headline, label, caption, subtitle, watermark text, any written characters"
-      : "watermark, tool logo overlay, copyright stamp, unintended random text artifacts",
     module === "ecom_banner" ? "wrong product category, unrelated object, replaced product" : null,
   ]
     .filter(Boolean)

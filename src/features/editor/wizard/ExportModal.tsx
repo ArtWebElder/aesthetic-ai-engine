@@ -1,25 +1,12 @@
 // src/features/editor/wizard/ExportModal.tsx
-// CREATYNG — MASTER SPEC DIFF 13.1 + 13.4 + 13.5
-// Modal de export multi-formato. Usa CachedGeneration do wizard store.
+// CREATYNG — Export Modal redesigned to match CreatyngMicroV2 prototype.
+// Light modal, dark header with thumbnail, 3 format cards, aspect ratio selector.
+// Keeps existing triggerDownload / recomposeForFormat logic.
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Progress } from "@/components/ui/progress";
-import {
-  EXPORT_FORMATS,
-  ExportFormat,
-  ExportCategory,
   recomposeForFormat,
-  renderFormatPreview,
+  EXPORT_FORMATS,
 } from "@/features/editor/engine/exportComposed";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 
@@ -34,39 +21,19 @@ interface ExportModalProps {
   colors: ColorConfig;
   composition: CompositionConfig;
   isPro?: boolean;
-}
-
-type Quality = "2k" | "4k";
-type OutputFormat = "png" | "jpg";
-
-interface FormatPreview {
-  formatId: string;
-  previewBase64: string;
-  loading: boolean;
-  error?: string;
-}
-
-// ─── AGRUPAMENTO ──────────────────────────────────────────────────────────────
-
-const CATEGORY_LABELS: Record<ExportCategory, string> = {
-  social: "Social Media",
-  ecommerce: "E-commerce",
-  ads: "Ads",
-};
-
-const CATEGORY_ORDER: ExportCategory[] = ["social", "ecommerce", "ads"];
-
-function groupFormats(): Record<ExportCategory, ExportFormat[]> {
-  const groups: Record<ExportCategory, ExportFormat[]> = {
-    social: [], ecommerce: [], ads: [],
+  foodPopOverlay?: boolean;
+  foodPopData?: {
+    price?: { value: string; prefix: string; suffix: string } | null;
+    whatsapp?: string;
+    instagram?: string;
+    accentColor?: string;
   };
-  for (const fmt of EXPORT_FORMATS) {
-    groups[fmt.category].push(fmt);
-  }
-  return groups;
 }
 
-// ─── DOWNLOAD ─────────────────────────────────────────────────────────────────
+type OutputFormat = "png" | "jpg" | "webp";
+type AspectRatioId = "1:1" | "9:16" | "16:9" | "4:5";
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
 
 function triggerDownload(base64: string, filename: string, mime: string): void {
   const link = document.createElement("a");
@@ -82,369 +49,242 @@ function formatDate(): string {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
 }
 
+// ─── EXPORT FORMAT CONFIGS ────────────────────────────────────────────────────
+
+const FORMAT_CARDS: Array<{ fmt: OutputFormat; label: string; desc: string; size: string; recommended?: boolean }> = [
+  { fmt: "png", label: "PNG", desc: "Alta qualidade", size: "~2.4 MB", recommended: true },
+  { fmt: "jpg", label: "JPG", desc: "Comprimido", size: "~800 KB" },
+  { fmt: "webp", label: "WebP", desc: "Moderno", size: "~500 KB" },
+];
+
+const ASPECT_RATIOS: Array<{ id: AspectRatioId; w: number; h: number }> = [
+  { id: "1:1", w: 18, h: 18 },
+  { id: "9:16", w: 13, h: 20 },
+  { id: "16:9", w: 22, h: 14 },
+  { id: "4:5", w: 16, h: 20 },
+];
+
 // ─── COMPONENTE ───────────────────────────────────────────────────────────────
 
 export function ExportModal({
   open, onClose,
   imageBase64, texts, presetConfig, colors, composition,
   isPro = false,
+  foodPopOverlay = false,
+  foodPopData,
 }: ExportModalProps) {
-  const groups = groupFormats();
-
-  // Seleção de formatos
-  const [selected, setSelected] = useState<Set<string>>(
-    () => new Set(["instagram_feed"])
-  );
-
-  // Qualidade e formato de saída
-  const [quality, setQuality] = useState<Quality>("2k");
-  const [outputFormat, setOutputFormat] = useState<OutputFormat>("png");
-
-  // Previews
-  const [previews, setPreviews] = useState<Map<string, FormatPreview>>(new Map());
-
-  // Export progress
+  const [selectedFormat, setSelectedFormat] = useState<OutputFormat>("png");
+  const [selectedRatio, setSelectedRatio] = useState<AspectRatioId>("1:1");
   const [exporting, setExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0);
-  const [exportStatus, setExportStatus] = useState<{ current: string; step: number; total: number } | null>(null);
   const [exportDone, setExportDone] = useState(false);
 
-  // Gerar preview para todos os formatos selecionados quando mudam
-  const previewAbortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (!open || !imageBase64) return;
-
-    // Cancelar previews anteriores
-    previewAbortRef.current?.abort();
-    const controller = new AbortController();
-    previewAbortRef.current = controller;
-
-    const formatIds = Array.from(selected);
-
-    // Marcar todos como loading
-    setPreviews((prev) => {
-      const next = new Map(prev);
-      for (const id of formatIds) {
-        if (!next.has(id)) {
-          next.set(id, { formatId: id, previewBase64: "", loading: true });
-        }
-      }
-      return next;
-    });
-
-    // Renderizar previews sequencialmente
-    (async () => {
-      for (const id of formatIds) {
-        if (controller.signal.aborted) break;
-        const fmt = EXPORT_FORMATS.find((f) => f.id === id);
-        if (!fmt) continue;
-
-        setPreviews((prev) =>
-          new Map(prev).set(id, { formatId: id, previewBase64: "", loading: true })
-        );
-
-        try {
-          const preview = await renderFormatPreview(
-            imageBase64, texts, presetConfig, colors, composition, fmt, 280
-          );
-          if (!controller.signal.aborted) {
-            setPreviews((prev) =>
-              new Map(prev).set(id, { formatId: id, previewBase64: preview, loading: false })
-            );
-          }
-        } catch {
-          if (!controller.signal.aborted) {
-            setPreviews((prev) =>
-              new Map(prev).set(id, { formatId: id, previewBase64: "", loading: false, error: "Erro ao gerar preview" })
-            );
-          }
-        }
-      }
-    })();
-
-    return () => controller.abort();
-  }, [open, selected, imageBase64]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  function toggleFormat(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function selectAll() {
-    setSelected(new Set(EXPORT_FORMATS.map((f) => f.id)));
-  }
-
-  function selectNone() {
-    setSelected(new Set());
-  }
+  if (!open) return null;
 
   async function handleExport() {
-    if (selected.size === 0) return;
     setExporting(true);
     setExportDone(false);
-    setExportProgress(0);
-    setExportStatus(null);
-
-    const formatIds = Array.from(selected);
-    const total = formatIds.length;
     const date = formatDate();
-    const mime = outputFormat === "jpg" ? "image/jpeg" : "image/png";
-    const ext = outputFormat === "jpg" ? "jpg" : "png";
+    const mime = selectedFormat === "jpg" ? "image/jpeg" : selectedFormat === "webp" ? "image/webp" : "image/png";
+    const ext = selectedFormat;
 
-    for (let i = 0; i < formatIds.length; i++) {
-      const id = formatIds[i];
-      const fmt = EXPORT_FORMATS.find((f) => f.id === id);
-      if (!fmt) continue;
-
-      setExportStatus({ current: fmt.label, step: i + 1, total });
-
-      try {
-        const result = await recomposeForFormat(
-          imageBase64, texts, presetConfig, colors, composition, fmt,
-          { quality, outputFormat }
-        );
-        const filename = `creatyng_${fmt.id}_${date}.${ext}`;
-        triggerDownload(result, filename, mime);
-
-        // Delay entre downloads para o browser processar cada arquivo
-        if (i < formatIds.length - 1) {
-          await new Promise((r) => setTimeout(r, 400));
-        }
-      } catch {
-        // continuar os próximos formatos mesmo se um falhar
-      }
-
-      setExportProgress(Math.round(((i + 1) / total) * 100));
+    try {
+      // Find the first format matching the selected aspect ratio or fall back to instagram_feed
+      const fmt = EXPORT_FORMATS.find((f) => f.ratio === selectedRatio) ?? EXPORT_FORMATS[0];
+      const result = await recomposeForFormat(
+        imageBase64, texts, presetConfig, colors, composition, fmt,
+        { quality: "2k", outputFormat: selectedFormat === "webp" ? "png" : selectedFormat, foodPopOverlay, foodPopData }
+      );
+      triggerDownload(result, `creatyng_${fmt.id}_${date}.${ext}`, mime);
+      setExportDone(true);
+      setTimeout(() => {
+        setExportDone(false);
+        onClose();
+      }, 1000);
+    } catch {
+      // silently fail
+    } finally {
+      setExporting(false);
     }
-
-    setExportStatus(null);
-    setExportDone(true);
-    setExporting(false);
-
-    // Fechar modal após breve confirmação de conclusão
-    setTimeout(() => {
-      setExportDone(false);
-      onClose();
-    }, 1200);
   }
 
-  const selectedCount = selected.size;
-
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-zinc-950 border-zinc-800 text-white">
-        <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2 text-lg font-semibold">
-            ✦ Exportar Criativo
-          </DialogTitle>
-        </DialogHeader>
-
-        {/* ── Preview da imagem base ── */}
-        {imageBase64 && (
-          <div className="flex justify-center mb-4">
-            <img
-              src={imageBase64}
-              alt="Preview"
-              className="max-h-40 rounded-lg object-contain border border-zinc-800"
-            />
-          </div>
-        )}
-
-        {/* ── Seleção de formatos ── */}
-        <div className="space-y-4 mb-4">
-          {CATEGORY_ORDER.map((cat) => (
-            <div key={cat}>
-              <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">
-                {CATEGORY_LABELS[cat]}
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {groups[cat].map((fmt) => {
-                  const isSelected = selected.has(fmt.id);
-                  const preview = previews.get(fmt.id);
-
-                  return (
-                    <label
-                      key={fmt.id}
-                      className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                        isSelected
-                          ? "border-purple-500 bg-purple-500/10"
-                          : "border-zinc-800 hover:border-zinc-600"
-                      }`}
-                      onClick={() => toggleFormat(fmt.id)}
-                    >
-                      {/* Preview miniatura */}
-                      <div
-                        className="flex-shrink-0 rounded overflow-hidden bg-zinc-900 flex items-center justify-center"
-                        style={{
-                          width: 48,
-                          height: Math.round(48 * (fmt.h / fmt.w)),
-                          maxHeight: 64,
-                        }}
-                      >
-                        {preview?.loading && (
-                          <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                        )}
-                        {preview?.previewBase64 && !preview.loading && (
-                          <img
-                            src={preview.previewBase64}
-                            alt={fmt.label}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                        {!preview && (
-                          <div className="w-4 h-4 bg-zinc-700 rounded" />
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            checked={isSelected}
-                            className="pointer-events-none border-zinc-600"
-                            onCheckedChange={() => {}}
-                          />
-                          <span className="text-sm font-medium text-zinc-200 truncate">
-                            {fmt.label}
-                          </span>
-                        </div>
-                        <p className="text-xs text-zinc-500 mt-0.5 ml-6">
-                          {fmt.ratio} · {fmt.w}×{fmt.h}px
-                        </p>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0,
+          background: "rgba(20,20,23,0.4)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          zIndex: 200,
+        }}
+      >
+        {/* Modal */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: "#ffffff", borderRadius: 20, width: 440,
+            boxShadow: "0 24px 80px rgba(0,0,0,.18)", overflow: "hidden",
+            fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
+          }}
+        >
+          {/* Dark header with thumbnail */}
+          <div style={{
+            background: "linear-gradient(135deg, #141417, #2a2a30)",
+            padding: "20px 24px",
+            display: "flex", alignItems: "center", gap: 16, position: "relative",
+          }}>
+            {/* Thumbnail */}
+            <div style={{
+              width: 56, height: 56, borderRadius: 10, overflow: "hidden",
+              flexShrink: 0, background: "linear-gradient(135deg, #ff713d, #FF9B70)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              {imageBase64 ? (
+                <img
+                  src={imageBase64}
+                  alt="Criativo"
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                </svg>
+              )}
             </div>
-          ))}
-        </div>
-
-        {/* ── Ações de seleção ── */}
-        <div className="flex gap-2 mb-4">
-          <button
-            className="text-xs text-purple-400 hover:text-purple-300 underline"
-            onClick={selectAll}
-          >
-            Selecionar todos
-          </button>
-          <span className="text-zinc-700">·</span>
-          <button
-            className="text-xs text-zinc-500 hover:text-zinc-400 underline"
-            onClick={selectNone}
-          >
-            Limpar seleção
-          </button>
-        </div>
-
-        {/* ── Qualidade + Formato ── */}
-        <div className="grid grid-cols-2 gap-6 p-4 rounded-lg bg-zinc-900 border border-zinc-800 mb-4">
-          {/* Qualidade */}
-          <div>
-            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">
-              Qualidade
-            </p>
-            <RadioGroup value={quality} onValueChange={(v) => setQuality(v as Quality)}>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="2k" id="q-2k" />
-                <Label htmlFor="q-2k" className="text-sm text-zinc-300 cursor-pointer">
-                  2K <span className="text-zinc-500">(recomendado)</span>
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="4k" id="q-4k" disabled={!isPro} />
-                <Label
-                  htmlFor="q-4k"
-                  className={`text-sm cursor-pointer ${isPro ? "text-zinc-300" : "text-zinc-600"}`}
-                >
-                  4K {!isPro && <span className="text-xs text-yellow-500 ml-1">PRO</span>}
-                </Label>
-              </div>
-            </RadioGroup>
+            <div>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>Exportar criativo</h3>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>
+                {texts.headline || "Criativo sem título"}
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              style={{
+                position: "absolute", top: 14, right: 14,
+                background: "rgba(255,255,255,0.1)", border: "none",
+                borderRadius: 7, width: 28, height: 28, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "rgba(255,255,255,0.6)", backdropFilter: "blur(4px)",
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
           </div>
 
-          {/* Formato */}
-          <div>
-            <p className="text-xs font-semibold text-zinc-400 uppercase tracking-widest mb-2">
+          {/* Body */}
+          <div style={{ padding: "20px 24px 24px" }}>
+
+            {/* Format selection */}
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
               Formato
-            </p>
-            <RadioGroup value={outputFormat} onValueChange={(v) => setOutputFormat(v as OutputFormat)}>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="png" id="f-png" />
-                <Label htmlFor="f-png" className="text-sm text-zinc-300 cursor-pointer">
-                  PNG
-                </Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <RadioGroupItem value="jpg" id="f-jpg" />
-                <Label htmlFor="f-jpg" className="text-sm text-zinc-300 cursor-pointer">
-                  JPG <span className="text-zinc-500">(85%)</span>
-                </Label>
-              </div>
-            </RadioGroup>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+              {FORMAT_CARDS.map((f) => {
+                const isSelected = selectedFormat === f.fmt;
+                return (
+                  <button
+                    key={f.fmt}
+                    onClick={() => setSelectedFormat(f.fmt)}
+                    style={{
+                      flex: 1, padding: "14px 10px", borderRadius: 12, cursor: "pointer",
+                      fontFamily: "inherit",
+                      border: isSelected ? "1.5px solid #ff713d" : "1px solid rgba(20,20,23,0.08)",
+                      background: isSelected ? "#FFF0EA" : "#ffffff",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                      transition: "all 150ms", position: "relative",
+                    }}
+                    onMouseEnter={(e) => { if (!isSelected) { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(20,20,23,0.15)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}}
+                    onMouseLeave={(e) => { if (!isSelected) { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(20,20,23,0.08)"; (e.currentTarget as HTMLButtonElement).style.transform = ""; }}}
+                  >
+                    {f.recommended && (
+                      <div style={{
+                        position: "absolute", top: -8, padding: "2px 8px",
+                        borderRadius: 5, background: "#ff713d", color: "#fff", fontSize: 9, fontWeight: 700,
+                      }}>Recomendado</div>
+                    )}
+                    <div style={{ fontSize: 18, fontWeight: 700, color: isSelected ? "#ff713d" : "#141417" }}>{f.label}</div>
+                    <div style={{ fontSize: 11, color: "#8e8e96" }}>{f.desc}</div>
+                    <div style={{ fontSize: 10, color: "#b5b5bb", fontFamily: "monospace" }}>{f.size}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Aspect ratio selection */}
+            <div style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>
+              Proporção
+            </div>
+            <div style={{ display: "flex", gap: 6, marginBottom: 18 }}>
+              {ASPECT_RATIOS.map((a) => {
+                const isSelected = selectedRatio === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => setSelectedRatio(a.id)}
+                    style={{
+                      flex: 1, padding: "10px 0", borderRadius: 9, cursor: "pointer",
+                      fontFamily: "inherit",
+                      border: isSelected ? "1.5px solid #ff713d" : "1px solid rgba(20,20,23,0.08)",
+                      background: isSelected ? "#FFF0EA" : "#ffffff",
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 5,
+                      transition: "all 150ms",
+                    }}
+                    onMouseEnter={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(20,20,23,0.15)"; }}
+                    onMouseLeave={(e) => { if (!isSelected) (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(20,20,23,0.08)"; }}
+                  >
+                    <div style={{
+                      width: a.w, height: a.h, borderRadius: 2,
+                      border: `1.5px solid ${isSelected ? "#ff713d" : "#b5b5bb"}`,
+                    }} />
+                    <span style={{ fontSize: 11, fontWeight: isSelected ? 600 : 400, color: isSelected ? "#ff713d" : "#5a5a60" }}>
+                      {a.id}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Credits note */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", color: "#b5b5bb", fontSize: 10.5, marginBottom: 18 }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>0 créditos — export é gratuito</span>
+            </div>
+
+            {/* Export button */}
+            <button
+              onClick={handleExport}
+              disabled={exporting || exportDone}
+              style={{
+                width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
+                background: exportDone
+                  ? "linear-gradient(135deg, #10B981, #059669)"
+                  : "linear-gradient(135deg, #ff713d, #FF9B70)",
+                color: "#fff", fontSize: 14, fontWeight: 600, cursor: (exporting || exportDone) ? "default" : "pointer",
+                fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                opacity: exporting ? 0.7 : 1,
+                boxShadow: "0 3px 12px rgba(255,113,61,0.3)",
+                transition: "all 200ms",
+              }}
+            >
+              {exportDone ? (
+                <>✓ Download concluído!</>
+              ) : exporting ? (
+                <>
+                  <span style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
+                  Exportando...
+                </>
+              ) : (
+                <>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  Baixar {selectedFormat.toUpperCase()}
+                </>
+              )}
+            </button>
           </div>
         </div>
-
-        {/* ── Progress bar durante export ── */}
-        {(exporting || exportDone) && (
-          <div className="mb-4 space-y-2">
-            {exportDone ? (
-              <p className="text-xs text-green-400 font-medium flex items-center gap-1">
-                <span>✓</span> Download concluído!
-              </p>
-            ) : exportStatus ? (
-              <p className="text-xs text-zinc-400">
-                Baixando{" "}
-                <span className="text-zinc-200 font-medium">{exportStatus.current}</span>
-                {" "}
-                <span className="text-zinc-500">
-                  ({exportStatus.step} de {exportStatus.total})
-                </span>
-              </p>
-            ) : (
-              <p className="text-xs text-zinc-400">Preparando...</p>
-            )}
-            <Progress value={exportDone ? 100 : exportProgress} className="h-1.5 bg-zinc-800" />
-          </div>
-        )}
-
-        {/* ── Botões ── */}
-        <div className="flex items-center justify-between gap-3">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={exporting}
-            className="border-zinc-700 text-zinc-400 hover:text-white hover:border-zinc-500"
-          >
-            Cancelar
-          </Button>
-
-          <Button
-            onClick={handleExport}
-            disabled={selectedCount === 0 || exporting || exportDone}
-            className="bg-purple-600 hover:bg-purple-500 text-white font-semibold px-6"
-          >
-            {exportDone
-              ? "✓ Concluído"
-              : exporting
-              ? "Exportando..."
-              : selectedCount === 0
-              ? "Selecione um formato"
-              : `✦ Exportar ${selectedCount} formato${selectedCount > 1 ? "s" : ""}`}
-          </Button>
-        </div>
-
-        {selectedCount > 1 && !exporting && (
-          <p className="text-xs text-zinc-500 text-center mt-2">
-            {selectedCount} arquivos serão baixados individualmente
-          </p>
-        )}
-      </DialogContent>
-    </Dialog>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </>
   );
 }

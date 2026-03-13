@@ -23,8 +23,7 @@ type ReplicateStrictResult = {
   meta: {
     providerName: string;
     payloadKind: "replicate_kontext";
-    endpoint: "replicate:v1:predictions";
-    version: string;
+    endpoint: string;
   };
 };
 
@@ -59,13 +58,7 @@ export class ReplicateFluxKontextProvider {
 
   constructor(input: { token: string; version?: string }) {
     this.token = input.token;
-    this.version =
-      input.version?.trim() ||
-      String(Deno.env.get("REPLICATE_FLUX_KONTEXT_PRO_VERSION") ?? "").trim();
-
-    if (!this.version) {
-      throw new Error("replicate_missing_version");
-    }
+    this.version = input.version?.trim() ?? "";
   }
 
   async generateImageToImageStrict(input: ReplicateStrictInput): Promise<ReplicateStrictResult> {
@@ -86,7 +79,6 @@ export class ReplicateFluxKontextProvider {
       .join("\n");
 
     const payload = {
-      version: this.version,
       input: {
         prompt,
         input_image: initImage,
@@ -95,7 +87,7 @@ export class ReplicateFluxKontextProvider {
       },
     };
 
-    const createResp = await fetch("https://api.replicate.com/v1/predictions", {
+    const createResp = await fetch("https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-pro/predictions", {
       method: "POST",
       headers: {
         Authorization: `Token ${this.token}`,
@@ -183,8 +175,7 @@ export class ReplicateFluxKontextProvider {
       meta: {
         providerName: this.name,
         payloadKind: "replicate_kontext",
-        endpoint: "replicate:v1:predictions",
-        version: this.version,
+        endpoint: "replicate:v1:models:flux-kontext-pro",
       },
     };
   }

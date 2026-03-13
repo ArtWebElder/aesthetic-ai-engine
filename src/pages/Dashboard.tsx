@@ -1,213 +1,462 @@
-import { useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Coins, FolderOpen, Zap, Download, ImagePlus, ShoppingBag, Camera, Plus, Sparkles, ArrowRight, Target, Flame } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import MiniProductionChart from '@/components/MiniProductionChart';
-import ProjectWizard from '@/components/ProjectWizard';
-import { PageHeader } from '@/components/ui-premium/PageHeader';
-import { SectionHeader } from '@/components/ui-premium/SectionHeader';
-import { EmptyState } from '@/components/ui-premium/EmptyState';
-import { GettingStartedBanner } from '@/components/ui-premium/GettingStartedBanner';
-import { ResumeCard } from '@/components/ui-premium/ResumeCard';
-import { ProjectCard } from '@/components/ui-premium/ProjectCard';
-import { mockCredits, mockGenerations } from '@/lib/mocks/data';
-import { listProjects, deleteProject, createProject } from '@/features/projects/store';
+import {
+  Utensils, Sparkles, BookOpen, Zap, ChevronLeft, ChevronRight,
+  FolderOpen, Plus, Image,
+} from 'lucide-react';
+import { EmptyState } from '@/components/creatyng';
+import { listProjects } from '@/features/projects/store';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
-import { useAuth } from '@/features/auth/fake-auth';
-import type { ProjectType } from '@/types';
 import type { Project } from '@/types/spec';
+import { useEffect } from 'react';
 
-const quickCreate: { labelKey: string; hintKey: string; icon: typeof ImagePlus; type: ProjectType; popular?: boolean }[] = [
-  { labelKey: 'dashboard.quick_create_social', hintKey: 'dashboard.quick_create_social_hint', icon: ImagePlus, type: 'social_post', popular: true },
-  { labelKey: 'dashboard.quick_create_ecom', hintKey: 'dashboard.quick_create_ecom_hint', icon: ShoppingBag, type: 'ecom_banner' },
-  { labelKey: 'dashboard.quick_create_photoshoot', hintKey: 'dashboard.quick_create_photoshoot_hint', icon: Camera, type: 'photoshoot' },
+/* ── Feature cards ────────────────────────────────────── */
+const FEATURES = [
+  {
+    id: 'food_pop',
+    labelKey: 'dashboard.feature.food_pop',
+    descKey: 'dashboard.feature.food_pop_desc',
+    gradient: 'linear-gradient(135deg, #f97316, #e11d48)',
+    Icon: Utensils,
+    badgeLabel: 'Popular',
+    badgeBg: '#ff713d',
+    active: true,
+  },
+  {
+    id: 'pop_design',
+    labelKey: 'dashboard.feature.pop_design',
+    descKey: 'dashboard.feature.pop_design_desc',
+    gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+    Icon: Sparkles,
+    badgeLabel: 'Novo',
+    badgeBg: '#7C3AED',
+    active: true,
+  },
+  {
+    id: 'editorial',
+    labelKey: 'dashboard.feature.editorial',
+    descKey: 'dashboard.feature.editorial_desc',
+    gradient: 'linear-gradient(135deg, #475569, #334155)',
+    Icon: BookOpen,
+    badgeLabel: 'Em breve',
+    badgeBg: null,
+    active: false,
+  },
+  {
+    id: 'neon',
+    labelKey: 'dashboard.feature.neon',
+    descKey: 'dashboard.feature.neon_desc',
+    gradient: 'linear-gradient(135deg, #a855f7, #06b6d4)',
+    Icon: Zap,
+    badgeLabel: 'Em breve',
+    badgeBg: null,
+    active: false,
+  },
 ];
 
+/* ── Discover mosaic data ─────────────────────────────── */
+const DISCOVER = [
+  { gradient: 'linear-gradient(135deg, #f97316, #e11d48)', h: 176 },
+  { gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)', h: 224 },
+  { gradient: 'linear-gradient(135deg, #0891b2, #0d9488)', h: 144 },
+  { gradient: 'linear-gradient(135deg, #d97706, #ea580c)', h: 192 },
+  { gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)', h: 160 },
+  { gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)', h: 208 },
+  { gradient: 'linear-gradient(135deg, #10b981, #22c55e)', h: 176 },
+  { gradient: 'linear-gradient(135deg, #a855f7, #ec4899)', h: 144 },
+];
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+const PROJECT_GRADIENTS = [
+  'linear-gradient(135deg, #f97316, #e11d48)',
+  'linear-gradient(135deg, #7c3aed, #4f46e5)',
+  'linear-gradient(135deg, #0891b2, #0d9488)',
+  'linear-gradient(135deg, #d97706, #ea580c)',
+  'linear-gradient(135deg, #3b82f6, #6366f1)',
+  'linear-gradient(135deg, #10b981, #22c55e)',
+];
+
+/* ── Section header ──────────────────────────────────── */
+function SectionHeader({
+  title, onViewAll, scrollRef,
+}: {
+  title: string;
+  onViewAll?: () => void;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
+}) {
+  const { t } = useI18n();
+  const scrollBy = (dir: number) => scrollRef?.current?.scrollBy({ left: dir * 210, behavior: 'smooth' });
+
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{title}</h2>
+      <div className="flex items-center gap-2">
+        {scrollRef && (
+          <div className="flex gap-1">
+            {([-1, 1] as const).map((dir) => (
+              <button
+                key={dir}
+                onClick={() => scrollBy(dir)}
+                className="flex items-center justify-center transition-colors"
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 8,
+                  border: '1px solid hsl(var(--border))',
+                  background: 'hsl(var(--card))',
+                  color: 'hsl(var(--muted-foreground))',
+                }}
+              >
+                {dir === -1 ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+              </button>
+            ))}
+          </div>
+        )}
+        {onViewAll && (
+          <button
+            onClick={onViewAll}
+            className="transition-colors"
+            style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))' }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#ff713d'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--muted-foreground))'; }}
+          >
+            {t('common.view_all')}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ── Feature card ────────────────────────────────────── */
+function FeatureCard({ f, onNavigate }: { f: typeof FEATURES[0]; onNavigate: () => void }) {
+  const { t } = useI18n();
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="relative shrink-0 overflow-hidden"
+      style={{
+        width: 195,
+        height: 155,
+        borderRadius: 12,
+        background: f.gradient,
+        opacity: f.active ? 1 : 0.55,
+        cursor: f.active ? 'pointer' : 'default',
+      }}
+      onMouseEnter={() => f.active && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={() => f.active && onNavigate()}
+    >
+      <div className="relative z-10 p-[14px] h-full flex flex-col">
+        <div className="flex items-start justify-between">
+          <div
+            className="flex items-center justify-center"
+            style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.2)' }}
+          >
+            <f.Icon style={{ width: 18, height: 18, color: '#ffffff' }} />
+          </div>
+          <span
+            className="text-white"
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              padding: '3px 8px',
+              borderRadius: 20,
+              background: f.badgeBg || 'rgba(255,255,255,0.15)',
+              backdropFilter: f.badgeBg ? 'none' : 'blur(6px)',
+              border: f.badgeBg ? 'none' : '1px solid rgba(255,255,255,0.12)',
+            }}
+          >
+            {t(('dashboard.badge.' + (f.badgeLabel === 'Popular' ? 'popular' : f.badgeLabel === 'Novo' ? 'new' : 'coming')) as string) || f.badgeLabel}
+          </span>
+        </div>
+        <div className="mt-auto">
+          <p style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }} className="line-clamp-2">
+            {t(f.labelKey)}
+          </p>
+        </div>
+      </div>
+
+      {hovered && (
+        <div
+          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 animate-fade-in"
+          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)' }}
+        >
+          <button
+            className="transition-colors"
+            style={{
+              background: '#ffffff',
+              color: '#141417',
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '7px 16px',
+              borderRadius: 8,
+            }}
+          >
+            {t('dashboard.create_now')}
+          </button>
+          <p className="text-white/80 text-center px-4 line-clamp-2" style={{ fontSize: 10.5 }}>
+            {t(f.descKey)}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Project card ────────────────────────────────────── */
+function ProjectCard({
+  project, gradient, onClick,
+}: {
+  project: Project;
+  gradient: string;
+  onClick: () => void;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="group shrink-0 overflow-hidden cursor-pointer transition-all duration-200"
+      style={{
+        width: 180,
+        borderRadius: 10,
+        border: hovered ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+        background: hovered ? 'hsl(var(--primary) / 0.06)' : 'hsl(var(--card))',
+        boxShadow: hovered ? '0 4px 16px rgba(255,113,61,0.12)' : 'none',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      onClick={onClick}
+    >
+      <div className="relative" style={{ height: 100, background: gradient }}>
+        <div className="absolute inset-0 flex items-center justify-center opacity-20">
+          <Image className="w-8 h-8 text-white" />
+        </div>
+        <div
+          className="absolute top-2 left-2 rounded-full"
+          style={{ width: 8, height: 8, background: '#ff713d' }}
+        />
+      </div>
+      <div style={{ padding: '10px 12px' }}>
+        <p className="line-clamp-1" style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>
+          {project.name}
+        </p>
+        <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 2 }}>
+          {formatDate(project.updatedAt)}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Discover item ───────────────────────────────────── */
+function DiscoverItem({ gradient, height }: { gradient: string; height: number }) {
+  const { t } = useI18n();
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="break-inside-avoid overflow-hidden cursor-pointer transition-all duration-200 mb-3"
+      style={{
+        borderRadius: 12,
+        background: gradient,
+        height,
+        position: 'relative',
+        border: hovered ? '1.5px solid #ff713d' : '1.5px solid transparent',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {hovered && (
+        <div className="absolute inset-0 flex items-center justify-center animate-fade-in">
+          <span
+            className="text-white font-medium"
+            style={{
+              fontSize: 11,
+              padding: '4px 12px',
+              borderRadius: 20,
+              background: 'rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.15)',
+            }}
+          >
+            {t('dashboard.create_similar')}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Dashboard ───────────────────────────────────────── */
 const Dashboard = () => {
-  const [wizardOpen, setWizardOpen] = useState(false);
-  const [wizardType, setWizardType] = useState<ProjectType | undefined>();
-  const [projects, setProjects] = useState<Project[]>(() => listProjects());
   const navigate = useNavigate();
   const { t } = useI18n();
   const { user } = useAuth();
 
-  useEffect(() => {
-    setProjects(listProjects());
-  }, [wizardOpen]);
+  const [projects, setProjects] = useState<Project[]>(() => listProjects());
+  const [discoverTab, setDiscoverTab] = useState<'explore' | 'templates'>('explore');
 
-  const handleQuickCreate = (type: ProjectType) => {
-    setWizardType(type);
-    setWizardOpen(true);
-  };
+  const featureScrollRef = useRef<HTMLDivElement>(null);
+  const projectScrollRef = useRef<HTMLDivElement>(null);
 
-  const handleDelete = (id: string) => {
-    deleteProject(id);
-    setProjects(listProjects());
-  };
+  useEffect(() => { setProjects(listProjects()); }, []);
 
-  const handleDuplicate = (p: Project) => {
-    const dup = createProject(`${p.name} ${t("common.copy_suffix")}`, p.spec.format);
-    setProjects(listProjects());
-    navigate(`/app/projects/${dup.id}`);
-  };
-
-  const firstName = user?.name?.split(' ')[0] || 'there';
-  const completedCount = mockGenerations.filter(g => g.status === 'completed').length;
-  const lastOpenedId = localStorage.getItem("lastOpenedProjectId");
-  const mostRecentProject = (lastOpenedId && projects.find(p => p.id === lastOpenedId)) || (projects.length > 0 ? projects[0] : null);
-  const weeklyGoal = 10;
-  // Streak: count days with activity this week (mock: days with data > 0)
-  const activeDays = [3, 5, 2, 7, 4, 6, 8].filter(v => v > 0).length;
+  const firstName =
+    user?.user_metadata?.full_name?.split(' ')[0] ||
+    user?.email?.split('@')[0] ||
+    t('dashboard.fallback_name');
 
   return (
-    <div className="p-4 sm:p-5 lg:p-6 max-w-6xl mx-auto space-y-4 animate-page-fade">
-      {/* ── Hero ── */}
-      <PageHeader
-        title={`${t("dashboard.welcome_back")}${firstName !== 'there' ? `, ${firstName}` : ''}`}
-        subtitle={t("dashboard.welcome_subtitle")}
-        action={
-          <Button
-            onClick={() => { setWizardType(undefined); setWizardOpen(true); }}
-            className="btn-gradient h-10 px-5 text-sm font-semibold shadow-lg shadow-primary/20"
-          >
-            <Plus className="h-4 w-4 mr-1.5" />
-            {t("projects.new_project")}
-          </Button>
-        }
-      />
+    <div className="min-h-full px-8 py-7 space-y-10">
 
-      {/* Compact stat pills + streak */}
-      <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-        {[
-          { icon: Coins, label: t("dashboard.stat_credits"), value: mockCredits.current },
-          { icon: FolderOpen, label: t("dashboard.stat_projects"), value: projects.length },
-          { icon: Zap, label: t("dashboard.stat_generations"), value: completedCount },
-          { icon: Download, label: t("dashboard.stat_exports"), value: 12 },
-        ].map((s, i) => (
-          <div key={s.label} className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1.5 sm:py-1 text-xs shrink-0 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: `${i * 60}ms` }}>
-            <s.icon className="h-3 w-3 text-primary" />
-            <span className="font-medium tabular-nums">{s.value}</span>
-            <span className="text-muted-foreground/70 text-[10px]">{s.label}</span>
-          </div>
-        ))}
-        {activeDays > 0 && (
-          <div className="flex items-center gap-1.5 bg-card border border-border/30 rounded-full px-2.5 py-1.5 sm:py-1 text-xs shrink-0 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '300ms' }}>
-            <Flame className="h-3 w-3 text-orange-500" />
-            <span className="text-muted-foreground/70 text-[10px]">{t("dashboard.active_days_this_week", { days: activeDays })}</span>
-          </div>
-        )}
+      {/* ── 1. Greeting ─────────────────────────────── */}
+      <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))' }}>
+          {t('dashboard.greeting', { name: firstName })}
+        </h1>
+        <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))', marginTop: 2 }}>{t('dashboard.greeting_sub')}</p>
       </div>
 
-      {/* ── Getting Started + Resume — shared row ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <GettingStartedBanner
-          hasProjects={projects.length > 0}
-          hasGenerations={completedCount > 0}
-          onCreateProject={() => { setWizardType(undefined); setWizardOpen(true); }}
+      {/* ── 2. Quick start ──────────────────────────── */}
+      <section className="animate-fade-up" style={{ animationDelay: '60ms' }}>
+        <SectionHeader
+          title={t('dashboard.quick_create')}
+          onViewAll={() => navigate('/app/templates')}
+          scrollRef={featureScrollRef}
         />
-        {mostRecentProject && (
-          <ResumeCard
-            project={mostRecentProject}
-            onContinue={() => navigate(`/app/projects/${mostRecentProject.id}`)}
-          />
-        )}
-      </div>
+        <div ref={featureScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+          {FEATURES.map((f) => (
+            <FeatureCard key={f.id} f={f} onNavigate={() => navigate('/app/create')} />
+          ))}
+        </div>
+      </section>
 
-      {/* ── Quick Create + Production — side by side ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Quick Create (2/3) */}
-        <div className="lg:col-span-2 space-y-2">
-          <SectionHeader label={t("dashboard.quick_create")} />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-            {quickCreate.map((item, i) => (
-              <button
-                key={item.type}
-                onClick={() => handleQuickCreate(item.type)}
-                className="relative bg-card border border-border/30 rounded-xl p-4 sm:p-3.5 text-left transition-all duration-150 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] hover:border-primary/20 group animate-fade-in opacity-0 [animation-fill-mode:forwards] min-h-[72px] active:scale-[0.98]"
-                style={{ animationDelay: `${i * 80}ms` }}
+      {/* ── 3. My Projects ──────────────────────────── */}
+      <section className="animate-fade-up" style={{ animationDelay: '120ms' }}>
+        <SectionHeader
+          title={t('dashboard.recent_projects')}
+          onViewAll={() => navigate('/app/projects')}
+          scrollRef={projectScrollRef}
+        />
+
+        {projects.length === 0 ? (
+          <div style={{ maxWidth: 480 }}>
+            <div className="bg-card border border-border rounded-2xl">
+              <EmptyState
+                icon={<FolderOpen className="w-6 h-6" />}
+                title={t('projects.empty_title')}
+                description={t('dashboard.empty_description')}
+                ctaLabel={t('projects.new_project')}
+                onCta={() => navigate('/app/create')}
+              />
+            </div>
+          </div>
+        ) : (
+          <div ref={projectScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+            {/* New project button */}
+            <button
+              onClick={() => navigate('/app/create')}
+              className="shrink-0 flex flex-col items-center justify-center gap-2 transition-all"
+              style={{
+                width: 180,
+                height: 135,
+                borderRadius: 10,
+                border: '2px dashed hsl(var(--border))',
+                color: 'hsl(var(--muted-foreground))',
+                background: 'transparent',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = '#ff713d';
+                (e.currentTarget as HTMLButtonElement).style.color = '#ff713d';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'hsl(var(--border))';
+                (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--muted-foreground))';
+              }}
+            >
+              <div
+                className="flex items-center justify-center"
+                style={{ width: 36, height: 36, borderRadius: 10, background: 'hsl(var(--muted))' }}
               >
-                {item.popular && (
-                  <Badge variant="secondary" className="absolute top-2.5 right-2.5 text-[9px] px-1.5 py-0 h-4 font-normal opacity-70">
-                    {t("dashboard.popular")}
-                  </Badge>
-                )}
-                <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="h-8 w-8 rounded-lg bg-primary/8 flex items-center justify-center group-hover:bg-primary/12 transition-colors duration-200">
-                    <item.icon className="h-4 w-4 text-primary" />
-                  </div>
-                </div>
-                <h3 className="font-medium text-sm">{t(item.labelKey)}</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1">{t(item.hintKey)}</p>
+                <Plus className="w-4 h-4" />
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 500 }}>{t('projects.new_project')}</span>
+            </button>
+
+            {projects.slice(0, 8).map((p, idx) => (
+              <ProjectCard
+                key={p.id}
+                project={p}
+                gradient={PROJECT_GRADIENTS[idx % PROJECT_GRADIENTS.length]}
+                onClick={() => navigate(`/app/projects/${p.id}`)}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── 4. Discover gallery ─────────────────────── */}
+      <section className="animate-fade-up" style={{ animationDelay: '180ms' }}>
+        <div className="flex items-center justify-between mb-3">
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{t('dashboard.discover')}</h2>
+          <div
+            className="flex"
+            style={{ padding: 2, background: 'hsl(var(--muted))', borderRadius: 8 }}
+          >
+            {(['explore', 'templates'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setDiscoverTab(tab)}
+                className="transition-all duration-150"
+                style={{
+                  padding: '4px 12px',
+                  fontSize: 12,
+                  fontWeight: discoverTab === tab ? 600 : 400,
+                  color: discoverTab === tab ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                  borderRadius: 6,
+                  background: discoverTab === tab ? 'hsl(var(--card))' : 'transparent',
+                  boxShadow: discoverTab === tab ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                }}
+              >
+                {t(`dashboard.discover_tab_${tab}`)}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Production (1/3) */}
-        <div className="space-y-2">
-          <SectionHeader label={t("dashboard.production")} />
-          <div className="bg-card border border-border/30 rounded-xl p-3.5 space-y-2.5 animate-fade-in opacity-0 [animation-fill-mode:forwards]" style={{ animationDelay: '120ms' }}>
-            <MiniProductionChart />
-            <div className="pt-2 border-t border-border/20 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <Target className="h-3 w-3 text-primary" />
-                  <span className="text-[11px] font-medium">{t("dashboard.weekly_goal")}</span>
-                </div>
-                <span className="text-[11px] text-muted-foreground tabular-nums">{completedCount}/{weeklyGoal}</span>
-              </div>
-              <div className="h-1 bg-muted/50 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min((completedCount / weeklyGoal) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-          </div>
+        <div className="columns-2 sm:columns-3 lg:columns-4" style={{ columnGap: 12 }}>
+          {DISCOVER.map((item, i) => (
+            <DiscoverItem key={i} gradient={item.gradient} height={item.h} />
+          ))}
         </div>
-      </div>
 
-      {/* ── Recent Projects ── */}
-      <div className="space-y-3">
-        <SectionHeader
-          label={t("dashboard.recent_projects")}
-          action={
-            <Button variant="ghost" size="sm" onClick={() => navigate('/app/projects')} className="text-xs h-7 text-muted-foreground hover:text-foreground">
-              {t("common.view_all")}
-              <ArrowRight className="h-3 w-3 ml-1" />
-            </Button>
-          }
-        />
+        <div className="flex justify-center mt-5">
+          <button
+            onClick={() => navigate('/app/templates')}
+            className="transition-colors"
+            style={{
+              padding: '10px 32px',
+              borderRadius: 10,
+              border: '1px solid hsl(var(--border))',
+              background: 'transparent',
+              fontSize: 13.5,
+              fontWeight: 500,
+              color: 'hsl(var(--muted-foreground))',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLButtonElement).style.color = '#ff713d'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'hsl(var(--border))'; (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--muted-foreground))'; }}
+          >
+            {t('dashboard.view_more')}
+          </button>
+        </div>
+      </section>
 
-        {projects.length === 0 ? (
-          <EmptyState
-            icon={Sparkles}
-            title={t("projects.empty_title")}
-            description={t("dashboard.empty_description")}
-            action={
-              <Button onClick={() => { setWizardType(undefined); setWizardOpen(true); }} className="btn-gradient">
-                <Plus className="h-4 w-4 mr-1.5" />
-                {t("projects.new_project")}
-              </Button>
-            }
-          />
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {projects.slice(0, 6).map((project, i) => (
-              <ProjectCard
-                key={project.id}
-                project={project}
-                index={i}
-                onDelete={handleDelete}
-                onDuplicate={handleDuplicate}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <ProjectWizard open={wizardOpen} onOpenChange={setWizardOpen} initialType={wizardType} />
     </div>
   );
 };

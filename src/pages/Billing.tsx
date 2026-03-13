@@ -1,138 +1,289 @@
-import { useState } from 'react';
-import { CreditCard, Coins, Key, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from 'react';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import StatCard from '@/components/StatCard';
+  Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp,
+} from 'lucide-react';
 import { mockCredits } from '@/lib/mocks/data';
-import { useI18n } from '@/i18n';
+import RechargeCreditsModal from '@/components/creatyng/RechargeCreditsModal';
 
-const creditPacks = [
-  { amount: 50, price: 5 },
-  { amount: 150, price: 12 },
-  { amount: 300, price: 20 },
+/* ── Plans ───────────────────────────────────────────── */
+const PLANS = [
+  {
+    id: 'free', name: 'Free', price: 'R$ 0', period: '/mês', credits: '50',
+    desc: 'Para conhecer a plataforma', current: false, accent: '#8e8e96',
+    Icon: Sparkles,
+    features: ['50 créditos / mês', '2 templates disponíveis', 'Export PNG', "Marca d'água Creatyng"],
+    missing: ['Chat AI', 'Brand Kit', 'Multi-formato', 'Suporte prioritário'],
+  },
+  {
+    id: 'pro', name: 'Pro', price: 'R$ 49', period: '/mês', credits: '500',
+    desc: 'Para criadores individuais', current: true, popular: true, accent: '#ff713d',
+    Icon: Zap,
+    features: ['500 créditos / mês', 'Todos os templates', 'Export PNG, JPG, WebP', "Sem marca d'água", 'Chat AI ilimitado', 'Brand Kit básico'],
+    missing: ['Multi-formato', 'Suporte prioritário'],
+  },
+  {
+    id: 'team', name: 'Team', price: 'R$ 149', period: '/mês', credits: '2.000',
+    desc: 'Para equipes e agências', current: false, accent: '#7C3AED',
+    Icon: Users,
+    features: ['2.000 créditos / mês', 'Todos os templates', 'Todos os formatos', "Sem marca d'água", 'Chat AI ilimitado', 'Brand Kit completo', 'Até 5 colaboradores', 'Suporte prioritário'],
+    missing: [],
+  },
+  {
+    id: 'enterprise', name: 'Enterprise', price: 'Sob consulta', period: '', credits: 'Ilimitado',
+    desc: 'Para grandes operações', current: false, accent: 'hsl(var(--foreground))',
+    Icon: Building2,
+    features: ['Créditos ilimitados', 'API dedicada', 'White-label', 'SSO & compliance', 'Gerente de conta', 'SLA garantido', 'Colaboradores ilimitados', 'Onboarding dedicado'],
+    missing: [],
+  },
 ];
 
+/* ── History ─────────────────────────────────────────── */
+const HISTORY = [
+  { date: 'Hoje', action: 'Food/Pop — Burger Artesanal', credits: -5, type: 'gen' },
+  { date: 'Hoje', action: 'Chat AI — Refinamento', credits: -1, type: 'chat' },
+  { date: 'Ontem', action: 'Pop Design — Açaí Bowl', credits: -8, type: 'gen' },
+  { date: 'Ontem', action: 'Food/Pop — Sushi Festival', credits: -5, type: 'gen' },
+  { date: '08 Mar', action: 'Recarga avulsa — 200 créditos', credits: 200, type: 'topup' },
+  { date: '05 Mar', action: 'Food/Pop — Pizza Weekend', credits: -5, type: 'gen' },
+  { date: '01 Mar', action: 'Renovação mensal — Plano Pro', credits: 500, type: 'renew' },
+];
+
+/* ── Component ────────────────────────────────────────── */
 const Billing = () => {
-  const [buyOpen, setBuyOpen] = useState(false);
-  const { t } = useI18n();
-  const plans = [
-    { name: t('billing.plan.starter'), price: 19, credits: 100, features: [t('billing.feature.100_credits'), t('billing.feature.all_templates'), t('billing.feature.hd_export')] },
-    { name: t('billing.plan.pro'), price: 49, credits: 500, features: [t('billing.feature.500_credits'), t('billing.feature.priority_generation'), t('billing.feature.2k_export'), t('billing.feature.byok')] },
-    { name: t('billing.plan.business'), price: 99, credits: 1500, features: [t('billing.feature.1500_credits'), t('billing.feature.api_access'), t('billing.feature.4k_export'), t('billing.feature.team_seats')] },
-  ];
+  const [tab, setTab] = useState<'plans' | 'usage'>('plans');
+  const [ready, setReady] = useState(false);
+  const [showReloadModal, setShowReloadModal] = useState(false);
+  useEffect(() => { setReady(true); }, []);
+
+  const totalCredits = 500;
+  const usedCredits = totalCredits - mockCredits.current;
+  const pct = Math.round((usedCredits / totalCredits) * 100);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-heading font-bold tracking-tight">{t('billing.title')}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{t('billing.subtitle')}</p>
+    <div style={{
+      fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
+      minHeight: '100%', color: 'hsl(var(--foreground))', padding: '28px 36px 48px',
+    }}>
+      <style>{`
+        @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes scIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+      `}</style>
+
+      {/* Title + Tabs */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24,
+        animation: ready ? 'fdUp 450ms ease both' : 'none',
+      }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 3 }}>Planos & Faturamento</h1>
+          <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Gerencie seu plano, créditos e histórico de uso.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 2, background: 'hsl(var(--muted))', borderRadius: 8, padding: 3 }}>
+          {[{ id: 'plans' as const, label: 'Planos' }, { id: 'usage' as const, label: 'Uso & Histórico' }].map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)} style={{
+              padding: '6px 16px', borderRadius: 6, border: 'none', fontFamily: 'inherit',
+              background: tab === t.id ? 'hsl(var(--card))' : 'transparent',
+              color: tab === t.id ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+              fontWeight: tab === t.id ? 600 : 400,
+              fontSize: 13, cursor: 'pointer',
+              boxShadow: tab === t.id ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+              transition: 'all 150ms',
+            }}>{t.label}</button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <StatCard title={t('billing.current_plan')} value={t('billing.plan.starter')} icon={CreditCard} subtitle={t('billing.per_month', { price: 19 })} />
-        <StatCard title={t('billing.credits')} value={mockCredits.current} icon={Coins} subtitle={t('billing.remaining')} />
-      </div>
-
-      {/* Plans */}
-      <div>
-        <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.plans')}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {plans.map((plan, i) => (
-            <div key={plan.name} className={`bg-card border rounded-xl p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04] ${i === 1 ? 'border-primary/40' : 'border-border/50'}`}>
-              <h3 className="font-heading font-semibold">{plan.name}</h3>
-              <p className="text-2xl font-heading font-bold mt-1">${plan.price}<span className="text-sm text-muted-foreground font-normal">{t('billing.mo_suffix')}</span></p>
-              <ul className="mt-4 space-y-2">
-                {plan.features.map((f) => (
-                  <li key={f} className="text-xs text-muted-foreground flex items-center gap-2">
-                    <Check className="h-3 w-3 text-primary" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Button variant={i === 1 ? 'default' : 'outline'} size="sm" className="w-full mt-4" disabled>
-                {i === 0 ? t('billing.current') : t('billing.upgrade')}
-              </Button>
+      {tab === 'plans' && (
+        <>
+          {/* Usage summary card */}
+          <div style={{
+            background: 'hsl(var(--card))', borderRadius: 14, border: '1px solid hsl(var(--border))',
+            padding: '20px 24px', marginBottom: 28,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            animation: ready ? 'fdUp 450ms 60ms ease both' : 'none',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+              <div>
+                <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', fontWeight: 500, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Plano atual</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#ff713d' }}>Pro</span>
+                  <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--primary) / 0.1)', padding: '2px 8px', borderRadius: 5, fontWeight: 500 }}>R$ 49/mês</span>
+                </div>
+              </div>
+              <div style={{ width: 1, height: 40, background: 'hsl(var(--border))' }} />
+              <div>
+                <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', fontWeight: 500, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Créditos usados</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 20, fontWeight: 700 }}>{usedCredits}</span>
+                  <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>de {totalCredits}</span>
+                </div>
+                <div style={{ width: 180, height: 6, borderRadius: 3, background: 'hsl(var(--muted))', marginTop: 6 }}>
+                  <div style={{ width: `${pct}%`, height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, #ff713d, #FF9B70)', transition: 'width 600ms ease' }} />
+                </div>
+              </div>
+              <div style={{ width: 1, height: 40, background: 'hsl(var(--border))' }} />
+              <div>
+                <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', fontWeight: 500, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Renova em</div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>22 dias</div>
+              </div>
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Buy credits */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-heading font-semibold">{t('billing.buy_credits')}</h2>
-          <Button variant="outline" size="sm" onClick={() => setBuyOpen(true)}>{t('billing.buy')}</Button>
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          {creditPacks.map((pack) => (
-            <button key={pack.amount} className="bg-card border border-border/50 rounded-xl p-4 text-center transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-foreground/[0.04]" onClick={() => setBuyOpen(true)}>
-              <p className="text-xl font-heading font-bold">{pack.amount}</p>
-              <p className="text-xs text-muted-foreground">{t('billing.credits_unit')}</p>
-              <p className="text-sm font-medium mt-2">${pack.price}</p>
+            <button
+              onClick={() => setShowReloadModal(true)}
+              style={{
+                padding: '9px 20px', borderRadius: 9, border: '1.5px solid #ff713d',
+                background: 'hsl(var(--primary) / 0.1)', color: '#ff713d', fontSize: 13, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
+              }}
+            >
+              <Plus size={15} /> Recarregar créditos
             </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="h-px bg-border/50" />
-
-      {/* BYOK */}
-      <div>
-        <h2 className="text-lg font-heading font-semibold mb-4">{t('billing.byok_title')}</h2>
-        <div className="bg-card border border-border/50 rounded-xl p-5 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Key className="h-4 w-4 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{t('billing.byok_subtitle')}</p>
           </div>
-          <div className="space-y-2">
-            <Label className="text-xs">{t('billing.provider')}</Label>
-            <Select defaultValue="openai">
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="openai">OpenAI</SelectItem>
-                <SelectItem value="replicate">Replicate</SelectItem>
-                <SelectItem value="stability">Stability AI</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">{t('billing.api_key')}</Label>
-            <Input type="password" placeholder={t("billing.api_key_placeholder")} />
-          </div>
-          <Button variant="outline" size="sm" disabled>{t('billing.save_key')}</Button>
-        </div>
-      </div>
 
-      <Dialog open={buyOpen} onOpenChange={setBuyOpen}>
-        <DialogContent className="glass-surface-strong sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="font-heading">{t('billing.buy_credits')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 pt-2">
-            {creditPacks.map((pack) => (
-              <button key={pack.amount} className="w-full bg-card border border-border/50 rounded-xl p-4 flex items-center justify-between transition-all duration-200 hover:bg-muted/30">
-                <span className="font-medium">{t('billing.credit_pack', { amount: pack.amount })}</span>
-                <span className="text-sm">${pack.price}</span>
-              </button>
+          {/* Plan cards */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16,
+            animation: ready ? 'fdUp 450ms 140ms ease both' : 'none',
+          }}>
+            {PLANS.map((p, i) => (
+              <div key={p.id} style={{
+                background: 'hsl(var(--card))', borderRadius: 14, overflow: 'hidden',
+                border: p.current ? '2px solid #ff713d' : '1px solid hsl(var(--border))',
+                boxShadow: p.current ? '0 4px 20px rgba(255,113,61,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
+                position: 'relative', display: 'flex', flexDirection: 'column',
+                animation: ready ? `scIn 340ms ${140 + i * 50}ms ease both` : 'none',
+              }}>
+                {p.popular && (
+                  <div style={{
+                    position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 6,
+                    background: '#ff713d', color: '#fff', fontSize: 10, fontWeight: 600,
+                  }}>Seu plano</div>
+                )}
+                <div style={{ padding: '22px 20px 0' }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 10, marginBottom: 14,
+                    background: p.id === 'free' ? 'hsl(var(--muted))' : p.id === 'pro' ? 'hsl(var(--primary) / 0.1)' : p.id === 'team' ? 'rgba(124,58,237,0.08)' : 'hsl(var(--muted))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.accent,
+                  }}>
+                    <p.Icon size={18} />
+                  </div>
+                  <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 3 }}>{p.name}</h3>
+                  <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 14 }}>{p.desc}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: 4 }}>
+                    <span style={{ fontSize: 28, fontWeight: 700, color: p.accent }}>{p.price}</span>
+                    <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>{p.period}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 18 }}>
+                    <span style={{ fontWeight: 600, color: 'hsl(var(--foreground))' }}>{p.credits}</span> créditos / mês
+                  </div>
+                </div>
+                {/* Features */}
+                <div style={{ padding: '0 20px 20px', flex: 1 }}>
+                  <div style={{ height: 1, background: 'hsl(var(--border))', marginBottom: 16 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {p.features.map((f, j) => (
+                      <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+                        <Check size={16} color="#10B981" /><span>{f}</span>
+                      </div>
+                    ))}
+                    {p.missing.map((f, j) => (
+                      <div key={`m${j}`} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'hsl(var(--muted-foreground))' }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        <span style={{ textDecoration: 'line-through' }}>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* CTA */}
+                <div style={{ padding: '0 20px 20px' }}>
+                  <button style={{
+                    width: '100%', padding: '10px 0', borderRadius: 9, cursor: 'pointer',
+                    fontFamily: 'inherit', fontSize: 13, fontWeight: 600, transition: 'all 180ms',
+                    ...(p.current ? {
+                      border: '1px solid hsl(var(--border))', background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))',
+                    } : p.id === 'enterprise' ? {
+                      border: '1.5px solid hsl(var(--foreground))', background: 'transparent', color: 'hsl(var(--foreground))',
+                    } : {
+                      border: 'none', background: `linear-gradient(135deg, ${p.accent}, ${p.accent}BB)`, color: '#fff',
+                      boxShadow: `0 3px 10px ${p.accent}33`,
+                    }),
+                  }}>
+                    {p.current ? 'Plano atual' : p.id === 'enterprise' ? 'Falar com vendas' : `Assinar ${p.name}`}
+                  </button>
+                </div>
+              </div>
             ))}
-            <Button className="w-full mt-2" disabled>{t('billing.pay_with_stripe')}</Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </>
+      )}
+
+      {tab === 'usage' && (
+        <div style={{ animation: ready ? 'fdUp 450ms 60ms ease both' : 'none' }}>
+          {/* KPI cards */}
+          <div style={{ display: 'flex', gap: 14, marginBottom: 28 }}>
+            {[
+              { label: 'Créditos restantes', value: String(mockCredits.current), sub: `de ${totalCredits} este mês`, color: '#ff713d' },
+              { label: 'Gerações este mês', value: '42', sub: '+12% vs mês anterior', color: '#7C3AED', trend: true },
+              { label: 'Gasto médio / dia', value: '9.3', sub: 'créditos por dia', color: '#10B981' },
+            ].map((s, i) => (
+              <div key={i} style={{
+                flex: 1, background: 'hsl(var(--card))', borderRadius: 12, border: '1px solid hsl(var(--border))',
+                padding: '16px 18px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              }}>
+                <div style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 5 }}>{s.label}</div>
+                <div style={{ fontSize: 24, fontWeight: 700, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {s.trend && <TrendingUp size={14} color="#10B981" />}{s.sub}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* History table */}
+          <div style={{ background: 'hsl(var(--card))', borderRadius: 14, border: '1px solid hsl(var(--border))', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600 }}>Histórico de uso</h3>
+              <button style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', fontSize: 12, fontWeight: 500, color: 'hsl(var(--muted-foreground))', cursor: 'pointer', fontFamily: 'inherit' }}>Este mês</button>
+            </div>
+            {HISTORY.map((h, i) => (
+              <div key={i} style={{
+                padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                borderBottom: i < HISTORY.length - 1 ? '1px solid hsl(var(--border))' : 'none',
+                transition: 'background 120ms',
+              }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--muted))'}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: h.credits > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(255,113,61,0.12)',
+                    color: h.credits > 0 ? '#10B981' : '#ff713d',
+                  }}>
+                    {h.credits > 0 ? <Plus size={15} /> : <Sparkles size={15} />}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 500 }}>{h.action}</div>
+                    <div style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 1 }}>{h.date}</div>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: 13, fontWeight: 600, fontFamily: 'monospace',
+                  color: h.credits > 0 ? '#10B981' : 'hsl(var(--muted-foreground))',
+                }}>
+                  {h.credits > 0 ? '+' : ''}{h.credits}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      <RechargeCreditsModal
+        open={showReloadModal}
+        onClose={() => setShowReloadModal(false)}
+        currentCredits={mockCredits.current}
+        totalCredits={totalCredits}
+      />
     </div>
   );
 };
