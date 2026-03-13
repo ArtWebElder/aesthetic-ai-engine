@@ -30,7 +30,7 @@ const PLANS = [
   },
   {
     id: 'enterprise', name: 'Enterprise', price: 'Sob consulta', period: '', credits: 'Ilimitado',
-    desc: 'Para grandes operações', current: false, accent: '#141417',
+    desc: 'Para grandes operações', current: false, accent: 'hsl(var(--foreground))',
     Icon: Building2,
     features: ['Créditos ilimitados', 'API dedicada', 'White-label', 'SSO & compliance', 'Gerente de conta', 'SLA garantido', 'Colaboradores ilimitados', 'Onboarding dedicado'],
     missing: [],
