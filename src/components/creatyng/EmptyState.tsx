@@ -24,9 +24,9 @@ const EmptyState = ({ icon, title, description, ctaLabel, onCta, className }: Em
       </div>
     )}
     <div className="flex flex-col gap-1.5">
-      <h3 className="text-sm font-semibold text-[#141417]">{title}</h3>
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
       {description && (
-        <p className="text-sm text-[#8e8e96] max-w-xs">{description}</p>
+        <p className="text-sm text-muted-foreground max-w-xs">{description}</p>
       )}
     </div>
     {ctaLabel && onCta && (

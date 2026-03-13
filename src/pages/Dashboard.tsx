@@ -93,7 +93,7 @@ function SectionHeader({
 
   return (
     <div className="flex items-center justify-between mb-3">
-      <h2 style={{ fontSize: 15, fontWeight: 600, color: '#141417' }}>{title}</h2>
+      <h2 style={{ fontSize: 15, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{title}</h2>
       <div className="flex items-center gap-2">
         {scrollRef && (
           <div className="flex gap-1">
@@ -106,9 +106,9 @@ function SectionHeader({
                   width: 28,
                   height: 28,
                   borderRadius: 8,
-                  border: '1px solid rgba(20,20,23,0.1)',
-                  background: '#ffffff',
-                  color: '#8e8e96',
+                  border: '1px solid hsl(var(--border))',
+                  background: 'hsl(var(--card))',
+                  color: 'hsl(var(--muted-foreground))',
                 }}
               >
                 {dir === -1 ? <ChevronLeft className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
@@ -120,9 +120,9 @@ function SectionHeader({
           <button
             onClick={onViewAll}
             className="transition-colors"
-            style={{ fontSize: 12.5, color: '#8e8e96' }}
+            style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))' }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#ff713d'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--muted-foreground))'; }}
           >
             {t('common.view_all')}
           </button>
@@ -152,7 +152,6 @@ function FeatureCard({ f, onNavigate }: { f: typeof FEATURES[0]; onNavigate: () 
       onMouseLeave={() => setHovered(false)}
       onClick={() => f.active && onNavigate()}
     >
-      {/* Content */}
       <div className="relative z-10 p-[14px] h-full flex flex-col">
         <div className="flex items-start justify-between">
           <div
@@ -183,7 +182,6 @@ function FeatureCard({ f, onNavigate }: { f: typeof FEATURES[0]; onNavigate: () 
         </div>
       </div>
 
-      {/* Hover overlay */}
       {hovered && (
         <div
           className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 animate-fade-in"
@@ -227,15 +225,14 @@ function ProjectCard({
       style={{
         width: 180,
         borderRadius: 10,
-        border: hovered ? '1.5px solid #ff713d' : '1px solid rgba(20,20,23,0.08)',
-        background: hovered ? 'linear-gradient(to bottom, #FFF0EA, #ffffff)' : '#ffffff',
+        border: hovered ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+        background: hovered ? 'hsl(var(--primary) / 0.06)' : 'hsl(var(--card))',
         boxShadow: hovered ? '0 4px 16px rgba(255,113,61,0.12)' : 'none',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
     >
-      {/* Thumbnail */}
       <div className="relative" style={{ height: 100, background: gradient }}>
         <div className="absolute inset-0 flex items-center justify-center opacity-20">
           <Image className="w-8 h-8 text-white" />
@@ -245,12 +242,11 @@ function ProjectCard({
           style={{ width: 8, height: 8, background: '#ff713d' }}
         />
       </div>
-      {/* Body */}
       <div style={{ padding: '10px 12px' }}>
-        <p className="line-clamp-1" style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>
+        <p className="line-clamp-1" style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>
           {project.name}
         </p>
-        <p style={{ fontSize: 11, color: '#b5b5bb', marginTop: 2 }}>
+        <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 2 }}>
           {formatDate(project.updatedAt)}
         </p>
       </div>
@@ -321,10 +317,10 @@ const Dashboard = () => {
 
       {/* ── 1. Greeting ─────────────────────────────── */}
       <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))' }}>
           {t('dashboard.greeting', { name: firstName })}
         </h1>
-        <p style={{ fontSize: 14, color: '#5a5a60', marginTop: 2 }}>{t('dashboard.greeting_sub')}</p>
+        <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))', marginTop: 2 }}>{t('dashboard.greeting_sub')}</p>
       </div>
 
       {/* ── 2. Quick start ──────────────────────────── */}
@@ -351,7 +347,7 @@ const Dashboard = () => {
 
         {projects.length === 0 ? (
           <div style={{ maxWidth: 480 }}>
-            <div className="bg-white border rounded-2xl" style={{ borderColor: 'rgba(20,20,23,0.08)' }}>
+            <div className="bg-card border border-border rounded-2xl">
               <EmptyState
                 icon={<FolderOpen className="w-6 h-6" />}
                 title={t('projects.empty_title')}
@@ -371,8 +367,8 @@ const Dashboard = () => {
                 width: 180,
                 height: 135,
                 borderRadius: 10,
-                border: '2px dashed rgba(20,20,23,0.12)',
-                color: '#8e8e96',
+                border: '2px dashed hsl(var(--border))',
+                color: 'hsl(var(--muted-foreground))',
                 background: 'transparent',
               }}
               onMouseEnter={(e) => {
@@ -380,13 +376,13 @@ const Dashboard = () => {
                 (e.currentTarget as HTMLButtonElement).style.color = '#ff713d';
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(20,20,23,0.12)';
-                (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'hsl(var(--border))';
+                (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--muted-foreground))';
               }}
             >
               <div
                 className="flex items-center justify-center"
-                style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(20,20,23,0.04)' }}
+                style={{ width: 36, height: 36, borderRadius: 10, background: 'hsl(var(--muted))' }}
               >
                 <Plus className="w-4 h-4" />
               </div>
@@ -408,10 +404,10 @@ const Dashboard = () => {
       {/* ── 4. Discover gallery ─────────────────────── */}
       <section className="animate-fade-up" style={{ animationDelay: '180ms' }}>
         <div className="flex items-center justify-between mb-3">
-          <h2 style={{ fontSize: 15, fontWeight: 600, color: '#141417' }}>{t('dashboard.discover')}</h2>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{t('dashboard.discover')}</h2>
           <div
             className="flex"
-            style={{ padding: 2, background: 'rgba(20,20,23,0.04)', borderRadius: 8 }}
+            style={{ padding: 2, background: 'hsl(var(--muted))', borderRadius: 8 }}
           >
             {(['explore', 'templates'] as const).map((tab) => (
               <button
@@ -422,9 +418,9 @@ const Dashboard = () => {
                   padding: '4px 12px',
                   fontSize: 12,
                   fontWeight: discoverTab === tab ? 600 : 400,
-                  color: discoverTab === tab ? '#141417' : '#8e8e96',
+                  color: discoverTab === tab ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
                   borderRadius: 6,
-                  background: discoverTab === tab ? '#ffffff' : 'transparent',
+                  background: discoverTab === tab ? 'hsl(var(--card))' : 'transparent',
                   boxShadow: discoverTab === tab ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
                 }}
               >
@@ -447,14 +443,14 @@ const Dashboard = () => {
             style={{
               padding: '10px 32px',
               borderRadius: 10,
-              border: '1px solid rgba(20,20,23,0.1)',
+              border: '1px solid hsl(var(--border))',
               background: 'transparent',
               fontSize: 13.5,
               fontWeight: 500,
-              color: '#5a5a60',
+              color: 'hsl(var(--muted-foreground))',
             }}
             onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLButtonElement).style.color = '#ff713d'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(20,20,23,0.1)'; (e.currentTarget as HTMLButtonElement).style.color = '#5a5a60'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'hsl(var(--border))'; (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--muted-foreground))'; }}
           >
             {t('dashboard.view_more')}
           </button>

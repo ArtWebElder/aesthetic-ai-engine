@@ -49,8 +49,8 @@ function CreditsBar({ propertiesOpen }: { propertiesOpen: boolean }) {
         alignItems: 'center',
         gap: 5,
         padding: '5px 10px',
-        background: '#ffffff',
-        border: '1px solid rgba(20,20,23,0.08)',
+        background: 'hsl(var(--card))',
+        border: '1px solid hsl(var(--border))',
         borderRadius: 8,
         fontSize: 12,
         fontWeight: 600,
@@ -64,7 +64,7 @@ function CreditsBar({ propertiesOpen }: { propertiesOpen: boolean }) {
         onClick={() => navigate('/app/billing')}
         style={{
           padding: '5px 12px',
-          background: '#FFF0EA',
+          background: 'hsl(var(--primary) / 0.1)',
           border: '1.5px solid #ff713d',
           borderRadius: 8,
           color: '#ff713d',
@@ -214,7 +214,7 @@ export function StudioPage() {
       position: 'absolute',
       inset: 0,
       zIndex: 0,
-      background: '#F0F0EE',
+      background: 'hsl(var(--background))',
       overflow: 'hidden',
     }}>
       {/* Canvas fills entire screen */}
