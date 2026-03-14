@@ -13,6 +13,16 @@ const ICON_MAP: Record<string, React.ElementType> = {
   AlignLeft, Palette, Camera, Download, ScanEye, FileText,
 };
 
+/** Trigger browser download for a base64 data URI */
+function triggerDownload(dataUri: string, format: string) {
+  const a = document.createElement('a');
+  a.href = dataUri;
+  a.download = `creatyng-asset.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 const RUN_NODES: NodeTypeId[] = [
   'prompt_builder', 'scene_gen', 'image_gen',
   'reference_analyzer', 'bg_removal', 'export',
@@ -26,10 +36,13 @@ interface StudioNodeProps {
   isSelected: boolean;
   execState: ExecState;
   output?: NodeOutput;
+  isConnecting: boolean;
   onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onSelect: (nodeId: string) => void;
   onRun: (nodeId: string) => void;
   onDataChange: (nodeId: string, key: string, value: string) => void;
+  onOutputPortDown: (e: React.MouseEvent, nodeId: string) => void;
+  onInputPortUp: (nodeId: string) => void;
 }
 
 // ── Output Preview ──────────────────────────────────────────────────────────
@@ -73,12 +86,31 @@ function OutputPreview({ output }: { output?: NodeOutput }) {
   }
 
   if (output.type === 'export') {
+    const imgSrc = output.image || output.finalImage;
     return (
-      <div style={{
-        margin: '4px 10px 6px', padding: '6px 8px', borderRadius: 6,
-        background: '#10b98115', fontSize: 10, color: '#10b981',
-      }}>
-        ✓ Pronto para download ({output.format || 'png'})
+      <div style={{ margin: '4px 10px 6px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{
+          padding: '6px 8px', borderRadius: 6,
+          background: '#10b98115', fontSize: 10, color: '#10b981',
+        }}>
+          ✓ Pronto para download ({output.format || 'png'})
+        </div>
+        {imgSrc && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              triggerDownload(imgSrc, output.format || 'png');
+            }}
+            style={{
+              width: '100%', padding: '5px 0', borderRadius: 6,
+              background: '#10b981', color: '#fff', fontSize: 11,
+              fontWeight: 600, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+            }}
+          >
+            <Download size={12} /> Download {(output.format || 'png').toUpperCase()}
+          </button>
+        )}
       </div>
     );
   }
@@ -382,8 +414,9 @@ function NodeContent({
 // ── Main Node Component ─────────────────────────────────────────────────────
 
 export function StudioNode({
-  node, isSelected, execState, output,
+  node, isSelected, execState, output, isConnecting,
   onMouseDown, onSelect, onRun, onDataChange,
+  onOutputPortDown, onInputPortUp,
 }: StudioNodeProps) {
   const def = NODE_TYPE_DEFS[node.type];
   const IconComp = ICON_MAP[def.icon] ?? Building2;
@@ -421,18 +454,31 @@ export function StudioNode({
       }}
       onClick={() => onSelect(node.id)}
     >
-      {/* Input port */}
-      <div style={{
-        position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
-        width: 13, height: 13, borderRadius: '50%',
-        border: `2px solid ${def.color}`, background: 'hsl(var(--card))', zIndex: 30,
-      }} />
-      {/* Output port */}
-      <div style={{
-        position: 'absolute', right: -7, top: '50%', transform: 'translateY(-50%)',
-        width: 13, height: 13, borderRadius: '50%',
-        background: def.color, zIndex: 30,
-      }} />
+      {/* Input port — interactive: receives connections when dragging */}
+      <div
+        onMouseUp={(e) => { e.stopPropagation(); onInputPortUp(node.id); }}
+        style={{
+          position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
+          width: 13, height: 13, borderRadius: '50%',
+          border: `2px solid ${def.color}`, background: 'hsl(var(--card))', zIndex: 30,
+          cursor: isConnecting ? 'crosshair' : 'default',
+          transition: 'transform 0.1s, box-shadow 0.1s',
+          ...(isConnecting ? { boxShadow: `0 0 8px ${def.color}80`, transform: 'translateY(-50%) scale(1.3)' } : {}),
+        }}
+      />
+      {/* Output port — interactive: starts connection drag */}
+      <div
+        onMouseDown={(e) => { e.stopPropagation(); onOutputPortDown(e, node.id); }}
+        style={{
+          position: 'absolute', right: -7, top: '50%', transform: 'translateY(-50%)',
+          width: 13, height: 13, borderRadius: '50%',
+          background: def.color, zIndex: 30,
+          cursor: 'crosshair',
+          transition: 'transform 0.1s',
+        }}
+        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-50%) scale(1.3)'; }}
+        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-50%)'; }}
+      />
 
       {/* Header — drag handle */}
       <div

@@ -115,6 +115,10 @@ export function StudioPage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept shortcuts when user is typing in an input/textarea
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
       if (e.key === 'Escape') {
         setSelectedNodeId(null);
         setOpenPanel(null);
@@ -174,6 +178,20 @@ export function StudioPage() {
       (nodeId, output) => {
         setExecStates(prev => ({ ...prev, [nodeId]: 'done' }));
         setNodeOutputs(prev => ({ ...prev, [nodeId]: output }));
+        // Auto-download when export node completes
+        const node = nodes.find(n => n.id === nodeId);
+        if (node?.type === 'export' && output?.type === 'export') {
+          const imgSrc = output.image || output.finalImage;
+          if (imgSrc && typeof imgSrc === 'string') {
+            const fmt = (output.format as string) || 'png';
+            const a = document.createElement('a');
+            a.href = imgSrc;
+            a.download = `creatyng-asset.${fmt}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }
+        }
       },
       (nodeId, error) => {
         setExecStates(prev => ({ ...prev, [nodeId]: 'error' }));
@@ -189,6 +207,23 @@ export function StudioPage() {
       n.id === nodeId ? { ...n, data: { ...n.data, [key]: value } } : n
     ));
   }, []);
+
+  const handleAddConnection = useCallback((fromNode: string, toNode: string) => {
+    // Prevent duplicate connections
+    const exists = connections.some(c => c.fromNode === fromNode && c.toNode === toNode);
+    if (exists) return;
+    // Prevent self-connections
+    if (fromNode === toNode) return;
+
+    const newConn: Connection = {
+      id: `c${Date.now()}`,
+      fromNode,
+      fromPort: 'output',
+      toNode,
+      toPort: 'input',
+    };
+    setConnections(prev => [...prev, newConn]);
+  }, [connections]);
 
   const handleAddNode = useCallback((typeId: NodeTypeId) => {
     const def = NODE_TYPE_DEFS[typeId];
@@ -294,6 +329,7 @@ export function StudioPage() {
         onNodeMove={handleNodeMove}
         onNodeRun={handleNodeRun}
         onNodeDataChange={handleNodeDataChange}
+        onAddConnection={handleAddConnection}
       />
 
       {/* Fixed UI overlays */}

@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import {
   Connection, ExecState, StudioNode as StudioNodeType,
   ToolMode, NODE_TYPE_DEFS
@@ -28,6 +28,7 @@ interface StudioCanvasProps {
   onNodeMove: (id: string, x: number, y: number) => void;
   onNodeRun: (id: string) => void;
   onNodeDataChange: (id: string, key: string, value: string) => void;
+  onAddConnection: (fromNode: string, toNode: string) => void;
 }
 
 export function StudioCanvas({
@@ -45,6 +46,7 @@ export function StudioCanvas({
   onNodeMove,
   onNodeRun,
   onNodeDataChange,
+  onAddConnection,
 }: StudioCanvasProps) {
   const outerRef = useRef<HTMLDivElement>(null);
 
@@ -63,6 +65,11 @@ export function StudioCanvas({
     startPanX: number;
     startPanY: number;
   } | null>(null);
+
+  // Connection drag state
+  const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
+  const [connectingMouse, setConnectingMouse] = useState<{ x: number; y: number } | null>(null);
+  const connectingRef = useRef<string | null>(null);
 
   // Stable refs to latest state (avoid re-attaching listeners)
   const zoomRef = useRef(zoom);
@@ -86,6 +93,34 @@ export function StudioCanvas({
     };
   }, [nodes]);
 
+  // Port drag: start connection from output port
+  const handleOutputPortDown = useCallback((e: React.MouseEvent, nodeId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    connectingRef.current = nodeId;
+    setConnectingFrom(nodeId);
+    // Convert client coords to canvas coords for the temp line
+    const outer = outerRef.current;
+    if (outer) {
+      const rect = outer.getBoundingClientRect();
+      const scale = zoomRef.current / 100;
+      const cx = (e.clientX - rect.left - panRef.current.x) / scale;
+      const cy = (e.clientY - rect.top - panRef.current.y) / scale;
+      setConnectingMouse({ x: cx, y: cy });
+    }
+  }, []);
+
+  // Port drag: complete connection on input port
+  const handleInputPortUp = useCallback((nodeId: string) => {
+    const from = connectingRef.current;
+    if (from && from !== nodeId) {
+      onAddConnection(from, nodeId);
+    }
+    connectingRef.current = null;
+    setConnectingFrom(null);
+    setConnectingMouse(null);
+  }, [onAddConnection]);
+
   const handleCanvasMouseDown = useCallback((e: React.MouseEvent) => {
     // Middle mouse or hand tool → pan
     if (e.button === 1 || toolModeRef.current === 'hand') {
@@ -98,9 +133,14 @@ export function StudioCanvas({
       };
       return;
     }
-    // Left click on canvas background → deselect
+    // Left click on canvas background → deselect + cancel connection drag
     if (e.target === e.currentTarget) {
       onSelectNode(null);
+      if (connectingRef.current) {
+        connectingRef.current = null;
+        setConnectingFrom(null);
+        setConnectingMouse(null);
+      }
     }
   }, [onSelectNode]);
 
@@ -116,6 +156,16 @@ export function StudioCanvas({
     if (!outer) return;
 
     const onMouseMove = (e: MouseEvent) => {
+      // Connection drag — update temp line endpoint
+      if (connectingRef.current) {
+        const rect = outer.getBoundingClientRect();
+        const scale = zoomRef.current / 100;
+        const cx = (e.clientX - rect.left - panRef.current.x) / scale;
+        const cy = (e.clientY - rect.top - panRef.current.y) / scale;
+        setConnectingMouse({ x: cx, y: cy });
+        return;
+      }
+
       if (nodeDragRef.current) {
         const scale = zoomRef.current / 100;
         const dx = (e.clientX - nodeDragRef.current.startMouseX) / scale;
@@ -138,6 +188,12 @@ export function StudioCanvas({
     };
 
     const onMouseUp = () => {
+      // Cancel connection drag if mouse released on canvas (not on a port)
+      if (connectingRef.current) {
+        connectingRef.current = null;
+        setConnectingFrom(null);
+        setConnectingMouse(null);
+      }
       nodeDragRef.current = null;
       panDragRef.current = null;
     };
@@ -161,6 +217,21 @@ export function StudioCanvas({
   const bgOffsetX = (pan.x % bgPatternSize + bgPatternSize) % bgPatternSize;
   const bgOffsetY = (pan.y % bgPatternSize + bgPatternSize) % bgPatternSize;
 
+  // Compute temp connection line from the output port of connectingFrom node
+  let tempConnectionPath: string | null = null;
+  if (connectingFrom && connectingMouse) {
+    const fromNode = nodes.find(n => n.id === connectingFrom);
+    if (fromNode) {
+      const fromDef = NODE_TYPE_DEFS[fromNode.type];
+      const x1 = fromNode.x + fromDef.defaultWidth;
+      const y1 = fromNode.y + fromDef.defaultHeight / 2;
+      const x2 = connectingMouse.x;
+      const y2 = connectingMouse.y;
+      const dx = Math.max(60, Math.abs(x2 - x1) * 0.5);
+      tempConnectionPath = `M ${x1},${y1} C ${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`;
+    }
+  }
+
   return (
     <div
       ref={outerRef}
@@ -169,7 +240,7 @@ export function StudioCanvas({
         position: 'absolute',
         inset: 0,
         overflow: 'hidden',
-        cursor: toolMode === 'hand' ? 'grab' : 'default',
+        cursor: connectingFrom ? 'crosshair' : toolMode === 'hand' ? 'grab' : 'default',
         background: 'hsl(var(--background))',
         backgroundImage: 'radial-gradient(circle, hsl(var(--foreground) / 0.09) 1.2px, transparent 1.2px)',
         backgroundSize: `${bgPatternSize}px ${bgPatternSize}px`,
@@ -207,6 +278,18 @@ export function StudioCanvas({
               execStates={execStates}
             />
           ))}
+          {/* Temporary connection line while dragging */}
+          {tempConnectionPath && (
+            <path
+              d={tempConnectionPath}
+              fill="none"
+              stroke="#ff713d"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeDasharray="6 4"
+              opacity={0.7}
+            />
+          )}
         </svg>
 
         {/* Nodes layer */}
@@ -217,10 +300,13 @@ export function StudioCanvas({
             isSelected={selectedNodeId === node.id}
             execState={execStates[node.id] ?? 'idle'}
             output={nodeOutputs[node.id]}
+            isConnecting={Boolean(connectingFrom)}
             onMouseDown={handleNodeMouseDown}
             onSelect={onSelectNode}
             onRun={onNodeRun}
             onDataChange={onNodeDataChange}
+            onOutputPortDown={handleOutputPortDown}
+            onInputPortUp={handleInputPortUp}
           />
         ))}
       </div>
