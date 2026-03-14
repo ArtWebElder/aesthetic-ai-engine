@@ -1,11 +1,11 @@
 // src/services/referenceAnalyzer.ts
-// CREATYNG — Analisa imagem de referência com Gemini 2.0 Flash 001
+// CREATYNG — Analisa imagem de referência com Gemini 2.5 Flash
 // Extrai layout, cores, composição como JSON estruturado para construir prompt de geração.
 
 import type { ReferenceAnalysis } from "@/types/preset";
 
 const GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) ?? "";
-const ANALYSIS_MODEL = "gemini-2.0-flash-001";
+const ANALYSIS_MODEL = "gemini-2.5-flash";
 
 export async function analyzeReference(
   referenceImage: string,

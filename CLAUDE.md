@@ -64,7 +64,7 @@ Ideal para power users e fluxos customizados.
 
 ### Pipeline Studio (Banner Criativo)
 ```
-Referência (imagem)  →  Analisar Referência (Gemini 2.0 Flash 001)
+Referência (imagem)  →  Analisar Referência (Gemini 2.5 Flash)
 Subject (foto real)  →  BG Removal (ONNX/API)
                               ↓
                      Gerar Fundo (Flux/Gemini — SÓ cenário, sem subject)
@@ -107,37 +107,46 @@ Referência + Subject → Analisar Referência (Gemini)
 | `src/app/create/studio/StudioToolbar.tsx` | Toolbar inferior (cursor/hand, zoom) |
 | `src/app/create/studio/StudioProperties.tsx` | Painel de propriedades do node selecionado |
 | `src/app/create/studio/StudioSelect.tsx` | Select customizado para nodes |
+| `src/app/create/studio/StudioNavbar.tsx` | Navbar lateral esquerda com tabs |
 
 ### Services
 | Arquivo | Descrição |
 |---|---|
-| `src/services/referenceAnalyzer.ts` | Analisa referência com Gemini 2.0 Flash 001 → JSON estruturado |
+| `src/services/referenceAnalyzer.ts` | Analisa referência com Gemini 2.5 Flash → JSON estruturado |
 | `src/services/generateService.ts` | Service de geração (chamada Supabase Edge Function) |
+| `src/services/adminService.ts` | Service de administração |
 | `src/services/supabaseClient.ts` | Cliente Supabase |
 
 ### Backend (Edge Functions)
 | Arquivo | Descrição |
 |---|---|
 | `supabase/functions/generate-image/index.ts` | Orquestrador principal |
+| `supabase/functions/generate-image/types.ts` | Tipos do backend |
 | `supabase/functions/generate-image/providers/registry.ts` | Roteamento de providers |
+| `supabase/functions/generate-image/providers/provider.ts` | Interface base de provider |
 | `supabase/functions/generate-image/providers/gemini-image.ts` | Provider Gemini (primário strict) |
 | `supabase/functions/generate-image/providers/replicateFluxKontext.ts` | Provider Replicate Kontext (fallback strict) |
 | `supabase/functions/generate-image/providers/replicate-flux.ts` | Provider Replicate (text-to-image) |
+| `supabase/functions/generate-image/providers/vertex-imagen.ts` | Provider Vertex (legacy, não usar) |
 | `supabase/functions/generate-image/preprocess/subject.ts` | Preprocess: alpha, upscale, padding, SHA-256 |
+| `supabase/functions/generate-image/smartPromptCompiler.ts` | Compilador de prompt inteligente |
+| `supabase/functions/generate-image/visionAnalysis.ts` | Análise de visão |
+| `supabase/functions/generate-image/utils/base64.ts` | Utilitários base64 |
 
 ### Editor (Wizard) — interface alternativa
 | Arquivo | Descrição |
 |---|---|
 | `src/features/editor/EditorPage.tsx` | Editor principal (wizard mode) |
+| `src/features/editor/design/` | Subpasta de design do editor |
+| `src/features/editor/engine/` | Subpasta do motor do editor (bgRemoval, textRenderer, etc.) |
+| `src/features/editor/wizard/` | Subpasta do wizard (WizardLayout, Steps, PreviewCanvas) |
 | `src/types/spec/index.ts` | Tipos core do editor (source of truth) |
-| `src/features/engine/prompt-compiler.ts` | Compilador spec → prompt |
-| `src/features/editor/scene-presets.ts` | Presets de cena |
-| `src/features/editor/scene-moods.ts` | Moods de cena |
-| `src/features/editor/scene-props.ts` | Props de cena (bokeh, vidro, névoa) |
+| `src/types/preset.ts` | Tipos universais: ReferenceAnalysis, VisualDNA, CreatygnPreset, etc. |
 
 ### i18n
 | Arquivo | Descrição |
 |---|---|
+| `src/i18n/index.ts` | Provider e hook `useI18n()` → retorna `{ t, lang, setLang }` |
 | `src/i18n/locales/en.json` | Traduções EN |
 | `src/i18n/locales/pt-BR.json` | Traduções PT-BR |
 | `src/i18n/locales/es.json` | Traduções ES |
@@ -157,8 +166,8 @@ Referência + Subject → Analisar Referência (Gemini)
 ### AI (4)
 | ID | Label | Provider | Custo |
 |---|---|---|---|
-| `reference_analyzer` | Analisar Referência | Gemini 2.0 Flash 001 | 2 cr |
-| `scene_gen` | Scene Gen | Gemini | 3 cr |
+| `reference_analyzer` | Analisar Referência | Gemini 2.5 Flash | 2 cr |
+| `scene_gen` | Scene Gen | Gemini (delega p/ image_gen) | 3 cr |
 | `image_gen` | Image Gen | Replicate/Gemini | 5 cr |
 | `background_gen` | Gerar Fundo | Flux/Gemini | 4 cr |
 
@@ -173,8 +182,8 @@ Referência + Subject → Analisar Referência (Gemini)
 | ID | Label | Descrição |
 |---|---|---|
 | `text_overlay` | Overlay de Texto | Renderiza textos via Canvas 2D sobre imagem |
-| `typography` | Typography | Tipografia (legacy) |
-| `color_grade` | Color Grade | Gradação de cor |
+| `typography` | Typography | Tipografia (legacy — pass-through, não implementado) |
+| `color_grade` | Color Grade | Gradação de cor (legacy — pass-through, não implementado) |
 
 ### Output (1)
 | ID | Label | Descrição |
@@ -198,43 +207,114 @@ Referência + Subject → Analisar Referência (Gemini)
 
 ---
 
-## STUDIO — COMPORTAMENTOS IMPLEMENTADOS
+## STUDIO — DETALHES DE IMPLEMENTAÇÃO
 
-### Cache Invalidation
+### Estado do StudioPage (StudioPage.tsx)
+```typescript
+// State principal
+const [nodes, setNodes] = useState<StudioNode[]>(DEFAULT_NODES);           // [] vazio
+const [connections, setConnections] = useState<Connection[]>(DEFAULT_CONNECTIONS); // [] vazio
+const [execStates, setExecStates] = useState<Record<string, ExecState>>({});
+const [nodeOutputs, setNodeOutputs] = useState<NodeOutputs>({});
+const [showFlowSelector, setShowFlowSelector] = useState(true);            // modal ao abrir
+```
+
+### Cache Invalidation (handleNodeDataChange)
 Quando um node de input muda seus dados (nova imagem, novo texto), **todos os nodes downstream** são invalidados automaticamente:
 - BFS forward pelas conexões a partir do node alterado
 - `nodeOutputs` e `execStates` são limpos para o node + todos dependentes
 - Nodes invalidados voltam ao estado `idle` (sem check verde)
 - Implementado em: `StudioPage.tsx` → `handleNodeDataChange`
 
-### Flow Selector
-- Modal aparece ao abrir o Studio (DEFAULT_NODES é vazio)
-- Cards com ícone, nome (i18n), descrição, créditos
-- Hover com borda na cor do fluxo
-- Opção "Fluxo Vazio" para canvas limpo
-- "Novo Fluxo" no menu top reabre o selector
+```typescript
+// Padrão: field_* keys atualizam node.data.fields nested
+if (key.startsWith('field_')) {
+  const fieldName = key.slice(6); // 'field_headline' → 'headline'
+  const fields = { ...(n.data.fields || {}), [fieldName]: value };
+  return { ...n, data: { ...n.data, fields } };
+}
+// Numeric keys são convertidos para number
+const numericKeys = ['subjectScale', 'shadowBlur', 'shadowOpacity', 'width', 'height'];
+```
 
-### Execução
-- Topological sort → execução sequencial
-- Input nodes são pré-populados antes da execução
-- Nodes críticos (image_gen, background_gen, compositor): erro para o fluxo
-- Nodes não-críticos (reference_analyzer): erro logado, fluxo continua
+### Flow Selector (FlowSelector.tsx)
+- Modal aparece ao abrir o Studio (DEFAULT_NODES é vazio → `showFlowSelector: true`)
+- Cards com ícone Lucide, nome (i18n via `lang`), descrição, créditos
+- Hover com borda na cor do fluxo + background sutil
+- Opção "Fluxo Vazio" (dashed border) para canvas limpo
+- "Novo Fluxo" no menu top → `setShowFlowSelector(true)` (reabre o selector, SEM confirm dialog)
+- PresetFlow interface inclui: `id, name, nameEn, nameEs, description, descriptionEn, descriptionEs, icon, color, credits`
+- i18n usa `lang` do hook `useI18n()` (não `locale`)
 
-### text_input com Fields
-- Quando `node.data.fields` existe (banner mode), renderiza 4 inputs separados
-- `handleNodeDataChange` com `field_*` keys atualiza objeto `fields` nested
-- Valores numéricos (subjectScale, shadowBlur, etc.) são convertidos para `number`
+### Execução (engine.ts)
+- `getExecutionOrder()` → topological sort via BFS (inDegree counting)
+- `prePopulateInputOutputs()` → pré-popula outputs dos input nodes ANTES da execução
+- `collectInputs()` → coleta inputs de todos os upstream conectados, mergeando via Object.assign
+- `findUpstreamByType()` → busca valor com `type` específico em `_allUpstream` array
+- Nodes críticos que param o fluxo: `image_gen`, `background_gen`, `compositor`
+- Nodes não-críticos (falham silenciosamente): `reference_analyzer` (fallback genérico)
+
+### Output Types do Engine (convenção interna)
+Cada node retorna um objeto com `type` que identifica a natureza do output:
+```
+image_upload      → { image, type: 'subject' }
+reference_upload  → { image, type: 'reference' }
+text_input        → { text, [fields], type: 'text' }        // fields se banner mode
+reference_analyzer→ { analysis, prompt, type: 'analysis' }
+prompt_builder    → { prompt, analysis, type: 'prompt' }
+image_gen         → { image, type: 'generated' }
+bg_removal        → { image, type: 'subject_cutout' }       // NÃO 'subject'
+background_gen    → { backgroundImage, image, type: 'background' }
+compositor        → { image, type: 'composed', width, height }
+text_overlay      → { image, type: 'final' }
+export            → { image, finalImage, type: 'export' }
+```
+**IMPORTANTE:** `bg_removal` retorna `type: 'subject_cutout'` (não `'subject'`). O `compositor` busca esse type via `findUpstreamByType(inputs, 'subject_cutout')`.
+
+### text_input com Fields (Banner Mode)
+- Quando `node.data.fields` é um objeto `{ headline, price, cta, contact }`, renderiza 4 inputs separados
+- UI usa `onDataChange(node.id, 'field_headline', value)` → handler extrai `field_` prefix
+- Engine: `node.data.fields && typeof node.data.fields === 'object'` → retorna `{ fields, type: 'text' }`
+
+### StudioNodePanel — Categorias (NODE_GROUPS)
+```
+FREQUENTLY USED  → text_input, image_upload, reference_upload, prompt_builder, image_gen
+USE AI           → reference_analyzer, scene_gen, image_gen, background_gen
+PROCESSING       → bg_removal, compositor, color_grade
+COMPOSITION      → text_overlay, typography, prompt_builder
+PROVIDE CONTEXT  → brand_input, image_upload, reference_upload, text_input
+OUTPUT           → export
+```
+
+### StudioNode.tsx — Ícones importados
+```typescript
+import { Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
+  AlignLeft, Palette, Camera, Download, Play, CheckCircle,
+  Loader2, ScanEye, FileText, AlertCircle, Trash2,
+  Image, Layers, LayoutTemplate } from 'lucide-react';
+```
+`RUN_NODES` (nodes com botão "Run"): `prompt_builder, scene_gen, image_gen, reference_analyzer, bg_removal, export, background_gen, compositor, text_overlay`
 
 ---
 
 ## PIPELINE DE IA (PROVIDERS) — STATUS ATUAL
 
 ### Reference Analyzer (frontend)
-- **Modelo:** `gemini-2.0-flash-001` via Gemini API
-- **responseMimeType:** `application/json` (força JSON limpo)
-- **Retry:** 2 tentativas (temp 0.2 → temp 0.1)
-- **Fallback:** se ambas falharem, retorna análise genérica (não lança erro)
+- **Modelo:** `gemini-2.5-flash` via Gemini API
+- **URL:** `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
+- **responseMimeType:** `application/json` (força JSON limpo, sem markdown fences)
+- **Retry:** 2 tentativas (temp 0.2 → temp 0.1, ambas com responseMimeType)
+- **Fallback:** se ambas falharem (parse error OU HTTP error), retorna `buildFallbackAnalysis()` com defaults profissionais — **NÃO lança erro**
+- **Fallback defaults:** center position, large size, dark gradient bg, studio lighting, bold-sans headline, #FFFFFF text
 - Arquivo: `src/services/referenceAnalyzer.ts`
+
+### Histórico de modelos testados (Reference Analyzer)
+```
+gemini-2.5-pro                → JSON inválido (retornava markdown fences, thinking tokens)
+gemini-2.0-flash              → 404 (modelo não existe sem suffix)
+gemini-2.0-flash-001          → 404 (descontinuado, "no longer available to new users")
+gemini-2.5-flash              → ✅ FUNCIONA (estável, rápido, obedece responseMimeType)
+```
 
 ### Strict Identity ON (Ecom Banner e Photoshoot)
 1. **Primário:** Gemini (`gemini-2.0-flash-preview-image-generation`) via Gemini API — modo IMG2IMG
@@ -244,10 +324,12 @@ Quando um node de input muda seus dados (nova imagem, novo texto), **todos os no
 ### Strict Identity OFF (Social Post text-to-image)
 - **Provider:** Replicate FLUX (`replicate-flux.ts`) via text-to-image
 
-### Background Gen (Studio)
+### Background Gen (Studio — engine.ts case 'background_gen')
 - Usa o mesmo endpoint `generate-image` com `strictIdentity: false`
 - Prompt inclui instrução explícita: "ONLY background, NO product, NO text"
-- Fallback se não recebeu análise: prompt genérico profissional
+- `negativePrompt`: "product, person, people, food, text, typography, watermark, logo, letters, words, main subject"
+- `module: 'sys-img-background'`
+- **Fallback se não recebeu análise:** prompt genérico profissional ("Professional product photography background. Clean, modern studio environment...")
 
 ### Preprocess (antes de chamar qualquer provider no modo strict)
 - Detectar alpha/transparência → compor fundo neutro (`#111827`)
@@ -257,13 +339,20 @@ Quando um node de input muda seus dados (nova imagem, novo texto), **todos os no
 - Fallback: se `PREPROCESS_DECODE_ENABLED != "true"`, passa original sem transformar
 
 ### Variáveis de ambiente necessárias
-- `VITE_GEMINI_API_KEY` — Google AI Studio (frontend, para reference analyzer)
-- `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` — Supabase (frontend)
-- `GEMINI_API_KEY` — Google AI Studio (backend Edge Function)
-- `REPLICATE_API_TOKEN` — Replicate (backend)
-- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — (backend)
-- `GENS_BUCKET` (default: `generations-private`)
-- `PREPROCESS_DECODE_ENABLED=true` — ativa pixel-level preprocess (opcional)
+```
+# Frontend (.env)
+VITE_GEMINI_API_KEY=           # Google AI Studio (para reference analyzer)
+VITE_SUPABASE_URL=             # Supabase project URL
+VITE_SUPABASE_ANON_KEY=        # Supabase anon key
+
+# Backend (Supabase Edge Function secrets)
+GEMINI_API_KEY=                # Google AI Studio (para geração de imagem)
+REPLICATE_API_TOKEN=           # Replicate (para Flux/Kontext)
+SUPABASE_URL=                  # Auto-set pelo Supabase
+SUPABASE_SERVICE_ROLE_KEY=     # Auto-set pelo Supabase
+GENS_BUCKET=generations-private # Bucket de storage (default)
+PREPROCESS_DECODE_ENABLED=true  # Ativa pixel-level preprocess (opcional)
+```
 
 ### Response do backend inclui meta/debug
 ```json
@@ -326,6 +415,13 @@ Quando um node de input muda seus dados (nova imagem, novo texto), **todos os no
 (option.labelKey ? t(option.labelKey) : option.label) || option.label
 ```
 
+### Hook i18n
+```typescript
+// src/i18n/index.ts exporta:
+useI18n(): { lang: Lang; setLang: (l: Lang) => void; t: (k: string) => string }
+// ATENÇÃO: é `lang`, NÃO `locale`. Tipo Lang = 'en' | 'pt-BR' | 'es'
+```
+
 ### Namespaces de keys
 ```
 editor.*          editor.preset.*       editor.actions.*
@@ -358,17 +454,19 @@ STAGE 6 — MVP Polish         ❌ PENDENTE   (landing page, billing, testes)
 
 **Concluído:**
 - Node editor com canvas infinito, pan/zoom, conexões SVG
-- 15 tipos de node com UI completa
-- Motor de execução real (topological sort, executeNode)
+- 15 tipos de node com UI completa (13 implementados, 2 pass-through: typography, color_grade)
+- Motor de execução real (topological sort, executeNode, executeFlow)
 - 3 fluxos preset: styled-photo, creative-banner, simple-gen
-- Flow Selector modal ao abrir Studio
-- Reference Analyzer com Gemini 2.0 Flash 001 + JSON mode + fallback
-- Background Gen com prompt de fundo isolado
-- Compositor (Canvas API) — subject real sobre fundo gerado
-- Text Overlay (Canvas 2D) — headline, preço, CTA
-- BG Removal (ONNX/API)
-- Cache invalidation — nodes downstream limpos quando input muda
-- i18n completo (en, pt-BR, es)
+- Flow Selector modal ao abrir Studio (sem confirm dialog)
+- Reference Analyzer com Gemini 2.5 Flash + JSON mode + fallback genérico
+- Background Gen com prompt de fundo isolado + fallback sem análise
+- Compositor (Canvas API) — subject real sobre fundo gerado com shadow/scale/position
+- Text Overlay (Canvas 2D) — headline com word-wrap, price badge, CTA
+- BG Removal (ONNX/API) → output type `subject_cutout`
+- Cache invalidation — BFS forward, nodes downstream limpos quando input muda
+- text_input com fields mode (banner: headline/price/cta/contact)
+- StudioNodePanel com 6 categorias
+- i18n completo (en, pt-BR, es) incluindo flow selector, node placeholders, panel groups
 
 **Pendente / próximos passos:**
 - Testar fluxo completo end-to-end com imagens reais
@@ -377,22 +475,52 @@ STAGE 6 — MVP Polish         ❌ PENDENTE   (landing page, billing, testes)
 - Templates de fluxo mais variados
 - Melhorar compositor: múltiplas posições, rotação, blending modes
 - Text overlay: mais fontes, estilos, posições configuráveis
+- Implementar typography e color_grade (hoje são pass-through)
 
 ---
 
-## CORREÇÕES RECENTES (Março 2026)
+## HISTÓRICO DE BUGS RESOLVIDOS E DECISÕES (Março 2026)
 
-1. **Gemini model IDs corrigidos:**
-   - Reference Analyzer: `gemini-2.5-pro` → `gemini-2.0-flash-001` (o 2.5 Pro retornava JSON inválido, o 2.0 Flash sem suffix dava 404)
-   - Backend geração: `gemini-3-pro-image-preview` → `gemini-2.0-flash-preview-image-generation`
+### 1. Gemini model IDs — tentativa e erro
+- `gemini-2.5-pro` → retornava JSON inválido (thinking tokens, markdown fences), descartado
+- `gemini-2.0-flash` (sem suffix) → 404 Not Found, o modelo precisa do suffix `-001`
+- `gemini-3-pro-image-preview` → modelo inexistente no backend, corrigido para `gemini-2.0-flash-preview-image-generation`
+- **Decisão:** sempre usar IDs exatos verificados: `gemini-2.0-flash-001` (análise), `gemini-2.0-flash-preview-image-generation` (geração)
 
-2. **responseMimeType `application/json`** adicionado ao Reference Analyzer — força o Gemini a retornar JSON limpo sem markdown fences
+### 2. responseMimeType — solução definitiva para JSON
+- Mesmo com prompt dizendo "return ONLY JSON", o Gemini 2.5 Pro retornava markdown fences
+- `generationConfig.responseMimeType: "application/json"` forçou JSON limpo em 100% dos casos
+- Aplicado em ambas as tentativas (primeira temp 0.2, retry temp 0.1)
 
-3. **Fallback sem análise** — se o Gemini falhar após 2 tentativas, retorna análise genérica com defaults profissionais. Fluxo continua.
+### 3. Fallback sem análise — fluxo não pode parar
+- Se o Gemini falhar totalmente (HTTP error + parse error), `buildFallbackAnalysis()` retorna defaults profissionais
+- O fluxo continua: background_gen usa prompt genérico, compositor compõe normalmente, text_overlay renderiza textos
+- reference_analyzer é non-critical no engine (falha não para o fluxo)
 
-4. **Cache invalidation** — quando user troca imagem/texto num node, todos os nodes downstream são invalidados (BFS forward pelas conexões)
+### 4. Cache de outputs não era invalidado
+- **Bug:** user trocava imagem no Image Upload, mas nodes downstream continuavam usando output antigo
+- **Fix:** BFS forward em `handleNodeDataChange` — percorre conexões, limpa `nodeOutputs` e `execStates` de todos os dependentes
+- Nodes invalidados voltam para `idle` (sem check verde), indicando re-execução necessária
 
-5. **Decisão IA-first** — tipografia integrada pela IA na cena no Editor; no Studio, usa Canvas 2D (text_overlay node). Stage 3 HTML/CSS suspenso.
+### 5. bg_removal output type conflito
+- Originalmente retornava `type: 'subject'`, igual ao `image_upload`
+- Compositor não conseguia distinguir entre subject original e subject recortado
+- **Fix:** bg_removal agora retorna `type: 'subject_cutout'`, compositor busca via `findUpstreamByType(inputs, 'subject_cutout')`
+
+### 6. Fluxo 'asset-generator' renomeado
+- Nome original (`asset-generator`) era genérico demais
+- Renomeado para `styled-photo` com i18n names (PT: "Foto no Estilo", EN: "Styled Photo", ES: "Foto con Estilo")
+- PresetFlow interface expandida com `id, nameEn, nameEs, descriptionEn, descriptionEs, icon, color, credits`
+
+### 7. DEFAULT_NODES era pré-populado
+- Originalmente `DEFAULT_NODES = PRESET_FLOWS['asset-generator'].nodes` — Studio já abria com um fluxo
+- Mudado para `DEFAULT_NODES = []` — Studio abre vazio e mostra FlowSelector modal
+- `handleNewFlow` agora reabre o selector em vez de fazer `window.confirm` + carregar flow hardcoded
+
+### 8. Decisão IA-first (Stage 3 suspenso)
+- HTML/CSS overlay por cima da imagem gerada produzia camadas desconexas (texto "colado" sem integração visual)
+- **Decisão:** tipografia no Editor é gerada pela IA como parte da imagem (via prompt); no Studio, usa Canvas 2D (text_overlay node)
+- Stage 3 (HTML/CSS renderer com Headless Chromium) foi **permanentemente suspenso**
 
 ---
 
@@ -459,9 +587,13 @@ DELIVERABLE: Return diff/patch only. Do not explain what you did — show the co
 - Deixar texto de UI hardcoded em JSX
 - Alterar `value` de qualquer option/enum
 - Compor overlays CSS por cima da imagem gerada (efeitos visuais pertencem ao prompt/IA)
-- Usar modelos Gemini inexistentes (sempre verificar: `gemini-2.0-flash-001` para análise, `gemini-2.0-flash-preview-image-generation` para geração)
+- Usar modelos Gemini inexistentes (sempre verificar: `gemini-2.5-flash` para análise, `gemini-2.0-flash-preview-image-generation` para geração)
 - Implementar features de STAGE futuro antes de resolver bugs do STAGE atual
 - Não limpar cache de outputs quando inputs mudam (sempre invalidar downstream)
+- Usar `locale` do useI18n (é `lang`, não `locale`)
+- bg_removal retornar `type: 'subject'` (é `'subject_cutout'` — compositor depende disso)
+- DEFAULT_NODES com nodes pré-populados (deve ser `[]` para mostrar FlowSelector)
+- handleNewFlow com `window.confirm` (deve reabrir FlowSelector)
 
 ---
 
