@@ -22,6 +22,7 @@ import {
   executeFlow,
   executeNode,
   collectInputs,
+  prePopulateInputOutputs,
   type NodeOutputs,
 } from './studio/engine';
 
@@ -137,9 +138,18 @@ export function StudioPage() {
     setExecStates(prev => ({ ...prev, [nodeId]: 'running' }));
 
     try {
-      const inputs = collectInputs(nodeId, connections, nodeOutputs);
+      // Pre-populate input node outputs so upstream data is always available
+      // even when running a single node without "Run All".
+      const enrichedOutputs = { ...nodeOutputs };
+      prePopulateInputOutputs(nodes, enrichedOutputs);
+
+      const inputs = collectInputs(nodeId, connections, enrichedOutputs);
+      console.log(`[Studio:handleNodeRun] Node ${nodeId} (${node.type}) inputs:`, Object.keys(inputs).filter(k => k !== '_allUpstream'));
       const output = await executeNode(node, inputs);
-      setNodeOutputs(prev => ({ ...prev, [nodeId]: output }));
+      setNodeOutputs(prev => {
+        const next = { ...prev, ...enrichedOutputs, [nodeId]: output };
+        return next;
+      });
       setExecStates(prev => ({ ...prev, [nodeId]: 'done' }));
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'Execution failed';

@@ -57,8 +57,10 @@ export function collectInputs(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allUpstream: any[] = [];
 
-  connections
-    .filter((c) => c.toNode === nodeId)
+  const incomingConns = connections.filter((c) => c.toNode === nodeId);
+  console.log('[Engine] collectInputs for', nodeId, 'connections:', incomingConns.map(c => `${c.fromNode}→${c.toNode}`), 'available outputs:', Object.keys(outputs));
+
+  incomingConns
     .forEach((c) => {
       const sourceOutput = outputs[c.fromNode];
       if (sourceOutput !== undefined) {
@@ -208,9 +210,18 @@ export async function executeNode(
         (inputs._refImage as string) ||
         undefined;
 
+      // Detailed source logging for debugging
+      const subjectSource = subData?.image ? 'upstream[subject]'
+        : inputs._subImage ? '_subImage passthrough'
+        : inputs.image ? 'inputs.image'
+        : 'NONE';
+      const referenceSource = refData?.image ? 'upstream[reference]'
+        : inputs._refImage ? '_refImage passthrough'
+        : 'NONE';
+
       console.log('[Studio:image_gen] Prompt length:', prompt.length);
-      console.log('[Studio:image_gen] Subject present:', Boolean(subject), subject ? `(${subject.slice(0, 30)}... ${subject.length} chars)` : 'MISSING');
-      console.log('[Studio:image_gen] Reference present:', Boolean(reference), reference ? `(${reference.slice(0, 30)}... ${reference.length} chars)` : 'none');
+      console.log('[Studio:image_gen] Subject:', subjectSource, subject ? `(${subject.length} chars, starts: ${subject.slice(0, 40)}...)` : 'MISSING');
+      console.log('[Studio:image_gen] Reference:', referenceSource, reference ? `(${reference.length} chars)` : 'none');
       console.log('[Studio:image_gen] All upstream types:', ((inputs._allUpstream || []) as Array<Record<string, unknown>>).map(u => u?.type));
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
@@ -326,6 +337,70 @@ export async function executeNode(
 }
 
 /**
+ * Input node types that hold data directly (no upstream dependencies).
+ * Their outputs are pre-populated before the flow runs so downstream
+ * nodes can always find them — even when running a single node.
+ */
+const INPUT_NODE_TYPES: readonly string[] = [
+  'image_upload',
+  'reference_upload',
+  'text_input',
+  'brand_input',
+];
+
+/**
+ * Pre-populate outputs for all input nodes from their node.data.
+ * Input nodes don't depend on upstream — their data is already in node.data
+ * (set by the UI when the user uploads an image or types text).
+ */
+export function prePopulateInputOutputs(
+  nodes: StudioNode[],
+  outputs: NodeOutputs,
+): void {
+  for (const node of nodes) {
+    if (!INPUT_NODE_TYPES.includes(node.type)) continue;
+    // Don't overwrite if already executed
+    if (outputs[node.id] !== undefined) continue;
+
+    switch (node.type) {
+      case 'image_upload':
+        if (node.data.imageBase64) {
+          outputs[node.id] = {
+            image: node.data.imageBase64 as string,
+            type: 'subject',
+          };
+          console.log(`[Engine:prePopulate] ${node.id} (image_upload) → subject image (${String(node.data.imageBase64).length} chars)`);
+        }
+        break;
+      case 'reference_upload':
+        if (node.data.imageBase64) {
+          outputs[node.id] = {
+            image: node.data.imageBase64 as string,
+            type: 'reference',
+          };
+          console.log(`[Engine:prePopulate] ${node.id} (reference_upload) → reference image (${String(node.data.imageBase64).length} chars)`);
+        }
+        break;
+      case 'text_input':
+        outputs[node.id] = { text: (node.data.text as string) || '' };
+        break;
+      case 'brand_input':
+        outputs[node.id] = {
+          brandName: (node.data.brandName as string) || '',
+          description: (node.data.description as string) || '',
+        };
+        break;
+    }
+  }
+}
+
+/**
+ * Node types that are critical — if they fail, the flow must stop.
+ * Non-critical nodes (like reference_analyzer) can fail and the flow continues.
+ */
+const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen'];
+
+/**
  * Execute entire flow sequentially in topological order.
  */
 export async function executeFlow(
@@ -339,6 +414,13 @@ export async function executeFlow(
   const order = getExecutionOrder(nodes, connections);
   const outputs: NodeOutputs = {};
 
+  // Pre-populate input node outputs from node.data
+  // so downstream nodes always find their data.
+  prePopulateInputOutputs(nodes, outputs);
+
+  console.log('[Engine:executeFlow] Pre-populated outputs:', Object.keys(outputs));
+  console.log('[Engine:executeFlow] Execution order:', order);
+
   for (const nodeId of order) {
     const node = nodes.find((n) => n.id === nodeId);
     if (!node) continue;
@@ -347,6 +429,7 @@ export async function executeFlow(
 
     try {
       const inputs = collectInputs(nodeId, connections, outputs);
+      console.log(`[Engine:executeFlow] Node ${nodeId} (${node.type}) inputs:`, Object.keys(inputs).filter(k => k !== '_allUpstream'));
       const output = await executeNode(node, inputs);
       outputs[nodeId] = output;
       onNodeDone(nodeId, output);
@@ -354,7 +437,15 @@ export async function executeFlow(
       const msg = error instanceof Error ? error.message : 'Execution failed';
       console.error(`[Studio] Node ${nodeId} (${node.type}) failed:`, error);
       onNodeError(nodeId, msg);
-      break; // Stop flow on first error
+
+      // Only stop the flow for critical nodes (image_gen).
+      // Non-critical nodes (reference_analyzer) can fail — downstream
+      // nodes have fallback logic (e.g. prompt_builder uses default prompt).
+      if (CRITICAL_NODE_TYPES.includes(node.type)) {
+        console.warn(`[Engine] Critical node ${node.type} failed — stopping flow.`);
+        break;
+      }
+      console.warn(`[Engine] Non-critical node ${node.type} failed — continuing flow.`);
     }
   }
 
