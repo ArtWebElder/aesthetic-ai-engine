@@ -16,6 +16,8 @@ interface StudioCanvasProps {
   nodes: StudioNodeType[];
   connections: Connection[];
   execStates: Record<string, ExecState>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  nodeOutputs: Record<string, any>;
   selectedNodeId: string | null;
   zoom: number;
   pan: { x: number; y: number };
@@ -32,6 +34,7 @@ export function StudioCanvas({
   nodes,
   connections,
   execStates,
+  nodeOutputs,
   selectedNodeId,
   zoom,
   pan,
@@ -213,6 +216,7 @@ export function StudioCanvas({
             node={node}
             isSelected={selectedNodeId === node.id}
             execState={execStates[node.id] ?? 'idle'}
+            output={nodeOutputs[node.id]}
             onMouseDown={handleNodeMouseDown}
             onSelect={onSelectNode}
             onRun={onNodeRun}

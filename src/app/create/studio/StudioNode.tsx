@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, Play, CheckCircle,
-  Loader2,
+  Loader2, ScanEye, FileText, AlertCircle,
 } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, NodeTypeId, StudioNode as StudioNodeType } from './types';
 import { useI18n } from '@/i18n';
@@ -10,29 +10,147 @@ import { StudioSelect } from './StudioSelect';
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
-  AlignLeft, Palette, Camera, Download,
+  AlignLeft, Palette, Camera, Download, ScanEye, FileText,
 };
 
-const RUN_NODES: NodeTypeId[] = ['prompt_builder', 'scene_gen', 'image_gen'];
+const RUN_NODES: NodeTypeId[] = [
+  'prompt_builder', 'scene_gen', 'image_gen',
+  'reference_analyzer', 'bg_removal', 'export',
+];
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type NodeOutput = any;
 
 interface StudioNodeProps {
   node: StudioNodeType;
   isSelected: boolean;
   execState: ExecState;
+  output?: NodeOutput;
   onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onSelect: (nodeId: string) => void;
   onRun: (nodeId: string) => void;
   onDataChange: (nodeId: string, key: string, value: string) => void;
 }
 
+// ── Output Preview ──────────────────────────────────────────────────────────
+
+function OutputPreview({ output }: { output?: NodeOutput }) {
+  if (!output) return null;
+
+  const imgSrc = output.image || output.generatedImage || output.finalImage;
+  if (imgSrc && typeof imgSrc === 'string' && imgSrc.startsWith('data:')) {
+    return (
+      <div style={{ margin: '4px 10px 6px', borderRadius: 8, overflow: 'hidden', border: '1px solid hsl(var(--border))' }}>
+        <img src={imgSrc} alt="output" style={{ width: '100%', height: 80, objectFit: 'cover' }} />
+      </div>
+    );
+  }
+
+  if (output.prompt && typeof output.prompt === 'string') {
+    return (
+      <div style={{
+        margin: '4px 10px 6px', padding: '6px 8px', borderRadius: 6,
+        background: 'hsl(var(--muted))', fontSize: 10, fontFamily: 'monospace',
+        color: 'hsl(var(--foreground))', lineHeight: 1.4,
+        maxHeight: 60, overflow: 'hidden', textOverflow: 'ellipsis',
+      }}>
+        {output.prompt.slice(0, 150)}{output.prompt.length > 150 ? '...' : ''}
+      </div>
+    );
+  }
+
+  if (output.analysis) {
+    const a = output.analysis;
+    return (
+      <div style={{
+        margin: '4px 10px 6px', padding: '6px 8px', borderRadius: 6,
+        background: '#06B6D410', fontSize: 10,
+        color: '#06B6D4', lineHeight: 1.4,
+      }}>
+        ✓ {a.style?.mood || 'analyzed'} · {a.layout?.productPosition || '?'} · {a.style?.lighting || '?'}
+      </div>
+    );
+  }
+
+  if (output.type === 'export') {
+    return (
+      <div style={{
+        margin: '4px 10px 6px', padding: '6px 8px', borderRadius: 6,
+        background: '#10b98115', fontSize: 10, color: '#10b981',
+      }}>
+        ✓ Pronto para download ({output.format || 'png'})
+      </div>
+    );
+  }
+
+  return null;
+}
+
+// ── Image Upload Zone (shared between image_upload and reference_upload) ──
+
+function ImageUploadZone({
+  node, onDataChange, label,
+}: {
+  node: StudioNodeType;
+  onDataChange: (id: string, key: string, value: string) => void;
+  label: string;
+}) {
+  const hasImage = Boolean(node.data.imageBase64);
+  const inputId = `upload-${node.id}`;
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = (ev.target?.result as string) ?? '';
+      onDataChange(node.id, 'imageBase64', base64);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <div style={{ padding: '6px 10px' }} onMouseDown={e => e.stopPropagation()}>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+        id={inputId}
+      />
+      <label htmlFor={inputId} style={{ cursor: 'pointer', display: 'block' }}>
+        {hasImage ? (
+          <img
+            src={node.data.imageBase64 as string}
+            alt="uploaded"
+            style={{
+              width: '100%', height: 90, objectFit: 'cover',
+              borderRadius: 8, border: '1px solid hsl(var(--border))',
+            }}
+          />
+        ) : (
+          <div style={{
+            border: '1.5px dashed hsl(var(--border))',
+            borderRadius: 8, padding: '18px 8px', textAlign: 'center',
+            fontSize: 10, color: 'hsl(var(--muted-foreground))',
+          }}>
+            {label}
+          </div>
+        )}
+      </label>
+    </div>
+  );
+}
+
+// ── Node Content ────────────────────────────────────────────────────────────
+
 function NodeContent({
-  node,
-  execState,
-  onRun,
-  onDataChange,
+  node, execState, output, onRun, onDataChange,
 }: {
   node: StudioNodeType;
   execState: ExecState;
+  output?: NodeOutput;
   onRun: (id: string) => void;
   onDataChange: (id: string, key: string, value: string) => void;
 }) {
@@ -41,17 +159,15 @@ function NodeContent({
   const isRunnable = RUN_NODES.includes(node.type);
   const isRunning = execState === 'running';
   const isDone = execState === 'done';
+  const isError = execState === 'error';
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
     background: 'hsl(var(--muted))',
     border: '1px solid hsl(var(--border))',
-    borderRadius: 6,
-    padding: '5px 8px',
-    fontSize: 11,
-    color: 'hsl(var(--foreground))',
-    outline: 'none',
-    resize: 'none' as const,
+    borderRadius: 6, padding: '5px 8px',
+    fontSize: 11, color: 'hsl(var(--foreground))',
+    outline: 'none', resize: 'none' as const,
   };
 
   const runBtn = isRunnable && (
@@ -59,25 +175,18 @@ function NodeContent({
       onClick={e => { e.stopPropagation(); onRun(node.id); }}
       disabled={isRunning}
       style={{
-        width: '100%',
-        padding: '5px 0',
-        borderRadius: 6,
-        background: isRunning ? 'hsl(var(--muted))' : def.color,
-        color: '#fff',
-        fontSize: 11,
-        fontWeight: 600,
-        border: 'none',
-        cursor: isRunning ? 'not-allowed' : 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-        opacity: isRunning ? 0.6 : 1,
-        marginTop: 4,
+        width: '100%', padding: '5px 0', borderRadius: 6,
+        background: isError ? '#EF4444' : isRunning ? 'hsl(var(--muted))' : def.color,
+        color: '#fff', fontSize: 11, fontWeight: 600,
+        border: 'none', cursor: isRunning ? 'not-allowed' : 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        gap: 4, opacity: isRunning ? 0.6 : 1, marginTop: 4,
       }}
     >
       {isRunning ? (
         <><Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> {t('studio.node.running')}</>
+      ) : isError ? (
+        <><AlertCircle size={12} /> Retry</>
       ) : isDone ? (
         <><CheckCircle size={12} /> {t('studio.node.done')}</>
       ) : (
@@ -107,22 +216,13 @@ function NodeContent({
           />
         </div>
       );
+
     case 'image_upload':
-      return (
-        <div style={{ padding: '6px 10px' }}>
-          <div style={{
-            border: '1.5px dashed hsl(var(--border))',
-            borderRadius: 8,
-            padding: '18px 8px',
-            textAlign: 'center',
-            fontSize: 10,
-            color: 'hsl(var(--muted-foreground))',
-            cursor: 'pointer',
-          }}>
-            {t('studio.node.upload_hint')}
-          </div>
-        </div>
-      );
+      return <ImageUploadZone node={node} onDataChange={onDataChange} label={t('studio.node.upload_hint')} />;
+
+    case 'reference_upload':
+      return <ImageUploadZone node={node} onDataChange={onDataChange} label="Clique para subir referência" />;
+
     case 'text_input':
       return (
         <div style={{ padding: '6px 10px' }}>
@@ -136,58 +236,59 @@ function NodeContent({
           />
         </div>
       );
+
+    case 'reference_analyzer':
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{
+            background: 'hsl(var(--muted))', borderRadius: 6,
+            padding: '6px 8px', fontSize: 10, minHeight: 40,
+            color: isDone ? '#06B6D4' : 'hsl(var(--muted-foreground))',
+          }}>
+            {isDone && output?.analysis
+              ? `✓ ${output.analysis.style?.mood} · ${output.analysis.layout?.productPosition} · ${output.analysis.style?.lighting}`
+              : 'Conecte referência + subject → Run'}
+          </div>
+          {runBtn}
+          <OutputPreview output={output} />
+        </div>
+      );
+
     case 'prompt_builder':
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{
-            background: 'hsl(var(--muted))',
-            borderRadius: 6,
-            padding: '6px 8px',
-            fontSize: 10,
-            color: isDone ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
-            minHeight: 52,
-            fontFamily: 'monospace',
-          }}>
-            {isDone
-              ? 'A vibrant product photo with warm cinematic lighting, bokeh background, editorial quality...'
-              : t('studio.node.output_placeholder')}
-          </div>
-          <StudioSelect
-            defaultValue="gemini"
-            options={[
-              { value: 'gemini', label: 'Gemini 2.0 Flash' },
-              { value: 'gpt4', label: 'GPT-4o' },
-            ]}
+          <textarea
+            style={{ ...inputStyle, resize: 'none', fontFamily: 'monospace', fontSize: 10 }}
+            rows={2}
+            placeholder="Custom prompt (optional)..."
+            value={(node.data.customPrompt as string) ?? ''}
+            onChange={e => onDataChange(node.id, 'customPrompt', e.target.value)}
             onMouseDown={e => e.stopPropagation()}
           />
+          <OutputPreview output={output} />
           {runBtn}
         </div>
       );
+
     case 'scene_gen':
-    case 'image_gen':
+    case 'image_gen': {
+      const previewImg = output?.image || output?.generatedImage;
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{
-            background: 'hsl(var(--muted))',
-            borderRadius: 6,
-            fontSize: 10,
-            color: 'hsl(var(--muted-foreground))',
-            minHeight: 90,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
+            background: 'hsl(var(--muted))', borderRadius: 6,
+            fontSize: 10, color: 'hsl(var(--muted-foreground))',
+            minHeight: 90, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', overflow: 'hidden',
           }}>
-            {isDone ? (
+            {previewImg && typeof previewImg === 'string' && previewImg.startsWith('data:') ? (
+              <img src={previewImg} alt="generated" style={{ width: '100%', height: 90, objectFit: 'cover' }} />
+            ) : isDone ? (
               <div style={{
-                width: '100%',
-                height: 90,
+                width: '100%', height: 90,
                 background: `linear-gradient(135deg, ${def.color}33, ${def.color}11)`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 10,
-                color: def.color,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 10, color: def.color,
               }}>
                 ✓ {t('studio.node.generated')}
               </div>
@@ -195,27 +296,32 @@ function NodeContent({
               t('studio.node.preview_placeholder')
             )}
           </div>
+          {output?.provider && (
+            <div style={{ fontSize: 9, color: 'hsl(var(--muted-foreground))', textAlign: 'right' }}>
+              via {output.provider}
+            </div>
+          )}
           {runBtn}
         </div>
       );
+    }
+
     case 'bg_removal':
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <StudioSelect
-            defaultValue="onnx"
+            defaultValue="api"
             options={[
-              { value: 'onnx', label: 'ONNX (local)' },
               { value: 'api', label: 'API (cloud)' },
+              { value: 'onnx', label: 'ONNX (local)' },
             ]}
             onMouseDown={e => e.stopPropagation()}
           />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>Threshold</span>
-            <input type="range" min={0} max={100} defaultValue={50} style={{ flex: 1, accentColor: def.color }}
-              onMouseDown={e => e.stopPropagation()} />
-          </div>
+          <OutputPreview output={output} />
+          {runBtn}
         </div>
       );
+
     case 'typography':
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -224,6 +330,7 @@ function NodeContent({
           <input style={inputStyle} placeholder="CTA text..." onMouseDown={e => e.stopPropagation()} />
         </div>
       );
+
     case 'color_grade':
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -239,6 +346,7 @@ function NodeContent({
           />
         </div>
       );
+
     case 'export':
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -261,29 +369,32 @@ function NodeContent({
             ]}
             onMouseDown={e => e.stopPropagation()}
           />
+          <OutputPreview output={output} />
+          {runBtn}
         </div>
       );
+
     default:
       return null;
   }
 }
 
+// ── Main Node Component ─────────────────────────────────────────────────────
+
 export function StudioNode({
-  node,
-  isSelected,
-  execState,
-  onMouseDown,
-  onSelect,
-  onRun,
-  onDataChange,
+  node, isSelected, execState, output,
+  onMouseDown, onSelect, onRun, onDataChange,
 }: StudioNodeProps) {
   const def = NODE_TYPE_DEFS[node.type];
   const IconComp = ICON_MAP[def.icon] ?? Building2;
   const isRunning = execState === 'running';
   const isDone = execState === 'done';
+  const isError = execState === 'error';
   const headerRef = useRef<HTMLDivElement>(null);
 
-  const borderColor = isDone
+  const borderColor = isError
+    ? '#EF4444'
+    : isDone
     ? '#10b981'
     : isSelected
     ? def.color
@@ -298,14 +409,11 @@ export function StudioNode({
   return (
     <div
       style={{
-        position: 'absolute',
-        left: node.x,
-        top: node.y,
+        position: 'absolute', left: node.x, top: node.y,
         width: def.defaultWidth,
         background: 'hsl(var(--card))',
         border: `1.5px solid ${borderColor}`,
-        borderRadius: 10,
-        boxShadow,
+        borderRadius: 10, boxShadow,
         userSelect: 'none',
         zIndex: isSelected ? 20 : 10,
         transition: 'border-color 0.15s, box-shadow 0.15s',
@@ -314,58 +422,33 @@ export function StudioNode({
       onClick={() => onSelect(node.id)}
     >
       {/* Input port */}
-      <div
-        style={{
-          position: 'absolute',
-          left: -7,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: 13,
-          height: 13,
-          borderRadius: '50%',
-          border: `2px solid ${def.color}`,
-          background: 'hsl(var(--card))',
-          zIndex: 30,
-        }}
-      />
+      <div style={{
+        position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
+        width: 13, height: 13, borderRadius: '50%',
+        border: `2px solid ${def.color}`, background: 'hsl(var(--card))', zIndex: 30,
+      }} />
       {/* Output port */}
-      <div
-        style={{
-          position: 'absolute',
-          right: -7,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          width: 13,
-          height: 13,
-          borderRadius: '50%',
-          background: def.color,
-          zIndex: 30,
-        }}
-      />
+      <div style={{
+        position: 'absolute', right: -7, top: '50%', transform: 'translateY(-50%)',
+        width: 13, height: 13, borderRadius: '50%',
+        background: def.color, zIndex: 30,
+      }} />
 
       {/* Header — drag handle */}
       <div
         ref={headerRef}
         onMouseDown={e => { e.stopPropagation(); onMouseDown(e, node.id); }}
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 7,
+          display: 'flex', alignItems: 'center', gap: 7,
           padding: '8px 10px',
           borderBottom: '1px solid hsl(var(--border))',
-          cursor: 'grab',
-          borderRadius: '8px 8px 0 0',
+          cursor: 'grab', borderRadius: '8px 8px 0 0',
         }}
       >
         <div style={{
-          width: 24,
-          height: 24,
-          borderRadius: 6,
+          width: 24, height: 24, borderRadius: 6,
           background: `${def.color}25`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
           <IconComp size={13} style={{ color: def.color }} />
         </div>
@@ -374,18 +457,24 @@ export function StudioNode({
         </span>
         {def.aiProvider && (
           <span style={{
-            fontSize: 9,
-            fontWeight: 700,
-            color: def.aiProvider === 'Gemini' ? '#7c3aed' : '#ea6e0b',
-            background: def.aiProvider === 'Gemini' ? '#7c3aed18' : '#f9731618',
-            padding: '1px 5px',
-            borderRadius: 4,
-            letterSpacing: 0.3,
+            fontSize: 9, fontWeight: 700,
+            color: def.aiProvider.includes('Gemini') ? '#7c3aed' : '#ea6e0b',
+            background: def.aiProvider.includes('Gemini') ? '#7c3aed18' : '#f9731618',
+            padding: '1px 5px', borderRadius: 4, letterSpacing: 0.3,
           }}>
             {def.aiProvider}
           </span>
         )}
-        {isDone && <CheckCircle size={13} style={{ color: '#10b981', flexShrink: 0 }} />}
+        {def.creditCost && (
+          <span style={{
+            fontSize: 9, fontWeight: 600, color: '#ff713d',
+            background: '#ff713d15', padding: '1px 5px', borderRadius: 4,
+          }}>
+            {def.creditCost}cr
+          </span>
+        )}
+        {isError && <AlertCircle size={13} style={{ color: '#EF4444', flexShrink: 0 }} />}
+        {isDone && !isError && <CheckCircle size={13} style={{ color: '#10b981', flexShrink: 0 }} />}
         {isRunning && <Loader2 size={13} style={{ color: def.color, animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
       </div>
 
@@ -393,6 +482,7 @@ export function StudioNode({
       <NodeContent
         node={node}
         execState={execState}
+        output={output}
         onRun={onRun}
         onDataChange={onDataChange}
       />

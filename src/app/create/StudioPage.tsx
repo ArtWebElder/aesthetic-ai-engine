@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -10,13 +10,20 @@ import {
   PanelTab,
   NodeTypeId,
   NODE_TYPE_DEFS,
-  NODE_RUN_TIMEOUT,
   DEFAULT_NODES,
   DEFAULT_CONNECTIONS,
+  PRESET_FLOWS,
   AUTO_LAYOUT_COLUMNS,
   AUTO_LAYOUT_COL_X,
   AUTO_LAYOUT_ROW_GAP,
 } from './studio/types';
+
+import {
+  executeFlow,
+  executeNode,
+  collectInputs,
+  type NodeOutputs,
+} from './studio/engine';
 
 import { StudioCanvas } from './studio/StudioCanvas';
 import { StudioNavbar } from './studio/StudioNavbar';
@@ -91,7 +98,9 @@ export function StudioPage() {
     JSON.parse(JSON.stringify(DEFAULT_CONNECTIONS))
   );
   const [execStates, setExecStates] = useState<Record<string, ExecState>>({});
+  const [nodeOutputs, setNodeOutputs] = useState<NodeOutputs>({});
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [flowRunning, setFlowRunning] = useState(false);
 
   // Canvas state
   const [zoom, setZoom] = useState(100);
@@ -121,15 +130,49 @@ export function StudioPage() {
     setNodes(prev => prev.map(n => n.id === id ? { ...n, x, y } : n));
   }, []);
 
-  const handleNodeRun = useCallback((nodeId: string) => {
+  const handleNodeRun = useCallback(async (nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
-    const timeout = NODE_RUN_TIMEOUT[node.type] ?? 1000;
+
     setExecStates(prev => ({ ...prev, [nodeId]: 'running' }));
-    setTimeout(() => {
+
+    try {
+      const inputs = collectInputs(nodeId, connections, nodeOutputs);
+      const output = await executeNode(node, inputs);
+      setNodeOutputs(prev => ({ ...prev, [nodeId]: output }));
       setExecStates(prev => ({ ...prev, [nodeId]: 'done' }));
-    }, timeout);
-  }, [nodes]);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Execution failed';
+      console.error(`[Studio] Node ${nodeId} failed:`, error);
+      setExecStates(prev => ({ ...prev, [nodeId]: 'error' }));
+      alert(`Erro no node: ${msg}`);
+    }
+  }, [nodes, connections, nodeOutputs]);
+
+  const handleRunAll = useCallback(async () => {
+    if (flowRunning) return;
+    setFlowRunning(true);
+    setExecStates({});
+    setNodeOutputs({});
+
+    await executeFlow(
+      nodes,
+      connections,
+      (nodeId) => {
+        setExecStates(prev => ({ ...prev, [nodeId]: 'running' }));
+      },
+      (nodeId, output) => {
+        setExecStates(prev => ({ ...prev, [nodeId]: 'done' }));
+        setNodeOutputs(prev => ({ ...prev, [nodeId]: output }));
+      },
+      (nodeId, error) => {
+        setExecStates(prev => ({ ...prev, [nodeId]: 'error' }));
+        alert(`Erro no node: ${error}`);
+      },
+    );
+
+    setFlowRunning(false);
+  }, [nodes, connections, flowRunning]);
 
   const handleNodeDataChange = useCallback((nodeId: string, key: string, value: string) => {
     setNodes(prev => prev.map(n =>
@@ -174,14 +217,21 @@ export function StudioPage() {
     }));
   }, []);
 
+  const loadFlow = useCallback((flowId: string) => {
+    const flow = PRESET_FLOWS[flowId];
+    if (!flow) return;
+    setNodes(JSON.parse(JSON.stringify(flow.nodes)));
+    setConnections(JSON.parse(JSON.stringify(flow.connections)));
+    setExecStates({});
+    setNodeOutputs({});
+    setSelectedNodeId(null);
+  }, []);
+
   const handleNewFlow = useCallback(() => {
     if (window.confirm('Start a new flow? Current flow will be lost.')) {
-      setNodes(JSON.parse(JSON.stringify(DEFAULT_NODES)));
-      setConnections(JSON.parse(JSON.stringify(DEFAULT_CONNECTIONS)));
-      setExecStates({});
-      setSelectedNodeId(null);
+      loadFlow('asset-generator');
     }
-  }, []);
+  }, [loadFlow]);
 
   const handleCloneFlow = useCallback(() => {
     alert('Flow cloned — feature coming soon!');
@@ -192,6 +242,7 @@ export function StudioPage() {
       setNodes([]);
       setConnections([]);
       setExecStates({});
+      setNodeOutputs({});
       setSelectedNodeId(null);
     }
   }, []);
@@ -222,6 +273,7 @@ export function StudioPage() {
         nodes={nodes}
         connections={connections}
         execStates={execStates}
+        nodeOutputs={nodeOutputs}
         selectedNodeId={selectedNodeId}
         zoom={zoom}
         pan={pan}
@@ -243,6 +295,36 @@ export function StudioPage() {
       />
 
       <CreditsBar propertiesOpen={showProperties} />
+
+      {/* Run All button */}
+      <button
+        onClick={handleRunAll}
+        disabled={flowRunning || nodes.length === 0}
+        style={{
+          position: 'absolute',
+          top: 14,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 200,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '7px 18px',
+          background: flowRunning ? 'hsl(var(--muted))' : 'linear-gradient(135deg, #ff713d, #FF9B70)',
+          color: flowRunning ? 'hsl(var(--muted-foreground))' : '#fff',
+          border: 'none',
+          borderRadius: 10,
+          fontSize: 12,
+          fontWeight: 700,
+          cursor: flowRunning ? 'not-allowed' : 'pointer',
+          boxShadow: flowRunning ? 'none' : '0 4px 16px rgba(255,113,61,0.3)',
+          fontFamily: 'inherit',
+          transition: 'all 150ms',
+        }}
+      >
+        <Play size={14} />
+        {flowRunning ? 'Executando...' : 'Executar fluxo'}
+      </button>
 
       <StudioNavbar
         openPanel={openPanel}

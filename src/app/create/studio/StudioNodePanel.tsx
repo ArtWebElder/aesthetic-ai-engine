@@ -27,15 +27,15 @@ interface NodeCategoryGroup {
 const NODE_GROUPS: NodeCategoryGroup[] = [
   {
     labelKey: 'studio.panel.frequently_used',
-    items: ['text_input', 'image_upload', 'prompt_builder', 'image_gen'],
+    items: ['text_input', 'image_upload', 'reference_upload', 'prompt_builder', 'image_gen'],
   },
   {
     labelKey: 'studio.panel.use_ai',
-    items: ['scene_gen', 'image_gen'],
+    items: ['reference_analyzer', 'scene_gen', 'image_gen'],
   },
   {
     labelKey: 'studio.panel.context',
-    items: ['brand_input', 'image_upload', 'text_input'],
+    items: ['brand_input', 'image_upload', 'reference_upload', 'text_input'],
   },
   {
     labelKey: 'studio.panel.automate',

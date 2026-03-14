@@ -3,8 +3,10 @@
 export type NodeTypeId =
   | 'brand_input'
   | 'image_upload'
+  | 'reference_upload'
   | 'text_input'
   | 'prompt_builder'
+  | 'reference_analyzer'
   | 'scene_gen'
   | 'bg_removal'
   | 'typography'
@@ -47,8 +49,8 @@ export type PanelTab = 'nodes' | 'assets' | 'templates' | 'learn';
 
 // Column assignment for Auto Layout
 export const AUTO_LAYOUT_COLUMNS: Record<number, NodeTypeId[]> = {
-  0: ['brand_input', 'image_upload', 'text_input'],
-  1: ['bg_removal', 'color_grade', 'prompt_builder'],
+  0: ['brand_input', 'image_upload', 'reference_upload', 'text_input'],
+  1: ['bg_removal', 'color_grade', 'prompt_builder', 'reference_analyzer'],
   2: ['scene_gen', 'image_gen'],
   3: ['typography', 'export'],
 };
@@ -56,12 +58,13 @@ export const AUTO_LAYOUT_COLUMNS: Record<number, NodeTypeId[]> = {
 export const AUTO_LAYOUT_COL_X = [80, 460, 840, 1220];
 export const AUTO_LAYOUT_ROW_GAP = 230;
 
-// Node simulation timeouts (ms)
+// Node execution timeouts (ms) — used as fallback for simulation
 export const NODE_RUN_TIMEOUT: Partial<Record<NodeTypeId, number>> = {
   prompt_builder: 1800,
+  reference_analyzer: 8000,
   scene_gen: 3000,
-  image_gen: 3000,
-  bg_removal: 800,
+  image_gen: 15000,
+  bg_removal: 5000,
   color_grade: 800,
   typography: 800,
   export: 800,
@@ -84,7 +87,16 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     color: '#06b6d4',
     category: 'input',
     defaultWidth: 260,
-    defaultHeight: 148,
+    defaultHeight: 200,
+  },
+  reference_upload: {
+    id: 'reference_upload',
+    label: 'Referência Visual',
+    icon: 'ImagePlus',
+    color: '#7C3AED',
+    category: 'input',
+    defaultWidth: 280,
+    defaultHeight: 200,
   },
   text_input: {
     id: 'text_input',
@@ -102,9 +114,20 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     color: '#f59e0b',
     aiProvider: 'Gemini',
     category: 'processing',
-    defaultWidth: 280,
+    defaultWidth: 320,
     defaultHeight: 220,
     creditCost: 1,
+  },
+  reference_analyzer: {
+    id: 'reference_analyzer',
+    label: 'Analisar Referência',
+    icon: 'ScanEye',
+    color: '#06B6D4',
+    aiProvider: 'Gemini 2.5 Pro',
+    category: 'ai',
+    defaultWidth: 300,
+    defaultHeight: 180,
+    creditCost: 2,
   },
   scene_gen: {
     id: 'scene_gen',
@@ -166,18 +189,55 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
   },
 };
 
-// Default flow loaded on first open
-export const DEFAULT_NODES: StudioNode[] = [
-  { id: 'n1', type: 'brand_input', x: 60, y: 40, data: {} },
-  { id: 'n2', type: 'image_upload', x: 60, y: 280, data: {} },
-  { id: 'n3', type: 'text_input', x: 60, y: 500, data: {} },
-  { id: 'n4', type: 'prompt_builder', x: 480, y: 180, data: {} },
-  { id: 'n5', type: 'image_gen', x: 880, y: 200, data: {} },
-];
+// ── Preset Flows ──────────────────────────────────────────────────────────────
 
-export const DEFAULT_CONNECTIONS: Connection[] = [
-  { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n4', toPort: 'input' },
-  { id: 'c2', fromNode: 'n2', fromPort: 'output', toNode: 'n5', toPort: 'input' },
-  { id: 'c3', fromNode: 'n3', fromPort: 'output', toNode: 'n4', toPort: 'input' },
-  { id: 'c4', fromNode: 'n4', fromPort: 'output', toNode: 'n5', toPort: 'input' },
-];
+export interface PresetFlow {
+  name: string;
+  description: string;
+  nodes: StudioNode[];
+  connections: Connection[];
+}
+
+export const PRESET_FLOWS: Record<string, PresetFlow> = {
+  'asset-generator': {
+    name: 'Asset Generator',
+    description: 'Gera assets visuais baseados em referência + subject. Sem texto.',
+    nodes: [
+      { id: 'n1', type: 'reference_upload', x: 60, y: 60, data: {} },
+      { id: 'n2', type: 'image_upload', x: 60, y: 300, data: {} },
+      { id: 'n3', type: 'reference_analyzer', x: 420, y: 60, data: {} },
+      { id: 'n4', type: 'prompt_builder', x: 420, y: 280, data: { customPrompt: '' } },
+      { id: 'n5', type: 'image_gen', x: 780, y: 170, data: { width: 1080, height: 1080 } },
+      { id: 'n6', type: 'export', x: 1100, y: 170, data: { format: 'png' } },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n3', toPort: 'input' },
+      { id: 'c2', fromNode: 'n2', fromPort: 'output', toNode: 'n3', toPort: 'input' },
+      { id: 'c3', fromNode: 'n2', fromPort: 'output', toNode: 'n5', toPort: 'input' },
+      { id: 'c4', fromNode: 'n3', fromPort: 'output', toNode: 'n4', toPort: 'input' },
+      { id: 'c5', fromNode: 'n4', fromPort: 'output', toNode: 'n5', toPort: 'input' },
+      { id: 'c6', fromNode: 'n5', fromPort: 'output', toNode: 'n6', toPort: 'input' },
+    ],
+  },
+  'simple-gen': {
+    name: 'Simple Generation',
+    description: 'Fluxo básico: brand + imagem + prompt → geração.',
+    nodes: [
+      { id: 'n1', type: 'brand_input', x: 60, y: 40, data: {} },
+      { id: 'n2', type: 'image_upload', x: 60, y: 280, data: {} },
+      { id: 'n3', type: 'text_input', x: 60, y: 500, data: {} },
+      { id: 'n4', type: 'prompt_builder', x: 480, y: 180, data: {} },
+      { id: 'n5', type: 'image_gen', x: 880, y: 200, data: {} },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n4', toPort: 'input' },
+      { id: 'c2', fromNode: 'n2', fromPort: 'output', toNode: 'n5', toPort: 'input' },
+      { id: 'c3', fromNode: 'n3', fromPort: 'output', toNode: 'n4', toPort: 'input' },
+      { id: 'c4', fromNode: 'n4', fromPort: 'output', toNode: 'n5', toPort: 'input' },
+    ],
+  },
+};
+
+// Default flow loaded on first open
+export const DEFAULT_NODES: StudioNode[] = PRESET_FLOWS['asset-generator'].nodes;
+export const DEFAULT_CONNECTIONS: Connection[] = PRESET_FLOWS['asset-generator'].connections;
