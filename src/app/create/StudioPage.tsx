@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Sparkles, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -112,12 +112,101 @@ export function StudioPage() {
   const [openPanel, setOpenPanel] = useState<PanelTab | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
+  // ── History stack (undo/redo) — past/future model ─────────────────────
+  const MAX_HISTORY = 30;
+
+  type Snapshot = { nodes: StudioNodeType[]; connections: Connection[] };
+  const pastRef = useRef<Snapshot[]>([]);
+  const futureRef = useRef<Snapshot[]>([]);
+  const nodesRef = useRef(nodes);
+  const connectionsRef = useRef(connections);
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { connectionsRef.current = connections; }, [connections]);
+
+  const pushSnapshot = useCallback(() => {
+    const snap: Snapshot = {
+      nodes: JSON.parse(JSON.stringify(nodesRef.current)),
+      connections: JSON.parse(JSON.stringify(connectionsRef.current)),
+    };
+    pastRef.current = pastRef.current.slice(-(MAX_HISTORY - 1)).concat(snap);
+    futureRef.current = []; // clear redo on new action
+  }, []);
+
+  const undo = useCallback(() => {
+    if (pastRef.current.length === 0) return;
+    // Save current state into future for redo
+    futureRef.current.push({
+      nodes: JSON.parse(JSON.stringify(nodesRef.current)),
+      connections: JSON.parse(JSON.stringify(connectionsRef.current)),
+    });
+    const snap = pastRef.current.pop()!;
+    setNodes(snap.nodes);
+    setConnections(snap.connections);
+  }, []);
+
+  const redo = useCallback(() => {
+    if (futureRef.current.length === 0) return;
+    // Save current state into past for undo
+    pastRef.current.push({
+      nodes: JSON.parse(JSON.stringify(nodesRef.current)),
+      connections: JSON.parse(JSON.stringify(connectionsRef.current)),
+    });
+    const snap = futureRef.current.pop()!;
+    setNodes(snap.nodes);
+    setConnections(snap.connections);
+  }, []);
+
+  // ── Delete node ──────────────────────────────────────────────────────────
+  const handleDeleteNode = useCallback((nodeId: string) => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    // Confirm if node has been executed (has output)
+    if (nodeOutputs[nodeId]) {
+      if (!window.confirm('This node has output. Delete it?')) return;
+    }
+
+    pushSnapshot();
+    setNodes(prev => prev.filter(n => n.id !== nodeId));
+    setConnections(prev => prev.filter(c => c.fromNode !== nodeId && c.toNode !== nodeId));
+    setExecStates(prev => { const next = { ...prev }; delete next[nodeId]; return next; });
+    setNodeOutputs(prev => { const next = { ...prev }; delete next[nodeId]; return next; });
+    if (selectedNodeId === nodeId) setSelectedNodeId(null);
+  }, [nodes, nodeOutputs, selectedNodeId, pushSnapshot]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't intercept shortcuts when user is typing in an input/textarea
       const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      const isEditing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+      // Undo/Redo — always capture unless editing text
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey && !isEditing) {
+        e.preventDefault();
+        undo();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && e.shiftKey && !isEditing) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+      // Also support Ctrl+Y for redo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'y' && !isEditing) {
+        e.preventDefault();
+        redo();
+        return;
+      }
+
+      if (isEditing) return;
+
+      // Delete selected node
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeId) {
+        e.preventDefault();
+        handleDeleteNode(selectedNodeId);
+        return;
+      }
 
       if (e.key === 'Escape') {
         setSelectedNodeId(null);
@@ -128,9 +217,13 @@ export function StudioPage() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [undo, redo, selectedNodeId, handleDeleteNode]);
 
   // Node operations
+  const handleNodeDragStart = useCallback(() => {
+    pushSnapshot();
+  }, [pushSnapshot]);
+
   const handleNodeMove = useCallback((id: string, x: number, y: number) => {
     setNodes(prev => prev.map(n => n.id === id ? { ...n, x, y } : n));
   }, []);
@@ -215,6 +308,7 @@ export function StudioPage() {
     // Prevent self-connections
     if (fromNode === toNode) return;
 
+    pushSnapshot();
     const newConn: Connection = {
       id: `c${Date.now()}`,
       fromNode,
@@ -223,10 +317,11 @@ export function StudioPage() {
       toPort: 'input',
     };
     setConnections(prev => [...prev, newConn]);
-  }, [connections]);
+  }, [connections, pushSnapshot]);
 
   const handleAddNode = useCallback((typeId: NodeTypeId) => {
     const def = NODE_TYPE_DEFS[typeId];
+    pushSnapshot();
     const newNode: StudioNodeType = {
       id: `n${Date.now()}`,
       type: typeId,
@@ -239,10 +334,11 @@ export function StudioPage() {
     setSelectedNodeId(newNode.id);
     // Suppress unused variable warning
     void def;
-  }, []);
+  }, [pushSnapshot]);
 
   // Auto layout
   const handleAutoLayout = useCallback(() => {
+    pushSnapshot();
     setNodes(prev => prev.map(node => {
       let colIdx = 3; // default: last column
       let rowIdx = 0;
@@ -260,17 +356,18 @@ export function StudioPage() {
         y: 40 + rowIdx * AUTO_LAYOUT_ROW_GAP,
       };
     }));
-  }, []);
+  }, [pushSnapshot]);
 
   const loadFlow = useCallback((flowId: string) => {
     const flow = PRESET_FLOWS[flowId];
     if (!flow) return;
+    pushSnapshot();
     setNodes(JSON.parse(JSON.stringify(flow.nodes)));
     setConnections(JSON.parse(JSON.stringify(flow.connections)));
     setExecStates({});
     setNodeOutputs({});
     setSelectedNodeId(null);
-  }, []);
+  }, [pushSnapshot]);
 
   const handleNewFlow = useCallback(() => {
     if (window.confirm('Start a new flow? Current flow will be lost.')) {
@@ -327,9 +424,11 @@ export function StudioPage() {
         onPanChange={setPan}
         onSelectNode={handleSelectNode}
         onNodeMove={handleNodeMove}
+        onNodeDragStart={handleNodeDragStart}
         onNodeRun={handleNodeRun}
         onNodeDataChange={handleNodeDataChange}
         onAddConnection={handleAddConnection}
+        onDeleteNode={handleDeleteNode}
       />
 
       {/* Fixed UI overlays */}

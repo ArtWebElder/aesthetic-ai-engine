@@ -26,9 +26,11 @@ interface StudioCanvasProps {
   onPanChange: (p: { x: number; y: number }) => void;
   onSelectNode: (id: string | null) => void;
   onNodeMove: (id: string, x: number, y: number) => void;
+  onNodeDragStart?: () => void;
   onNodeRun: (id: string) => void;
   onNodeDataChange: (id: string, key: string, value: string) => void;
   onAddConnection: (fromNode: string, toNode: string) => void;
+  onDeleteNode?: (id: string) => void;
 }
 
 export function StudioCanvas({
@@ -44,9 +46,11 @@ export function StudioCanvas({
   onPanChange,
   onSelectNode,
   onNodeMove,
+  onNodeDragStart,
   onNodeRun,
   onNodeDataChange,
   onAddConnection,
+  onDeleteNode,
 }: StudioCanvasProps) {
   const outerRef = useRef<HTMLDivElement>(null);
 
@@ -84,6 +88,7 @@ export function StudioCanvas({
     e.preventDefault();
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
+    onNodeDragStart?.();
     nodeDragRef.current = {
       nodeId,
       startMouseX: e.clientX,
@@ -91,7 +96,7 @@ export function StudioCanvas({
       startNodeX: node.x,
       startNodeY: node.y,
     };
-  }, [nodes]);
+  }, [nodes, onNodeDragStart]);
 
   // Port drag: start connection from output port
   const handleOutputPortDown = useCallback((e: React.MouseEvent, nodeId: string) => {
@@ -305,6 +310,7 @@ export function StudioCanvas({
             onSelect={onSelectNode}
             onRun={onNodeRun}
             onDataChange={onNodeDataChange}
+            onDelete={onDeleteNode}
             onOutputPortDown={handleOutputPortDown}
             onInputPortUp={handleInputPortUp}
           />

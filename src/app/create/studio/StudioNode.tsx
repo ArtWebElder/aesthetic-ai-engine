@@ -1,8 +1,8 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, Play, CheckCircle,
-  Loader2, ScanEye, FileText, AlertCircle,
+  Loader2, ScanEye, FileText, AlertCircle, Trash2,
 } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, NodeTypeId, StudioNode as StudioNodeType } from './types';
 import { useI18n } from '@/i18n';
@@ -61,6 +61,7 @@ interface StudioNodeProps {
   onSelect: (nodeId: string) => void;
   onRun: (nodeId: string) => void;
   onDataChange: (nodeId: string, key: string, value: string) => void;
+  onDelete?: (nodeId: string) => void;
   onOutputPortDown: (e: React.MouseEvent, nodeId: string) => void;
   onInputPortUp: (nodeId: string) => void;
 }
@@ -440,7 +441,7 @@ function NodeContent({
 
 export function StudioNode({
   node, isSelected, execState, output, isConnecting,
-  onMouseDown, onSelect, onRun, onDataChange,
+  onMouseDown, onSelect, onRun, onDataChange, onDelete,
   onOutputPortDown, onInputPortUp,
 }: StudioNodeProps) {
   const def = NODE_TYPE_DEFS[node.type];
@@ -449,6 +450,7 @@ export function StudioNode({
   const isDone = execState === 'done';
   const isError = execState === 'error';
   const headerRef = useRef<HTMLDivElement>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   const borderColor = isError
     ? '#EF4444'
@@ -478,6 +480,8 @@ export function StudioNode({
         overflow: 'visible',
       }}
       onClick={() => onSelect(node.id)}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Input port — interactive: receives connections when dragging */}
       <div
@@ -547,6 +551,26 @@ export function StudioNode({
         {isError && <AlertCircle size={13} style={{ color: '#EF4444', flexShrink: 0 }} />}
         {isDone && !isError && <CheckCircle size={13} style={{ color: '#10b981', flexShrink: 0 }} />}
         {isRunning && <Loader2 size={13} style={{ color: def.color, animation: 'spin 1s linear infinite', flexShrink: 0 }} />}
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(node.id); }}
+            onMouseDown={(e) => e.stopPropagation()}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 22, height: 22, borderRadius: 5,
+              border: 'none', background: 'transparent',
+              cursor: 'pointer', flexShrink: 0, padding: 0,
+              opacity: isHovered || isSelected ? 0.5 : 0,
+              transition: 'opacity 0.15s, background 0.1s',
+              color: '#EF4444',
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; (e.currentTarget as HTMLElement).style.background = '#EF444418'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = isHovered || isSelected ? '0.5' : '0'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+            title="Delete node"
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
       </div>
 
       {/* Body */}
