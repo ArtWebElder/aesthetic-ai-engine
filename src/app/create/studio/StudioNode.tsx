@@ -13,14 +13,34 @@ const ICON_MAP: Record<string, React.ElementType> = {
   AlignLeft, Palette, Camera, Download, ScanEye, FileText,
 };
 
-/** Trigger browser download for a base64 data URI */
-function triggerDownload(dataUri: string, format: string) {
-  const a = document.createElement('a');
-  a.href = dataUri;
-  a.download = `creatyng-asset.${format}`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+/** Trigger browser download — handles both base64 data URIs and remote URLs */
+async function triggerDownload(src: string, format: string) {
+  let blobUrl: string | null = null;
+  try {
+    let blob: Blob;
+    if (src.startsWith('data:')) {
+      // Convert base64 data URI → blob
+      const res = await fetch(src);
+      blob = await res.blob();
+    } else {
+      // Remote URL — fetch as blob to bypass CORS navigation issues
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+      blob = await res.blob();
+    }
+    blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = `creatyng-asset.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  } catch (err) {
+    console.error('[StudioNode] Download failed, falling back to window.open:', err);
+    window.open(src, '_blank');
+  } finally {
+    if (blobUrl) URL.revokeObjectURL(blobUrl);
+  }
 }
 
 const RUN_NODES: NodeTypeId[] = [
@@ -51,7 +71,7 @@ function OutputPreview({ output }: { output?: NodeOutput }) {
   if (!output) return null;
 
   const imgSrc = output.image || output.generatedImage || output.finalImage;
-  if (imgSrc && typeof imgSrc === 'string' && imgSrc.startsWith('data:')) {
+  if (imgSrc && typeof imgSrc === 'string' && (imgSrc.startsWith('data:') || imgSrc.startsWith('http'))) {
     return (
       <div style={{ margin: '4px 10px 6px', borderRadius: 8, overflow: 'hidden', border: '1px solid hsl(var(--border))' }}>
         <img src={imgSrc} alt="output" style={{ width: '100%', height: 80, objectFit: 'cover' }} />
@@ -86,29 +106,34 @@ function OutputPreview({ output }: { output?: NodeOutput }) {
   }
 
   if (output.type === 'export') {
-    const imgSrc = output.image || output.finalImage;
+    const exportImg = output.image || output.finalImage;
     return (
       <div style={{ margin: '4px 10px 6px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {exportImg && typeof exportImg === 'string' && (
+          <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid hsl(var(--border))' }}>
+            <img src={exportImg} alt="export preview" style={{ width: '100%', height: 80, objectFit: 'cover' }} />
+          </div>
+        )}
         <div style={{
           padding: '6px 8px', borderRadius: 6,
           background: '#10b98115', fontSize: 10, color: '#10b981',
         }}>
           ✓ Pronto para download ({output.format || 'png'})
         </div>
-        {imgSrc && (
+        {exportImg && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              triggerDownload(imgSrc, output.format || 'png');
+              triggerDownload(exportImg, output.format || 'png');
             }}
             style={{
-              width: '100%', padding: '5px 0', borderRadius: 6,
-              background: '#10b981', color: '#fff', fontSize: 11,
+              width: '100%', padding: '7px 0', borderRadius: 6,
+              background: '#10b981', color: '#fff', fontSize: 12,
               fontWeight: 600, border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
             }}
           >
-            <Download size={12} /> Download {(output.format || 'png').toUpperCase()}
+            <Download size={14} /> Download {(output.format || 'png').toUpperCase()}
           </button>
         )}
       </div>
@@ -313,7 +338,7 @@ function NodeContent({
             minHeight: 90, display: 'flex', alignItems: 'center',
             justifyContent: 'center', overflow: 'hidden',
           }}>
-            {previewImg && typeof previewImg === 'string' && previewImg.startsWith('data:') ? (
+            {previewImg && typeof previewImg === 'string' && (previewImg.startsWith('data:') || previewImg.startsWith('http')) ? (
               <img src={previewImg} alt="generated" style={{ width: '100%', height: 90, objectFit: 'cover' }} />
             ) : isDone ? (
               <div style={{
