@@ -1,11 +1,11 @@
 // src/services/referenceAnalyzer.ts
-// CREATYNG — Analisa imagem de referência com Gemini 2.5 Pro
+// CREATYNG — Analisa imagem de referência com Gemini 2.0 Flash
 // Extrai layout, cores, composição como JSON estruturado para construir prompt de geração.
 
 import type { ReferenceAnalysis } from "@/types/preset";
 
 const GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) ?? "";
-const ANALYSIS_MODEL = "gemini-2.5-pro";
+const ANALYSIS_MODEL = "gemini-2.0-flash";
 
 export async function analyzeReference(
   referenceImage: string,
@@ -81,6 +81,7 @@ ${texts.contact ? `- Contact: "${texts.contact}"` : ""}`;
     generationConfig: {
       temperature: 0.2,
       maxOutputTokens: 2000,
+      responseMimeType: "application/json",
     },
   };
 
@@ -142,6 +143,7 @@ Headline: "${texts.headline}"`,
     generationConfig: {
       temperature: 0.1,
       maxOutputTokens: 2000,
+      responseMimeType: "application/json",
     },
   };
 
@@ -153,8 +155,9 @@ Headline: "${texts.headline}"`,
 
   if (!retryResp.ok) {
     const errText = await retryResp.text();
-    console.error("[ReferenceAnalyzer] Retry HTTP error:", retryResp.status, errText.slice(0, 300));
-    throw new Error(`reference_analysis_retry_failed: HTTP ${retryResp.status}`);
+    console.warn("[ReferenceAnalyzer] Retry HTTP error:", retryResp.status, errText.slice(0, 300));
+    console.warn("[ReferenceAnalyzer] Returning fallback analysis.");
+    return buildFallbackAnalysis(texts);
   }
 
   const retryData = await retryResp.json();
@@ -173,9 +176,46 @@ Headline: "${texts.headline}"`,
     return retryParsed;
   }
 
-  console.error("[ReferenceAnalyzer] Both attempts failed to produce valid JSON.");
-  console.error("[ReferenceAnalyzer] Last raw text:", retryText.slice(0, 500));
-  throw new Error("reference_analysis_parse_error: Gemini returned invalid JSON after 2 attempts.");
+  console.warn("[ReferenceAnalyzer] Both attempts failed to produce valid JSON — returning fallback analysis.");
+  console.warn("[ReferenceAnalyzer] Last raw text:", retryText.slice(0, 500));
+  return buildFallbackAnalysis(texts);
+}
+
+/**
+ * Fallback analysis when Gemini fails to return valid JSON.
+ * Provides sensible defaults so the flow can continue.
+ */
+function buildFallbackAnalysis(
+  texts: { headline: string; price?: string; cta?: string; contact?: string },
+): ReferenceAnalysis {
+  console.warn("[ReferenceAnalyzer] Using fallback analysis — flow will continue with generic settings.");
+  return {
+    layout: {
+      productPosition: "center",
+      productSize: "large",
+      textPosition: "bottom",
+      hasPrice: Boolean(texts.price),
+      priceBadgeStyle: texts.price ? "rounded pill" : "",
+    },
+    style: {
+      mood: "professional",
+      lighting: "studio",
+      colorScheme: ["#1a1a2e", "#16213e", "#0f3460"],
+      backgroundType: "gradient",
+      backgroundDescription: "Professional dark gradient background with subtle light effects, clean and modern aesthetic suitable for product photography",
+    },
+    typography: {
+      headlineStyle: "bold-sans",
+      headlineSize: "large",
+      headlineColor: "#FFFFFF",
+      ctaStyle: texts.cta ? "pill" : "none",
+    },
+    composition: {
+      description: "Product centered on a clean professional background with soft studio lighting and subtle shadow beneath",
+      sceneElements: ["soft shadow", "ambient light"],
+      decorativeElements: ["subtle gradient", "vignette"],
+    },
+  };
 }
 
 /**

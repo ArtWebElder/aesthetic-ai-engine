@@ -327,9 +327,15 @@ export async function executeNode(
     }
 
     case 'background_gen': {
-      const prompt = (inputs.prompt as string) || '';
+      let prompt = (inputs.prompt as string) || '';
       const instruction = (node.data.instruction as string) || '';
       const productPosition = inputs.analysis?.layout?.productPosition || 'center';
+
+      // Fallback: if no analysis/prompt arrived, use a generic professional background prompt
+      if (!prompt.trim()) {
+        console.warn('[Studio:background_gen] No upstream prompt — using generic fallback');
+        prompt = 'Professional product photography background. Clean, modern studio environment with subtle gradient lighting. Dark elegant tones. High quality, 8K detail.';
+      }
 
       const bgPrompt = `${prompt}\n\nCRITICAL INSTRUCTIONS: ${instruction}\n- Generate ONLY the background scene/environment\n- DO NOT include any product, person, food item or main subject\n- DO NOT include any text, typography, logos or watermarks\n- Leave clear space where the product would be placed (${productPosition})\n- The background should complement a product that will be composited on top\n- Ultra high quality, 8K detail, professional photography lighting`;
 
