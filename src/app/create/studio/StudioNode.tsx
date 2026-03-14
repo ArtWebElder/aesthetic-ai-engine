@@ -494,7 +494,8 @@ export function StudioNode({
     >
       {/* Input port — interactive: receives connections when dragging */}
       <div
-        onMouseUp={(e) => { e.stopPropagation(); onInputPortUp(node.id); }}
+        onMouseDown={(e) => e.stopPropagation()}
+        onMouseUp={() => onInputPortUp(node.id)}
         style={{
           position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
           width: 13, height: 13, borderRadius: '50%',
