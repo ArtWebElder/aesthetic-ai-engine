@@ -485,7 +485,7 @@ STAGE 6 — MVP Polish         ❌ PENDENTE   (landing page, billing, testes)
 - `gemini-2.5-pro` → retornava JSON inválido (thinking tokens, markdown fences), descartado
 - `gemini-2.0-flash` (sem suffix) → 404 Not Found, o modelo precisa do suffix `-001`
 - `gemini-3-pro-image-preview` → modelo inexistente no backend, corrigido para `gemini-2.0-flash-preview-image-generation`
-- **Decisão:** sempre usar IDs exatos verificados: `gemini-2.0-flash-001` (análise), `gemini-2.0-flash-preview-image-generation` (geração)
+- **Decisão:** sempre usar IDs exatos verificados: `gemini-2.5-flash` (análise), `gemini-2.0-flash-preview-image-generation` (geração)
 
 ### 2. responseMimeType — solução definitiva para JSON
 - Mesmo com prompt dizendo "return ONLY JSON", o Gemini 2.5 Pro retornava markdown fences
