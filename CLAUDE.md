@@ -300,11 +300,11 @@ import { Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
 ## PIPELINE DE IA (PROVIDERS) — STATUS ATUAL
 
 ### Reference Analyzer (frontend)
-- **Modelo:** `gemini-2.5-flash-preview-05-20` via Gemini API
+- **Modelos (cascata):** `gemini-1.5-flash-latest` → `gemini-1.5-pro-latest` → `gemini-2.0-flash-exp`
 - **URL:** `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 - **responseMimeType:** `application/json` (força JSON limpo, sem markdown fences)
-- **Retry:** 2 tentativas (temp 0.2 → temp 0.1, ambas com responseMimeType)
-- **Fallback:** se ambas falharem (parse error OU HTTP error), retorna `buildFallbackAnalysis()` com defaults profissionais — **NÃO lança erro**
+- **Cascading fallback:** tenta cada modelo em ordem; para cada modelo, 2 tentativas (temp 0.2 → temp 0.1)
+- **Fallback final:** se TODOS os modelos falharem, retorna `buildFallbackAnalysis()` com defaults profissionais — **NÃO lança erro**
 - **Fallback defaults:** center position, large size, dark gradient bg, studio lighting, bold-sans headline, #FFFFFF text
 - Arquivo: `src/services/referenceAnalyzer.ts`
 
@@ -313,8 +313,19 @@ import { Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
 gemini-2.5-pro                → JSON inválido (retornava markdown fences, thinking tokens)
 gemini-2.0-flash              → 404 (modelo não existe sem suffix)
 gemini-2.0-flash-001          → 404 (descontinuado, "no longer available to new users")
-gemini-2.5-flash              → ✅ FUNCIONA (estável, rápido, obedece responseMimeType)
-gemini-2.5-flash-preview-05-20 → ✅ ATUAL (substitui todos os anteriores para análise e chat)
+gemini-2.5-flash              → ✅ FUNCIONA mas preview expirou (alias instável)
+gemini-2.5-flash-preview-05-20 → ❌ DESCONTINUADO (404 a partir de março 2026)
+gemini-1.5-flash-latest       → ✅ ATUAL (alias estável do Google, sempre aponta para o mais recente 1.5 Flash)
+```
+
+### Estratégia de modelo atual (análise/chat) — Cascading Fallback
+Todos os 5 arquivos de análise/chat usam a mesma lista de modelos em cascata:
+```
+MODELS = [
+  "gemini-1.5-flash-latest",   // primário — alias estável
+  "gemini-1.5-pro-latest",     // fallback 1 — mais capaz
+  "gemini-2.0-flash-exp",      // fallback 2 — experimental
+]
 ```
 
 ### Strict Identity ON (Ecom Banner e Photoshoot)
@@ -486,7 +497,7 @@ STAGE 6 — MVP Polish         ❌ PENDENTE   (landing page, billing, testes)
 - `gemini-2.5-pro` → retornava JSON inválido (thinking tokens, markdown fences), descartado
 - `gemini-2.0-flash` (sem suffix) → 404 Not Found, o modelo precisa do suffix `-001`
 - `gemini-3-pro-image-preview` → modelo inexistente no backend, corrigido para `gemini-2.0-flash-preview-image-generation`
-- **Decisão:** sempre usar IDs exatos verificados: `gemini-2.5-flash-preview-05-20` (análise/chat), `gemini-2.0-flash-preview-image-generation` (geração)
+- **Decisão:** usar cascading model fallback para análise/chat (`gemini-1.5-flash-latest` → `gemini-1.5-pro-latest` → `gemini-2.0-flash-exp`). Modelo de geração: `gemini-2.0-flash-preview-image-generation`
 
 ### 2. responseMimeType — solução definitiva para JSON
 - Mesmo com prompt dizendo "return ONLY JSON", o Gemini 2.5 Pro retornava markdown fences
@@ -525,13 +536,15 @@ STAGE 6 — MVP Polish         ❌ PENDENTE   (landing page, billing, testes)
 
 ### 9. Unificação de modelo Gemini Flash para análise/chat
 - Múltiplos arquivos usavam modelos diferentes e desatualizados: `gemini-2.0-flash-lite`, `gemini-2.0-flash`, `gemini-2.5-flash`
-- Todos os 5 arquivos de análise/chat unificados para `gemini-2.5-flash-preview-05-20`:
-  - `src/services/referenceAnalyzer.ts` (ANALYSIS_MODEL)
-  - `supabase/functions/generate-image/visionAnalysis.ts` (VISION_MODEL)
-  - `supabase/functions/chat-edit/index.ts` (GEMINI_TEXT_MODEL)
-  - `src/features/editor/engine/chatCompositionAI.ts` (endpoint hardcoded)
-  - `src/features/editor/wizard/RefinementChat.tsx` (endpoint hardcoded)
-- **Modelo de geração de imagem** permanece `gemini-2.0-flash-preview-image-generation` (diferente)
+- Primeiro unificados para `gemini-2.5-flash-preview-05-20` — depois esse modelo também deu 404
+- **Solução definitiva:** cascading model fallback com 3 modelos (`gemini-1.5-flash-latest` → `gemini-1.5-pro-latest` → `gemini-2.0-flash-exp`)
+- Aplicado em todos os 5 arquivos:
+  - `src/services/referenceAnalyzer.ts` (ANALYSIS_MODELS array)
+  - `supabase/functions/generate-image/visionAnalysis.ts` (VISION_MODELS array)
+  - `supabase/functions/chat-edit/index.ts` (GEMINI_TEXT_MODELS array)
+  - `src/features/editor/engine/chatCompositionAI.ts` (GEMINI_MODELS array)
+  - `src/features/editor/wizard/RefinementChat.tsx` (GEMINI_MODELS array)
+- **Modelo de geração de imagem** permanece `gemini-2.0-flash-preview-image-generation` (NÃO foi alterado)
 
 ---
 
@@ -598,7 +611,7 @@ DELIVERABLE: Return diff/patch only. Do not explain what you did — show the co
 - Deixar texto de UI hardcoded em JSX
 - Alterar `value` de qualquer option/enum
 - Compor overlays CSS por cima da imagem gerada (efeitos visuais pertencem ao prompt/IA)
-- Usar modelos Gemini inexistentes (sempre verificar: `gemini-2.5-flash-preview-05-20` para análise/chat, `gemini-2.0-flash-preview-image-generation` para geração)
+- Usar modelo Gemini hardcoded sem cascading fallback (análise/chat deve usar array de modelos: `gemini-1.5-flash-latest` → `gemini-1.5-pro-latest` → `gemini-2.0-flash-exp`)
 - Implementar features de STAGE futuro antes de resolver bugs do STAGE atual
 - Não limpar cache de outputs quando inputs mudam (sempre invalidar downstream)
 - Usar `locale` do useI18n (é `lang`, não `locale`)

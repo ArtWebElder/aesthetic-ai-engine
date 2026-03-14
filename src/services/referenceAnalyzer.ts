@@ -1,11 +1,15 @@
 // src/services/referenceAnalyzer.ts
-// CREATYNG — Analisa imagem de referência com Gemini 2.5 Flash Preview
+// CREATYNG — Analisa imagem de referência com Gemini Flash (cascading model fallback)
 // Extrai layout, cores, composição como JSON estruturado para construir prompt de geração.
 
 import type { ReferenceAnalysis } from "@/types/preset";
 
 const GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) ?? "";
-const ANALYSIS_MODEL = "gemini-2.5-flash-preview-05-20";
+const ANALYSIS_MODELS = [
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-2.0-flash-exp",
+];
 
 export async function analyzeReference(
   referenceImage: string,
@@ -13,7 +17,7 @@ export async function analyzeReference(
   texts: { headline: string; price?: string; cta?: string; contact?: string },
 ): Promise<ReferenceAnalysis> {
   console.log("[ReferenceAnalyzer] Starting analysis...");
-  console.log("[ReferenceAnalyzer] Model:", ANALYSIS_MODEL);
+  console.log("[ReferenceAnalyzer] Models (cascade):", ANALYSIS_MODELS.join(", "));
   console.log("[ReferenceAnalyzer] API key present:", Boolean(GEMINI_API_KEY), GEMINI_API_KEY ? `(${GEMINI_API_KEY.slice(0, 8)}...)` : "");
   console.log("[ReferenceAnalyzer] Reference image:", referenceImage ? `${referenceImage.slice(0, 30)}... (${referenceImage.length} chars)` : "EMPTY");
   console.log("[ReferenceAnalyzer] Subject image:", subjectImage ? `${subjectImage.slice(0, 30)}... (${subjectImage.length} chars)` : "EMPTY");
@@ -22,8 +26,6 @@ export async function analyzeReference(
   if (!GEMINI_API_KEY) {
     throw new Error("reference_analyzer_missing_key: VITE_GEMINI_API_KEY not set. Add VITE_GEMINI_API_KEY to your .env file.");
   }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${ANALYSIS_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
 
   const prompt = `You are an expert advertisement designer. Analyze this reference creative image in detail.
 
@@ -68,65 +70,64 @@ ${texts.contact ? `- Contact: "${texts.contact}"` : ""}`;
   const cleanRef = referenceImage.replace(/^data:image\/\w+;base64,/, "");
   const cleanSub = subjectImage.replace(/^data:image\/\w+;base64,/, "");
 
-  const body = {
-    contents: [
-      {
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: "image/jpeg", data: cleanRef } },
-          { inline_data: { mime_type: "image/jpeg", data: cleanSub } },
-        ],
+  // ── Cascading model fallback: try each model in order ──
+  for (const model of ANALYSIS_MODELS) {
+    console.log(`[ReferenceAnalyzer] Trying model: ${model}`);
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
+
+    // ── Attempt 1: full prompt, temp 0.2 ──
+    const body = {
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: "image/jpeg", data: cleanRef } },
+            { inline_data: { mime_type: "image/jpeg", data: cleanSub } },
+          ],
+        },
+      ],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 2000,
+        responseMimeType: "application/json",
       },
-    ],
-    generationConfig: {
-      temperature: 0.2,
-      maxOutputTokens: 2000,
-      responseMimeType: "application/json",
-    },
-  };
+    };
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
-  console.log("[ReferenceAnalyzer] Sending request to:", url.split("?")[0]);
-  console.log("[ReferenceAnalyzer] Payload size (approx):", JSON.stringify(body).length, "bytes");
+      if (!response.ok) {
+        const err = await response.text();
+        console.warn(`[ReferenceAnalyzer] ${model} HTTP ${response.status}: ${err.slice(0, 200)}`);
+        continue; // try next model
+      }
 
-  if (!response.ok) {
-    const err = await response.text();
-    console.error("[ReferenceAnalyzer] Gemini HTTP error:", response.status, response.statusText);
-    console.error("[ReferenceAnalyzer] Gemini error body:", err);
-    throw new Error(`reference_analysis_failed: HTTP ${response.status} — ${err.slice(0, 300)}`);
-  }
+      const data = await response.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        console.warn(`[ReferenceAnalyzer] ${model} returned empty response`);
+        continue;
+      }
 
-  const data = await response.json();
-  console.log("[ReferenceAnalyzer] Response candidates:", data.candidates?.length ?? 0);
+      console.log(`[ReferenceAnalyzer] ${model} raw response:`, text.slice(0, 200));
+      const parsed = extractJSON(text);
+      if (parsed) {
+        console.log(`[ReferenceAnalyzer] ${model} parsed OK:`, parsed.style?.mood, parsed.layout?.productPosition);
+        return parsed;
+      }
 
-  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
-    console.error("[ReferenceAnalyzer] Empty response from Gemini:", JSON.stringify(data).slice(0, 500));
-    throw new Error("reference_analysis_empty: Gemini returned no text content.");
-  }
-
-  const text = data.candidates[0].content.parts[0].text;
-  console.log("[ReferenceAnalyzer] Raw response (full):", text);
-
-  const parsed = extractJSON(text);
-  if (parsed) {
-    console.log("[ReferenceAnalyzer] Parsed OK:", parsed.style?.mood, parsed.layout?.productPosition);
-    return parsed;
-  }
-
-  // ── Retry with stricter prompt and lower temperature ──
-  console.warn("[ReferenceAnalyzer] First attempt parse failed — retrying with stricter prompt...");
-
-  const retryBody = {
-    contents: [
-      {
-        parts: [
+      // ── Attempt 2: stricter prompt, temp 0.1 ──
+      console.warn(`[ReferenceAnalyzer] ${model} parse failed — retrying with stricter prompt...`);
+      const retryBody = {
+        contents: [
           {
-            text: `Return ONLY a JSON object. No text before or after. No markdown. No backticks. No explanation.
+            parts: [
+              {
+                text: `Return ONLY a JSON object. No text before or after. No markdown. No backticks. No explanation.
 
 Analyze this reference advertisement image. The second image is the product photo.
 
@@ -134,50 +135,49 @@ JSON schema:
 {"layout":{"productPosition":"center|left|right|top|bottom","productSize":"small|medium|large|full","textPosition":"top|bottom|left|right|overlay-bottom|overlay-top","hasPrice":false,"priceBadgeStyle":""},"style":{"mood":"","lighting":"","colorScheme":["#hex"],"backgroundType":"","backgroundDescription":""},"typography":{"headlineStyle":"","headlineSize":"","headlineColor":"#hex","ctaStyle":""},"composition":{"description":"","sceneElements":[],"decorativeElements":[]}}
 
 Headline: "${texts.headline}"`,
+              },
+              { inline_data: { mime_type: "image/jpeg", data: cleanRef } },
+              { inline_data: { mime_type: "image/jpeg", data: cleanSub } },
+            ],
           },
-          { inline_data: { mime_type: "image/jpeg", data: cleanRef } },
-          { inline_data: { mime_type: "image/jpeg", data: cleanSub } },
         ],
-      },
-    ],
-    generationConfig: {
-      temperature: 0.1,
-      maxOutputTokens: 2000,
-      responseMimeType: "application/json",
-    },
-  };
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 2000,
+          responseMimeType: "application/json",
+        },
+      };
 
-  const retryResp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(retryBody),
-  });
+      const retryResp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(retryBody),
+      });
 
-  if (!retryResp.ok) {
-    const errText = await retryResp.text();
-    console.warn("[ReferenceAnalyzer] Retry HTTP error:", retryResp.status, errText.slice(0, 300));
-    console.warn("[ReferenceAnalyzer] Returning fallback analysis.");
-    return buildFallbackAnalysis(texts);
+      if (!retryResp.ok) {
+        console.warn(`[ReferenceAnalyzer] ${model} retry HTTP ${retryResp.status}`);
+        continue; // try next model
+      }
+
+      const retryData = await retryResp.json();
+      const retryText = retryData.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (retryText) {
+        const retryParsed = extractJSON(retryText);
+        if (retryParsed) {
+          console.log(`[ReferenceAnalyzer] ${model} retry parsed OK:`, retryParsed.style?.mood);
+          return retryParsed;
+        }
+      }
+
+      console.warn(`[ReferenceAnalyzer] ${model} both attempts failed to parse — trying next model...`);
+    } catch (err) {
+      console.warn(`[ReferenceAnalyzer] ${model} error:`, err);
+      continue; // try next model
+    }
   }
 
-  const retryData = await retryResp.json();
-  const retryText = retryData.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!retryText) {
-    console.error("[ReferenceAnalyzer] Retry returned no text:", JSON.stringify(retryData).slice(0, 500));
-    throw new Error("reference_analysis_retry_empty: Gemini returned no text on retry.");
-  }
-
-  console.log("[ReferenceAnalyzer] Retry raw response:", retryText);
-
-  const retryParsed = extractJSON(retryText);
-  if (retryParsed) {
-    console.log("[ReferenceAnalyzer] Retry parsed OK:", retryParsed.style?.mood, retryParsed.layout?.productPosition);
-    return retryParsed;
-  }
-
-  console.warn("[ReferenceAnalyzer] Both attempts failed to produce valid JSON — returning fallback analysis.");
-  console.warn("[ReferenceAnalyzer] Last raw text:", retryText.slice(0, 500));
+  // ── All models exhausted — return fallback ──
+  console.warn("[ReferenceAnalyzer] All models failed — returning fallback analysis.");
   return buildFallbackAnalysis(texts);
 }
 

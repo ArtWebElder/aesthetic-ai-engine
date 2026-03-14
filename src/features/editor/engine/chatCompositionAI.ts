@@ -8,6 +8,11 @@ import { applyChatToComposition } from './chatApplyComposition';
 
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string) ?? "";
 const GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) ?? "";
+const GEMINI_MODELS = [
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-2.0-flash-exp",
+];
 
 console.log('[ChatAI] attempting AI path...');
 console.log('[ChatAI] supabase URL:', SUPABASE_URL || '(não configurado)');
@@ -15,7 +20,7 @@ console.log('[ChatAI] Gemini API key present:', !!GEMINI_API_KEY);
 
 /**
  * Chama Gemini Flash diretamente do browser para interpretar o comando.
- * Retorna a composição modificada ou null em caso de falha.
+ * Usa cascading model fallback. Retorna a composição modificada ou null em caso de falha.
  */
 async function applyViaGeminiFrontend(
   composition: CreatygnComposition,
@@ -25,8 +30,6 @@ async function applyViaGeminiFrontend(
     console.warn('[ChatAI] VITE_GEMINI_API_KEY não configurado — pulando path IA');
     return null;
   }
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
 
   const prompt = `Você é o motor de design do Creatyng. Recebe um JSON de composição e um comando do usuário. Retorne APENAS o JSON modificado, sem markdown, sem explicação, sem backticks.
 
@@ -43,32 +46,46 @@ Regras:
 - Se pede mudar tamanho, ajuste fontSize proporcionalmente
 - Retorne o JSON completo modificado`;
 
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
-      }),
-      signal: AbortSignal.timeout(20_000),
-    });
+  const bodyStr = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.1, maxOutputTokens: 4096 },
+  });
 
-    if (!res.ok) {
-      console.warn('[ChatAI] Gemini respondeu', res.status);
-      return null;
+  for (const model of GEMINI_MODELS) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    try {
+      console.log(`[ChatAI] Trying model: ${model}`);
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr,
+        signal: AbortSignal.timeout(20_000),
+      });
+
+      if (!res.ok) {
+        console.warn(`[ChatAI] ${model} HTTP ${res.status}`);
+        continue;
+      }
+
+      const data = await res.json();
+      const raw: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+      if (!raw) {
+        console.warn(`[ChatAI] ${model} returned empty text`);
+        continue;
+      }
+
+      const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+      const parsed = JSON.parse(cleaned) as CreatygnComposition;
+      console.log(`[ChatAI] ${model} parsed OK`);
+      return parsed;
+    } catch (e) {
+      console.warn(`[ChatAI] ${model} error:`, e);
+      continue;
     }
-
-    const data = await res.json();
-    const raw: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-    // Remove possíveis backticks escapados (defensive)
-    const cleaned = raw.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
-    const parsed = JSON.parse(cleaned) as CreatygnComposition;
-    return parsed;
-  } catch (e) {
-    console.warn('[ChatAI] Gemini error:', e);
-    return null;
   }
+
+  console.warn('[ChatAI] All models failed');
+  return null;
 }
 
 /**

@@ -10,6 +10,11 @@ import { applyCommandWithAI } from "../engine/chatCompositionAI";
 import type { CreatygnComposition } from "@/types/composition";
 
 const GEMINI_API_KEY = (import.meta as { env: Record<string, string> }).env.VITE_GEMINI_API_KEY ?? "";
+const GEMINI_MODELS = [
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-2.0-flash-exp",
+];
 
 // Map emoji prefix to lucide icon + strip emoji from displayed text
 const EMOJI_PREFIX_MAP: Array<{ prefix: string; icon: ReactNode; color: string }> = [
@@ -34,24 +39,40 @@ async function callGeminiForHelp(command: string): Promise<string> {
     console.warn('[Chat] VITE_GEMINI_API_KEY não configurado — IA indisponível');
     return "IA não configurada. Verifique VITE_GEMINI_API_KEY.";
   }
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `Você é assistente de design do Creatyng. O usuário quer ajustar um criativo visual e enviou: "${command}". Responda em 1-2 linhas em PT-BR.` }] }],
-        generationConfig: { temperature: 0.3, maxOutputTokens: 200 },
-      }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!res.ok) return `IA indisponível (${res.status}). Tente novamente.`;
-    const data = await res.json();
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "Sem resposta da IA.";
-  } catch (e) {
-    console.warn('[Chat] Gemini error:', e);
-    return "Erro ao contatar a IA. Verifique sua conexão.";
+
+  const bodyStr = JSON.stringify({
+    contents: [{ parts: [{ text: `Você é assistente de design do Creatyng. O usuário quer ajustar um criativo visual e enviou: "${command}". Responda em 1-2 linhas em PT-BR.` }] }],
+    generationConfig: { temperature: 0.3, maxOutputTokens: 200 },
+  });
+
+  for (const model of GEMINI_MODELS) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    try {
+      console.log(`[Chat] Trying model: ${model}`);
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: bodyStr,
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) {
+        console.warn(`[Chat] ${model} HTTP ${res.status}`);
+        continue;
+      }
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      if (text) {
+        console.log(`[Chat] ${model} responded OK`);
+        return text;
+      }
+      console.warn(`[Chat] ${model} returned empty text`);
+    } catch (e) {
+      console.warn(`[Chat] ${model} error:`, e);
+      continue;
+    }
   }
+
+  return "IA indisponível. Todos os modelos falharam. Tente novamente.";
 }
 
 interface ChatMessage {

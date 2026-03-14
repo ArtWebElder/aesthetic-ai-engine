@@ -3,12 +3,16 @@
 // =============================================================================
 // CREATYNG — VISION FIRST STAGE 1: Vision Analysis (DIFF VF.2)
 // Gemini Flash extrai VisualDNA e SubjectProfile de imagens de referência.
-// Usa gemini-2.5-flash-preview-05-20 (não o modelo de geração) — economizar custo aqui.
+// Usa cascading model fallback (gemini-1.5-flash-latest → gemini-1.5-pro-latest → gemini-2.0-flash-exp).
 // =============================================================================
 
 import type { VisualDNA, SubjectProfile, VisionAnalysisResult } from "./types.ts";
 
-const VISION_MODEL = "gemini-2.5-flash-preview-05-20";
+const VISION_MODELS = [
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-2.0-flash-exp",
+];
 const VISION_TIMEOUT_MS = 30_000;
 
 // ── Prompts de extração ───────────────────────────────────────────────────────
@@ -121,8 +125,6 @@ async function callGeminiVision(
   textPrompt: string,
   apiKey: string
 ): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${VISION_MODEL}:generateContent?key=${apiKey}`;
-
   const payload = {
     contents: [
       {
@@ -144,28 +146,45 @@ async function callGeminiVision(
     },
   };
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS);
+  const bodyStr = JSON.stringify(payload);
 
-  try {
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    });
+  for (const model of VISION_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), VISION_TIMEOUT_MS);
 
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "");
-      throw new Error(`Gemini Vision HTTP ${resp.status}: ${errText}`);
+    try {
+      console.log(`[VisionAnalysis] Trying model: ${model}`);
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: bodyStr,
+        signal: controller.signal,
+      });
+
+      if (!resp.ok) {
+        const errText = await resp.text().catch(() => "");
+        console.warn(`[VisionAnalysis] ${model} HTTP ${resp.status}: ${errText.slice(0, 200)}`);
+        continue; // try next model
+      }
+
+      const data = await resp.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      if (text.trim()) {
+        console.log(`[VisionAnalysis] ${model} returned response`);
+        return text.trim();
+      }
+      console.warn(`[VisionAnalysis] ${model} returned empty text`);
+      continue;
+    } catch (err) {
+      console.warn(`[VisionAnalysis] ${model} error:`, err);
+      continue;
+    } finally {
+      clearTimeout(timer);
     }
-
-    const data = await resp.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    return text.trim();
-  } finally {
-    clearTimeout(timer);
   }
+
+  throw new Error(`Gemini Vision: all models failed (${VISION_MODELS.join(", ")})`);
 }
 
 function parseJsonSafe<T>(raw: string): T | null {

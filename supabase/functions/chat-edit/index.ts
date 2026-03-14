@@ -4,7 +4,11 @@
 // Recebe { composition, command } → retorna { composition } modificado.
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
-const GEMINI_TEXT_MODEL = "gemini-2.5-flash-preview-05-20";
+const GEMINI_TEXT_MODELS = [
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-2.0-flash-exp",
+];
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {
@@ -90,28 +94,45 @@ Deno.serve(async (req: Request) => {
     },
   };
 
-  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TEXT_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  const bodyStr = JSON.stringify(geminiPayload);
 
-  let geminiRes: Response;
-  try {
-    geminiRes = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(geminiPayload),
-    });
-  } catch (e) {
-    console.error("[chat-edit] Gemini fetch error:", e);
-    return json({ error: "Failed to reach Gemini API" }, 502, headers);
+  // ── Cascading model fallback ──
+  let rawText = "";
+  let modelUsed = "";
+  for (const model of GEMINI_TEXT_MODELS) {
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    try {
+      console.log(`[chat-edit] Trying model: ${model}`);
+      const geminiRes = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: bodyStr,
+      });
+
+      if (!geminiRes.ok) {
+        const errText = await geminiRes.text();
+        console.warn(`[chat-edit] ${model} HTTP ${geminiRes.status}: ${errText.slice(0, 200)}`);
+        continue; // try next model
+      }
+
+      const geminiData = await geminiRes.json();
+      rawText = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      if (rawText) {
+        modelUsed = model;
+        break;
+      }
+      console.warn(`[chat-edit] ${model} returned empty text`);
+    } catch (e) {
+      console.warn(`[chat-edit] ${model} fetch error:`, e);
+      continue;
+    }
   }
 
-  if (!geminiRes.ok) {
-    const errText = await geminiRes.text();
-    console.error("[chat-edit] Gemini error:", geminiRes.status, errText);
-    return json({ error: "Gemini API error", detail: errText }, 502, headers);
+  if (!rawText) {
+    console.error("[chat-edit] All models failed");
+    return json({ error: "All Gemini models failed" }, 502, headers);
   }
-
-  const geminiData = await geminiRes.json();
-  const rawText: string = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  console.log(`[chat-edit] Using response from model: ${modelUsed}`);
 
   let updatedComposition: unknown;
   try {
