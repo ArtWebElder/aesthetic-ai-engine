@@ -5,15 +5,22 @@
 import type { ReferenceAnalysis } from "@/types/preset";
 
 const GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) ?? "";
-const ANALYSIS_MODEL = "gemini-2.5-pro-preview-06-05";
+const ANALYSIS_MODEL = "gemini-2.5-pro";
 
 export async function analyzeReference(
   referenceImage: string,
   subjectImage: string,
   texts: { headline: string; price?: string; cta?: string; contact?: string },
 ): Promise<ReferenceAnalysis> {
+  console.log("[ReferenceAnalyzer] Starting analysis...");
+  console.log("[ReferenceAnalyzer] Model:", ANALYSIS_MODEL);
+  console.log("[ReferenceAnalyzer] API key present:", Boolean(GEMINI_API_KEY), GEMINI_API_KEY ? `(${GEMINI_API_KEY.slice(0, 8)}...)` : "");
+  console.log("[ReferenceAnalyzer] Reference image:", referenceImage ? `${referenceImage.slice(0, 30)}... (${referenceImage.length} chars)` : "EMPTY");
+  console.log("[ReferenceAnalyzer] Subject image:", subjectImage ? `${subjectImage.slice(0, 30)}... (${subjectImage.length} chars)` : "EMPTY");
+  console.log("[ReferenceAnalyzer] Texts:", JSON.stringify(texts));
+
   if (!GEMINI_API_KEY) {
-    throw new Error("reference_analyzer_missing_key: VITE_GEMINI_API_KEY not set.");
+    throw new Error("reference_analyzer_missing_key: VITE_GEMINI_API_KEY not set. Add VITE_GEMINI_API_KEY to your .env file.");
   }
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${ANALYSIS_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
@@ -83,17 +90,38 @@ ${texts.contact ? `- Contact: "${texts.contact}"` : ""}`;
     body: JSON.stringify(body),
   });
 
+  console.log("[ReferenceAnalyzer] Sending request to:", url.split("?")[0]);
+  console.log("[ReferenceAnalyzer] Payload size (approx):", JSON.stringify(body).length, "bytes");
+
   if (!response.ok) {
     const err = await response.text();
-    console.error("[ReferenceAnalyzer] Gemini error:", err);
-    throw new Error("reference_analysis_failed");
+    console.error("[ReferenceAnalyzer] Gemini HTTP error:", response.status, response.statusText);
+    console.error("[ReferenceAnalyzer] Gemini error body:", err);
+    throw new Error(`reference_analysis_failed: HTTP ${response.status} — ${err.slice(0, 300)}`);
   }
 
   const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  console.log("[ReferenceAnalyzer] Response candidates:", data.candidates?.length ?? 0);
+
+  if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+    console.error("[ReferenceAnalyzer] Empty response from Gemini:", JSON.stringify(data).slice(0, 500));
+    throw new Error("reference_analysis_empty: Gemini returned no text content.");
+  }
+
+  const text = data.candidates[0].content.parts[0].text;
+  console.log("[ReferenceAnalyzer] Raw Gemini text:", text.slice(0, 200));
+
   const clean = text.replace(/```json\n?|```\n?/g, "").trim();
 
-  return JSON.parse(clean) as ReferenceAnalysis;
+  try {
+    const parsed = JSON.parse(clean) as ReferenceAnalysis;
+    console.log("[ReferenceAnalyzer] Parsed OK:", parsed.style?.mood, parsed.layout?.productPosition);
+    return parsed;
+  } catch (parseErr) {
+    console.error("[ReferenceAnalyzer] JSON parse failed:", parseErr);
+    console.error("[ReferenceAnalyzer] Cleaned text was:", clean.slice(0, 300));
+    throw new Error("reference_analysis_parse_error: Gemini returned invalid JSON.");
+  }
 }
 
 /**

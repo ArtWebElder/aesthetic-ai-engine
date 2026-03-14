@@ -121,44 +121,97 @@ export async function executeNode(
     }
 
     case 'reference_analyzer': {
+      const allUp = (inputs._allUpstream || []) as Array<Record<string, unknown>>;
+      console.log('[Studio:reference_analyzer] Upstream count:', allUp.length);
+      console.log('[Studio:reference_analyzer] Upstream types:', allUp.map(u => u?.type));
+      console.log('[Studio:reference_analyzer] Input keys:', Object.keys(inputs).filter(k => k !== '_allUpstream'));
+
       const refData = findUpstreamByType(inputs, 'reference');
       const subData = findUpstreamByType(inputs, 'subject');
-      const refImage = refData?.image;
-      const subImage = subData?.image;
-      const text = inputs.text || inputs.brandName || '';
 
-      if (!refImage) throw new Error('Referência não conectada');
-      if (!subImage) throw new Error('Subject não conectado');
+      console.log('[Studio:reference_analyzer] refData found:', Boolean(refData), refData?.image ? `(${String(refData.image).slice(0, 30)}... ${String(refData.image).length} chars)` : 'NO IMAGE');
+      console.log('[Studio:reference_analyzer] subData found:', Boolean(subData), subData?.image ? `(${String(subData.image).slice(0, 30)}... ${String(subData.image).length} chars)` : 'NO IMAGE');
 
+      const refImage = refData?.image as string | undefined;
+      const subImage = subData?.image as string | undefined;
+      const text = (inputs.text as string) || (inputs.brandName as string) || '';
+
+      if (!refImage) throw new Error('Referência não conectada — suba uma imagem no node "Referência Visual"');
+      if (!subImage) throw new Error('Subject não conectado — suba uma imagem no node "Image Upload"');
+
+      console.log('[Studio:reference_analyzer] Calling analyzeReference...');
       const analysis = await analyzeReference(refImage, subImage, {
         headline: text,
       });
 
+      const prompt = buildGenerationPrompt(analysis, { headline: text });
+      console.log('[Studio:reference_analyzer] Analysis OK, prompt length:', prompt.length);
+
       return {
         analysis,
-        prompt: buildGenerationPrompt(analysis, { headline: text }),
+        prompt,
+        // Pass through upstream images so downstream nodes can access them
+        _refImage: refImage,
+        _subImage: subImage,
         type: 'analysis',
       };
     }
 
     case 'prompt_builder': {
       const parts: string[] = [];
-      if (inputs.prompt) parts.push(inputs.prompt);
-      if (inputs.text) parts.push(inputs.text);
-      if (inputs.brandName) parts.push(`Brand: ${inputs.brandName}`);
-      if (inputs.description) parts.push(inputs.description);
+      if (inputs.prompt) parts.push(inputs.prompt as string);
+      if (inputs.text) parts.push(inputs.text as string);
+      if (inputs.brandName) parts.push(`Brand: ${inputs.brandName as string}`);
+      if (inputs.description) parts.push(inputs.description as string);
       if (node.data.customPrompt) parts.push(node.data.customPrompt as string);
 
-      const finalPrompt = parts.filter(Boolean).join('\n\n');
-      return { prompt: finalPrompt, analysis: inputs.analysis, type: 'prompt' };
+      // Fallback: if no upstream prompt arrived (analyzer failed), use custom prompt or default
+      let finalPrompt = parts.filter(Boolean).join('\n\n');
+      if (!finalPrompt.trim()) {
+        finalPrompt = 'Professional product photography. Cinematic lighting, high quality, sharp focus, 8K detail. Agency-grade commercial creative.';
+        console.log('[Studio:prompt_builder] No upstream prompt — using default fallback');
+      }
+
+      console.log('[Studio:prompt_builder] Final prompt length:', finalPrompt.length);
+
+      // Pass through any upstream images for downstream nodes
+      return {
+        prompt: finalPrompt,
+        analysis: inputs.analysis,
+        _refImage: inputs._refImage,
+        _subImage: inputs._subImage,
+        image: inputs.image,
+        type: 'prompt',
+      };
     }
 
     case 'image_gen': {
-      const prompt = inputs.prompt || (node.data.customPrompt as string) || '';
+      const prompt = (inputs.prompt as string) || (node.data.customPrompt as string) || '';
+
+      // Find subject image — check multiple sources:
+      // 1. Direct upstream 'subject' type (from image_upload connected directly)
+      // 2. Passed through from reference_analyzer/prompt_builder via _subImage
+      // 3. Generic image field
       const subData = findUpstreamByType(inputs, 'subject');
+      const subject: string | undefined =
+        subData?.image ||
+        (inputs._subImage as string) ||
+        (inputs.image as string) ||
+        undefined;
+
+      // Find reference image for style_image:
+      // 1. Direct upstream 'reference' type
+      // 2. Passed through from reference_analyzer/prompt_builder via _refImage
       const refData = findUpstreamByType(inputs, 'reference');
-      const subject = subData?.image || inputs.subjectBase64;
-      const reference = refData?.image || inputs.styleReferenceBase64;
+      const reference: string | undefined =
+        refData?.image ||
+        (inputs._refImage as string) ||
+        undefined;
+
+      console.log('[Studio:image_gen] Prompt length:', prompt.length);
+      console.log('[Studio:image_gen] Subject present:', Boolean(subject), subject ? `(${subject.slice(0, 30)}... ${subject.length} chars)` : 'MISSING');
+      console.log('[Studio:image_gen] Reference present:', Boolean(reference), reference ? `(${reference.slice(0, 30)}... ${reference.length} chars)` : 'none');
+      console.log('[Studio:image_gen] All upstream types:', ((inputs._allUpstream || []) as Array<Record<string, unknown>>).map(u => u?.type));
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -167,18 +220,29 @@ export async function executeNode(
         throw new Error('Supabase não configurado (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)');
       }
 
-      const payload = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const payload: Record<string, any> = {
         prompt,
         negativePrompt: 'text, typography, watermark, logo, words, letters, blurry, low quality',
         width: (node.data.width as number) || 1080,
         height: (node.data.height as number) || 1080,
-        subjectBase64: subject,
-        styleReferenceBase64: reference,
         strictIdentity: Boolean(subject),
         identityStrength: (node.data.identityStrength as number) || 90,
         styleStrength: reference ? 70 : 45,
         module: (node.data.module as string) || 'studio',
       };
+
+      // Only send subjectBase64 if we have one
+      if (subject) {
+        payload.subjectBase64 = subject;
+      }
+      // Only send styleReferenceBase64 if we have one
+      if (reference) {
+        payload.styleReferenceBase64 = reference;
+      }
+
+      console.log('[Studio:image_gen] Payload keys:', Object.keys(payload));
+      console.log('[Studio:image_gen] subjectBase64 in payload:', Boolean(payload.subjectBase64), payload.subjectBase64 ? `(${String(payload.subjectBase64).length} chars)` : '');
 
       const response = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
         method: 'POST',
@@ -192,10 +256,13 @@ export async function executeNode(
 
       if (!response.ok) {
         const err = await response.text();
-        throw new Error(`Generation failed: ${err}`);
+        console.error('[Studio:image_gen] Generation failed:', response.status, err.slice(0, 500));
+        throw new Error(`Generation failed (${response.status}): ${err.slice(0, 200)}`);
       }
 
       const result = await response.json();
+      console.log('[Studio:image_gen] Response keys:', Object.keys(result));
+      console.log('[Studio:image_gen] Provider:', result.provider || result.meta?.providerName);
 
       // Handle signedUrl or imageBase64 response
       let imageBase64: string;
@@ -212,7 +279,8 @@ export async function executeNode(
           ? result.imageBase64
           : `data:image/png;base64,${result.imageBase64}`;
       } else {
-        throw new Error('Resposta sem imagem');
+        console.error('[Studio:image_gen] No image in response:', JSON.stringify(result).slice(0, 300));
+        throw new Error('Resposta sem imagem — verifique os logs da Edge Function');
       }
 
       return {
