@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Play } from 'lucide-react';
+import { Sparkles, Play, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -402,6 +402,17 @@ export function StudioPage() {
   // Show properties only when no side panel is open (or always show — up to UX)
   const showProperties = selectedNode !== null;
 
+  // Find last completed export node image for the header download button
+  const lastExportImage = (() => {
+    const exportNodes = nodes.filter(n => n.type === 'export' && execStates[n.id] === 'done');
+    for (let i = exportNodes.length - 1; i >= 0; i--) {
+      const out = nodeOutputs[exportNodes[i].id];
+      const img = out?.image || out?.finalImage;
+      if (img && typeof img === 'string') return { src: img, format: (out?.format as string) || 'png' };
+    }
+    return null;
+  })();
+
   return (
     <div style={{
       position: 'absolute',
@@ -441,35 +452,75 @@ export function StudioPage() {
 
       <CreditsBar propertiesOpen={showProperties} />
 
-      {/* Run All button */}
-      <button
-        onClick={handleRunAll}
-        disabled={flowRunning || nodes.length === 0}
-        style={{
-          position: 'absolute',
-          top: 14,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 200,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          padding: '7px 18px',
-          background: flowRunning ? 'hsl(var(--muted))' : 'linear-gradient(135deg, #ff713d, #FF9B70)',
-          color: flowRunning ? 'hsl(var(--muted-foreground))' : '#fff',
-          border: 'none',
-          borderRadius: 10,
-          fontSize: 12,
-          fontWeight: 700,
-          cursor: flowRunning ? 'not-allowed' : 'pointer',
-          boxShadow: flowRunning ? 'none' : '0 4px 16px rgba(255,113,61,0.3)',
-          fontFamily: 'inherit',
-          transition: 'all 150ms',
-        }}
-      >
-        <Play size={14} />
-        {flowRunning ? 'Executando...' : 'Executar fluxo'}
-      </button>
+      {/* Run All + Download result buttons */}
+      <div style={{
+        position: 'absolute',
+        top: 14,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 200,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+      }}>
+        <button
+          onClick={handleRunAll}
+          disabled={flowRunning || nodes.length === 0}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '7px 18px',
+            background: flowRunning ? 'hsl(var(--muted))' : 'linear-gradient(135deg, #ff713d, #FF9B70)',
+            color: flowRunning ? 'hsl(var(--muted-foreground))' : '#fff',
+            border: 'none',
+            borderRadius: 10,
+            fontSize: 12,
+            fontWeight: 700,
+            cursor: flowRunning ? 'not-allowed' : 'pointer',
+            boxShadow: flowRunning ? 'none' : '0 4px 16px rgba(255,113,61,0.3)',
+            fontFamily: 'inherit',
+            transition: 'all 150ms',
+          }}
+        >
+          <Play size={14} />
+          {flowRunning ? 'Executando...' : 'Executar fluxo'}
+        </button>
+
+        {lastExportImage && (
+          <button
+            onClick={() => {
+              const { src, format } = lastExportImage;
+              const a = document.createElement('a');
+              a.href = src;
+              a.download = `creatyng-asset.${format}`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '7px 18px',
+              background: '#10B981',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 12,
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(16,185,129,0.35)',
+              fontFamily: 'inherit',
+              transition: 'all 150ms',
+              animation: 'downloadPulse 2s ease-in-out 1',
+            }}
+          >
+            <Download size={14} />
+            Baixar resultado
+          </button>
+        )}
+      </div>
 
       <StudioNavbar
         openPanel={openPanel}

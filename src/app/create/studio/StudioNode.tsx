@@ -108,34 +108,43 @@ function OutputPreview({ output }: { output?: NodeOutput }) {
 
   if (output.type === 'export') {
     const exportImg = output.image || output.finalImage;
+    const fmt = (output.format || 'png') as string;
     return (
-      <div style={{ margin: '4px 10px 6px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{ margin: '4px 10px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {exportImg && typeof exportImg === 'string' && (
           <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid hsl(var(--border))' }}>
             <img src={exportImg} alt="export preview" style={{ width: '100%', height: 80, objectFit: 'cover' }} />
           </div>
         )}
-        <div style={{
-          padding: '6px 8px', borderRadius: 6,
-          background: '#10b98115', fontSize: 10, color: '#10b981',
-        }}>
-          ✓ Pronto para download ({output.format || 'png'})
-        </div>
         {exportImg && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              triggerDownload(exportImg, output.format || 'png');
+              triggerDownload(exportImg, fmt);
             }}
+            onMouseDown={(e) => e.stopPropagation()}
             style={{
-              width: '100%', padding: '7px 0', borderRadius: 6,
-              background: '#10b981', color: '#fff', fontSize: 12,
-              fontWeight: 600, border: 'none', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              width: '100%', padding: '10px 0', borderRadius: 8,
+              background: '#10B981', color: '#fff', fontSize: 13,
+              fontWeight: 700, border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              boxShadow: '0 4px 14px rgba(16,185,129,0.35)',
+              letterSpacing: 0.3,
+              transition: 'transform 0.1s, box-shadow 0.1s',
             }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1.02)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 6px 20px rgba(16,185,129,0.45)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = 'scale(1)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 4px 14px rgba(16,185,129,0.35)'; }}
           >
-            <Download size={14} /> Download {(output.format || 'png').toUpperCase()}
+            <Download size={16} /> Download {fmt.toUpperCase()}
           </button>
+        )}
+        {!exportImg && (
+          <div style={{
+            padding: '6px 8px', borderRadius: 6,
+            background: '#10b98115', fontSize: 10, color: '#10b981',
+          }}>
+            ✓ Pronto ({fmt})
+          </div>
         )}
       </div>
     );
