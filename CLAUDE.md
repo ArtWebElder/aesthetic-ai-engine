@@ -1,17 +1,12 @@
-# CREATYNG — CONTEXT PERMANENTE PARA O CLAUDE CODE
+# CREATYNG — CONTEXTO PERMANENTE PARA O CLAUDE CODE
 
-<<<<<<< HEAD
-> Cole este arquivo na raiz do repositório. O Claude Code lê automaticamente a cada sessão.
-> Antes de qualquer tarefa, leia este arquivo inteiro e confirme o estágio atual.
-=======
 > Leia este arquivo inteiro antes de qualquer tarefa e confirme o estágio atual.
 > Não implemente nada sem antes declarar: "Estamos no STAGE X. O próximo diff é Y."
 > Para tasks de geração/prompt/engine, leia também: **CREATYNG_VISUAL_SPEC.md**
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
 
 ---
 
-## 🎯 O QUE É O CREATYNG
+## O QUE É O CREATYNG
 
 SaaS premium de criação visual com IA. O usuário preenche campos simples (headline, estilo, produto) e recebe na outra ponta uma imagem de nível agência — texto perfeito, layout profissional, sem cara de IA amadora.
 
@@ -21,160 +16,254 @@ SaaS premium de criação visual com IA. O usuário preenche campos simples (hea
 
 ---
 
-## 🧩 AS 3 FEATURES CORE DO MVP
+## DUAS INTERFACES DE CRIAÇÃO
 
-Essas são as únicas features que importam agora. Nada mais deve ser implementado antes delas estarem completas e testadas.
+O Creatyng tem duas interfaces distintas para criação:
 
-### 1. Ecom Banner
-- Banners para e-commerce em tamanhos exatos (sem corte, sem distorção)
-- Produto/logo preservado com fidelidade total (Strict Identity ON por padrão)
-- Texto ambientado: tipografia real renderizada sobre a imagem, com textura e blend
+### 1. Editor (Wizard)
+Interface guiada com 3 passos (Subject → Style → Text). Usa presets de cena, moods, props.
+Ideal para leigos — preenche campos e gera.
+- Localização: `src/features/editor/`
+- Rota: `/create` (EditorPage)
 
-### 2. Social Post
-- Posts para redes sociais (Instagram, TikTok, Facebook)
-<<<<<<< HEAD
-- Headline + subheadline + CTA renderizados com HTML/CSS sobre base gerada pela IA
-=======
-- Headline + subheadline + CTA **integrados na imagem pela IA** (não HTML/CSS overlay)
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
-- Presets de estilo pré-moldados (usuário escolhe, não digita prompt)
-
-### 3. Photoshoot
-- Ensaio fotográfico ultra realista (pessoa, produto, marca, carro, comida, qualquer subject)
-- Altíssima qualidade: sem cara de cera, sem distorção, iluminação cinematográfica
-- Output 2K/4K, estilo controlado por presets
+### 2. Studio (Node Editor)
+Interface estilo ComfyUI com nodes visuais conectáveis. Pipeline configurável.
+Ideal para power users e fluxos customizados.
+- Localização: `src/app/create/studio/`
+- Rota: `/create/studio` (StudioPage)
+- **Este é o foco de desenvolvimento atual.**
 
 ---
 
-## 🔧 ARQUITETURA TÉCNICA
+## FEATURES CORE DO MVP
+
+### 1. Ecom Banner (via Studio → fluxo "Banner Criativo")
+- Produto real do user (foto) + fundo profissional gerado pela IA + texto nítido (Canvas 2D)
+- Pipeline: Referência → Análise → BG Removal → Gerar Fundo → Compositor → Text Overlay → Export
+- Subject preservado 100% fiel (foto real recortada, não regenerada pela IA)
+
+### 2. Styled Photo (via Studio → fluxo "Foto no Estilo")
+- Recria a foto do user seguindo o estilo de uma referência visual
+- Pipeline: Referência + Subject → Análise → Prompt Builder → Image Gen → Export
+- Strict Identity: produto mantém aparência real
+
+### 3. Photoshoot (via Editor/Wizard)
+- Ensaio fotográfico ultra realista (pessoa, produto, marca, comida)
+- Altíssima qualidade: iluminação cinematográfica, output 2K/4K
+- Estilo controlado por presets de cena
+
+---
+
+## ARQUITETURA TÉCNICA
 
 ### Stack
-<<<<<<< HEAD
-- **Frontend:** Next.js + React + TypeScript + Tailwind CSS
-- **Backend:** Supabase (Postgres + Storage + Edge Functions em Deno)
-- **IA Engine:** Pipeline multi-modelo com roteamento inteligente
-- **Render:** HTML/CSS server-side (Headless Chromium) para tipografia final
-
-### Pipeline de geração
-=======
 - **Frontend:** React + TypeScript + Tailwind CSS + shadcn-ui (Vite)
 - **Backend:** Supabase (Postgres + Storage + Edge Functions em Deno)
 - **IA Engine:** Pipeline multi-modelo com roteamento inteligente
-- **Render:** ~~HTML/CSS server-side (Headless Chromium)~~ — **SUSPENSO** (ver decisão abaixo)
+- **Tipografia:** Canvas 2D no browser (text overlay node) — não HTML/CSS overlay
 
-### Pipeline de geração (como deve ser)
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
+### Pipeline Studio (Banner Criativo)
 ```
-User Input (campos simples)
-  ↓
-Builder estruturado (spec JSON)
-  ↓
-Prompt Engine (compila spec → prompt interno)
-  ↓
-AI Generation (modelo escolhido automaticamente)
-  ↓
-<<<<<<< HEAD
-Image Base (gerado pela IA)
-  ↓
-HTML/CSS Render (texto + efeitos + composição)
-=======
-AI Generation (modelo escolhido automaticamente)
-  ↓
-Imagem final completa (fundo + subject + texto + efeitos — tudo gerado pela IA)
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
-  ↓
-Export 2K / 4K
+Referência (imagem)  →  Analisar Referência (Gemini 2.0 Flash 001)
+Subject (foto real)  →  BG Removal (ONNX/API)
+                              ↓
+                     Gerar Fundo (Flux/Gemini — SÓ cenário, sem subject)
+                              ↓
+                     Compositor (Canvas API — subject recortado SOBRE fundo)
+                              ↓
+                     Text Overlay (Canvas 2D — headline, preço, CTA)
+                              ↓
+                     Export (PNG/JPG/WebP)
 ```
 
-<<<<<<< HEAD
-### Arquivos principais (fonte única de verdade)
-- `src/features/editor/EditorPage.tsx` — EditorPage principal (auth/editor é só re-export)
-- `src/types/spec/index.ts` — tipos core do editor (source of truth)
-- `src/types/index.ts` — tipos de UI/labels apenas (NÃO é o core)
-- `supabase/functions/generate-image/index.ts` — Edge Function de geração
-=======
-**Regra crítica (ATUALIZADA):** A IA gera o criativo COMPLETO — fundo, ambientação, subject, tipografia integrada e efeitos visuais. O texto é instruído via `[TYPOGRAPHY_BLOCK]` no prompt e faz parte da imagem, com textura e blend ambientados. Não há renderização HTML/CSS por cima.
-
-**Regra crítica 2:** efeitos visuais (bokeh, vidro, névoa, neon) são DESCRITOS NO PROMPT para a IA gerar como parte da imagem. Não são CSS compostos por cima.
-
-**Decisão arquitetural (2026-03):** Stage 3 (HTML/CSS renderer) está **SUSPENSO**. A abordagem IA-first produz resultados muito superiores para criativos ambientados. Overlays CSS produziam camadas desconexas sem integração visual.
-
-### Arquivos principais (fonte única de verdade)
-- `src/features/editor/EditorPage.tsx` — editor principal
-- `src/types/spec/index.ts` — tipos core do editor (source of truth)
-- `src/types/index.ts` — tipos de UI/labels apenas (NÃO é o core)
-- `supabase/functions/generate-image/index.ts` — Edge Function de geração (orquestrador)
-- `supabase/functions/generate-image/providers/registry.ts` — roteamento de providers
-- `supabase/functions/generate-image/providers/gemini-image.ts` — provider Gemini (primário strict)
-- `supabase/functions/generate-image/providers/replicateFluxKontext.ts` — provider Replicate (fallback strict)
-- `supabase/functions/generate-image/providers/replicate-flux.ts` — provider Replicate (text-to-image)
-- `supabase/functions/generate-image/preprocess/subject.ts` — preprocess de imagem do subject
-- `src/features/engine/prompt-compiler.ts` — compilador spec → prompt
-- `src/features/editor/scene-presets.ts` — presets de cena com descriptions
-- `src/features/editor/scene-moods.ts` — moods de cena
-- `src/features/editor/scene-props.ts` — props de cena (bokeh, vidro, névoa etc.)
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
-- `src/i18n/locales/en.json` — traduções EN
-- `src/i18n/locales/pt-BR.json` — traduções PT-BR
-- `src/i18n/locales/es.json` — traduções ES
+### Pipeline Studio (Foto no Estilo)
+```
+Referência + Subject → Analisar Referência (Gemini)
+                              ↓
+                     Prompt Builder (compila prompt)
+                              ↓
+                     Image Gen (Gemini IMG2IMG / Replicate)
+                              ↓
+                     Export
+```
 
 ---
 
-<<<<<<< HEAD
-## 🤖 PIPELINE DE IA (PROVIDERS)
+## ARQUIVOS PRINCIPAIS (fonte única de verdade)
 
-### Strict Identity ON (padrão para Ecom Banner e Photoshoot)
-1. **Primário:** Gemini Nano Banana Pro (`gemini-3-pro-image-preview`) via Gemini API — modo EDIT/IMG2IMG
-2. **Fallback:** FLUX.1 Kontext Pro via Replicate (`black-forest-labs/flux-kontext-pro`)
+### Studio (Node Editor) — FOCO ATUAL
+| Arquivo | Descrição |
+|---|---|
+| `src/app/create/StudioPage.tsx` | Página principal do Studio (state, handlers, layout) |
+| `src/app/create/studio/types.ts` | Tipos: NodeTypeId, NODE_TYPE_DEFS, PRESET_FLOWS, Connection |
+| `src/app/create/studio/engine.ts` | Motor de execução: executeNode, executeFlow, topological sort |
+| `src/app/create/studio/StudioNode.tsx` | Renderização visual de cada node (inputs, previews, run btn) |
+| `src/app/create/studio/StudioCanvas.tsx` | Canvas infinito com pan/zoom |
+| `src/app/create/studio/StudioConnection.tsx` | Linhas SVG entre nodes |
+| `src/app/create/studio/StudioNodePanel.tsx` | Painel lateral "Add node" com categorias |
+| `src/app/create/studio/FlowSelector.tsx` | Modal de seleção de fluxo ao abrir o Studio |
+| `src/app/create/studio/StudioChat.tsx` | Chat IA (descreva e a IA monta o fluxo) |
+| `src/app/create/studio/StudioTopMenu.tsx` | Menu topo (New, Clone, Undo, Redo, Auto Layout) |
+| `src/app/create/studio/StudioToolbar.tsx` | Toolbar inferior (cursor/hand, zoom) |
+| `src/app/create/studio/StudioProperties.tsx` | Painel de propriedades do node selecionado |
+| `src/app/create/studio/StudioSelect.tsx` | Select customizado para nodes |
+
+### Services
+| Arquivo | Descrição |
+|---|---|
+| `src/services/referenceAnalyzer.ts` | Analisa referência com Gemini 2.0 Flash 001 → JSON estruturado |
+| `src/services/generateService.ts` | Service de geração (chamada Supabase Edge Function) |
+| `src/services/supabaseClient.ts` | Cliente Supabase |
+
+### Backend (Edge Functions)
+| Arquivo | Descrição |
+|---|---|
+| `supabase/functions/generate-image/index.ts` | Orquestrador principal |
+| `supabase/functions/generate-image/providers/registry.ts` | Roteamento de providers |
+| `supabase/functions/generate-image/providers/gemini-image.ts` | Provider Gemini (primário strict) |
+| `supabase/functions/generate-image/providers/replicateFluxKontext.ts` | Provider Replicate Kontext (fallback strict) |
+| `supabase/functions/generate-image/providers/replicate-flux.ts` | Provider Replicate (text-to-image) |
+| `supabase/functions/generate-image/preprocess/subject.ts` | Preprocess: alpha, upscale, padding, SHA-256 |
+
+### Editor (Wizard) — interface alternativa
+| Arquivo | Descrição |
+|---|---|
+| `src/features/editor/EditorPage.tsx` | Editor principal (wizard mode) |
+| `src/types/spec/index.ts` | Tipos core do editor (source of truth) |
+| `src/features/engine/prompt-compiler.ts` | Compilador spec → prompt |
+| `src/features/editor/scene-presets.ts` | Presets de cena |
+| `src/features/editor/scene-moods.ts` | Moods de cena |
+| `src/features/editor/scene-props.ts` | Props de cena (bokeh, vidro, névoa) |
+
+### i18n
+| Arquivo | Descrição |
+|---|---|
+| `src/i18n/locales/en.json` | Traduções EN |
+| `src/i18n/locales/pt-BR.json` | Traduções PT-BR |
+| `src/i18n/locales/es.json` | Traduções ES |
+
+---
+
+## STUDIO — NODES DISPONÍVEIS (15 tipos)
+
+### Input (4)
+| ID | Label | Descrição |
+|---|---|---|
+| `brand_input` | Brand Input | Nome da marca + descrição |
+| `image_upload` | Image Upload | Upload de subject (foto do produto) |
+| `reference_upload` | Referência Visual | Upload de imagem de referência |
+| `text_input` | Text Prompt | Texto livre OU campos múltiplos (headline, price, cta, contact) |
+
+### AI (4)
+| ID | Label | Provider | Custo |
+|---|---|---|---|
+| `reference_analyzer` | Analisar Referência | Gemini 2.0 Flash 001 | 2 cr |
+| `scene_gen` | Scene Gen | Gemini | 3 cr |
+| `image_gen` | Image Gen | Replicate/Gemini | 5 cr |
+| `background_gen` | Gerar Fundo | Flux/Gemini | 4 cr |
+
+### Processing (3)
+| ID | Label | Descrição |
+|---|---|---|
+| `prompt_builder` | Prompt Builder | Compila prompt a partir de inputs |
+| `bg_removal` | BG Removal | Remove fundo (ONNX/API) → output type `subject_cutout` |
+| `compositor` | Compositor | Compõe subject recortado sobre fundo (Canvas API) |
+
+### Composition (3)
+| ID | Label | Descrição |
+|---|---|---|
+| `text_overlay` | Overlay de Texto | Renderiza textos via Canvas 2D sobre imagem |
+| `typography` | Typography | Tipografia (legacy) |
+| `color_grade` | Color Grade | Gradação de cor |
+
+### Output (1)
+| ID | Label | Descrição |
+|---|---|---|
+| `export` | Export | Exporta imagem final (PNG/JPG/WebP) |
+
+---
+
+## STUDIO — FLUXOS PRESET
+
+### styled-photo (Foto no Estilo) — 5 cr
+6 nodes: reference_upload → reference_analyzer → prompt_builder → image_gen → export
+(+ image_upload conectado ao analyzer e image_gen)
+
+### creative-banner (Banner Criativo) — 8 cr
+9 nodes: ref → analyze, sub → bgrem, analyze → bggen, bgrem + bggen → compose → overlay → export
+(+ text_input com campos headline/price/cta/contact)
+
+### simple-gen (Geração Simples) — 3 cr
+5 nodes: brand_input + image_upload + text_input → prompt_builder → image_gen
+
+---
+
+## STUDIO — COMPORTAMENTOS IMPLEMENTADOS
+
+### Cache Invalidation
+Quando um node de input muda seus dados (nova imagem, novo texto), **todos os nodes downstream** são invalidados automaticamente:
+- BFS forward pelas conexões a partir do node alterado
+- `nodeOutputs` e `execStates` são limpos para o node + todos dependentes
+- Nodes invalidados voltam ao estado `idle` (sem check verde)
+- Implementado em: `StudioPage.tsx` → `handleNodeDataChange`
+
+### Flow Selector
+- Modal aparece ao abrir o Studio (DEFAULT_NODES é vazio)
+- Cards com ícone, nome (i18n), descrição, créditos
+- Hover com borda na cor do fluxo
+- Opção "Fluxo Vazio" para canvas limpo
+- "Novo Fluxo" no menu top reabre o selector
+
+### Execução
+- Topological sort → execução sequencial
+- Input nodes são pré-populados antes da execução
+- Nodes críticos (image_gen, background_gen, compositor): erro para o fluxo
+- Nodes não-críticos (reference_analyzer): erro logado, fluxo continua
+
+### text_input com Fields
+- Quando `node.data.fields` existe (banner mode), renderiza 4 inputs separados
+- `handleNodeDataChange` com `field_*` keys atualiza objeto `fields` nested
+- Valores numéricos (subjectScale, shadowBlur, etc.) são convertidos para `number`
+
+---
+
+## PIPELINE DE IA (PROVIDERS) — STATUS ATUAL
+
+### Reference Analyzer (frontend)
+- **Modelo:** `gemini-2.0-flash-001` via Gemini API
+- **responseMimeType:** `application/json` (força JSON limpo)
+- **Retry:** 2 tentativas (temp 0.2 → temp 0.1)
+- **Fallback:** se ambas falharem, retorna análise genérica (não lança erro)
+- Arquivo: `src/services/referenceAnalyzer.ts`
+
+### Strict Identity ON (Ecom Banner e Photoshoot)
+1. **Primário:** Gemini (`gemini-2.0-flash-preview-image-generation`) via Gemini API — modo IMG2IMG
+2. **Fallback:** FLUX.1 Kontext Pro via Replicate (`replicateFluxKontext.ts`)
 3. **Erro se ambos falharem:** `strict_identity_provider_unavailable`
 
-### Preprocess obrigatório (antes de chamar qualquer provider no modo strict)
-- Detectar alpha/transparência → compor fundo neutro
-- Upscale: minSide >= 1024px
-- Padding e centralização determinística
-- Nunca pedir pro usuário "melhorar a imagem" — o preprocess resolve
-=======
-## 🤖 PIPELINE DE IA (PROVIDERS) — STATUS ATUAL
-
-### Strict Identity ON (padrão para Ecom Banner e Photoshoot)
-1. **Primário:** Gemini (`gemini-2.0-flash-preview-image-generation`) via Gemini API — modo IMG2IMG ✅ **IMPLEMENTADO**
-2. **Fallback:** FLUX.1 Kontext Pro via Replicate (`replicateFluxKontext.ts`) ✅ **IMPLEMENTADO**
-3. **Erro se ambos falharem:** `strict_identity_provider_unavailable` ✅ **IMPLEMENTADO**
-
 ### Strict Identity OFF (Social Post text-to-image)
-- **Provider:** Replicate FLUX (`replicate-flux.ts`) via text-to-image ✅ **IMPLEMENTADO**
+- **Provider:** Replicate FLUX (`replicate-flux.ts`) via text-to-image
+
+### Background Gen (Studio)
+- Usa o mesmo endpoint `generate-image` com `strictIdentity: false`
+- Prompt inclui instrução explícita: "ONLY background, NO product, NO text"
+- Fallback se não recebeu análise: prompt genérico profissional
 
 ### Preprocess (antes de chamar qualquer provider no modo strict)
-- Detectar alpha/transparência → compor fundo neutro (`#111827`) ✅ **IMPLEMENTADO**
-- Upscale: minSide >= 1024px ✅ **IMPLEMENTADO**
-- Padding e centralização (12% por padrão) ✅ **IMPLEMENTADO**
-- SHA-256 hash determinístico ✅ **IMPLEMENTADO**
-- Fallback: se `PREPROCESS_DECODE_ENABLED != "true"`, passa original sem transformar ✅ **IMPLEMENTADO**
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
+- Detectar alpha/transparência → compor fundo neutro (`#111827`)
+- Upscale: minSide >= 1024px
+- Padding e centralização (12% por padrão)
+- SHA-256 hash determinístico
+- Fallback: se `PREPROCESS_DECODE_ENABLED != "true"`, passa original sem transformar
 
 ### Variáveis de ambiente necessárias
-- `GEMINI_API_KEY` — Google AI Studio
-- `REPLICATE_API_TOKEN` — Replicate
-<<<<<<< HEAD
-
-### Response do backend deve sempre incluir meta/debug
-```json
-{
-  "imageUrl": "...",
-  "meta": {
-    "providerName": "gemini_edit | replicate_kontext",
-    "modeUsed": "img2img | text2img",
-    "strictIdentity": true,
-    "identityStrength": 90,
-    "styleStrength": 45,
-    "preprocessFlags": ["alpha_removed", "upscaled", "padded"],
-    "preprocessedHash": "sha256...",
-    "payloadKind": "gemini_edit | replicate_kontext"
-=======
-- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
+- `VITE_GEMINI_API_KEY` — Google AI Studio (frontend, para reference analyzer)
+- `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` — Supabase (frontend)
+- `GEMINI_API_KEY` — Google AI Studio (backend Edge Function)
+- `REPLICATE_API_TOKEN` — Replicate (backend)
+- `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` — (backend)
 - `GENS_BUCKET` (default: `generations-private`)
 - `PREPROCESS_DECODE_ENABLED=true` — ativa pixel-level preprocess (opcional)
-- `GCP_PROJECT_ID` / `GCP_SA_KEY_B64` — legacy Vertex (não usar mais)
 
 ### Response do backend inclui meta/debug
 ```json
@@ -196,31 +285,25 @@ Export 2K / 4K
       "width": 1248,
       "height": 1248
     }
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
   }
 }
 ```
 
 ---
 
-## 🎨 FILOSOFIA DO PRODUTO (NÃO NEGOCIÁVEL)
+## FILOSOFIA DO PRODUTO (NÃO NEGOCIÁVEL)
 
 1. **O usuário nunca vê prompt.** Ele preenche campos: headline, estilo, intensidade, subject. O sistema compila o prompt internamente.
-2. **Texto perfeito é obrigação.** Nunca depender da IA para tipografia. O HTML/CSS renderer entrega texto com: fontes reais, stroke, shadow, glow, textura, blend-mode.
-<<<<<<< HEAD
-3. **Resultado na primeira tentativa.** O usuário clica em "Gerar" e recebe a imagem pronta. Sem iteração manual obrigatória.
-4. **Qualidade acima de velocidade.** Latência maior é aceitável se o resultado for nível agência.
-5. **Leigo consegue usar.** Máximo ~10 campos/botões por feature. Nada de configuração avançada exposta.
-=======
+2. **Texto perfeito é obrigação.** Tipografia renderizada via Canvas 2D (text_overlay node) — fontes reais, shadow, wrap. Nunca depender da IA para tipografia.
 3. **Efeitos visuais pertencem à IA.** Bokeh, névoa, vidro, neon, sombra — são instruções de prompt, gerados pela IA como parte da imagem. Nunca CSS compostos por cima.
-4. **Resultado na primeira tentativa.** O usuário clica em "Gerar" e recebe a imagem pronta. Sem iteração manual obrigatória.
-5. **Qualidade acima de velocidade.** Latência maior é aceitável se o resultado for nível agência.
-6. **Leigo consegue usar.** Máximo ~10 campos/botões por feature. Nada de configuração avançada exposta.
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
+4. **Subject real é sagrado.** No fluxo Banner Criativo, o produto do user é recortado e composto sobre o fundo — nunca regenerado pela IA.
+5. **Resultado na primeira tentativa.** O usuário clica em "Executar" e recebe a imagem pronta. Sem iteração manual obrigatória.
+6. **Qualidade acima de velocidade.** Latência maior é aceitável se o resultado for nível agência.
+7. **Leigo consegue usar.** Interface simples, campos claros, presets pré-moldados.
 
 ---
 
-## 🌍 REGRAS DE I18N (PERMANENTES)
+## REGRAS DE I18N (PERMANENTES)
 
 ### O que PODE ser traduzido
 - Labels, headings, placeholders, pills/chips, labels de opções em select, texto de botões, empty states, helper text
@@ -248,6 +331,9 @@ Export 2K / 4K
 editor.*          editor.preset.*       editor.actions.*
 editor.format.*   editor.debug.*        editor.generic.*
 social.*          photoshoot.*          ecom.*          ambient.*
+studio.*          studio.nav.*          studio.panel.*
+studio.node.*     studio.flow_selector.*
+studio.props.*    studio.credits.*
 ```
 
 ### Regra de ouro
@@ -255,89 +341,67 @@ Toda feature nova: primeiro cria a estrutura interna → depois aplica i18n → 
 
 ---
 
-<<<<<<< HEAD
-=======
-## 🚦 ESTÁGIOS DO ROADMAP
+## ESTÁGIOS DO ROADMAP
 
 ```
-STAGE 0 — Mapping         ✅ CONCLUÍDO  (CLAUDE.md criado, arquitetura mapeada)
-STAGE 1 — Strict Providers ✅ CONCLUÍDO  (Gemini IMG2IMG + Replicate Kontext Pro + fallback)
-STAGE 2 — Preprocess       ✅ CONCLUÍDO  (alpha, upscale 1024px, padding 12%, SHA-256 hash)
-STAGE 3 — Renderer         ⏸ SUSPENSO   (HTML/CSS overlay substituído por IA-first — ver decisão em CREATYNG_VISUAL_SPEC.md)
-STAGE 4 — Editor UX        🔧 EM CURSO   (canvas limpo, bugs ativos — ver seção abaixo)
-STAGE 4b — Engine Quality  🔧 EM CURSO   (prompt 5-block, moods detalhados, modelo Gemini correto)
-STAGE 5 — MVP Polish       ❌ PENDENTE   (landing page, billing, testes)
+STAGE 0 — Mapping           ✅ CONCLUÍDO  (CLAUDE.md criado, arquitetura mapeada)
+STAGE 1 — Strict Providers   ✅ CONCLUÍDO  (Gemini IMG2IMG + Replicate Kontext Pro + fallback)
+STAGE 2 — Preprocess         ✅ CONCLUÍDO  (alpha, upscale 1024px, padding 12%, SHA-256 hash)
+STAGE 3 — Renderer           ⏸ SUSPENSO   (HTML/CSS overlay substituído por IA-first)
+STAGE 4 — Editor UX          ✅ CONCLUÍDO  (wizard 3 passos, presets, moods, props)
+STAGE 4b — Engine Quality    ✅ CONCLUÍDO  (prompt 5-block, moods detalhados, Gemini model fix)
+STAGE 5 — Studio             🔧 EM CURSO   (node editor ComfyUI-style — ver detalhes abaixo)
+STAGE 6 — MVP Polish         ❌ PENDENTE   (landing page, billing, testes)
 ```
 
-### 🐛 BUGS ATIVOS NO STAGE 4 (pendentes)
+### STATUS DO STAGE 5 (Studio)
 
-1. **Canvas pré-poluído** — `spec-defaults.ts` pode ainda ter defaults de content. **Fix:** zerar os defaults de content (headline: "", subheadline: "", ctaText: "").
+**Concluído:**
+- Node editor com canvas infinito, pan/zoom, conexões SVG
+- 15 tipos de node com UI completa
+- Motor de execução real (topological sort, executeNode)
+- 3 fluxos preset: styled-photo, creative-banner, simple-gen
+- Flow Selector modal ao abrir Studio
+- Reference Analyzer com Gemini 2.0 Flash 001 + JSON mode + fallback
+- Background Gen com prompt de fundo isolado
+- Compositor (Canvas API) — subject real sobre fundo gerado
+- Text Overlay (Canvas 2D) — headline, preço, CTA
+- BG Removal (ONNX/API)
+- Cache invalidation — nodes downstream limpos quando input muda
+- i18n completo (en, pt-BR, es)
 
-2. **Scene props com defaults ativos** — `scene-props.ts` pode ter `SCENE_PROP_DEFAULTS` não-vazios. **Fix:** zerar defaults; usuário escolhe ativamente.
-
-3. **Overlays CSS compostos sobre a imagem** — `EditorPage.tsx` pode ainda renderizar divs CSS (vidro, bokeh, névoa) por cima. **Fix:** remover CSS overlays; scene props influenciam apenas o prompt.
-
-### ✅ CORREÇÕES APLICADAS NO STAGE 4b (Engine Quality)
-
-1. **Gemini model ID corrigido** — era `gemini-3-pro-image-preview` (inexistente), agora `gemini-2.0-flash-preview-image-generation`.
-2. **Prompt compiler reescrito** — 5 blocos de linguagem natural (STYLE / SUBJECT / SCENE / TYPOGRAPHY / QUALITY) em vez de sopa de labels CSV.
-3. **Scene mood descriptions expandidas** — de 3 palavras para instruções fotográficas completas com iluminação, partículas, atmosfera.
-4. **Decisão IA-first** — tipografia integrada pela IA na cena; Stage 3 HTML/CSS suspenso.
+**Pendente / próximos passos:**
+- Testar fluxo completo end-to-end com imagens reais
+- Chat IA para montagem automática de fluxos
+- Salvar/carregar fluxos do user (Supabase)
+- Templates de fluxo mais variados
+- Melhorar compositor: múltiplas posições, rotação, blending modes
+- Text overlay: mais fontes, estilos, posições configuráveis
 
 ---
 
-<<<<<<< HEAD
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
-=======
-## ✅ FASE 1 — MASTER SPEC DIFF — CONCLUÍDA (2026-03)
+## CORREÇÕES RECENTES (Março 2026)
 
-Todos os 13 diffs da FASE 1 (PS.0 → TR.7) foram executados com sucesso. Ver `CREATYNG_EXECUTION_LOG.md` para status detalhado de cada diff.
+1. **Gemini model IDs corrigidos:**
+   - Reference Analyzer: `gemini-2.5-pro` → `gemini-2.0-flash-001` (o 2.5 Pro retornava JSON inválido, o 2.0 Flash sem suffix dava 404)
+   - Backend geração: `gemini-3-pro-image-preview` → `gemini-2.0-flash-preview-image-generation`
 
-### Arquivos criados na FASE 1
-| Arquivo | Diff | Descrição |
-|---|---|---|
-| `src/types/preset.ts` | PS.0 | Tipos universais: CreatygnPreset, WizardState, TextPresetConfig, ColorConfig, etc. |
-| `src/data/systemPresets.ts` | PS.0 | 5 presets de imagem + 8 presets de texto + PRESET_AFFINITY |
-| `src/lib/presetUtils.ts` | PS.0 | getPresetById, applyPresetOverride, buildActiveConfig |
-| `supabase/migrations/001_preset_system.sql` | PS.0 | Schema SQL: presets, generation_feedback, user_saved_presets |
-| `src/stores/useWizardStore.ts` | 9.1 | Zustand store — estado global do wizard |
-| `src/features/editor/wizard/WizardLayout.tsx` | 9.1 | Stepper 3 passos + keyboard nav + quick/advanced toggle |
-| `src/features/editor/wizard/WizardStep1Subject.tsx` | 9.1/9.5 | Upload subject + framing + angle + auto-preset suggestion |
-| `src/features/editor/wizard/WizardStep2Style.tsx` | 9.1/9.2 | PresetGrid + atmosfera + iluminação + color pickers |
-| `src/features/editor/wizard/WizardStep3Text.tsx` | 9.1/9.3 | Headline + CTA + subheadline + TextStylePicker + FontSelector |
-| `src/features/editor/wizard/PreviewCanvas.tsx` | 9.4 | Canvas de preview com position controls |
-| `src/features/editor/wizard/index.ts` | 9.1 | Barrel exports |
-| `public/textures/grunge-metal.png` | TR.1 | Textura metálica 256×256 gerada programaticamente |
-| `public/textures/spray-paint.png` | TR.1 | Textura spray 256×256 |
-| `public/textures/noise-subtle.png` | TR.1 | Textura de ruído sutil 256×256 |
-| `src/features/editor/engine/textureLoader.ts` | TR.1 | Cache de texturas com Map + preloadTextures() |
-| `src/features/editor/engine/cssVarsInjector.ts` | TR.2 | injectPresetCSSVars — CSS custom properties do tema |
-| `src/components/PresetCard.tsx` | 9.2 | Card de preset com thumbnail/emoji + tooltip |
-| `src/components/PresetGrid.tsx` | 9.2 | Grid configurável com seleção exclusiva por grupo |
-| `src/components/TextStylePicker.tsx` | TR.3 | 8 mini-canvas com preview ao vivo por preset |
-| `src/components/FontSelector.tsx` | 9.3 | Selector de fonte com override via Google Fonts |
-| `src/features/editor/engine/accentWord.ts` | TR.4 | detectAccentWord + parseManualAccent + getAccentParts |
-| `src/features/editor/engine/textRenderer.ts` | TR.5 | renderTextOnCanvas — motor principal Canvas 2D |
-| `src/features/editor/engine/overlayIntegration.ts` | TR.6 | Overlay adaptativo por luminosidade (ITU-R BT.709) |
-| `src/lib/presetSuggestion.ts` | 9.5 | suggestPresetForSubject(profile) |
-| `src/features/editor/engine/exportComposed.ts` | TR.7 | exportComposed — composição final + 6 EXPORT_FORMATS |
-| `CREATYNG_EXECUTION_LOG.md` | — | Log de execução de todos os diffs |
+2. **responseMimeType `application/json`** adicionado ao Reference Analyzer — força o Gemini a retornar JSON limpo sem markdown fences
 
-### Decisões técnicas tomadas na FASE 1
-- **zustand** adicionado como dependência (`npm install zustand`)
-- **SubjectProfile/VisualDNA** duplicados no frontend (tsconfig exclui supabase/functions/)
-- **Canvas 2D gradient preview**: mini-canvas usa cores sólidas + shadow; textura real apenas no export final
-- **Stage 3 SUSPENSO**: tipografia IA-first substituiu HTML/CSS overlay
+3. **Fallback sem análise** — se o Gemini falhar após 2 tentativas, retorna análise genérica com defaults profissionais. Fluxo continua.
+
+4. **Cache invalidation** — quando user troca imagem/texto num node, todos os nodes downstream são invalidados (BFS forward pelas conexões)
+
+5. **Decisão IA-first** — tipografia integrada pela IA na cena no Editor; no Studio, usa Canvas 2D (text_overlay node). Stage 3 HTML/CSS suspenso.
 
 ---
 
->>>>>>> origin/claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
-## 📏 REGRAS DE EXECUÇÃO PARA O CLAUDE CODE
+## REGRAS DE EXECUÇÃO PARA O CLAUDE CODE
 
 ### Tamanho das tasks (CRÍTICO)
-- ❌ Não: prompt que mexe em 10 arquivos diferentes
-- ❌ Não: prompt microscópico que altera 1 string
-- ✅ Sim: 1 objetivo claro, máximo 2 arquivos, 1 bloco lógico
+- Não: prompt que mexe em 10 arquivos diferentes
+- Não: prompt microscópico que altera 1 string
+- Sim: 1 objetivo claro, máximo 2-3 arquivos, 1 bloco lógico
 
 ### Regras de diff
 - Sempre gerar patch/diff
@@ -359,32 +423,14 @@ Se a task mexer em `spec`, `builder`, `engine` ou `compilePrompt` → **NÃO é 
 
 ---
 
-<<<<<<< HEAD
-## 🚦 ESTÁGIOS DO ROADMAP
-
-```
-STAGE 0 — Mapping         (mapeamento e diagnóstico)
-STAGE 1 — Strict Providers (Gemini + Replicate conectados)
-STAGE 2 — Preprocess       (alpha, upscale, padding)
-STAGE 3 — Renderer         (HTML/CSS server-side)
-STAGE 4 — Editor UX        (simplificação da interface)
-STAGE 5 — MVP Polish       (landing page, billing, testes)
-```
-
-**Antes de qualquer tarefa:** informe em qual STAGE estamos e qual o próximo diff.
-
----
-
-=======
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
-## 📋 TEMPLATE DE PROMPT PADRÃO (use sempre)
+## TEMPLATE DE PROMPT PADRÃO (use sempre)
 
 ```
 You are working on Creatyng — a premium AI visual creation SaaS.
 
 CURRENT STAGE: [STAGE X]
 GOAL: [1 sentence describing the goal]
-FILES ALLOWED TO MODIFY: [list max 2 files]
+FILES ALLOWED TO MODIFY: [list max 2-3 files]
 
 RULES:
 - Minimal diff only
@@ -404,27 +450,23 @@ DELIVERABLE: Return diff/patch only. Do not explain what you did — show the co
 
 ---
 
-## ⚠️ ERROS COMUNS — NUNCA REPETIR
+## ERROS COMUNS — NUNCA REPETIR
 
 - Usar `src/features/auth/editor/EditorPage.tsx` como fonte principal (é só re-export)
 - Misturar `src/types/index.ts` com `src/types/spec/index.ts` como source of truth
-- Chamar IA diretamente sem passar pelo `aiEngineService` (wrapper obrigatório)
-- Rodar Headless Chromium dentro de Supabase Edge (Deno não suporta) — usar render-service Node separado (Vercel/Railway/Render) ou Browserless
+- Chamar IA diretamente sem passar pelo service/engine (wrapper obrigatório)
+- Rodar Headless Chromium dentro de Supabase Edge (Deno não suporta)
 - Deixar texto de UI hardcoded em JSX
 - Alterar `value` de qualquer option/enum
-<<<<<<< HEAD
-=======
 - Compor overlays CSS por cima da imagem gerada (efeitos visuais pertencem ao prompt/IA)
+- Usar modelos Gemini inexistentes (sempre verificar: `gemini-2.0-flash-001` para análise, `gemini-2.0-flash-preview-image-generation` para geração)
 - Implementar features de STAGE futuro antes de resolver bugs do STAGE atual
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
+- Não limpar cache de outputs quando inputs mudam (sempre invalidar downstream)
 
 ---
 
-## 🔒 REGRA DE OURO FINAL
+## REGRA DE OURO FINAL
 
 > Se você (Claude Code) não tiver certeza do escopo, **pergunte antes de implementar**.
 > Nunca assuma. Nunca expanda o escopo sozinho. Uma task por vez.
-<<<<<<< HEAD
-=======
 > Sempre declare o STAGE atual e o próximo diff antes de qualquer execução.
->>>>>>> claude/explain-codebase-mmbkbikx3vh05x35-2AeXb
