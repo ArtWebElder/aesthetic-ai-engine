@@ -4,7 +4,7 @@
 // Recebe { composition, command } → retorna { composition } modificado.
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
-const GEMINI_TEXT_MODEL = "gemini-2.0-flash-lite";
+const GEMINI_TEXT_MODEL = "gemini-2.5-flash-preview-05-20";
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
   return new Response(JSON.stringify(data), {

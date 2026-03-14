@@ -3,12 +3,12 @@
 // =============================================================================
 // CREATYNG — VISION FIRST STAGE 1: Vision Analysis (DIFF VF.2)
 // Gemini Flash extrai VisualDNA e SubjectProfile de imagens de referência.
-// Usa gemini-2.0-flash (não o modelo de geração) — economizar custo aqui.
+// Usa gemini-2.5-flash-preview-05-20 (não o modelo de geração) — economizar custo aqui.
 // =============================================================================
 
 import type { VisualDNA, SubjectProfile, VisionAnalysisResult } from "./types.ts";
 
-const VISION_MODEL = "gemini-2.0-flash";
+const VISION_MODEL = "gemini-2.5-flash-preview-05-20";
 const VISION_TIMEOUT_MS = 30_000;
 
 // ── Prompts de extração ───────────────────────────────────────────────────────

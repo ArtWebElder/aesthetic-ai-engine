@@ -34,7 +34,7 @@ async function callGeminiForHelp(command: string): Promise<string> {
     console.warn('[Chat] VITE_GEMINI_API_KEY não configurado — IA indisponível');
     return "IA não configurada. Verifique VITE_GEMINI_API_KEY.";
   }
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
   try {
     const res = await fetch(endpoint, {
       method: 'POST',

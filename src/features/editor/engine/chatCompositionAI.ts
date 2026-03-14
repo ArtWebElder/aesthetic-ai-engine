@@ -26,7 +26,7 @@ async function applyViaGeminiFrontend(
     return null;
   }
 
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`;
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${GEMINI_API_KEY}`;
 
   const prompt = `Você é o motor de design do Creatyng. Recebe um JSON de composição e um comando do usuário. Retorne APENAS o JSON modificado, sem markdown, sem explicação, sem backticks.
 
