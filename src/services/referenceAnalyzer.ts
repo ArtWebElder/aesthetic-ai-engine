@@ -109,18 +109,111 @@ ${texts.contact ? `- Contact: "${texts.contact}"` : ""}`;
   }
 
   const text = data.candidates[0].content.parts[0].text;
-  console.log("[ReferenceAnalyzer] Raw Gemini text:", text.slice(0, 200));
+  console.log("[ReferenceAnalyzer] Raw response (full):", text);
 
-  const clean = text.replace(/```json\n?|```\n?/g, "").trim();
-
-  try {
-    const parsed = JSON.parse(clean) as ReferenceAnalysis;
+  const parsed = extractJSON(text);
+  if (parsed) {
     console.log("[ReferenceAnalyzer] Parsed OK:", parsed.style?.mood, parsed.layout?.productPosition);
     return parsed;
-  } catch (parseErr) {
-    console.error("[ReferenceAnalyzer] JSON parse failed:", parseErr);
-    console.error("[ReferenceAnalyzer] Cleaned text was:", clean.slice(0, 300));
-    throw new Error("reference_analysis_parse_error: Gemini returned invalid JSON.");
+  }
+
+  // ── Retry with stricter prompt and lower temperature ──
+  console.warn("[ReferenceAnalyzer] First attempt parse failed — retrying with stricter prompt...");
+
+  const retryBody = {
+    contents: [
+      {
+        parts: [
+          {
+            text: `Return ONLY a JSON object. No text before or after. No markdown. No backticks. No explanation.
+
+Analyze this reference advertisement image. The second image is the product photo.
+
+JSON schema:
+{"layout":{"productPosition":"center|left|right|top|bottom","productSize":"small|medium|large|full","textPosition":"top|bottom|left|right|overlay-bottom|overlay-top","hasPrice":false,"priceBadgeStyle":""},"style":{"mood":"","lighting":"","colorScheme":["#hex"],"backgroundType":"","backgroundDescription":""},"typography":{"headlineStyle":"","headlineSize":"","headlineColor":"#hex","ctaStyle":""},"composition":{"description":"","sceneElements":[],"decorativeElements":[]}}
+
+Headline: "${texts.headline}"`,
+          },
+          { inline_data: { mime_type: "image/jpeg", data: cleanRef } },
+          { inline_data: { mime_type: "image/jpeg", data: cleanSub } },
+        ],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 2000,
+    },
+  };
+
+  const retryResp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(retryBody),
+  });
+
+  if (!retryResp.ok) {
+    const errText = await retryResp.text();
+    console.error("[ReferenceAnalyzer] Retry HTTP error:", retryResp.status, errText.slice(0, 300));
+    throw new Error(`reference_analysis_retry_failed: HTTP ${retryResp.status}`);
+  }
+
+  const retryData = await retryResp.json();
+  const retryText = retryData.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!retryText) {
+    console.error("[ReferenceAnalyzer] Retry returned no text:", JSON.stringify(retryData).slice(0, 500));
+    throw new Error("reference_analysis_retry_empty: Gemini returned no text on retry.");
+  }
+
+  console.log("[ReferenceAnalyzer] Retry raw response:", retryText);
+
+  const retryParsed = extractJSON(retryText);
+  if (retryParsed) {
+    console.log("[ReferenceAnalyzer] Retry parsed OK:", retryParsed.style?.mood, retryParsed.layout?.productPosition);
+    return retryParsed;
+  }
+
+  console.error("[ReferenceAnalyzer] Both attempts failed to produce valid JSON.");
+  console.error("[ReferenceAnalyzer] Last raw text:", retryText.slice(0, 500));
+  throw new Error("reference_analysis_parse_error: Gemini returned invalid JSON after 2 attempts.");
+}
+
+/**
+ * Robustly extract and parse JSON from Gemini's response text.
+ * Handles: markdown fences, text before/after JSON, comments, trailing commas.
+ */
+function extractJSON(raw: string): ReferenceAnalysis | null {
+  // Step 1: Strip markdown code fences
+  let text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+
+  // Step 2: Try direct parse first (cleanest case)
+  try {
+    return JSON.parse(text) as ReferenceAnalysis;
+  } catch {
+    // continue to extraction
+  }
+
+  // Step 3: Extract the outermost JSON object from any surrounding text
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    console.error("[ReferenceAnalyzer] No JSON object found in text:", text.slice(0, 300));
+    return null;
+  }
+
+  text = jsonMatch[0];
+
+  // Step 4: Clean common Gemini quirks
+  // Remove trailing commas before } or ]
+  text = text.replace(/,\s*([}\]])/g, "$1");
+  // Remove single-line comments
+  text = text.replace(/\/\/[^\n]*/g, "");
+
+  try {
+    return JSON.parse(text) as ReferenceAnalysis;
+  } catch (err) {
+    console.error("[ReferenceAnalyzer] JSON.parse failed after extraction:", err);
+    console.error("[ReferenceAnalyzer] Extracted text:", text.slice(0, 400));
+    return null;
   }
 }
 
