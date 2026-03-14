@@ -31,7 +31,15 @@ const NODE_GROUPS: NodeCategoryGroup[] = [
   },
   {
     labelKey: 'studio.panel.use_ai',
-    items: ['reference_analyzer', 'scene_gen', 'image_gen'],
+    items: ['reference_analyzer', 'scene_gen', 'image_gen', 'background_gen'],
+  },
+  {
+    labelKey: 'studio.panel.processing',
+    items: ['bg_removal', 'compositor', 'color_grade'],
+  },
+  {
+    labelKey: 'studio.panel.composition',
+    items: ['text_overlay', 'typography', 'prompt_builder'],
   },
   {
     labelKey: 'studio.panel.context',
@@ -39,7 +47,7 @@ const NODE_GROUPS: NodeCategoryGroup[] = [
   },
   {
     labelKey: 'studio.panel.automate',
-    items: ['bg_removal', 'color_grade', 'typography', 'export'],
+    items: ['export'],
   },
 ];
 

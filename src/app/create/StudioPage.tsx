@@ -33,6 +33,7 @@ import { StudioTopMenu } from './studio/StudioTopMenu';
 import { StudioChat } from './studio/StudioChat';
 import { StudioNodePanel } from './studio/StudioNodePanel';
 import { StudioProperties } from './studio/StudioProperties';
+import { FlowSelector } from './studio/FlowSelector';
 import { useI18n } from '@/i18n';
 
 // Credits badge top-right
@@ -111,6 +112,7 @@ export function StudioPage() {
   // UI state
   const [openPanel, setOpenPanel] = useState<PanelTab | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
+  const [showFlowSelector, setShowFlowSelector] = useState(true);
 
   // ── History stack (undo/redo) — past/future model ─────────────────────
   const MAX_HISTORY = 30;
@@ -296,9 +298,20 @@ export function StudioPage() {
   }, [nodes, connections, flowRunning]);
 
   const handleNodeDataChange = useCallback((nodeId: string, key: string, value: string) => {
-    setNodes(prev => prev.map(n =>
-      n.id === nodeId ? { ...n, data: { ...n.data, [key]: value } } : n
-    ));
+    setNodes(prev => prev.map(n => {
+      if (n.id !== nodeId) return n;
+      // Handle field_* keys → update nested fields object
+      if (key.startsWith('field_')) {
+        const fieldName = key.slice(6); // 'field_headline' → 'headline'
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fields = { ...(n.data.fields as any || {}), [fieldName]: value };
+        return { ...n, data: { ...n.data, fields } };
+      }
+      // Store numeric strings as numbers for known numeric keys
+      const numericKeys = ['subjectScale', 'shadowBlur', 'shadowOpacity', 'width', 'height'];
+      const parsed = numericKeys.includes(key) && value !== '' ? Number(value) : value;
+      return { ...n, data: { ...n.data, [key]: parsed } };
+    }));
   }, []);
 
   const handleAddConnection = useCallback((fromNode: string, toNode: string) => {
@@ -367,13 +380,12 @@ export function StudioPage() {
     setExecStates({});
     setNodeOutputs({});
     setSelectedNodeId(null);
+    setShowFlowSelector(false);
   }, [pushSnapshot]);
 
   const handleNewFlow = useCallback(() => {
-    if (window.confirm('Start a new flow? Current flow will be lost.')) {
-      loadFlow('asset-generator');
-    }
-  }, [loadFlow]);
+    setShowFlowSelector(true);
+  }, []);
 
   const handleCloneFlow = useCallback(() => {
     alert('Flow cloned — feature coming soon!');
@@ -560,6 +572,22 @@ export function StudioPage() {
         onToolChange={setToolMode}
         onZoomChange={setZoom}
       />
+
+      {/* Flow selector modal */}
+      {showFlowSelector && (
+        <FlowSelector
+          onSelectFlow={(flowId) => loadFlow(flowId)}
+          onEmptyFlow={() => {
+            pushSnapshot();
+            setNodes([]);
+            setConnections([]);
+            setExecStates({});
+            setNodeOutputs({});
+            setSelectedNodeId(null);
+            setShowFlowSelector(false);
+          }}
+        />
+      )}
     </div>
   );
 }

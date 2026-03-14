@@ -12,6 +12,9 @@ export type NodeTypeId =
   | 'typography'
   | 'color_grade'
   | 'image_gen'
+  | 'background_gen'
+  | 'compositor'
+  | 'text_overlay'
   | 'export';
 
 export interface NodeTypeDef {
@@ -51,8 +54,8 @@ export type PanelTab = 'nodes' | 'assets' | 'templates' | 'learn';
 export const AUTO_LAYOUT_COLUMNS: Record<number, NodeTypeId[]> = {
   0: ['brand_input', 'image_upload', 'reference_upload', 'text_input'],
   1: ['bg_removal', 'color_grade', 'prompt_builder', 'reference_analyzer'],
-  2: ['scene_gen', 'image_gen'],
-  3: ['typography', 'export'],
+  2: ['scene_gen', 'image_gen', 'background_gen'],
+  3: ['compositor', 'text_overlay', 'typography', 'export'],
 };
 
 export const AUTO_LAYOUT_COL_X = [80, 460, 840, 1220];
@@ -64,6 +67,9 @@ export const NODE_RUN_TIMEOUT: Partial<Record<NodeTypeId, number>> = {
   reference_analyzer: 8000,
   scene_gen: 3000,
   image_gen: 15000,
+  background_gen: 15000,
+  compositor: 3000,
+  text_overlay: 1500,
   bg_removal: 5000,
   color_grade: 800,
   typography: 800,
@@ -178,6 +184,35 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     defaultHeight: 248,
     creditCost: 5,
   },
+  background_gen: {
+    id: 'background_gen',
+    label: 'Gerar Fundo',
+    icon: 'Image',
+    color: '#10B981',
+    aiProvider: 'Flux / Gemini',
+    category: 'ai',
+    defaultWidth: 300,
+    defaultHeight: 220,
+    creditCost: 4,
+  },
+  compositor: {
+    id: 'compositor',
+    label: 'Compositor',
+    icon: 'Layers',
+    color: '#F59E0B',
+    category: 'processing',
+    defaultWidth: 300,
+    defaultHeight: 200,
+  },
+  text_overlay: {
+    id: 'text_overlay',
+    label: 'Overlay de Texto',
+    icon: 'Type',
+    color: '#06B6D4',
+    category: 'composition',
+    defaultWidth: 300,
+    defaultHeight: 200,
+  },
   export: {
     id: 'export',
     label: 'Export',
@@ -192,16 +227,32 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
 // ── Preset Flows ──────────────────────────────────────────────────────────────
 
 export interface PresetFlow {
+  id: string;
   name: string;
+  nameEn: string;
+  nameEs: string;
   description: string;
+  descriptionEn: string;
+  descriptionEs: string;
+  icon: string;
+  color: string;
+  credits: number;
   nodes: StudioNode[];
   connections: Connection[];
 }
 
 export const PRESET_FLOWS: Record<string, PresetFlow> = {
-  'asset-generator': {
-    name: 'Asset Generator',
-    description: 'Gera assets visuais baseados em referência + subject. Sem texto.',
+  'styled-photo': {
+    id: 'styled-photo',
+    name: 'Foto no Estilo',
+    nameEn: 'Styled Photo',
+    nameEs: 'Foto con Estilo',
+    description: 'Recrie sua foto seguindo o estilo de uma referência visual',
+    descriptionEn: 'Recreate your photo following a visual reference style',
+    descriptionEs: 'Recrea tu foto siguiendo el estilo de una referencia visual',
+    icon: 'Palette',
+    color: '#7C3AED',
+    credits: 5,
     nodes: [
       { id: 'n1', type: 'reference_upload', x: 60, y: 60, data: {} },
       { id: 'n2', type: 'image_upload', x: 60, y: 300, data: {} },
@@ -219,9 +270,61 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
       { id: 'c6', fromNode: 'n5', fromPort: 'output', toNode: 'n6', toPort: 'input' },
     ],
   },
+  'creative-banner': {
+    id: 'creative-banner',
+    name: 'Banner Criativo',
+    nameEn: 'Creative Banner',
+    nameEs: 'Banner Creativo',
+    description: 'Seu produto real + fundo profissional + texto pronto para postar',
+    descriptionEn: 'Your real product + professional background + text ready to post',
+    descriptionEs: 'Tu producto real + fondo profesional + texto listo para publicar',
+    icon: 'LayoutTemplate',
+    color: '#ff713d',
+    credits: 8,
+    nodes: [
+      { id: 'ref', type: 'reference_upload', x: 60, y: 60, data: {} },
+      { id: 'sub', type: 'image_upload', x: 60, y: 320, data: {} },
+      { id: 'txt', type: 'text_input', x: 60, y: 560, data: {
+        text: '',
+        fields: { headline: '', price: '', cta: '', contact: '' },
+      }},
+      { id: 'analyze', type: 'reference_analyzer', x: 420, y: 60, data: {} },
+      { id: 'bgrem', type: 'bg_removal', x: 420, y: 320, data: {} },
+      { id: 'bggen', type: 'background_gen', x: 750, y: 60, data: {
+        width: 1080, height: 1080,
+        instruction: 'Generate ONLY the background/scene. NO product, NO people, NO text.',
+      }},
+      { id: 'compose', type: 'compositor', x: 750, y: 320, data: {
+        subjectScale: 0.65, subjectPosition: 'center',
+        shadowEnabled: true, shadowBlur: 20, shadowOpacity: 0.3,
+      }},
+      { id: 'overlay', type: 'text_overlay', x: 1050, y: 180, data: { template: 'auto' } },
+      { id: 'export', type: 'export', x: 1350, y: 180, data: { format: 'png' } },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'ref', fromPort: 'output', toNode: 'analyze', toPort: 'input' },
+      { id: 'c2', fromNode: 'sub', fromPort: 'output', toNode: 'analyze', toPort: 'input' },
+      { id: 'c3', fromNode: 'sub', fromPort: 'output', toNode: 'bgrem', toPort: 'input' },
+      { id: 'c4', fromNode: 'analyze', fromPort: 'output', toNode: 'bggen', toPort: 'input' },
+      { id: 'c5', fromNode: 'bgrem', fromPort: 'output', toNode: 'compose', toPort: 'input' },
+      { id: 'c6', fromNode: 'bggen', fromPort: 'output', toNode: 'compose', toPort: 'input' },
+      { id: 'c7', fromNode: 'compose', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      { id: 'c8', fromNode: 'txt', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      { id: 'c9', fromNode: 'analyze', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      { id: 'c10', fromNode: 'overlay', fromPort: 'output', toNode: 'export', toPort: 'input' },
+    ],
+  },
   'simple-gen': {
-    name: 'Simple Generation',
-    description: 'Fluxo básico: brand + imagem + prompt → geração.',
+    id: 'simple-gen',
+    name: 'Geração Simples',
+    nameEn: 'Simple Generation',
+    nameEs: 'Generación Simple',
+    description: 'Fluxo básico: brand + imagem + prompt → geração',
+    descriptionEn: 'Basic flow: brand + image + prompt → generation',
+    descriptionEs: 'Flujo básico: marca + imagen + prompt → generación',
+    icon: 'Sparkles',
+    color: '#8b5cf6',
+    credits: 3,
     nodes: [
       { id: 'n1', type: 'brand_input', x: 60, y: 40, data: {} },
       { id: 'n2', type: 'image_upload', x: 60, y: 280, data: {} },
@@ -238,6 +341,6 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
   },
 };
 
-// Default flow loaded on first open
-export const DEFAULT_NODES: StudioNode[] = PRESET_FLOWS['asset-generator'].nodes;
-export const DEFAULT_CONNECTIONS: Connection[] = PRESET_FLOWS['asset-generator'].connections;
+// Default: no flow loaded (show selector)
+export const DEFAULT_NODES: StudioNode[] = [];
+export const DEFAULT_CONNECTIONS: Connection[] = [];

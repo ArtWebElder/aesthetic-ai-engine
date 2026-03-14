@@ -3,6 +3,7 @@ import {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, Play, CheckCircle,
   Loader2, ScanEye, FileText, AlertCircle, Trash2,
+  Image, Layers, LayoutTemplate,
 } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, NodeTypeId, StudioNode as StudioNodeType } from './types';
 import { useI18n } from '@/i18n';
@@ -11,6 +12,7 @@ import { StudioSelect } from './StudioSelect';
 const ICON_MAP: Record<string, React.ElementType> = {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, ScanEye, FileText,
+  Image, Layers, LayoutTemplate,
 };
 
 /** Trigger browser download — handles both base64 data URIs and remote URLs */
@@ -46,6 +48,7 @@ async function triggerDownload(src: string, format: string) {
 const RUN_NODES: NodeTypeId[] = [
   'prompt_builder', 'scene_gen', 'image_gen',
   'reference_analyzer', 'bg_removal', 'export',
+  'background_gen', 'compositor', 'text_overlay',
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -290,7 +293,45 @@ function NodeContent({
     case 'reference_upload':
       return <ImageUploadZone node={node} onDataChange={onDataChange} label="Clique para subir referência" />;
 
-    case 'text_input':
+    case 'text_input': {
+      const hasFields = node.data.fields !== undefined;
+      if (hasFields) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fields = node.data.fields as any;
+        // Banner mode — multiple text fields stored as individual data keys
+        return (
+          <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <input
+              style={{ ...inputStyle, fontSize: 13, fontWeight: 600 }}
+              placeholder={t('studio.node.field_headline')}
+              value={fields?.headline ?? ''}
+              onChange={e => onDataChange(node.id, 'field_headline', e.target.value)}
+              onMouseDown={e => e.stopPropagation()}
+            />
+            <input
+              style={inputStyle}
+              placeholder={t('studio.node.field_price')}
+              value={fields?.price ?? ''}
+              onChange={e => onDataChange(node.id, 'field_price', e.target.value)}
+              onMouseDown={e => e.stopPropagation()}
+            />
+            <input
+              style={inputStyle}
+              placeholder={t('studio.node.field_cta')}
+              value={fields?.cta ?? ''}
+              onChange={e => onDataChange(node.id, 'field_cta', e.target.value)}
+              onMouseDown={e => e.stopPropagation()}
+            />
+            <input
+              style={inputStyle}
+              placeholder={t('studio.node.field_contact')}
+              value={fields?.contact ?? ''}
+              onChange={e => onDataChange(node.id, 'field_contact', e.target.value)}
+              onMouseDown={e => e.stopPropagation()}
+            />
+          </div>
+        );
+      }
       return (
         <div style={{ padding: '6px 10px' }}>
           <textarea
@@ -303,6 +344,7 @@ function NodeContent({
           />
         </div>
       );
+    }
 
     case 'reference_analyzer':
       return (
@@ -413,6 +455,112 @@ function NodeContent({
           />
         </div>
       );
+
+    case 'background_gen': {
+      const bgPreview = output?.image || output?.backgroundImage;
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{
+            background: 'hsl(var(--muted))', borderRadius: 6,
+            fontSize: 10, color: 'hsl(var(--muted-foreground))',
+            minHeight: 80, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', overflow: 'hidden',
+          }}>
+            {bgPreview && typeof bgPreview === 'string' ? (
+              <img src={bgPreview} alt="background" style={{ width: '100%', height: 80, objectFit: 'cover' }} />
+            ) : (
+              t('studio.node.bg_placeholder')
+            )}
+          </div>
+          <StudioSelect
+            defaultValue="1080x1080"
+            options={[
+              { value: '1080x1080', label: '1080×1080' },
+              { value: '1080x1920', label: '1080×1920' },
+              { value: '1920x1080', label: '1920×1080' },
+            ]}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          {runBtn}
+        </div>
+      );
+    }
+
+    case 'compositor': {
+      const composedPreview = output?.image;
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{
+            background: 'hsl(var(--muted))', borderRadius: 6,
+            fontSize: 10, color: 'hsl(var(--muted-foreground))',
+            minHeight: 80, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', overflow: 'hidden',
+          }}>
+            {composedPreview && typeof composedPreview === 'string' ? (
+              <img src={composedPreview} alt="composed" style={{ width: '100%', height: 80, objectFit: 'cover' }} />
+            ) : (
+              t('studio.node.compose_placeholder')
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onMouseDown={e => e.stopPropagation()}>
+            <span style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', whiteSpace: 'nowrap' }}>
+              {t('studio.node.scale')}
+            </span>
+            <input
+              type="range" min="30" max="100" step="5"
+              value={Math.round(((node.data.subjectScale as number) || 0.65) * 100)}
+              onChange={e => onDataChange(node.id, 'subjectScale', String(Number(e.target.value) / 100))}
+              style={{ flex: 1, accentColor: '#F59E0B' }}
+            />
+            <span style={{ fontSize: 10, fontWeight: 600, color: 'hsl(var(--foreground))', minWidth: 28 }}>
+              {Math.round(((node.data.subjectScale as number) || 0.65) * 100)}%
+            </span>
+          </div>
+          <StudioSelect
+            defaultValue="center"
+            options={[
+              { value: 'center', label: 'Center' },
+              { value: 'bottom-center', label: 'Bottom' },
+              { value: 'left', label: 'Left' },
+              { value: 'right', label: 'Right' },
+            ]}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          {runBtn}
+        </div>
+      );
+    }
+
+    case 'text_overlay': {
+      const overlayPreview = output?.image;
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{
+            background: 'hsl(var(--muted))', borderRadius: 6,
+            fontSize: 10, color: 'hsl(var(--muted-foreground))',
+            minHeight: 80, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', overflow: 'hidden',
+          }}>
+            {overlayPreview && typeof overlayPreview === 'string' ? (
+              <img src={overlayPreview} alt="overlay" style={{ width: '100%', height: 80, objectFit: 'cover' }} />
+            ) : (
+              t('studio.node.overlay_placeholder')
+            )}
+          </div>
+          <StudioSelect
+            defaultValue="auto"
+            options={[
+              { value: 'auto', label: 'Auto' },
+              { value: 'top', label: 'Top' },
+              { value: 'bottom', label: 'Bottom' },
+              { value: 'center', label: 'Center' },
+            ]}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          {runBtn}
+        </div>
+      );
+    }
 
     case 'export':
       return (

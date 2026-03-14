@@ -112,7 +112,15 @@ export async function executeNode(
     }
 
     case 'text_input': {
-      return { text: (node.data.text as string) || '' };
+      // If the node has fields (banner mode), return structured object
+      if (node.data.fields && typeof node.data.fields === 'object') {
+        return {
+          text: (node.data.text as string) || '',
+          fields: node.data.fields,
+          type: 'text',
+        };
+      }
+      return { text: (node.data.text as string) || '', type: 'text' };
     }
 
     case 'brand_input': {
@@ -315,7 +323,227 @@ export async function executeNode(
         '@/features/editor/engine/bgRemoval'
       );
       const result = await removeSubjectBackground(image);
-      return { image: result, type: 'subject' };
+      return { image: result, type: 'subject_cutout' };
+    }
+
+    case 'background_gen': {
+      const prompt = (inputs.prompt as string) || '';
+      const instruction = (node.data.instruction as string) || '';
+      const productPosition = inputs.analysis?.layout?.productPosition || 'center';
+
+      const bgPrompt = `${prompt}\n\nCRITICAL INSTRUCTIONS: ${instruction}\n- Generate ONLY the background scene/environment\n- DO NOT include any product, person, food item or main subject\n- DO NOT include any text, typography, logos or watermarks\n- Leave clear space where the product would be placed (${productPosition})\n- The background should complement a product that will be composited on top\n- Ultra high quality, 8K detail, professional photography lighting`;
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      if (!supabaseUrl || !supabaseKey) throw new Error('Supabase não configurado');
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          prompt: bgPrompt,
+          negativePrompt: 'product, person, people, food, text, typography, watermark, logo, letters, words, main subject',
+          width: (node.data.width as number) || 1080,
+          height: (node.data.height as number) || 1080,
+          strictIdentity: false,
+          styleStrength: 60,
+          module: 'sys-img-background',
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        throw new Error(`Falha ao gerar fundo (${response.status}): ${err.slice(0, 200)}`);
+      }
+
+      const result = await response.json();
+      let bgImage: string;
+      if (result.signedUrl) {
+        const imgResp = await fetch(result.signedUrl);
+        const blob = await imgResp.blob();
+        bgImage = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } else if (result.imageBase64) {
+        bgImage = result.imageBase64.startsWith('data:')
+          ? result.imageBase64
+          : `data:image/png;base64,${result.imageBase64}`;
+      } else {
+        throw new Error('Resposta sem imagem do backend');
+      }
+
+      return {
+        backgroundImage: bgImage,
+        image: bgImage,
+        type: 'background',
+        analysis: inputs.analysis,
+      };
+    }
+
+    case 'compositor': {
+      const subjectData = findUpstreamByType(inputs, 'subject_cutout');
+      const bgData = findUpstreamByType(inputs, 'background');
+      const subjectImg: string | undefined = subjectData?.image;
+      const bgImg: string | undefined = bgData?.backgroundImage || bgData?.image;
+
+      if (!subjectImg) throw new Error('Subject recortado não conectado');
+      if (!bgImg) throw new Error('Fundo gerado não conectado');
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const width = (node.data.width as number) || 1080;
+      const height = (node.data.height as number) || 1080;
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw background
+      const bgImage = new Image();
+      bgImage.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        bgImage.onload = () => resolve();
+        bgImage.onerror = () => reject(new Error('Failed to load background'));
+        bgImage.src = bgImg;
+      });
+      ctx.drawImage(bgImage, 0, 0, width, height);
+
+      // Shadow
+      if (node.data.shadowEnabled) {
+        ctx.shadowColor = `rgba(0,0,0,${(node.data.shadowOpacity as number) || 0.3})`;
+        ctx.shadowBlur = (node.data.shadowBlur as number) || 20;
+        ctx.shadowOffsetY = 8;
+      }
+
+      // Draw subject
+      const subImg = new Image();
+      subImg.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        subImg.onload = () => resolve();
+        subImg.onerror = () => reject(new Error('Failed to load subject'));
+        subImg.src = subjectImg;
+      });
+
+      const scale = (node.data.subjectScale as number) || 0.65;
+      const subW = width * scale;
+      const subH = (subImg.height / subImg.width) * subW;
+      const position = (node.data.subjectPosition as string) || 'center';
+
+      let x = (width - subW) / 2;
+      let y = (height - subH) / 2;
+      if (position === 'left') { x = width * 0.05; y = height - subH - height * 0.05; }
+      if (position === 'right') { x = width - subW - width * 0.05; y = height - subH - height * 0.05; }
+      if (position === 'bottom-center') { x = (width - subW) / 2; y = height - subH; }
+
+      ctx.drawImage(subImg, x, y, subW, subH);
+      ctx.shadowColor = 'transparent';
+
+      return {
+        image: canvas.toDataURL('image/png'),
+        type: 'composed',
+        width,
+        height,
+      };
+    }
+
+    case 'text_overlay': {
+      const composedData = findUpstreamByType(inputs, 'composed');
+      const composedImg: string | undefined = composedData?.image || inputs.image;
+      const texts = inputs.fields || inputs.text || {};
+      const analysis = inputs.analysis;
+
+      if (!composedImg) throw new Error('Imagem composta não conectada');
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const width = composedData?.width || 1080;
+      const height = composedData?.height || 1080;
+      canvas.width = width;
+      canvas.height = height;
+
+      // Draw base image
+      const baseImg = new Image();
+      baseImg.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        baseImg.onload = () => resolve();
+        baseImg.onerror = () => reject(new Error('Failed to load composed image'));
+        baseImg.src = composedImg;
+      });
+      ctx.drawImage(baseImg, 0, 0, width, height);
+
+      const headlineColor = analysis?.typography?.headlineColor || '#FFFFFF';
+      const textPos = analysis?.layout?.textPosition || 'bottom';
+
+      // Headline
+      const headline = typeof texts === 'string' ? texts : (texts.headline || '');
+      if (headline) {
+        ctx.save();
+        ctx.font = 'bold 64px "Instrument Sans", "Inter", Arial, sans-serif';
+        ctx.fillStyle = headlineColor;
+        ctx.textAlign = 'center';
+        ctx.shadowColor = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur = 12;
+        ctx.shadowOffsetY = 4;
+
+        const yPos = textPos === 'top' ? 100 : textPos === 'bottom' ? height - 180 : height / 2;
+        const words = headline.split(' ');
+        let line = '';
+        let lineY = yPos;
+        const maxWidth = width * 0.85;
+
+        for (const word of words) {
+          const test = line + word + ' ';
+          if (ctx.measureText(test).width > maxWidth && line) {
+            ctx.fillText(line.trim(), width / 2, lineY);
+            line = word + ' ';
+            lineY += 72;
+          } else {
+            line = test;
+          }
+        }
+        ctx.fillText(line.trim(), width / 2, lineY);
+        ctx.restore();
+      }
+
+      // Price badge
+      const price = typeof texts === 'object' ? texts.price : '';
+      if (price) {
+        ctx.save();
+        const badgeY = height - 80;
+        const badgeX = width / 2;
+        ctx.font = 'bold 28px "Instrument Sans", Arial, sans-serif';
+        const bw = ctx.measureText(price).width + 40;
+
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath();
+        ctx.roundRect(badgeX - bw / 2, badgeY - 20, bw, 44, 10);
+        ctx.fill();
+
+        ctx.fillStyle = 'rgba(255,255,255,0.9)';
+        ctx.textAlign = 'center';
+        ctx.fillText(price, badgeX, badgeY + 10);
+        ctx.restore();
+      }
+
+      // CTA
+      const cta = typeof texts === 'object' ? texts.cta : '';
+      if (cta) {
+        ctx.save();
+        ctx.font = '600 18px "Instrument Sans", Arial, sans-serif';
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.textAlign = 'center';
+        ctx.fillText(cta, width / 2, height - 30);
+        ctx.restore();
+      }
+
+      return {
+        image: canvas.toDataURL('image/png'),
+        type: 'final',
+      };
     }
 
     case 'export': {
@@ -398,7 +626,7 @@ export function prePopulateInputOutputs(
  * Node types that are critical — if they fail, the flow must stop.
  * Non-critical nodes (like reference_analyzer) can fail and the flow continues.
  */
-const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen'];
+const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor'];
 
 /**
  * Execute entire flow sequentially in topological order.
