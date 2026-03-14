@@ -312,7 +312,33 @@ export function StudioPage() {
       const parsed = numericKeys.includes(key) && value !== '' ? Number(value) : value;
       return { ...n, data: { ...n.data, [key]: parsed } };
     }));
-  }, []);
+
+    // Invalidate cached outputs for this node + all downstream dependents
+    const toInvalidate = new Set<string>();
+    toInvalidate.add(nodeId);
+    // BFS forward through connections
+    const queue = [nodeId];
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      for (const c of connections) {
+        if (c.fromNode === current && !toInvalidate.has(c.toNode)) {
+          toInvalidate.add(c.toNode);
+          queue.push(c.toNode);
+        }
+      }
+    }
+
+    setNodeOutputs(prev => {
+      const next = { ...prev };
+      for (const id of toInvalidate) delete next[id];
+      return next;
+    });
+    setExecStates(prev => {
+      const next = { ...prev };
+      for (const id of toInvalidate) delete next[id];
+      return next;
+    });
+  }, [connections]);
 
   const handleAddConnection = useCallback((fromNode: string, toNode: string) => {
     // Prevent duplicate connections
