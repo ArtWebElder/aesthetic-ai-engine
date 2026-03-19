@@ -58,6 +58,12 @@ Return ONLY valid JSON (no markdown, no backticks):
     "description": "Complete description of how ALL elements are arranged. Be very specific about positions, sizes, overlaps, effects. This will be used to generate a new image.",
     "sceneElements": ["list all visible elements: ingredients, steam, sauce splash, leaves, etc"],
     "decorativeElements": ["shadows", "reflections", "bokeh", "particles", "glow", etc]
+  },
+  "textPlacement": {
+    "primaryArea": "bottom-center|bottom-left|bottom-right|top-center",
+    "availableHeight": 25-35,
+    "backgroundDarknessInTextArea": "light|medium|dark",
+    "suggestedTextColor": "#hex"
   }
 }
 
@@ -132,7 +138,7 @@ ${texts.contact ? `- Contact: "${texts.contact}"` : ""}`;
 Analyze this reference advertisement image. The second image is the product photo.
 
 JSON schema:
-{"layout":{"productPosition":"center|left|right|top|bottom","productSize":"small|medium|large|full","textPosition":"top|bottom|left|right|overlay-bottom|overlay-top","hasPrice":false,"priceBadgeStyle":""},"style":{"mood":"","lighting":"","colorScheme":["#hex"],"backgroundType":"","backgroundDescription":""},"typography":{"headlineStyle":"","headlineSize":"","headlineColor":"#hex","ctaStyle":""},"composition":{"description":"","sceneElements":[],"decorativeElements":[]}}
+{"layout":{"productPosition":"center|left|right|top|bottom","productSize":"small|medium|large|full","textPosition":"top|bottom|left|right|overlay-bottom|overlay-top","hasPrice":false,"priceBadgeStyle":""},"style":{"mood":"","lighting":"","colorScheme":["#hex"],"backgroundType":"","backgroundDescription":""},"typography":{"headlineStyle":"","headlineSize":"","headlineColor":"#hex","ctaStyle":""},"composition":{"description":"","sceneElements":[],"decorativeElements":[]},"textPlacement":{"primaryArea":"bottom-center","availableHeight":25,"backgroundDarknessInTextArea":"dark","suggestedTextColor":"#FFFFFF"}}
 
 Headline: "${texts.headline}"`,
               },
@@ -214,6 +220,12 @@ function buildFallbackAnalysis(
       description: "Product centered on a clean professional background with soft studio lighting and subtle shadow beneath",
       sceneElements: ["soft shadow", "ambient light"],
       decorativeElements: ["subtle gradient", "vignette"],
+    },
+    textPlacement: {
+      primaryArea: "bottom-center",
+      availableHeight: 30,
+      backgroundDarknessInTextArea: "dark",
+      suggestedTextColor: "#FFFFFF",
     },
   };
 }

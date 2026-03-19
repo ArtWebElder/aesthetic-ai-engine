@@ -196,12 +196,11 @@ export async function executeNode(
     }
 
     case 'image_gen': {
-      const prompt = (inputs.prompt as string) || (node.data.customPrompt as string) || '';
+      let prompt = (inputs.prompt as string) || (node.data.customPrompt as string) || '';
+      const analysis = inputs.analysis
+        || Object.values(inputs).find((v: any) => v?.analysis)?.analysis;
 
-      // Find subject image — check multiple sources:
-      // 1. Direct upstream 'subject' type (from image_upload connected directly)
-      // 2. Passed through from reference_analyzer/prompt_builder via _subImage
-      // 3. Generic image field
+      // Find subject image
       const subData = findUpstreamByType(inputs, 'subject');
       const subject: string | undefined =
         subData?.image ||
@@ -209,28 +208,53 @@ export async function executeNode(
         (inputs.image as string) ||
         undefined;
 
-      // Find reference image for style_image:
-      // 1. Direct upstream 'reference' type
-      // 2. Passed through from reference_analyzer/prompt_builder via _refImage
+      // Find reference image
       const refData = findUpstreamByType(inputs, 'reference');
       const reference: string | undefined =
         refData?.image ||
         (inputs._refImage as string) ||
         undefined;
 
-      // Detailed source logging for debugging
-      const subjectSource = subData?.image ? 'upstream[subject]'
-        : inputs._subImage ? '_subImage passthrough'
-        : inputs.image ? 'inputs.image'
-        : 'NONE';
-      const referenceSource = refData?.image ? 'upstream[reference]'
-        : inputs._refImage ? '_refImage passthrough'
-        : 'NONE';
+      const isSceneMode = node.data.mode === 'scene_with_subject';
 
+      console.log('[Studio:image_gen] Mode:', node.data.mode || 'default');
       console.log('[Studio:image_gen] Prompt length:', prompt.length);
-      console.log('[Studio:image_gen] Subject:', subjectSource, subject ? `(${subject.length} chars, starts: ${subject.slice(0, 40)}...)` : 'MISSING');
-      console.log('[Studio:image_gen] Reference:', referenceSource, reference ? `(${reference.length} chars)` : 'none');
-      console.log('[Studio:image_gen] All upstream types:', ((inputs._allUpstream || []) as Array<Record<string, unknown>>).map(u => u?.type));
+      console.log('[Studio:image_gen] Subject:', subject ? `(${subject.length} chars)` : 'MISSING');
+      console.log('[Studio:image_gen] Reference:', reference ? `(${reference.length} chars)` : 'none');
+      console.log('[Studio:image_gen] Analysis:', analysis ? 'present' : 'none');
+
+      // ── scene_with_subject: build rich prompt from analysis ──
+      if (isSceneMode && analysis) {
+        const style = analysis.style || {};
+        const composition = analysis.composition || {};
+        const layout = analysis.layout || {};
+
+        prompt = `Create a professional advertisement/banner image.
+
+COMPOSITION REFERENCE: ${composition.description || 'Professional product photography'}
+
+STYLE:
+- Mood: ${style.mood || 'professional'}
+- Lighting: ${style.lighting || 'studio'}
+- Background: ${style.backgroundDescription || 'clean professional background'}
+- Color palette: ${(style.colorScheme || ['#1a1a1a', '#333333']).join(', ')}
+
+PRODUCT PLACEMENT:
+- Position the product/subject ${layout.productPosition || 'center'}, ${layout.productSize || 'medium'} size
+- The product in the input image must be the HERO of the composition
+- Maintain the product's EXACT appearance — do not alter its colors, shape, or details
+- Integrate the product naturally into the scene with proper lighting, shadows, and reflections
+
+CRITICAL RULES:
+- DO NOT add ANY text, typography, numbers, letters, or watermarks
+- DO NOT add logos or brand names
+- Leave the bottom 25-30% of the image with a slightly darker/cleaner area for text overlay
+- The image should look like a professional product photography composition
+- Ultra high quality, 8K detail, proper depth of field
+- Natural integration of the product with the background
+
+${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.customPrompt}` : ''}`;
+      }
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
@@ -242,26 +266,23 @@ export async function executeNode(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const payload: Record<string, any> = {
         prompt,
-        negativePrompt: 'text, typography, watermark, logo, words, letters, blurry, low quality',
+        negativePrompt: 'text, typography, watermark, logo, words, letters, numbers, blurry, low quality, distorted, deformed',
         width: (node.data.width as number) || 1080,
         height: (node.data.height as number) || 1080,
         strictIdentity: Boolean(subject),
-        identityStrength: (node.data.identityStrength as number) || 90,
-        styleStrength: reference ? 70 : 45,
-        module: (node.data.module as string) || 'studio',
+        identityStrength: isSceneMode ? 95 : ((node.data.identityStrength as number) || 90),
+        styleStrength: isSceneMode ? 75 : (reference ? 70 : 45),
+        module: isSceneMode ? 'sys-img-banner' : ((node.data.module as string) || 'studio'),
       };
 
-      // Only send subjectBase64 if we have one
       if (subject) {
         payload.subjectBase64 = subject;
       }
-      // Only send styleReferenceBase64 if we have one
       if (reference) {
         payload.styleReferenceBase64 = reference;
       }
 
       console.log('[Studio:image_gen] Payload keys:', Object.keys(payload));
-      console.log('[Studio:image_gen] subjectBase64 in payload:', Boolean(payload.subjectBase64), payload.subjectBase64 ? `(${String(payload.subjectBase64).length} chars)` : '');
 
       const response = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
         method: 'POST',
@@ -280,7 +301,6 @@ export async function executeNode(
       }
 
       const result = await response.json();
-      console.log('[Studio:image_gen] Response keys:', Object.keys(result));
       console.log('[Studio:image_gen] Provider:', result.provider || result.meta?.providerName);
 
       // Handle signedUrl or imageBase64 response
@@ -307,6 +327,7 @@ export async function executeNode(
         generatedImage: imageBase64,
         type: 'generated',
         provider: result.provider || result.meta?.providerName || 'unknown',
+        analysis,
       };
     }
 

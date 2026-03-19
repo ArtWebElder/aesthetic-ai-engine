@@ -121,6 +121,12 @@ export interface ReferenceAnalysis {
     sceneElements: string[];
     decorativeElements: string[];
   };
+  textPlacement?: {
+    primaryArea: string;
+    availableHeight: number;
+    backgroundDarknessInTextArea: string;
+    suggestedTextColor: string;
+  };
 }
 
 // ─── PRESET UNIVERSAL ────────────────────────────────────────────────────────

@@ -13,6 +13,60 @@ interface TextData {
 }
 
 /**
+ * Adapta o template baseado na análise da referência (textPlacement).
+ * Ajusta posição, cor e overlay pra maximizar legibilidade.
+ */
+function adaptTemplate(
+  template: TypographyTemplate,
+  analysis: Record<string, unknown> | null | undefined,
+): TypographyTemplate {
+  const adapted = JSON.parse(JSON.stringify(template)) as TypographyTemplate;
+  const tp = (analysis as any)?.textPlacement;
+
+  if (!tp) return adapted;
+
+  // Adaptar posição baseado na análise
+  if (tp.primaryArea) {
+    const areaMap: Record<string, TypographyTemplate['container']['position']> = {
+      'bottom-center': 'bottom',
+      'bottom-left': 'bottom-left',
+      'bottom-right': 'bottom-right',
+      'top-center': 'top',
+      'center': 'center',
+    };
+    if (areaMap[tp.primaryArea]) {
+      adapted.container.position = areaMap[tp.primaryArea];
+    }
+  }
+
+  // Adaptar cor do texto baseado no fundo
+  if (tp.suggestedTextColor) {
+    adapted.headline.color = tp.suggestedTextColor;
+    adapted.price.color = tp.suggestedTextColor;
+  }
+
+  // Se fundo na área de texto é claro, usar texto escuro
+  if (tp.backgroundDarknessInTextArea === 'light') {
+    adapted.headline.color = '#141417';
+    adapted.price.color = '#141417';
+    adapted.cta.color = '#141417';
+    adapted.contact.color = '#141417';
+    if (adapted.decorations) {
+      adapted.decorations.overlayGradient = undefined;
+    }
+    adapted.container.background = 'linear-gradient(to top, rgba(255,255,255,0.5) 0%, transparent 100%)';
+    adapted.headline.textShadow = '0 1px 8px rgba(255,255,255,0.3)';
+  }
+
+  // Se fundo na área de texto é escuro, reforçar overlay
+  if (tp.backgroundDarknessInTextArea === 'dark') {
+    adapted.container.background = 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)';
+  }
+
+  return adapted;
+}
+
+/**
  * Renderiza overlay de texto sobre uma imagem base usando HTML/CSS.
  * Retorna base64 da imagem final com texto.
  */
@@ -25,9 +79,12 @@ export async function renderTypographyOverlay(
   height: number = 1080,
 ): Promise<string> {
 
-  const template = templateId
+  let template = templateId
     ? TYPOGRAPHY_TEMPLATES.find(t => t.id === templateId) || selectTemplate(analysis)
     : selectTemplate(analysis);
+
+  // Adaptar baseado na análise de textPlacement
+  template = adaptTemplate(template, analysis);
 
   console.log('[Typography] Using template:', template.id, template.name);
 
