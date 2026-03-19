@@ -107,7 +107,7 @@ IMPORTANT — sceneDescription guidelines:
         continue;
       }
 
-      console.log(`[ReferenceAnalyzer] ${model} FULL response:`, text);
+      console.log(`[ReferenceAnalyzer] === FULL RAW RESPONSE ===`, text);
 
       const parsed = extractJSON(text);
       if (parsed) {
@@ -118,7 +118,9 @@ IMPORTANT — sceneDescription guidelines:
           console.warn(`[ReferenceAnalyzer] ${model} sceneDescription too short (${descLen} chars) — trying next model...`);
           continue;
         }
-        return normalizeAnalysis(parsed, texts);
+        const result = normalizeAnalysis(parsed, texts);
+        console.log(`[ReferenceAnalyzer] sceneDescription:`, result.sceneDescription);
+        return result;
       }
 
       console.warn(`[ReferenceAnalyzer] ${model} JSON parse failed — trying next model...`);

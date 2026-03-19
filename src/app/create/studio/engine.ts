@@ -255,6 +255,8 @@ CRITICAL RULES:
 ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.customPrompt}` : ''}`;
       }
 
+      console.log('[ImageGen] Final prompt being sent:', prompt.slice(0, 500));
+
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
