@@ -96,6 +96,7 @@ export interface SubjectProfile {
 // ─── REFERENCE ANALYSIS (Gemini 2.5 Pro) ──────────────────────────────────────
 
 export interface ReferenceAnalysis {
+  sceneDescription?: string;
   layout: {
     productPosition: string;
     productSize: string;

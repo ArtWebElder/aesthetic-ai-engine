@@ -226,18 +226,18 @@ export async function executeNode(
       // ── scene_with_subject: build rich prompt from analysis ──
       if (isSceneMode && analysis) {
         const style = analysis.style || {};
-        const composition = analysis.composition || {};
         const layout = analysis.layout || {};
+        // Use sceneDescription (verbal, rich) as the core — much better than JSON fields
+        const scene = analysis.sceneDescription || analysis.composition?.description || '';
 
         prompt = `Create a professional advertisement/banner image.
 
-COMPOSITION REFERENCE: ${composition.description || 'Professional product photography'}
+SCENE (recreate this exact style and atmosphere):
+${scene}
 
-STYLE:
-- Mood: ${style.mood || 'professional'}
-- Lighting: ${style.lighting || 'studio'}
-- Background: ${style.backgroundDescription || 'clean professional background'}
-- Color palette: ${(style.colorScheme || ['#1a1a1a', '#333333']).join(', ')}
+${style.backgroundDescription ? `BACKGROUND: ${style.backgroundDescription}` : ''}
+MOOD: ${style.mood || 'professional'}
+COLOR PALETTE: ${(style.colorScheme || ['#1a1a1a', '#333333']).join(', ')}
 
 PRODUCT PLACEMENT:
 - Position the product/subject ${layout.productPosition || 'center'}, ${layout.productSize || 'medium'} size
@@ -249,7 +249,6 @@ CRITICAL RULES:
 - DO NOT add ANY text, typography, numbers, letters, or watermarks
 - DO NOT add logos or brand names
 - Leave the bottom 25-30% of the image with a slightly darker/cleaner area for text overlay
-- The image should look like a professional product photography composition
 - Ultra high quality, 8K detail, proper depth of field
 - Natural integration of the product with the background
 
