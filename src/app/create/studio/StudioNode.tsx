@@ -547,16 +547,23 @@ function NodeContent({
               t('studio.node.overlay_placeholder')
             )}
           </div>
-          <StudioSelect
-            defaultValue="auto"
-            options={[
-              { value: 'auto', label: 'Auto' },
-              { value: 'top', label: 'Top' },
-              { value: 'bottom', label: 'Bottom' },
-              { value: 'center', label: 'Center' },
-            ]}
-            onMouseDown={e => e.stopPropagation()}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <label style={{ fontSize: 11, color: '#8e8e96' }}>Template</label>
+            <StudioSelect
+              defaultValue={(node.data.templateId as string) || 'auto'}
+              options={[
+                { value: 'auto', label: 'Auto' },
+                { value: 'luxury-minimal', label: 'Luxury Minimal' },
+                { value: 'bold-impact', label: 'Bold Impact' },
+                { value: 'neon-glow', label: 'Neon Glow' },
+                { value: 'glass-card', label: 'Glass Card' },
+                { value: 'food-vibrant', label: 'Food Vibrant' },
+                { value: 'editorial-split', label: 'Editorial Split' },
+              ]}
+              onChange={v => onDataChange(node.id, 'templateId', v === 'auto' ? '' : v)}
+              onMouseDown={e => e.stopPropagation()}
+            />
+          </div>
           {runBtn}
         </div>
       );

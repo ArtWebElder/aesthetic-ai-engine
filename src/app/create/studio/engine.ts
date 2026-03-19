@@ -458,97 +458,38 @@ export async function executeNode(
 
     case 'text_overlay': {
       const composedData = findUpstreamByType(inputs, 'composed');
-      const composedImg: string | undefined = composedData?.image || inputs.image;
+      const composedImg: string | undefined = composedData?.image || inputs.image
+        || Object.values(inputs).find((v: any) => v?.type === 'generated')?.image;
       const texts = inputs.fields || inputs.text || {};
-      const analysis = inputs.analysis;
+      const analysis = inputs.analysis
+        || Object.values(inputs).find((v: any) => v?.analysis)?.analysis;
 
-      if (!composedImg) throw new Error('Imagem composta não conectada');
+      if (!composedImg) throw new Error('Imagem não conectada ao overlay de texto');
 
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d')!;
-      const width = composedData?.width || 1080;
-      const height = composedData?.height || 1080;
-      canvas.width = width;
-      canvas.height = height;
+      const { renderTypographyOverlay } = await import('@/services/typographyRenderer');
 
-      // Draw base image
-      const baseImg = new Image();
-      baseImg.crossOrigin = 'anonymous';
-      await new Promise<void>((resolve, reject) => {
-        baseImg.onload = () => resolve();
-        baseImg.onerror = () => reject(new Error('Failed to load composed image'));
-        baseImg.src = composedImg;
-      });
-      ctx.drawImage(baseImg, 0, 0, width, height);
+      const templateId = (node.data.templateId as string) || undefined;
+      const w = (node.data.width as number) || composedData?.width || 1080;
+      const h = (node.data.height as number) || composedData?.height || 1080;
 
-      const headlineColor = analysis?.typography?.headlineColor || '#FFFFFF';
-      const textPos = analysis?.layout?.textPosition || 'bottom';
-
-      // Headline
-      const headline = typeof texts === 'string' ? texts : (texts.headline || '');
-      if (headline) {
-        ctx.save();
-        ctx.font = 'bold 64px "Instrument Sans", "Inter", Arial, sans-serif';
-        ctx.fillStyle = headlineColor;
-        ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 12;
-        ctx.shadowOffsetY = 4;
-
-        const yPos = textPos === 'top' ? 100 : textPos === 'bottom' ? height - 180 : height / 2;
-        const words = headline.split(' ');
-        let line = '';
-        let lineY = yPos;
-        const maxWidth = width * 0.85;
-
-        for (const word of words) {
-          const test = line + word + ' ';
-          if (ctx.measureText(test).width > maxWidth && line) {
-            ctx.fillText(line.trim(), width / 2, lineY);
-            line = word + ' ';
-            lineY += 72;
-          } else {
-            line = test;
-          }
-        }
-        ctx.fillText(line.trim(), width / 2, lineY);
-        ctx.restore();
-      }
-
-      // Price badge
-      const price = typeof texts === 'object' ? texts.price : '';
-      if (price) {
-        ctx.save();
-        const badgeY = height - 80;
-        const badgeX = width / 2;
-        ctx.font = 'bold 28px "Instrument Sans", Arial, sans-serif';
-        const bw = ctx.measureText(price).width + 40;
-
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        ctx.beginPath();
-        ctx.roundRect(badgeX - bw / 2, badgeY - 20, bw, 44, 10);
-        ctx.fill();
-
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.textAlign = 'center';
-        ctx.fillText(price, badgeX, badgeY + 10);
-        ctx.restore();
-      }
-
-      // CTA
-      const cta = typeof texts === 'object' ? texts.cta : '';
-      if (cta) {
-        ctx.save();
-        ctx.font = '600 18px "Instrument Sans", Arial, sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.textAlign = 'center';
-        ctx.fillText(cta, width / 2, height - 30);
-        ctx.restore();
-      }
+      const result = await renderTypographyOverlay(
+        composedImg,
+        {
+          headline: typeof texts === 'string' ? texts : (texts.headline || ''),
+          price: typeof texts === 'object' ? texts.price : '',
+          cta: typeof texts === 'object' ? texts.cta : '',
+          contact: typeof texts === 'object' ? texts.contact : '',
+        },
+        analysis,
+        templateId,
+        w,
+        h,
+      );
 
       return {
-        image: canvas.toDataURL('image/png'),
+        image: result,
         type: 'final',
+        templateUsed: templateId || 'auto',
       };
     }
 
