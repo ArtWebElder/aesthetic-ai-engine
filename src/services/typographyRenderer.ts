@@ -134,6 +134,254 @@ export async function renderTypographyOverlay(
   }
 }
 
+// ── Composition AI mode ─────────────────────────────────────────────────────
+
+interface CopyData {
+  headline: string;
+  subheadline?: string;
+  priceFormatted: string;
+  priceBadgeText?: string;
+  cta: string;
+  tagline?: string;
+}
+
+interface CompositionLayout {
+  textBlockPosition: string;
+  textBlockX: number;
+  textBlockY: number;
+  textBlockMaxWidth: number;
+  textAlign: string;
+  verticalAlign?: string;
+}
+
+interface CompositionTextStyle {
+  fontSize: number;
+  fontWeight: number;
+  fontFamily?: string;
+  color: string;
+  letterSpacing?: number;
+  textTransform?: string;
+  textShadow?: string;
+  marginBottom?: number;
+}
+
+interface CompositionPriceStyle extends CompositionTextStyle {
+  backgroundColor?: string;
+  borderRadius?: number;
+  padding?: string;
+  hasBadge?: boolean;
+  badgeStyle?: string;
+}
+
+interface CompositionCtaStyle extends CompositionTextStyle {
+  backgroundColor?: string;
+  borderRadius?: number;
+  padding?: string;
+}
+
+interface CompositionBackdrop {
+  enabled: boolean;
+  type: string;
+  css: string;
+}
+
+interface CompositionData {
+  layout: CompositionLayout;
+  headline: CompositionTextStyle;
+  subheadline?: CompositionTextStyle;
+  price: CompositionPriceStyle;
+  cta: CompositionCtaStyle;
+  backdrop?: CompositionBackdrop;
+  colorPalette?: Record<string, string>;
+}
+
+/**
+ * Renderiza overlay usando instruções de composição da IA (posições, cores, fontes exatas).
+ * Modo alternativo ao template-based — ativado quando compositionData está disponível.
+ */
+export async function renderCompositionOverlay(
+  baseImage: string,
+  copyData: CopyData,
+  compositionData: CompositionData,
+  width: number = 1080,
+  height: number = 1080,
+): Promise<string> {
+  const layout = compositionData.layout;
+  const hl = compositionData.headline;
+  const sub = compositionData.subheadline;
+  const price = compositionData.price;
+  const cta = compositionData.cta;
+  const backdrop = compositionData.backdrop;
+
+  console.log('[Typography:CompositionAI] Rendering with AI layout at', layout.textBlockX, layout.textBlockY);
+
+  // Load Google Font if specified
+  const fonts = new Set<string>();
+  [hl.fontFamily, sub?.fontFamily, price.fontFamily, cta.fontFamily].forEach(f => {
+    if (f && !f.includes('sans-serif') && !f.includes('serif')) {
+      const fontName = f.split(',')[0].trim().replace(/['"]/g, '');
+      if (fontName) fonts.add(fontName);
+    }
+  });
+
+  // Inject Google Fonts CSS link
+  const fontLinks = Array.from(fonts).map(f => {
+    const encoded = encodeURIComponent(f);
+    return `<link href="https://fonts.googleapis.com/css2?family=${encoded}:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">`;
+  }).join('\n');
+
+  // Build headline HTML
+  const headlineHTML = copyData.headline
+    ? `<div style="
+        font-family:${hl.fontFamily || 'Inter, sans-serif'};
+        font-size:${hl.fontSize}px;
+        font-weight:${hl.fontWeight};
+        color:${hl.color};
+        letter-spacing:${hl.letterSpacing ?? 0}px;
+        text-transform:${hl.textTransform || 'none'};
+        ${hl.textShadow ? `text-shadow:${hl.textShadow};` : ''}
+        margin-bottom:${hl.marginBottom ?? 8}px;
+        line-height:1.15;
+        word-wrap:break-word;
+      ">${copyData.headline}</div>`
+    : '';
+
+  // Build subheadline HTML
+  const subheadlineHTML = copyData.subheadline && sub
+    ? `<div style="
+        font-family:${sub.fontFamily || 'Inter, sans-serif'};
+        font-size:${sub.fontSize}px;
+        font-weight:${sub.fontWeight};
+        color:${sub.color};
+        letter-spacing:${sub.letterSpacing ?? 0}px;
+        text-transform:${sub.textTransform || 'none'};
+        margin-bottom:${sub.marginBottom ?? 8}px;
+        line-height:1.3;
+      ">${copyData.subheadline}</div>`
+    : '';
+
+  // Build price HTML
+  let priceHTML = '';
+  if (copyData.priceFormatted) {
+    const badgeText = copyData.priceBadgeText
+      ? `<span style="font-size:${Math.round(price.fontSize * 0.6)}px; font-weight:400; opacity:0.8; display:block; margin-bottom:4px;">${copyData.priceBadgeText}</span>`
+      : '';
+
+    if (price.hasBadge && price.backgroundColor) {
+      priceHTML = `<div style="
+        display:inline-block;
+        background:${price.backgroundColor};
+        border-radius:${price.borderRadius ?? 8}px;
+        padding:${price.padding || '8px 20px'};
+        margin-bottom:${price.marginBottom ?? 12}px;
+      ">
+        ${badgeText}
+        <span style="
+          font-size:${price.fontSize}px;
+          font-weight:${price.fontWeight};
+          color:${price.color};
+        ">${copyData.priceFormatted}</span>
+      </div>`;
+    } else {
+      priceHTML = `<div style="
+        margin-bottom:${price.marginBottom ?? 12}px;
+      ">
+        ${badgeText}
+        <span style="
+          font-size:${price.fontSize}px;
+          font-weight:${price.fontWeight};
+          color:${price.color};
+        ">${copyData.priceFormatted}</span>
+      </div>`;
+    }
+  }
+
+  // Build CTA HTML
+  const ctaHTML = copyData.cta
+    ? `<div style="
+        display:inline-block;
+        background:${cta.backgroundColor || '#ff713d'};
+        border-radius:${cta.borderRadius ?? 8}px;
+        padding:${cta.padding || '12px 32px'};
+      ">
+        <span style="
+          font-size:${cta.fontSize}px;
+          font-weight:${cta.fontWeight};
+          color:${cta.color};
+          letter-spacing:${cta.letterSpacing ?? 1}px;
+          text-transform:${cta.textTransform || 'uppercase'};
+        ">${copyData.cta}</span>
+      </div>`
+    : '';
+
+  // Build backdrop HTML
+  const backdropHTML = backdrop?.enabled
+    ? `<div style="position:absolute; inset:0; ${backdrop.css ? `background:${backdrop.css};` : ''}"></div>`
+    : '';
+
+  const html = `
+    ${fontLinks}
+    <div style="position:relative; width:${width}px; height:${height}px; overflow:hidden;">
+      <img src="${baseImage}" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover;" crossorigin="anonymous" />
+      ${backdropHTML}
+      <div style="
+        position:absolute;
+        left:${layout.textBlockX}px;
+        top:${layout.textBlockY}px;
+        max-width:${layout.textBlockMaxWidth}px;
+        text-align:${layout.textAlign || 'left'};
+        z-index:10;
+      ">
+        ${headlineHTML}
+        ${subheadlineHTML}
+        ${priceHTML}
+        ${ctaHTML}
+      </div>
+    </div>
+  `;
+
+  // Render using html2canvas (same approach as template mode)
+  const container = document.createElement('div');
+  container.style.cssText = `
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+    width: ${width}px;
+    height: ${height}px;
+    overflow: hidden;
+  `;
+  document.body.appendChild(container);
+  container.innerHTML = html;
+
+  // Wait for images to load
+  const images = container.querySelectorAll('img');
+  await Promise.all(
+    Array.from(images).map(img =>
+      img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; })
+    )
+  );
+
+  // Wait for fonts
+  await document.fonts.ready;
+  await new Promise(res => setTimeout(res, 150));
+
+  try {
+    const canvas = await html2canvas(container, {
+      width,
+      height,
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false,
+    });
+
+    return canvas.toDataURL('image/png');
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
 function buildOverlayHTML(
   baseImage: string,
   texts: TextData,

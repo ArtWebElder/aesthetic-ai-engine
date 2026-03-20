@@ -15,6 +15,8 @@ export type NodeTypeId =
   | 'background_gen'
   | 'compositor'
   | 'text_overlay'
+  | 'copy_ai'
+  | 'composition_ai'
   | 'export';
 
 export interface NodeTypeDef {
@@ -53,9 +55,9 @@ export type PanelTab = 'nodes' | 'assets' | 'templates' | 'learn';
 // Column assignment for Auto Layout
 export const AUTO_LAYOUT_COLUMNS: Record<number, NodeTypeId[]> = {
   0: ['brand_input', 'image_upload', 'reference_upload', 'text_input'],
-  1: ['bg_removal', 'color_grade', 'prompt_builder', 'reference_analyzer'],
+  1: ['bg_removal', 'color_grade', 'prompt_builder', 'reference_analyzer', 'copy_ai'],
   2: ['scene_gen', 'image_gen', 'background_gen'],
-  3: ['compositor', 'text_overlay', 'typography', 'export'],
+  3: ['compositor', 'text_overlay', 'typography', 'composition_ai', 'export'],
 };
 
 export const AUTO_LAYOUT_COL_X = [80, 460, 840, 1220];
@@ -73,6 +75,8 @@ export const NODE_RUN_TIMEOUT: Partial<Record<NodeTypeId, number>> = {
   bg_removal: 5000,
   color_grade: 800,
   typography: 800,
+  copy_ai: 8000,
+  composition_ai: 10000,
   export: 800,
 };
 
@@ -213,6 +217,28 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     defaultWidth: 300,
     defaultHeight: 200,
   },
+  copy_ai: {
+    id: 'copy_ai',
+    label: 'Copy IA',
+    icon: 'FileText',
+    color: '#F59E0B',
+    aiProvider: 'Gemini',
+    category: 'ai',
+    defaultWidth: 300,
+    defaultHeight: 220,
+    creditCost: 2,
+  },
+  composition_ai: {
+    id: 'composition_ai',
+    label: 'Composição IA',
+    icon: 'LayoutTemplate',
+    color: '#8B5CF6',
+    aiProvider: 'Gemini',
+    category: 'ai',
+    defaultWidth: 320,
+    defaultHeight: 220,
+    creditCost: 2,
+  },
   export: {
     id: 'export',
     label: 'Export',
@@ -275,12 +301,12 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     name: 'Banner Criativo',
     nameEn: 'Creative Banner',
     nameEs: 'Banner Creativo',
-    description: 'Seu produto real + fundo profissional + texto pronto para postar',
-    descriptionEn: 'Your real product + professional background + text ready to post',
-    descriptionEs: 'Tu producto real + fondo profesional + texto listo para publicar',
+    description: 'Seu produto real + fundo profissional + copy e composição IA',
+    descriptionEn: 'Your real product + professional background + AI copy & composition',
+    descriptionEs: 'Tu producto real + fondo profesional + copy y composición IA',
     icon: 'LayoutTemplate',
     color: '#ff713d',
-    credits: 8,
+    credits: 12,
     nodes: [
       { id: 'ref', type: 'reference_upload', x: 60, y: 60, data: { label: 'Referência do Banner' } },
       { id: 'sub', type: 'image_upload', x: 60, y: 300, data: { label: 'Foto do Produto' } },
@@ -289,23 +315,37 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
         fields: { headline: '', price: '', cta: '', contact: '' },
       }},
       { id: 'analyze', type: 'reference_analyzer', x: 420, y: 60, data: {} },
-      { id: 'generate', type: 'image_gen', x: 420, y: 300, data: {
+      { id: 'copy', type: 'copy_ai', x: 420, y: 520, data: {} },
+      { id: 'generate', type: 'image_gen', x: 780, y: 180, data: {
         width: 1080, height: 1080,
         mode: 'scene_with_subject',
       }},
-      { id: 'overlay', type: 'text_overlay', x: 780, y: 180, data: { templateId: '' } },
-      { id: 'export', type: 'export', x: 1080, y: 180, data: { format: 'png' } },
+      { id: 'compose', type: 'composition_ai', x: 1140, y: 180, data: {} },
+      { id: 'overlay', type: 'text_overlay', x: 1500, y: 180, data: { templateId: '' } },
+      { id: 'export', type: 'export', x: 1820, y: 180, data: { format: 'png' } },
     ],
     connections: [
+      // Reference → Analyze
       { id: 'c1', fromNode: 'ref', fromPort: 'output', toNode: 'analyze', toPort: 'input' },
       { id: 'c2', fromNode: 'sub', fromPort: 'output', toNode: 'analyze', toPort: 'input' },
-      { id: 'c3', fromNode: 'sub', fromPort: 'output', toNode: 'generate', toPort: 'input' },
-      { id: 'c4', fromNode: 'ref', fromPort: 'output', toNode: 'generate', toPort: 'input' },
-      { id: 'c5', fromNode: 'analyze', fromPort: 'output', toNode: 'generate', toPort: 'input' },
-      { id: 'c6', fromNode: 'generate', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
-      { id: 'c7', fromNode: 'txt', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
-      { id: 'c8', fromNode: 'analyze', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
-      { id: 'c9', fromNode: 'overlay', fromPort: 'output', toNode: 'export', toPort: 'input' },
+      // Analyze → Copy IA (referenceAnalysis)
+      { id: 'c3', fromNode: 'analyze', fromPort: 'output', toNode: 'copy', toPort: 'input' },
+      // Text input → Copy IA (product info)
+      { id: 'c4', fromNode: 'txt', fromPort: 'output', toNode: 'copy', toPort: 'input' },
+      // Subject + Reference + Analyze → Image Gen
+      { id: 'c5', fromNode: 'sub', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c6', fromNode: 'ref', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c7', fromNode: 'analyze', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      // Image Gen + Copy IA + Analyze → Composition IA
+      { id: 'c8', fromNode: 'generate', fromPort: 'output', toNode: 'compose', toPort: 'input' },
+      { id: 'c9', fromNode: 'copy', fromPort: 'output', toNode: 'compose', toPort: 'input' },
+      { id: 'c10', fromNode: 'analyze', fromPort: 'output', toNode: 'compose', toPort: 'input' },
+      // Composition IA + Image Gen + Copy IA → Text Overlay
+      { id: 'c11', fromNode: 'compose', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      { id: 'c12', fromNode: 'generate', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      { id: 'c13', fromNode: 'copy', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      // Text Overlay → Export
+      { id: 'c14', fromNode: 'overlay', fromPort: 'output', toNode: 'export', toPort: 'input' },
     ],
   },
   'simple-gen': {

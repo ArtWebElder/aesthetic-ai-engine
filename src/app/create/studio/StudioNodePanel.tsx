@@ -31,7 +31,7 @@ const NODE_GROUPS: NodeCategoryGroup[] = [
   },
   {
     labelKey: 'studio.panel.use_ai',
-    items: ['reference_analyzer', 'scene_gen', 'image_gen', 'background_gen'],
+    items: ['reference_analyzer', 'scene_gen', 'image_gen', 'background_gen', 'copy_ai', 'composition_ai'],
   },
   {
     labelKey: 'studio.panel.processing',

@@ -49,6 +49,7 @@ const RUN_NODES: NodeTypeId[] = [
   'prompt_builder', 'scene_gen', 'image_gen',
   'reference_analyzer', 'bg_removal', 'export',
   'background_gen', 'compositor', 'text_overlay',
+  'copy_ai', 'composition_ai',
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -105,6 +106,34 @@ function OutputPreview({ output }: { output?: NodeOutput }) {
         color: '#06B6D4', lineHeight: 1.4,
       }}>
         ✓ {a.style?.mood || 'analyzed'} · {a.layout?.productPosition || '?'} · {a.style?.lighting || '?'}
+      </div>
+    );
+  }
+
+  if (output.copyData) {
+    const cd = output.copyData;
+    return (
+      <div style={{
+        margin: '4px 10px 6px', padding: '6px 8px', borderRadius: 6,
+        background: '#F59E0B10', fontSize: 10,
+        color: '#F59E0B', lineHeight: 1.4,
+      }}>
+        <div style={{ fontWeight: 700 }}>{cd.headline || 'Copy'}</div>
+        {cd.priceFormatted && <div>{cd.priceFormatted}</div>}
+        {cd.cta && <div style={{ textTransform: 'uppercase', fontSize: 9 }}>{cd.cta}</div>}
+      </div>
+    );
+  }
+
+  if (output.compositionData) {
+    const comp = output.compositionData;
+    return (
+      <div style={{
+        margin: '4px 10px 6px', padding: '6px 8px', borderRadius: 6,
+        background: '#8B5CF610', fontSize: 10,
+        color: '#8B5CF6', lineHeight: 1.4,
+      }}>
+        ✓ Layout: {comp.layout?.textBlockPosition || 'auto'} · {comp.layout?.textAlign || 'left'}
       </div>
     );
   }
@@ -564,6 +593,67 @@ function NodeContent({
               onMouseDown={e => e.stopPropagation()}
             />
           </div>
+          {runBtn}
+        </div>
+      );
+    }
+
+    case 'copy_ai':
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <input
+            style={inputStyle}
+            placeholder={t('studio.node.copy_product_name')}
+            value={(node.data.productName as string) ?? ''}
+            onChange={e => onDataChange(node.id, 'productName', e.target.value)}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          <input
+            style={inputStyle}
+            placeholder={t('studio.node.copy_price')}
+            value={(node.data.productPrice as string) ?? ''}
+            onChange={e => onDataChange(node.id, 'productPrice', e.target.value)}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          <StudioSelect
+            defaultValue={(node.data.tone as string) || 'premium'}
+            options={[
+              { value: 'premium', label: 'Premium' },
+              { value: 'urgente', label: 'Urgente' },
+              { value: 'jovem', label: 'Jovem' },
+              { value: 'elegante', label: 'Elegante' },
+              { value: 'minimalista', label: 'Minimalista' },
+              { value: 'divertido', label: 'Divertido' },
+            ]}
+            onChange={v => onDataChange(node.id, 'tone', v)}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          <OutputPreview output={output} />
+          {runBtn}
+        </div>
+      );
+
+    case 'composition_ai': {
+      const compPreview = output?.image;
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{
+            background: 'hsl(var(--muted))', borderRadius: 6,
+            fontSize: 10, color: 'hsl(var(--muted-foreground))',
+            minHeight: 60, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', overflow: 'hidden',
+          }}>
+            {compPreview && typeof compPreview === 'string' ? (
+              <img src={compPreview} alt="composition" style={{ width: '100%', height: 60, objectFit: 'cover' }} />
+            ) : isDone && output?.compositionData ? (
+              <div style={{ padding: '6px 8px', color: '#8B5CF6', fontSize: 10 }}>
+                ✓ {output.compositionData.layout?.textBlockPosition || 'layout'} · {output.compositionData.layout?.textAlign || 'auto'}
+              </div>
+            ) : (
+              t('studio.node.composition_placeholder')
+            )}
+          </div>
+          <OutputPreview output={output} />
           {runBtn}
         </div>
       );

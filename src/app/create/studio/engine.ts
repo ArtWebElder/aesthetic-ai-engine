@@ -480,19 +480,51 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
 
     case 'text_overlay': {
       const composedData = findUpstreamByType(inputs, 'composed');
-      const composedImg: string | undefined = composedData?.image || inputs.image
-        || Object.values(inputs).find((v: any) => v?.type === 'generated')?.image;
-      const texts = inputs.fields || inputs.text || {};
+      const compositionUp = findUpstreamByType(inputs, 'composition');
+      const copyUp = findUpstreamByType(inputs, 'copy');
+      const generatedUp = findUpstreamByType(inputs, 'generated');
+
+      const composedImg: string | undefined =
+        composedData?.image
+        || compositionUp?.image
+        || generatedUp?.image
+        || inputs.image
+        || Object.values(inputs).find((v: unknown) => (v as Record<string, unknown>)?.type === 'generated')?.image;
+
+      // Prefer copy data from Copy IA node, fallback to text_input fields
+      const copyData = copyUp?.copyData || inputs.copyData;
+      const texts = copyData
+        ? {
+            headline: copyData.headline || '',
+            price: copyData.priceFormatted || '',
+            cta: copyData.cta || '',
+            contact: '',
+          }
+        : (inputs.fields || inputs.text || {});
       const analysis = inputs.analysis
-        || Object.values(inputs).find((v: any) => v?.analysis)?.analysis;
+        || Object.values(inputs).find((v: unknown) => (v as Record<string, unknown>)?.analysis)?.analysis;
 
       if (!composedImg) throw new Error('Imagem não conectada ao overlay de texto');
 
-      const { renderTypographyOverlay } = await import('@/services/typographyRenderer');
+      const { renderTypographyOverlay, renderCompositionOverlay } = await import('@/services/typographyRenderer');
 
-      const templateId = (node.data.templateId as string) || undefined;
       const w = (node.data.width as number) || composedData?.width || 1080;
       const h = (node.data.height as number) || composedData?.height || 1080;
+
+      // If compositionData from Composição IA is available, use AI-driven layout
+      const compositionData = compositionUp?.compositionData || inputs.compositionData;
+      if (compositionData && copyData) {
+        console.log('[Studio:text_overlay] Using AI composition layout');
+        const result = await renderCompositionOverlay(composedImg, copyData, compositionData, w, h);
+        return {
+          image: result,
+          type: 'final',
+          templateUsed: 'composition-ai',
+        };
+      }
+
+      // Fallback: use template-based rendering
+      const templateId = (node.data.templateId as string) || undefined;
 
       const result = await renderTypographyOverlay(
         composedImg,
@@ -512,6 +544,124 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
         image: result,
         type: 'final',
         templateUsed: templateId || 'auto',
+      };
+    }
+
+    case 'copy_ai': {
+      // Collect product info from upstream text_input (fields) or node.data
+      const textData = findUpstreamByType(inputs, 'text');
+      const analysisData = findUpstreamByType(inputs, 'analysis');
+
+      const fields = textData?.fields || {};
+      const productName = (node.data.productName as string)
+        || (fields.headline as string)
+        || (inputs.brandName as string)
+        || '';
+      const productPrice = (node.data.productPrice as string)
+        || (fields.price as string)
+        || '';
+
+      if (!productName) throw new Error('Nome do produto não informado — conecte um Text Input ou preencha o campo');
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      if (!supabaseUrl || !supabaseKey) throw new Error('Supabase não configurado');
+
+      console.log('[Studio:copy_ai] Generating copy for:', productName, '| Price:', productPrice);
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/generate-copy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          productName,
+          productPrice: productPrice || undefined,
+          currency: (node.data.currency as string) || 'BRL',
+          targetAudience: (node.data.targetAudience as string) || undefined,
+          tone: (node.data.tone as string) || 'premium',
+          language: (node.data.language as string) || 'pt-BR',
+          referenceAnalysis: analysisData?.analysis || undefined,
+          additionalContext: (node.data.additionalContext as string) || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error('[Studio:copy_ai] Failed:', response.status, err.slice(0, 300));
+        throw new Error(`Copy generation failed (${response.status}): ${err.slice(0, 200)}`);
+      }
+
+      const result = await response.json();
+      const copyData = result.copy;
+      console.log('[Studio:copy_ai] OK — headline:', copyData.headline, '| cta:', copyData.cta);
+
+      return {
+        copyData,
+        headline: copyData.headline,
+        subheadline: copyData.subheadline,
+        priceFormatted: copyData.priceFormatted,
+        priceBadgeText: copyData.priceBadgeText,
+        cta: copyData.cta,
+        tagline: copyData.tagline,
+        type: 'copy',
+      };
+    }
+
+    case 'composition_ai': {
+      // Collect generated image + copy data + reference analysis
+      const generatedData = findUpstreamByType(inputs, 'generated');
+      const copyUpstream = findUpstreamByType(inputs, 'copy');
+      const analysisUp = findUpstreamByType(inputs, 'analysis');
+
+      const generatedImage = generatedData?.image || inputs.image || inputs.generatedImage;
+      const copyData = copyUpstream?.copyData || inputs.copyData;
+
+      if (!generatedImage) throw new Error('Imagem gerada não conectada — conecte um node Image Gen');
+      if (!copyData) throw new Error('Copy não conectado — conecte um node Copy IA');
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      if (!supabaseUrl || !supabaseKey) throw new Error('Supabase não configurado');
+
+      const canvasWidth = (node.data.width as number) || 1080;
+      const canvasHeight = (node.data.height as number) || 1080;
+
+      console.log('[Studio:composition_ai] Analyzing composition for', canvasWidth, 'x', canvasHeight);
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/analyze-composition`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: supabaseKey,
+          Authorization: `Bearer ${supabaseKey}`,
+        },
+        body: JSON.stringify({
+          generatedImageBase64: generatedImage,
+          copyData,
+          referenceAnalysis: analysisUp?.analysis || undefined,
+          canvasWidth,
+          canvasHeight,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error('[Studio:composition_ai] Failed:', response.status, err.slice(0, 300));
+        throw new Error(`Composition analysis failed (${response.status}): ${err.slice(0, 200)}`);
+      }
+
+      const result = await response.json();
+      const compositionData = result.composition;
+      console.log('[Studio:composition_ai] OK — position:', compositionData.layout?.textBlockPosition);
+
+      return {
+        compositionData,
+        copyData,
+        image: generatedImage,
+        type: 'composition',
       };
     }
 
@@ -595,7 +745,7 @@ export function prePopulateInputOutputs(
  * Node types that are critical — if they fail, the flow must stop.
  * Non-critical nodes (like reference_analyzer) can fail and the flow continues.
  */
-const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor'];
+const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor', 'copy_ai', 'composition_ai'];
 
 /**
  * Execute entire flow sequentially in topological order.
