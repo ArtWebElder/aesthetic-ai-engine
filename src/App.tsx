@@ -22,6 +22,7 @@ import Billing from "./pages/Billing";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import AppShell from "./components/AppShell";
+import { SupportChat } from "./components/SupportChat";
 import NotFound from "./pages/NotFound";
 import { AdminRoute } from "@/features/admin/AdminRoute";
 import { AdminShell } from "@/features/admin/AdminShell";
@@ -114,6 +115,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
+            <SupportChat />
           </TooltipProvider>
           </ToastProvider>
         </AuthProvider>
