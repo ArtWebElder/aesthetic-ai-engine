@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Search, Command, Menu, Sparkles, Zap, Bell } from 'lucide-react';
+import { Search, Command, Menu, Sparkles, Zap } from 'lucide-react';
+import { NotificationCenter } from '@/components/NotificationCenter';
 import { Button } from '@/components/ui/button';
 import { mockCredits } from '@/lib/mocks/data';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -52,7 +53,6 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
   const { user } = useAuth();
   const { t } = useI18n();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [notifCount, setNotifCount] = useState(3);
 
   const initials = (
     user?.user_metadata?.full_name?.charAt(0) ||
@@ -145,33 +145,8 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
         Upgrade
       </button>
 
-      {/* Notification bell */}
-      <button
-        onClick={() => setNotifCount(0)}
-        style={{
-          position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 34, height: 34, borderRadius: 9,
-          border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))',
-          cursor: 'pointer', flexShrink: 0, transition: 'background 150ms',
-        }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--muted))'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--card))'}
-        title="Notificações"
-      >
-        <Bell style={{ width: 16, height: 16, color: 'hsl(var(--muted-foreground))' }} />
-        {notifCount > 0 && (
-          <div style={{
-            position: 'absolute', top: 3, right: 3,
-            width: 16, height: 16, borderRadius: '50%',
-            background: '#EF4444', color: '#fff',
-            fontSize: 9, fontWeight: 700,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            border: '1.5px solid hsl(var(--background) / 0.8)',
-          }}>
-            {notifCount > 9 ? '9+' : notifCount}
-          </div>
-        )}
-      </button>
+      {/* Notification center */}
+      <NotificationCenter />
 
       {/* Avatar */}
       <div
