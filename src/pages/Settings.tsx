@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   User, Settings2, Palette, Key,
   Camera, Upload, Plus, X, Copy, Trash2, Check, ChevronDown,
-  Languages, Sun, Moon, Monitor,
+  Languages, Sun, Moon, Monitor, AlertTriangle,
 } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
@@ -241,6 +241,38 @@ const Settings = () => {
           </div>
         </div>
 
+        {/* Default format */}
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>Formato padrão</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {['1:1', '9:16', '4:5', '16:9'].map(fmt => (
+              <button key={fmt} style={{
+                padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                border: '1px solid hsl(var(--border))',
+                background: 'hsl(var(--card))',
+                color: 'hsl(var(--muted-foreground))',
+                fontSize: 13, transition: 'all 150ms',
+              }}>{fmt}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Export quality */}
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>Qualidade de exportação</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {['2K (1080p)', '4K (2160p)'].map(q => (
+              <button key={q} style={{
+                padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
+                border: '1px solid hsl(var(--border))',
+                background: 'hsl(var(--card))',
+                color: 'hsl(var(--muted-foreground))',
+                fontSize: 13, transition: 'all 150ms',
+              }}>{q}</button>
+            ))}
+          </div>
+        </div>
+
         {/* Notifications */}
         <div style={{ marginBottom: 8 }}>
           <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 4, display: 'block' }}>Notificações</label>
@@ -428,6 +460,10 @@ const Settings = () => {
           </div>
         </div>
 
+        <div style={{ marginBottom: 20 }}>
+          <Toggle label="Aplicar Brand Kit automaticamente" on={false} onToggle={() => toast.info('Em breve!')} />
+        </div>
+
         <button onClick={() => toast.success('Brand Kit atualizado!')} style={{
           padding: '10px 28px', borderRadius: 9, border: 'none',
           background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
@@ -441,6 +477,27 @@ const Settings = () => {
       <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>API Keys</h2>
         <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>Gerencie suas chaves de API para integração.</p>
+
+        {/* BYOK section */}
+        <div style={{
+          padding: '16px 20px', borderRadius: 12, marginBottom: 28,
+          border: '1px solid hsl(var(--border))', background: 'hsl(var(--muted) / 0.3)',
+        }}>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Conecte suas próprias chaves de API</h3>
+          <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', marginBottom: 14 }}>Use modelos premium e tenha controle total sobre custos.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 420, opacity: 0.5, pointerEvents: 'none' }}>
+            <Field label="Gemini API Key" value="" onChange={() => {}} placeholder="AIza..." disabled />
+            <Field label="Replicate API Token" value="" onChange={() => {}} placeholder="r8_..." disabled />
+          </div>
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '5px 12px', borderRadius: 6,
+            background: '#F59E0B20', color: '#B45309', fontSize: 11.5, fontWeight: 500,
+          }}>
+            <AlertTriangle size={13} />
+            BYOK não disponível no momento — em breve
+          </div>
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 540, marginBottom: 20 }}>
           {apiKeys.map(k => (
