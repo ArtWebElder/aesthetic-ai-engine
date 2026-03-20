@@ -837,6 +837,11 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
     }
 
     // ── compositionMode + Imagen 4: try text-in-image generation first ──────
+    // If Imagen 4 succeeds, its base64 flows into the non-strict upload path below.
+    // If it fails, the normal provider (Nano Banana Pro / Flux) takes over.
+    let imagen4Base64: string | null = null;
+    let imagen4ProviderName = "";
+
     console.log("[Imagen4] gate check — compositionMode:", compositionMode, "| headline:", JSON.stringify(copyDataInput.headline ?? null), "| headlineTruthy:", Boolean(copyDataInput.headline));
     if (compositionMode && copyDataInput.headline) {
       const imagen4AspectRatio = mapToImagen4AspectRatio(aspectRatio);
@@ -850,104 +855,22 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
       console.log("[Imagen4] attempting generation... | model: imagen-4.0-generate-001 | aspectRatio:", imagen4AspectRatio, "| prompt length:", imagen4Prompt.length);
 
       try {
-        const imagen4Base64 = await generateWithImagen4(imagen4Prompt, imagen4AspectRatio);
-
-        const imagen4Mime = "image/png";
-        const imagen4Bytes = base64ToUint8(imagen4Base64);
-        const imagen4Path = `anon/${generationId}.png`;
-
-        let { error: i4UploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(imagen4Path, imagen4Bytes, {
-          contentType: imagen4Mime,
-          upsert: true,
-          cacheControl: "3600",
-        });
-
-        if (i4UploadError && looksLikeBucketMissing(i4UploadError.message)) {
-          const ensureErr = await ensurePrivateBucket(supabase, STORAGE_BUCKET);
-          if (!ensureErr) {
-            const retry = await supabase.storage.from(STORAGE_BUCKET).upload(imagen4Path, imagen4Bytes, {
-              contentType: imagen4Mime,
-              upsert: true,
-              cacheControl: "3600",
-            });
-            i4UploadError = retry.error ?? null;
-          }
-        }
-
-        if (i4UploadError) {
-          throw new Error(`storage_upload: ${i4UploadError.message}`);
-        }
-
-        const { data: i4SignedData, error: i4SignedError } = await supabase.storage
-          .from(STORAGE_BUCKET)
-          .createSignedUrl(imagen4Path, signedUrlTtl);
-
-        if (i4SignedError || !i4SignedData?.signedUrl) {
-          throw new Error(`signed_url: ${i4SignedError?.message ?? "missing"}`);
-        }
-
-        const i4ProviderName = "imagen-4.0-generate-001";
-        await supabase
-          .from("generations")
-          .update({
-            status: "ok",
-            duration_ms: Date.now() - startedAt,
-            provider: i4ProviderName,
-            bucket: STORAGE_BUCKET,
-            path: imagen4Path,
-            signed_url: i4SignedData.signedUrl,
-            mime: imagen4Mime,
-            width: input.width,
-            height: input.height,
-            prompt: imagen4Prompt,
-            prompt_len: imagen4Prompt.length,
-            negative_prompt: null,
-            credits_used: 1,
-            meta: {
-              module: input.module,
-              modeUsed: "imagen4_composition",
-              providerName: i4ProviderName,
-              payloadKind: "imagen4_text_in_image",
-              aspectRatio: imagen4AspectRatio,
-              compositionMode: true,
-              preprocess: emptyPreprocessMeta(),
-            },
-          })
-          .eq("id", generationId);
-
-        console.log("[Imagen4] success — generationId:", generationId, "| duration:", Date.now() - startedAt, "ms");
-
-        return json(
-          {
-            generationId,
-            provider: i4ProviderName,
-            bucket: STORAGE_BUCKET,
-            path: imagen4Path,
-            signedUrl: i4SignedData.signedUrl,
-            mime: imagen4Mime,
-            width: input.width,
-            height: input.height,
-            creditsUsed: 1,
-            createdAt,
-            meta: {
-              providerName: i4ProviderName,
-              modeUsed: "imagen4_composition",
-              compositionMode: true,
-              payloadKind: "imagen4_text_in_image",
-              aspectRatio: imagen4AspectRatio,
-              preprocess: emptyPreprocessMeta(),
-            },
-          },
-          200,
-          headers,
-        );
+        imagen4Base64 = await generateWithImagen4(imagen4Prompt, imagen4AspectRatio);
+        imagen4ProviderName = "imagen-4.0-generate-001";
+        console.log("[Imagen4] success — image size:", imagen4Base64.length, "chars");
       } catch (imagen4Error) {
         const imagen4Details = String((imagen4Error as { message?: string })?.message ?? imagen4Error).slice(0, 500);
         console.warn("[Imagen4] failed:", imagen4Details, "— falling back to Nano Banana Pro");
-        // Fall through to existing provider logic (Nano Banana Pro + Flux Kontext)
+        imagen4Base64 = null;
       }
     } else if (compositionMode) {
       console.warn("[Imagen4] skipped — compositionMode:", compositionMode, "but headline is falsy:", JSON.stringify(copyDataInput.headline ?? null));
+    }
+
+    // If Imagen 4 succeeded, skip strict path — go straight to non-strict upload flow
+    if (imagen4Base64) {
+      (input as { strictIdentity: boolean }).strictIdentity = false;
+      console.log("[Imagen4] bypassing strict path — will use non-strict upload flow");
     }
 
     if (input.strictIdentity) {
@@ -1357,33 +1280,41 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
       );
     }
 
-    // Non-strict mode: text-to-image via Replicate Flux Kontext Pro
+    // Non-strict mode: text-to-image via Imagen 4 (if available) or Replicate Flux
     let t2iBase64 = "";
     let t2iPayloadKind = "replicate_t2i_unknown";
-    const t2iProviderName = selectedProvider.name;
+    let t2iProviderName = selectedProvider.name;
 
-    try {
-      const result = await selectedProvider.generateTextToImage({
-        prompt: input.prompt,
-        negativePrompt: input.negativePrompt,
-        width: input.width,
-        height: input.height,
-        seed: input.seed,
-        module: input.module,
-        strictIdentity: false,
-        identityStrength: null,
-        styleStrength: null,
-        referenceImagesCount: input.referenceImages.length,
-      });
-      t2iBase64 = result.base64;
-      t2iPayloadKind = result.payloadKind || "replicate_t2i";
-    } catch (e) {
-      const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
-      await updateGenerationError(supabase, generationId, startedAt, `t2i_error: ${details}`, input.prompt.length, input.negativePrompt ?? null);
-      if (isRateLimitError(details)) {
-        return json({ error: "replicate_rate_limit", details: "Limite de requisições atingido. Tente novamente em alguns segundos.", provider: t2iProviderName }, 429, headers);
+    if (imagen4Base64) {
+      // Imagen 4 already generated the image — use it directly
+      t2iBase64 = imagen4Base64;
+      t2iPayloadKind = "imagen4_text_in_image";
+      t2iProviderName = imagen4ProviderName;
+      console.log("[Imagen4] using pre-generated base64 — skipping Replicate call | size:", t2iBase64.length, "chars");
+    } else {
+      try {
+        const result = await selectedProvider.generateTextToImage({
+          prompt: input.prompt,
+          negativePrompt: input.negativePrompt,
+          width: input.width,
+          height: input.height,
+          seed: input.seed,
+          module: input.module,
+          strictIdentity: false,
+          identityStrength: null,
+          styleStrength: null,
+          referenceImagesCount: input.referenceImages.length,
+        });
+        t2iBase64 = result.base64;
+        t2iPayloadKind = result.payloadKind || "replicate_t2i";
+      } catch (e) {
+        const details = String((e as { message?: string })?.message ?? e).slice(0, 1200);
+        await updateGenerationError(supabase, generationId, startedAt, `t2i_error: ${details}`, input.prompt.length, input.negativePrompt ?? null);
+        if (isRateLimitError(details)) {
+          return json({ error: "replicate_rate_limit", details: "Limite de requisições atingido. Tente novamente em alguns segundos.", provider: t2iProviderName }, 429, headers);
+        }
+        return json({ error: "t2i_provider_failed", details, provider: t2iProviderName }, 500, headers);
       }
-      return json({ error: "t2i_provider_failed", details, provider: t2iProviderName }, 500, headers);
     }
 
     if (!t2iBase64.trim()) {
