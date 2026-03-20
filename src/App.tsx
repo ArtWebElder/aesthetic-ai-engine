@@ -13,7 +13,8 @@ import Login from "./pages/Login";
 import OnboardingPage from "./pages/OnboardingPage";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
-import Templates from "./pages/Templates";
+// Templates page removed — will be reimplemented
+// import Templates from "./pages/Templates";
 import { WizardPage } from "@/features/editor/wizard/WizardPage";
 import StudioPage from "@/app/create/StudioPage";
 import RefinementPage from "./pages/RefinementPage";
@@ -92,7 +93,7 @@ const App = () => (
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="projects" element={<Projects />} />
-                  <Route path="templates" element={<Templates />} />
+                  {/* Templates route removed — will be reimplemented */}
                   <Route path="create" element={<WizardPage />} />
                   <Route path="create/studio" element={<StudioPage />} />
                   <Route path="refine/:id" element={<RefinementPage />} />

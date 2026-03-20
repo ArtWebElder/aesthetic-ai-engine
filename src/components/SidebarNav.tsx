@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, FolderOpen, LayoutGrid, CreditCard,
+  LayoutDashboard, FolderOpen, CreditCard,
   Settings, HelpCircle, LogOut, Plus, ChevronLeft, ChevronRight, Shield, Workflow,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -11,7 +11,6 @@ import { supabase } from '@/services/supabaseClient';
 const primaryNavItems = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
   { labelKey: 'nav.projects', icon: FolderOpen, path: '/app/projects' },
-  { labelKey: 'nav.templates', icon: LayoutGrid, path: '/app/templates' },
   { labelKey: 'nav.billing', icon: CreditCard, path: '/app/billing' },
 ];
 
