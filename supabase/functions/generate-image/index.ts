@@ -106,6 +106,9 @@ type TextLayoutInput = {
 
 type CopyDataInput = {
   headline?: string;
+  subheadline?: string;
+  priceFormatted?: string;
+  priceBadgeText?: string;
   cta?: string;
 };
 
@@ -133,6 +136,7 @@ type GenerateBody = {
   compositionMode?: boolean;
   copyData?: CopyDataInput;
   textLayout?: TextLayoutInput;
+  subjectDescription?: string;      // verbal description of subject (for Imagen 4)
 };
 
 type ParsedReferenceImage = {
@@ -331,6 +335,113 @@ function pickClosestAspectRatio(width: number, height: number): "1:1" | "4:5" | 
     }
   }
   return best.ratio;
+}
+
+// ── Imagen 4 — text-in-image provider for compositionMode ────────────────────
+
+type Imagen4AspectRatio = "1:1" | "9:16" | "16:9" | "3:4" | "4:3";
+
+function mapToImagen4AspectRatio(ratio: string): Imagen4AspectRatio {
+  const map: Record<string, Imagen4AspectRatio> = {
+    "1:1": "1:1",
+    "9:16": "9:16",
+    "16:9": "16:9",
+    "3:4": "3:4",
+    "4:3": "4:3",
+    "4:5": "3:4", // closest Imagen 4 supported ratio
+  };
+  return map[ratio] || "1:1";
+}
+
+async function generateWithImagen4(
+  prompt: string,
+  aspectRatio: Imagen4AspectRatio = "1:1",
+  model: string = "imagen-4.0-generate-001",
+): Promise<string> {
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) throw new Error("GEMINI_API_KEY not configured for Imagen 4");
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:predict`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
+      body: JSON.stringify({
+        instances: [{ prompt }],
+        parameters: {
+          sampleCount: 1,
+          aspectRatio,
+          safetyFilterLevel: "block_only_high",
+          personGeneration: "allow_adult",
+        },
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Imagen 4 error (${response.status}): ${error.slice(0, 500)}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.predictions || data.predictions.length === 0 || !data.predictions[0].bytesBase64Encoded) {
+    throw new Error("Imagen 4 returned no image data");
+  }
+
+  return data.predictions[0].bytesBase64Encoded as string;
+}
+
+function buildImagen4CompositionPrompt(params: {
+  sceneDescription: string;
+  copyData: CopyDataInput;
+  textLayout: TextLayoutInput;
+  subjectDescription?: string;
+}): string {
+  const { sceneDescription, copyData, textLayout, subjectDescription } = params;
+
+  const lines: string[] = [
+    `Create a professional advertisement/creative banner image.`,
+    ``,
+    `VISUAL STYLE AND ATMOSPHERE:`,
+    sceneDescription,
+    ``,
+    `PRODUCT/SUBJECT: ${subjectDescription || "Luxury product centered in the composition"}`,
+    ``,
+    `COMPOSITION AND LAYOUT: ${textLayout.overallLayout || "product centered, text around it"}`,
+    `- The product should be positioned to leave space for text`,
+    `- Breathing areas must be clean and have good contrast for text readability`,
+    ``,
+    `TEXT TO RENDER IN THE IMAGE (render these EXACTLY as written, perfect spelling):`,
+    `- HEADLINE: "${copyData.headline || ""}" — positioned at ${textLayout.headlinePosition || "bottom-left"}, large and bold, prominent typography with visual impact (shadows, 3D effect, or gradient fill matching the visual style)`,
+  ];
+
+  if (copyData.subheadline) {
+    lines.push(`- SUBHEADLINE: "${copyData.subheadline}" — smaller, below the headline, clean and readable`);
+  }
+  if (copyData.priceFormatted) {
+    lines.push(`- PRICE: "${copyData.priceBadgeText || ""} ${copyData.priceFormatted}" — with a visual badge or tag element, prominent but not larger than the headline`);
+  }
+  if (copyData.cta) {
+    lines.push(`- CTA BUTTON: "${copyData.cta}" — positioned at ${textLayout.ctaPosition || "bottom"}, inside a stylish ${textLayout.ctaStyle || "pill"} button shape with gradient, shadow, and visual depth (3D glossy effect)`);
+  }
+
+  lines.push(``);
+  lines.push(`TYPOGRAPHY RULES:`);
+  lines.push(`- All text must be PERFECTLY SPELLED, no missing or extra letters`);
+  lines.push(`- Headline should have the most visual weight (largest, boldest)`);
+  if (copyData.cta) {
+    lines.push(`- CTA button should look like a clickable element with depth and glow`);
+  }
+  lines.push(`- Text colors must contrast well with the background behind them`);
+  lines.push(`- Use professional advertising typography — not generic or plain`);
+  lines.push(``);
+  lines.push(`QUALITY: Professional advertisement quality, high detail, photorealistic product with designed elements, 1080x1080px.`);
+
+  return lines.join("\n");
 }
 
 function extractBase64FromVertex(raw: unknown): string | null {
@@ -582,6 +693,12 @@ Deno.serve(async (req: Request) => {
     const compositionMode = rawBody.compositionMode === true;
     const copyDataInput = (rawBody.copyData || {}) as CopyDataInput;
     const textLayoutInput = (rawBody.textLayout || {}) as TextLayoutInput;
+    const subjectDescriptionInput = typeof rawBody.subjectDescription === "string"
+      ? (rawBody.subjectDescription as string).trim()
+      : "";
+
+    // Save original prompt before compositionMode augmentation (used by Imagen 4)
+    const originalPrompt = input.prompt;
 
     if (compositionMode && copyDataInput.headline) {
       const headlineLen = (copyDataInput.headline || '').length;
@@ -717,6 +834,117 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
     if (bucketError) {
       await updateGenerationError(supabase, generationId, startedAt, `bucket_error: ${bucketError}`, input.prompt.length, input.negativePrompt ?? null);
       return json({ error: "storage_bucket_error", details: bucketError }, 500, headers);
+    }
+
+    // ── compositionMode + Imagen 4: try text-in-image generation first ──────
+    if (compositionMode && copyDataInput.headline) {
+      const imagen4AspectRatio = mapToImagen4AspectRatio(aspectRatio);
+      const imagen4Prompt = buildImagen4CompositionPrompt({
+        sceneDescription: originalPrompt,
+        copyData: copyDataInput,
+        textLayout: textLayoutInput,
+        subjectDescription: subjectDescriptionInput || undefined,
+      });
+
+      console.log("[DEBUG] Attempting Imagen 4 for compositionMode");
+      console.log("[DEBUG] Imagen 4 prompt length:", imagen4Prompt.length);
+      console.log("[DEBUG] Imagen 4 aspectRatio:", imagen4AspectRatio);
+
+      try {
+        const imagen4Base64 = await generateWithImagen4(imagen4Prompt, imagen4AspectRatio);
+
+        const imagen4Mime = "image/png";
+        const imagen4Bytes = base64ToUint8(imagen4Base64);
+        const imagen4Path = `anon/${generationId}.png`;
+
+        let { error: i4UploadError } = await supabase.storage.from(STORAGE_BUCKET).upload(imagen4Path, imagen4Bytes, {
+          contentType: imagen4Mime,
+          upsert: true,
+          cacheControl: "3600",
+        });
+
+        if (i4UploadError && looksLikeBucketMissing(i4UploadError.message)) {
+          const ensureErr = await ensurePrivateBucket(supabase, STORAGE_BUCKET);
+          if (!ensureErr) {
+            const retry = await supabase.storage.from(STORAGE_BUCKET).upload(imagen4Path, imagen4Bytes, {
+              contentType: imagen4Mime,
+              upsert: true,
+              cacheControl: "3600",
+            });
+            i4UploadError = retry.error ?? null;
+          }
+        }
+
+        if (i4UploadError) {
+          throw new Error(`storage_upload: ${i4UploadError.message}`);
+        }
+
+        const { data: i4SignedData, error: i4SignedError } = await supabase.storage
+          .from(STORAGE_BUCKET)
+          .createSignedUrl(imagen4Path, signedUrlTtl);
+
+        if (i4SignedError || !i4SignedData?.signedUrl) {
+          throw new Error(`signed_url: ${i4SignedError?.message ?? "missing"}`);
+        }
+
+        const i4ProviderName = "imagen-4.0-generate-001";
+        await supabase
+          .from("generations")
+          .update({
+            status: "ok",
+            duration_ms: Date.now() - startedAt,
+            provider: i4ProviderName,
+            bucket: STORAGE_BUCKET,
+            path: imagen4Path,
+            signed_url: i4SignedData.signedUrl,
+            mime: imagen4Mime,
+            width: input.width,
+            height: input.height,
+            prompt: imagen4Prompt,
+            prompt_len: imagen4Prompt.length,
+            negative_prompt: null,
+            credits_used: 1,
+            meta: {
+              module: input.module,
+              modeUsed: "imagen4_composition",
+              providerName: i4ProviderName,
+              payloadKind: "imagen4_text_in_image",
+              aspectRatio: imagen4AspectRatio,
+              compositionMode: true,
+              preprocess: emptyPreprocessMeta(),
+            },
+          })
+          .eq("id", generationId);
+
+        return json(
+          {
+            generationId,
+            provider: i4ProviderName,
+            bucket: STORAGE_BUCKET,
+            path: imagen4Path,
+            signedUrl: i4SignedData.signedUrl,
+            mime: imagen4Mime,
+            width: input.width,
+            height: input.height,
+            creditsUsed: 1,
+            createdAt,
+            meta: {
+              providerName: i4ProviderName,
+              modeUsed: "imagen4_composition",
+              compositionMode: true,
+              payloadKind: "imagen4_text_in_image",
+              aspectRatio: imagen4AspectRatio,
+              preprocess: emptyPreprocessMeta(),
+            },
+          },
+          200,
+          headers,
+        );
+      } catch (imagen4Error) {
+        const imagen4Details = String((imagen4Error as { message?: string })?.message ?? imagen4Error).slice(0, 500);
+        console.warn("[Imagen4] Failed, falling back to existing providers:", imagen4Details);
+        // Fall through to existing provider logic (Nano Banana Pro + Flux Kontext)
+      }
     }
 
     if (input.strictIdentity) {

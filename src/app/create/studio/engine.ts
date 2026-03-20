@@ -329,8 +329,22 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
         payload.compositionMode = true;
         payload.copyData = {
           headline: copyUp.copyData.headline || '',
+          subheadline: copyUp.copyData.subheadline || '',
+          priceFormatted: copyUp.copyData.priceFormatted || '',
+          priceBadgeText: copyUp.copyData.priceBadgeText || '',
           cta: copyUp.copyData.cta || '',
         };
+
+        // Build verbal description of subject for Imagen 4 (text-to-image, no inline images)
+        const subjectDesc: string =
+          (copyUp.copyData.productName as string)
+          || (inputs.brandName as string)
+          || (analysis?.subject?.description as string)
+          || '';
+        if (subjectDesc) {
+          payload.subjectDescription = subjectDesc;
+        }
+
         if (analysis?.textLayout) {
           payload.textLayout = {
             headlinePosition: analysis.textLayout.headlinePosition,
@@ -341,7 +355,7 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
             overallLayout: analysis.textLayout.overallLayout,
           };
         }
-        console.log('[Studio:image_gen] compositionMode payload added — headline:', payload.copyData.headline?.slice(0, 30));
+        console.log('[Studio:image_gen] compositionMode payload added — headline:', payload.copyData.headline?.slice(0, 30), '| subjectDesc:', subjectDesc?.slice(0, 40));
       }
 
       if (subject) {
