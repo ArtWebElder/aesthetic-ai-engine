@@ -19,11 +19,7 @@ const NotFound = () => {
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      background: '#f5f5f3',
-      backgroundImage: [
-        "url(\"data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23141417' fill-opacity='0.04'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-        'radial-gradient(ellipse 700px 500px at 50% 0%, rgba(255,113,61,0.08) 0%, transparent 65%)',
-      ].join(','),
+      background: 'hsl(var(--background))',
       fontFamily: 'inherit',
     }}>
       {/* Logo */}
@@ -39,7 +35,7 @@ const NotFound = () => {
         }}>
           <span style={{ color: '#fff', fontWeight: 800, fontSize: 18, letterSpacing: -0.5 }}>C</span>
         </div>
-        <span style={{ fontWeight: 700, fontSize: 17, color: '#141417', letterSpacing: -0.3 }}>Creatyng</span>
+        <span style={{ fontWeight: 700, fontSize: 17, color: 'hsl(var(--foreground))', letterSpacing: -0.3 }}>Creatyng</span>
       </div>
 
       {/* 404 */}
@@ -55,13 +51,13 @@ const NotFound = () => {
         <p style={{
           fontSize: 18,
           fontWeight: 600,
-          color: '#141417',
+          color: 'hsl(var(--foreground))',
           marginTop: 16,
           marginBottom: 8,
         }}>{t('not_found.title')}</p>
         <p style={{
           fontSize: 14,
-          color: '#5a5a60',
+          color: 'hsl(var(--muted-foreground))',
           maxWidth: 340,
           lineHeight: 1.5,
         }}>{t('not_found.description')}</p>
@@ -90,9 +86,9 @@ const NotFound = () => {
           style={{
             padding: '10px 22px',
             borderRadius: 10,
-            border: '1.5px solid rgba(20,20,23,0.12)',
-            background: '#ffffff',
-            color: '#141417',
+            border: '1.5px solid hsl(var(--border))',
+            background: 'hsl(var(--card))',
+            color: 'hsl(var(--foreground))',
             fontSize: 14,
             fontWeight: 600,
             cursor: 'pointer',
