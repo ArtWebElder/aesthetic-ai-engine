@@ -49,17 +49,17 @@ class AppErrorBoundary extends Component<
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 40, fontFamily: "monospace", color: "#f87171", background: "#0a0a0a", minHeight: "100vh" }}>
+        <div style={{ padding: 40, fontFamily: "monospace", color: "#DC2626", background: "#FAFAF8", minHeight: "100vh" }}>
           <h1 style={{ fontSize: 20, marginBottom: 16 }}>Erro na aplicação</h1>
-          <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#fca5a5" }}>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#991B1B" }}>
             {this.state.error.message}
           </pre>
-          <pre style={{ whiteSpace: "pre-wrap", fontSize: 11, color: "#71717a", marginTop: 12 }}>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: 11, color: "#6B7280", marginTop: 12 }}>
             {this.state.error.stack}
           </pre>
           <button
             onClick={() => window.location.reload()}
-            style={{ marginTop: 24, padding: "8px 16px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}
+            style={{ marginTop: 24, padding: "8px 16px", background: "#F97316", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}
           >
             Recarregar
           </button>
@@ -74,7 +74,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <AppErrorBoundary>
-    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ToastProvider>
