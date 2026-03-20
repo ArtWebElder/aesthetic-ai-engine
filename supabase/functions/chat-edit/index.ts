@@ -5,9 +5,9 @@
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") ?? "";
 const GEMINI_TEXT_MODELS = [
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro-latest",
-  "gemini-2.0-flash-exp",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash",
 ];
 
 function json(data: unknown, status = 200, extraHeaders: Record<string, string> = {}) {

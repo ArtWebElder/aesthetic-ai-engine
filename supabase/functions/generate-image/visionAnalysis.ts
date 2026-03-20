@@ -3,15 +3,15 @@
 // =============================================================================
 // CREATYNG — VISION FIRST STAGE 1: Vision Analysis (DIFF VF.2)
 // Gemini Flash extrai VisualDNA e SubjectProfile de imagens de referência.
-// Usa cascading model fallback (gemini-1.5-flash-latest → gemini-1.5-pro-latest → gemini-2.0-flash-exp).
+// Usa cascading model fallback (gemini-2.5-flash → gemini-2.5-pro → gemini-2.0-flash).
 // =============================================================================
 
 import type { VisualDNA, SubjectProfile, VisionAnalysisResult } from "./types.ts";
 
 const VISION_MODELS = [
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro-latest",
-  "gemini-2.0-flash-exp",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash",
 ];
 const VISION_TIMEOUT_MS = 30_000;
 

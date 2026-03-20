@@ -11,9 +11,9 @@ import type { CreatygnComposition } from "@/types/composition";
 
 const GEMINI_API_KEY = (import.meta as { env: Record<string, string> }).env.VITE_GEMINI_API_KEY ?? "";
 const GEMINI_MODELS = [
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro-latest",
-  "gemini-2.0-flash-exp",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash",
 ];
 
 // Map emoji prefix to lucide icon + strip emoji from displayed text
