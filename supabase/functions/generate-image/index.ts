@@ -837,6 +837,7 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
     }
 
     // ── compositionMode + Imagen 4: try text-in-image generation first ──────
+    console.log("[Imagen4] gate check — compositionMode:", compositionMode, "| headline:", JSON.stringify(copyDataInput.headline ?? null), "| headlineTruthy:", Boolean(copyDataInput.headline));
     if (compositionMode && copyDataInput.headline) {
       const imagen4AspectRatio = mapToImagen4AspectRatio(aspectRatio);
       const imagen4Prompt = buildImagen4CompositionPrompt({
@@ -846,9 +847,7 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
         subjectDescription: subjectDescriptionInput || undefined,
       });
 
-      console.log("[DEBUG] Attempting Imagen 4 for compositionMode");
-      console.log("[DEBUG] Imagen 4 prompt length:", imagen4Prompt.length);
-      console.log("[DEBUG] Imagen 4 aspectRatio:", imagen4AspectRatio);
+      console.log("[Imagen4] attempting generation... | model: imagen-4.0-generate-001 | aspectRatio:", imagen4AspectRatio, "| prompt length:", imagen4Prompt.length);
 
       try {
         const imagen4Base64 = await generateWithImagen4(imagen4Prompt, imagen4AspectRatio);
@@ -916,6 +915,8 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
           })
           .eq("id", generationId);
 
+        console.log("[Imagen4] success — generationId:", generationId, "| duration:", Date.now() - startedAt, "ms");
+
         return json(
           {
             generationId,
@@ -942,9 +943,11 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
         );
       } catch (imagen4Error) {
         const imagen4Details = String((imagen4Error as { message?: string })?.message ?? imagen4Error).slice(0, 500);
-        console.warn("[Imagen4] Failed, falling back to existing providers:", imagen4Details);
+        console.warn("[Imagen4] failed:", imagen4Details, "— falling back to Nano Banana Pro");
         // Fall through to existing provider logic (Nano Banana Pro + Flux Kontext)
       }
+    } else if (compositionMode) {
+      console.warn("[Imagen4] skipped — compositionMode:", compositionMode, "but headline is falsy:", JSON.stringify(copyDataInput.headline ?? null));
     }
 
     if (input.strictIdentity) {
