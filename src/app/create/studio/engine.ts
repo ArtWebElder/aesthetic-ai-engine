@@ -514,13 +514,31 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       // If compositionData from Composição IA is available, use AI-driven layout
       const compositionData = compositionUp?.compositionData || inputs.compositionData;
       if (compositionData && copyData) {
-        console.log('[Studio:text_overlay] Using AI composition layout');
-        const result = await renderCompositionOverlay(composedImg, copyData, compositionData, w, h);
-        return {
-          image: result,
-          type: 'final',
-          templateUsed: 'composition-ai',
-        };
+        console.log('[Studio:text_overlay] Using Konva renderer (AI composition layout)');
+        try {
+          const { renderWithKonva } = await import('@/services/konvaRenderer');
+          const result = await renderWithKonva({
+            generatedImageBase64: composedImg,
+            compositionData,
+            copyData,
+            canvasWidth: w,
+            canvasHeight: h,
+            tone: (node.data.tone as string) || undefined,
+          });
+          return {
+            image: result,
+            type: 'final',
+            templateUsed: 'konva-composition-ai',
+          };
+        } catch (konvaErr) {
+          console.warn('[Studio:text_overlay] Konva renderer failed, falling back to html2canvas:', konvaErr);
+          const result = await renderCompositionOverlay(composedImg, copyData, compositionData, w, h);
+          return {
+            image: result,
+            type: 'final',
+            templateUsed: 'composition-ai-fallback',
+          };
+        }
       }
 
       // Fallback: use template-based rendering
