@@ -135,28 +135,26 @@ function SectionHeader({
 /* ── Feature card ────────────────────────────────────── */
 function FeatureCard({ f, onNavigate }: { f: typeof FEATURES[0]; onNavigate: () => void }) {
   const { t } = useI18n();
-  const [hovered, setHovered] = useState(false);
 
   return (
     <div
-      className="relative shrink-0 overflow-hidden"
+      className="relative shrink-0 overflow-hidden transition-transform duration-200"
       style={{
-        width: 195,
-        height: 155,
+        width: 210,
         borderRadius: 12,
         background: f.gradient,
         opacity: f.active ? 1 : 0.55,
         cursor: f.active ? 'pointer' : 'default',
       }}
-      onMouseEnter={() => f.active && setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={(e) => f.active && (e.currentTarget.style.transform = 'translateY(-2px)')}
+      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
       onClick={() => f.active && onNavigate()}
     >
-      <div className="relative z-10 p-[14px] h-full flex flex-col">
+      <div className="relative z-10 p-[14px] flex flex-col" style={{ minHeight: 170 }}>
         <div className="flex items-start justify-between">
           <div
             className="flex items-center justify-center"
-            style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(255,255,255,0.2)' }}
+            style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.2)' }}
           >
             <f.Icon style={{ width: 18, height: 18, color: '#ffffff' }} />
           </div>
@@ -176,35 +174,14 @@ function FeatureCard({ f, onNavigate }: { f: typeof FEATURES[0]; onNavigate: () 
           </span>
         </div>
         <div className="mt-auto">
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#ffffff' }} className="line-clamp-2">
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', marginBottom: 4 }} className="line-clamp-1">
             {t(f.labelKey)}
           </p>
-        </div>
-      </div>
-
-      {hovered && (
-        <div
-          className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-2 animate-fade-in"
-          style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)' }}
-        >
-          <button
-            className="transition-colors"
-            style={{
-              background: '#ffffff',
-              color: '#141417',
-              fontSize: 12,
-              fontWeight: 600,
-              padding: '7px 16px',
-              borderRadius: 8,
-            }}
-          >
-            {t('dashboard.create_now')}
-          </button>
-          <p className="text-white/80 text-center px-4 line-clamp-2" style={{ fontSize: 10.5 }}>
+          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }} className="line-clamp-2">
             {t(f.descKey)}
           </p>
         </div>
-      )}
+      </div>
     </div>
   );
 }
