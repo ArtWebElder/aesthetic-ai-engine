@@ -308,44 +308,47 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     color: '#ff713d',
     credits: 12,
     nodes: [
+      // Row 1: Reference → Analyze → Copy IA → Image Gen → Composition IA → Overlay → Export
       { id: 'ref', type: 'reference_upload', x: 60, y: 60, data: { label: 'Referência do Banner' } },
+      { id: 'analyze', type: 'reference_analyzer', x: 400, y: 60, data: {} },
+      { id: 'copy', type: 'copy_ai', x: 740, y: 60, data: {} },
+      { id: 'generate', type: 'image_gen', x: 1080, y: 160, data: {
+        width: 1080, height: 1080,
+        mode: 'composition_visual',
+      }},
+      { id: 'compose', type: 'composition_ai', x: 1420, y: 160, data: {} },
+      { id: 'overlay', type: 'text_overlay', x: 1760, y: 160, data: { templateId: '' } },
+      { id: 'export', type: 'export', x: 2060, y: 160, data: { format: 'png' } },
+      // Row 2: Subject (connects to Analyze + Image Gen)
       { id: 'sub', type: 'image_upload', x: 60, y: 300, data: { label: 'Foto do Produto' } },
+      // Row 3: Text Prompt (connects to Copy IA)
       { id: 'txt', type: 'text_input', x: 60, y: 520, data: {
         text: '',
         fields: { headline: '', price: '', cta: '', contact: '' },
       }},
-      { id: 'analyze', type: 'reference_analyzer', x: 420, y: 60, data: {} },
-      { id: 'copy', type: 'copy_ai', x: 420, y: 520, data: {} },
-      { id: 'generate', type: 'image_gen', x: 780, y: 180, data: {
-        width: 1080, height: 1080,
-        mode: 'scene_with_subject',
-      }},
-      { id: 'compose', type: 'composition_ai', x: 1140, y: 180, data: {} },
-      { id: 'overlay', type: 'text_overlay', x: 1500, y: 180, data: { templateId: '' } },
-      { id: 'export', type: 'export', x: 1820, y: 180, data: { format: 'png' } },
     ],
     connections: [
-      // Reference → Analyze
+      // Reference + Subject → Analyze
       { id: 'c1', fromNode: 'ref', fromPort: 'output', toNode: 'analyze', toPort: 'input' },
       { id: 'c2', fromNode: 'sub', fromPort: 'output', toNode: 'analyze', toPort: 'input' },
-      // Analyze → Copy IA (referenceAnalysis)
+      // Analyze + Text Input → Copy IA
       { id: 'c3', fromNode: 'analyze', fromPort: 'output', toNode: 'copy', toPort: 'input' },
-      // Text input → Copy IA (product info)
       { id: 'c4', fromNode: 'txt', fromPort: 'output', toNode: 'copy', toPort: 'input' },
-      // Subject + Reference + Analyze → Image Gen
-      { id: 'c5', fromNode: 'sub', fromPort: 'output', toNode: 'generate', toPort: 'input' },
-      { id: 'c6', fromNode: 'ref', fromPort: 'output', toNode: 'generate', toPort: 'input' },
-      { id: 'c7', fromNode: 'analyze', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      // Copy IA + Subject + Analyze → Image Gen (Copy BEFORE generation)
+      { id: 'c5', fromNode: 'copy', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c6', fromNode: 'sub', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c7', fromNode: 'ref', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c8', fromNode: 'analyze', fromPort: 'output', toNode: 'generate', toPort: 'input' },
       // Image Gen + Copy IA + Analyze → Composition IA
-      { id: 'c8', fromNode: 'generate', fromPort: 'output', toNode: 'compose', toPort: 'input' },
-      { id: 'c9', fromNode: 'copy', fromPort: 'output', toNode: 'compose', toPort: 'input' },
-      { id: 'c10', fromNode: 'analyze', fromPort: 'output', toNode: 'compose', toPort: 'input' },
+      { id: 'c9', fromNode: 'generate', fromPort: 'output', toNode: 'compose', toPort: 'input' },
+      { id: 'c10', fromNode: 'copy', fromPort: 'output', toNode: 'compose', toPort: 'input' },
+      { id: 'c11', fromNode: 'analyze', fromPort: 'output', toNode: 'compose', toPort: 'input' },
       // Composition IA + Image Gen + Copy IA → Text Overlay
-      { id: 'c11', fromNode: 'compose', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
-      { id: 'c12', fromNode: 'generate', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
-      { id: 'c13', fromNode: 'copy', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      { id: 'c12', fromNode: 'compose', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      { id: 'c13', fromNode: 'generate', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
+      { id: 'c14', fromNode: 'copy', fromPort: 'output', toNode: 'overlay', toPort: 'input' },
       // Text Overlay → Export
-      { id: 'c14', fromNode: 'overlay', fromPort: 'output', toNode: 'export', toPort: 'input' },
+      { id: 'c15', fromNode: 'overlay', fromPort: 'output', toNode: 'export', toPort: 'input' },
     ],
   },
   'simple-gen': {

@@ -140,8 +140,23 @@ Return ONLY valid JSON (no markdown, no backticks) with this exact structure:
     "text": "#FFFFFF",
     "textSecondary": "#CCCCCC",
     "background": "#000000"
+  },
+  "ctaShape": {
+    "detected": false,
+    "x": 0,
+    "y": 0,
+    "width": 0,
+    "height": 0,
+    "dominantColor": "#ff713d",
+    "suggestedTextColor": "#FFFFFF"
   }
-}`;
+}
+
+ADDITIONAL — CTA BUTTON SHAPE DETECTION:
+- Look for a visual shape in the image that resembles a CTA button (pill, rectangle, gradient shape, glossy 3D element).
+- If you find one, set "detected": true and provide the EXACT pixel coordinates (x, y, width, height) relative to the ${canvasWidth}x${canvasHeight} canvas.
+- Also identify the dominant color of the shape and suggest a text color with good contrast.
+- If no button shape is found, set "detected": false and return zeroes — the Konva renderer will create a Canvas 2D button as fallback.`;
 }
 
 function extractJSON(raw: string): Record<string, unknown> | null {
@@ -233,6 +248,15 @@ function buildFallbackComposition(body: CompositionBody): Record<string, unknown
       text: "#FFFFFF",
       textSecondary: "#CCCCCC",
       background: "#000000",
+    },
+    ctaShape: {
+      detected: false,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      dominantColor: "#ff713d",
+      suggestedTextColor: "#FFFFFF",
     },
   };
 }

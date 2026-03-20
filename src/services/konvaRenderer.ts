@@ -56,6 +56,16 @@ interface CompositionBackdrop {
   css: string;
 }
 
+interface CtaShapeDetection {
+  detected: boolean;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  dominantColor: string;
+  suggestedTextColor: string;
+}
+
 export interface CompositionData {
   layout: CompositionLayout;
   headline: CompositionTextStyle;
@@ -64,6 +74,7 @@ export interface CompositionData {
   cta: CompositionCtaStyle;
   backdrop?: CompositionBackdrop;
   colorPalette?: Record<string, string>;
+  ctaShape?: CtaShapeDetection | null;
 }
 
 // ── Font pairing fallbacks ───────────────────────────────────────────────────
@@ -430,42 +441,67 @@ export async function renderWithKonva(params: RenderWithKonvaParams): Promise<st
     // ── CTA button ───────────────────────────────────────────────────────
 
     if (copyData.cta) {
-      const ctaPadH = 28;
-      const ctaPadV = 12;
+      const ctaShapeData = compositionData.ctaShape;
 
-      // Measure CTA text first
-      const ctaTextNode = new Konva.Text({
-        text: applyTextTransform(copyData.cta, cta.textTransform),
-        fontSize: cta.fontSize,
-        fontFamily: ctaFont,
-        fontStyle: cta.fontWeight >= 700 ? 'bold' : 'normal',
-        fill: cta.color,
-        letterSpacing: cta.letterSpacing ?? 1,
-      });
+      if (ctaShapeData?.detected && ctaShapeData.width > 0 && ctaShapeData.height > 0) {
+        // Shape detected in the AI-generated image — only render text inside it
+        console.log('[KonvaRenderer] CTA shape detected at', ctaShapeData.x, ctaShapeData.y, ctaShapeData.width, 'x', ctaShapeData.height);
+        const ctaTextInShape = new Konva.Text({
+          x: ctaShapeData.x,
+          y: ctaShapeData.y,
+          width: ctaShapeData.width,
+          height: ctaShapeData.height,
+          text: applyTextTransform(copyData.cta, cta.textTransform),
+          fontSize: cta.fontSize,
+          fontFamily: ctaFont,
+          fontStyle: cta.fontWeight >= 700 ? 'bold' : 'normal',
+          fill: ctaShapeData.suggestedTextColor || cta.color,
+          align: 'center',
+          verticalAlign: 'middle',
+          letterSpacing: cta.letterSpacing ?? 1,
+          shadowColor: 'rgba(0,0,0,0.3)',
+          shadowBlur: 4,
+          shadowOffsetX: 0,
+          shadowOffsetY: 2,
+          shadowOpacity: 0.3,
+        });
+        textLayer.add(ctaTextInShape);
+      } else {
+        // Fallback: create CTA button via Konva (original behavior)
+        const ctaPadH = 28;
+        const ctaPadV = 12;
 
-      const ctaBtnW = ctaTextNode.width() + ctaPadH * 2;
-      const ctaBtnH = ctaTextNode.height() + ctaPadV * 2;
+        const ctaTextNode = new Konva.Text({
+          text: applyTextTransform(copyData.cta, cta.textTransform),
+          fontSize: cta.fontSize,
+          fontFamily: ctaFont,
+          fontStyle: cta.fontWeight >= 700 ? 'bold' : 'normal',
+          fill: cta.color,
+          letterSpacing: cta.letterSpacing ?? 1,
+        });
 
-      // Button background
-      const ctaBtn = new Konva.Rect({
-        x: layout.textBlockX,
-        y: currentY,
-        width: ctaBtnW,
-        height: ctaBtnH,
-        fill: cta.backgroundColor || '#ff713d',
-        cornerRadius: cta.borderRadius ?? 8,
-        shadowColor: 'rgba(0,0,0,0.4)',
-        shadowBlur: 14,
-        shadowOffsetX: 0,
-        shadowOffsetY: 5,
-        shadowOpacity: 0.4,
-      });
-      textLayer.add(ctaBtn);
+        const ctaBtnW = ctaTextNode.width() + ctaPadH * 2;
+        const ctaBtnH = ctaTextNode.height() + ctaPadV * 2;
 
-      // CTA text centered inside button
-      ctaTextNode.x(layout.textBlockX + ctaPadH);
-      ctaTextNode.y(currentY + ctaPadV);
-      textLayer.add(ctaTextNode);
+        const ctaBtn = new Konva.Rect({
+          x: layout.textBlockX,
+          y: currentY,
+          width: ctaBtnW,
+          height: ctaBtnH,
+          fill: cta.backgroundColor || '#ff713d',
+          cornerRadius: cta.borderRadius ?? 8,
+          shadowColor: 'rgba(0,0,0,0.4)',
+          shadowBlur: 14,
+          shadowOffsetX: 0,
+          shadowOffsetY: 5,
+          shadowOpacity: 0.4,
+        });
+        textLayer.add(ctaBtn);
+
+        ctaTextNode.x(layout.textBlockX + ctaPadH);
+        ctaTextNode.y(currentY + ctaPadV);
+        textLayer.add(ctaTextNode);
+      }
     }
 
     // ── Export ────────────────────────────────────────────────────────────

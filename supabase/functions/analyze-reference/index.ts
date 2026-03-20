@@ -57,8 +57,30 @@ I need TWO things from you. Return ONLY valid JSON (no markdown, no backticks):
     "primaryArea": "bottom-center|bottom-left|bottom-right|top-center|center",
     "backgroundDarknessInTextArea": "light|medium|dark",
     "suggestedTextColor": "#hex"
+  },
+
+  "textLayout": {
+    "hasTextInReference": true,
+    "headlinePosition": "top-left|top-center|top-right|center-left|center|center-right|bottom-left|bottom-center|bottom-right",
+    "headlineSize": "large|medium|small",
+    "subheadlinePosition": "below-headline or specific position",
+    "ctaPosition": "top|center|bottom",
+    "ctaStyle": "pill|rectangle|rounded|3d-glossy|outlined|gradient",
+    "hasLogo": false,
+    "logoPosition": "top-left or null",
+    "textHierarchy": "describe the visual hierarchy of text elements (e.g. headline dominant, subtitle smaller, CTA at bottom)",
+    "breathingSpaceAreas": ["area1", "area2"],
+    "overallLayout": "describe the overall composition layout in natural language (e.g. product centered, text on left half, CTA button at bottom-center)"
   }
 }
+
+TEXT LAYOUT ANALYSIS — In addition to the visual analysis above, carefully analyze the TEXT LAYOUT of the reference:
+- Does the reference image have text? If yes, where is each text element positioned?
+- What is the visual hierarchy? (large headline, smaller subtitle, CTA button at bottom?)
+- Where are the breathing space areas — empty/clean zones planned for text?
+- What style is the CTA button? (pill shape, rectangle, 3D glossy with gradient/glow, outlined, gradient fill?)
+- Is there a logo? Where?
+- Describe the overall layout composition (e.g. "product on right 60%, text stacked on left 40%, CTA pill at bottom center")
 
 IMPORTANT — sceneDescription guidelines:
 - Write as if you're briefing a photographer: "Low-angle shot of [product] on a glossy black surface. Warm amber key light from the left creates a long shadow. Background is a deep teal-to-midnight gradient with out-of-focus city lights creating golden bokeh. Smoke wisps curl up from behind the product. The surface has water droplets catching the light."
@@ -113,6 +135,7 @@ function normalizeAnalysis(
   const style = (raw.style || {}) as Record<string, unknown>;
   const layout = (raw.layout || {}) as Record<string, unknown>;
   const tp = (raw.textPlacement || {}) as Record<string, unknown>;
+  const tl = (raw.textLayout || {}) as Record<string, unknown>;
 
   return {
     sceneDescription: (raw.sceneDescription as string) || '',
@@ -146,6 +169,19 @@ function normalizeAnalysis(
       availableHeight: (tp.availableHeight as number) || 30,
       backgroundDarknessInTextArea: (tp.backgroundDarknessInTextArea as string) || 'dark',
       suggestedTextColor: (tp.suggestedTextColor as string) || '#FFFFFF',
+    },
+    textLayout: {
+      hasTextInReference: Boolean(tl.hasTextInReference),
+      headlinePosition: (tl.headlinePosition as string) || 'bottom-left',
+      headlineSize: (tl.headlineSize as string) || 'large',
+      subheadlinePosition: (tl.subheadlinePosition as string) || '',
+      ctaPosition: (tl.ctaPosition as string) || 'bottom',
+      ctaStyle: (tl.ctaStyle as string) || 'pill',
+      hasLogo: Boolean(tl.hasLogo),
+      logoPosition: (tl.logoPosition as string) || '',
+      textHierarchy: (tl.textHierarchy as string) || 'headline dominant, CTA at bottom',
+      breathingSpaceAreas: Array.isArray(tl.breathingSpaceAreas) ? (tl.breathingSpaceAreas as string[]) : ['bottom strip'],
+      overallLayout: (tl.overallLayout as string) || 'product centered, text at bottom',
     },
   };
 }
@@ -185,6 +221,19 @@ function buildFallbackAnalysis(
       availableHeight: 30,
       backgroundDarknessInTextArea: "dark",
       suggestedTextColor: "#FFFFFF",
+    },
+    textLayout: {
+      hasTextInReference: false,
+      headlinePosition: "bottom-left",
+      headlineSize: "large",
+      subheadlinePosition: "",
+      ctaPosition: "bottom",
+      ctaStyle: "pill",
+      hasLogo: false,
+      logoPosition: "",
+      textHierarchy: "headline dominant, CTA at bottom",
+      breathingSpaceAreas: ["bottom strip", "top-left quadrant"],
+      overallLayout: "product centered, text at bottom, CTA at bottom-center",
     },
   };
 }

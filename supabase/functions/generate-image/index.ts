@@ -95,6 +95,20 @@ async function getGoogleAccessToken(serviceAccount: { client_email: string; priv
   return await resp.json() as { access_token: string; expires_in: number; token_type: string };
 }
 
+type TextLayoutInput = {
+  headlinePosition?: string;
+  headlineSize?: string;
+  ctaPosition?: string;
+  ctaStyle?: string;
+  breathingSpaceAreas?: string[];
+  overallLayout?: string;
+};
+
+type CopyDataInput = {
+  headline?: string;
+  cta?: string;
+};
+
 type GenerateBody = {
   prompt: string;
   width?: number;
@@ -115,6 +129,10 @@ type GenerateBody = {
     weight?: number;
     lockRealism?: boolean;
   }>;
+  // Pipeline de 2 camadas — composição visual sem texto
+  compositionMode?: boolean;
+  copyData?: CopyDataInput;
+  textLayout?: TextLayoutInput;
 };
 
 type ParsedReferenceImage = {
@@ -558,6 +576,48 @@ Deno.serve(async (req: Request) => {
     if (!parsed.ok) return json({ error: parsed.error, details: parsed.details }, 400, headers);
 
     const input = parsed.data;
+
+    // ── compositionMode: augment prompt for 2-layer pipeline ──────────────────
+    const rawBody = bodyRaw as Record<string, unknown>;
+    const compositionMode = rawBody.compositionMode === true;
+    const copyDataInput = (rawBody.copyData || {}) as CopyDataInput;
+    const textLayoutInput = (rawBody.textLayout || {}) as TextLayoutInput;
+
+    if (compositionMode && copyDataInput.headline) {
+      const headlineLen = (copyDataInput.headline || '').length;
+      const ctaLen = (copyDataInput.cta || '').length;
+      const headlinePos = textLayoutInput.headlinePosition || 'bottom-left';
+      const ctaPos = textLayoutInput.ctaPosition || 'bottom';
+      const ctaStyle = textLayoutInput.ctaStyle || 'pill';
+      const overallLayout = textLayoutInput.overallLayout || 'product centered, text at bottom';
+      const breathingAreas = (textLayoutInput.breathingSpaceAreas || ['bottom strip']).join(', ');
+
+      const compositionSuffix = `
+
+COMPOSITION MODE — VISUAL-ONLY IMAGE (NO TEXT):
+ABSOLUTE RULES:
+- DO NOT write ANY text, word, letter, number or character in the image. ZERO text.
+- DO NOT write product names, prices, CTAs, or any characters.
+- The image must contain ONLY visual elements: product, background, lighting, decorative shapes.
+
+BREATHING SPACE FOR TEXT OVERLAY:
+- Based on reference layout: ${overallLayout}
+- Headline (~${headlineLen} chars) will be placed at: ${headlinePos} — leave that area CLEAN with good contrast
+- Breathing space areas: ${breathingAreas}
+
+CTA BUTTON SHAPE (visual element, no text inside):
+- Generate a stylized visual SHAPE (no text inside) at: ${ctaPos}
+- Button style: ${ctaStyle}
+${ctaStyle === '3d-glossy' ? '- Shape with gradient, light border, 3D depth effect, subtle glow' : ''}
+${ctaStyle === 'pill' ? '- Oval/pill shape with smooth gradient and shadow' : ''}
+${ctaStyle === 'gradient' ? '- Rounded rectangle with vibrant gradient fill' : ''}
+${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid fill' : ''}
+- Size proportional to ~${ctaLen} characters + padding
+- The shape is a VISUAL ELEMENT of the composition, not a UI button`;
+
+      (input as { prompt: string }).prompt = input.prompt + compositionSuffix;
+      console.log("[DEBUG] compositionMode=true — prompt augmented with composition suffix");
+    }
 
     // Se strictIdentity=true chegou sem subject image/base64, faz fallback silencioso para false
     // em vez de retornar erro 400. Isso torna o backend tolerante a estados inconsistentes do frontend.

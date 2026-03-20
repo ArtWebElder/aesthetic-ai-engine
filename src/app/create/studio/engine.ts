@@ -216,12 +216,60 @@ export async function executeNode(
         undefined;
 
       const isSceneMode = node.data.mode === 'scene_with_subject';
+      const isCompositionMode = node.data.mode === 'composition_visual';
+
+      // Find copy data from upstream Copy IA node (for composition_visual mode)
+      const copyUp = findUpstreamByType(inputs, 'copy');
 
       console.log('[Studio:image_gen] Mode:', node.data.mode || 'default');
       console.log('[Studio:image_gen] Prompt length:', prompt.length);
       console.log('[Studio:image_gen] Subject:', subject ? `(${subject.length} chars)` : 'MISSING');
       console.log('[Studio:image_gen] Reference:', reference ? `(${reference.length} chars)` : 'none');
       console.log('[Studio:image_gen] Analysis:', analysis ? 'present' : 'none');
+      console.log('[Studio:image_gen] CompositionMode:', isCompositionMode, '| CopyData:', copyUp?.copyData ? 'present' : 'none');
+
+      // ── composition_visual: 2-layer pipeline (visual + Konva text) ──
+      if (isCompositionMode && analysis) {
+        const style = analysis.style || {};
+        const layout = analysis.layout || {};
+        const textLayout = analysis.textLayout || {};
+        const scene = analysis.sceneDescription || analysis.composition?.description || '';
+
+        prompt = `Create a professional advertisement/banner image.
+
+SCENE (recreate this exact style and atmosphere):
+${scene}
+
+${style.backgroundDescription ? `BACKGROUND: ${style.backgroundDescription}` : ''}
+MOOD: ${style.mood || 'professional'}
+COLOR PALETTE: ${(style.colorScheme || ['#1a1a1a', '#333333']).join(', ')}
+
+PRODUCT PLACEMENT:
+- Position the product/subject ${layout.productPosition || 'center'}, ${layout.productSize || 'medium'} size
+- The product in the input image must be the HERO of the composition
+- Maintain the product's EXACT appearance — do not alter its colors, shape, or details
+- Integrate the product naturally into the scene with proper lighting, shadows, and reflections
+
+ABSOLUTE RULES — ZERO TEXT:
+- DO NOT render ANY text, letters, numbers, words, typography, or watermarks in the image
+- DO NOT write headlines, prices, CTAs, brand names, or logos
+- The image must contain ONLY visual elements (product, background, lighting, effects)
+- All text will be added in a separate layer via Canvas 2D — the image must be text-free
+
+BREATHING SPACE FOR TEXT OVERLAY:
+- Overall layout: ${textLayout.overallLayout || 'product centered, text at bottom'}
+- Leave clean space at: ${textLayout.headlinePosition || 'bottom-left'} for the headline
+- Breathing areas: ${(textLayout.breathingSpaceAreas || ['bottom strip']).join(', ')}
+- These areas should have slightly darker/simpler background for text readability
+
+${textLayout.ctaStyle && textLayout.ctaStyle !== 'none' ? `CTA BUTTON SHAPE:
+- Generate a VISUAL SHAPE (not text) at ${textLayout.ctaPosition || 'bottom'} that looks like a ${textLayout.ctaStyle} button
+- This shape should be a colored element (gradient, glow, 3D effect) where CTA text will be placed later
+- Make it visually prominent and match the overall style` : ''}
+
+Ultra high quality, 8K detail, proper depth of field.
+${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.customPrompt}` : ''}`;
+      }
 
       // ── scene_with_subject: build rich prompt from analysis ──
       if (isSceneMode && analysis) {
@@ -271,10 +319,30 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
         width: (node.data.width as number) || 1080,
         height: (node.data.height as number) || 1080,
         strictIdentity: Boolean(subject),
-        identityStrength: isSceneMode ? 95 : ((node.data.identityStrength as number) || 90),
-        styleStrength: isSceneMode ? 75 : (reference ? 70 : 45),
-        module: isSceneMode ? 'sys-img-banner' : ((node.data.module as string) || 'studio'),
+        identityStrength: (isSceneMode || isCompositionMode) ? 95 : ((node.data.identityStrength as number) || 90),
+        styleStrength: (isSceneMode || isCompositionMode) ? 75 : (reference ? 70 : 45),
+        module: (isSceneMode || isCompositionMode) ? 'sys-img-banner' : ((node.data.module as string) || 'studio'),
       };
+
+      // 2-layer pipeline: pass compositionMode + copyData + textLayout to Edge Function
+      if (isCompositionMode && copyUp?.copyData) {
+        payload.compositionMode = true;
+        payload.copyData = {
+          headline: copyUp.copyData.headline || '',
+          cta: copyUp.copyData.cta || '',
+        };
+        if (analysis?.textLayout) {
+          payload.textLayout = {
+            headlinePosition: analysis.textLayout.headlinePosition,
+            headlineSize: analysis.textLayout.headlineSize,
+            ctaPosition: analysis.textLayout.ctaPosition,
+            ctaStyle: analysis.textLayout.ctaStyle,
+            breathingSpaceAreas: analysis.textLayout.breathingSpaceAreas,
+            overallLayout: analysis.textLayout.overallLayout,
+          };
+        }
+        console.log('[Studio:image_gen] compositionMode payload added — headline:', payload.copyData.headline?.slice(0, 30));
+      }
 
       if (subject) {
         payload.subjectBase64 = subject;
