@@ -848,11 +848,19 @@ export function WizardPage() {
                 </div>
 
                 {displayBase64 && (
-                  <img
-                    src={displayBase64}
-                    alt="Criativo gerado"
-                    style={{ width: '100%', maxHeight: '55vh', borderRadius: 12, objectFit: 'contain', border: '1px solid hsl(var(--border))', boxShadow: '0 8px 32px rgba(20,20,23,0.1)', background: 'hsl(var(--card))' }}
-                  />
+                  <div style={{
+                    width: '100%', borderRadius: 12, overflow: 'hidden',
+                    border: '1px solid hsl(var(--border))',
+                    boxShadow: '0 8px 32px rgba(20,20,23,0.1)',
+                    background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <img
+                      src={displayBase64}
+                      alt="Criativo gerado"
+                      style={{ width: '100%', maxHeight: '55vh', objectFit: 'contain', display: 'block' }}
+                    />
+                  </div>
                 )}
 
                 {composing && popDesignStep && (
