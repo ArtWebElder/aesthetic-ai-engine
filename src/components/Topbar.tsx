@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Search, Command, Menu, Sparkles, Zap } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { Button } from '@/components/ui/button';
 import { mockCredits } from '@/lib/mocks/data';
@@ -53,6 +54,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
   const { user } = useAuth();
   const { t } = useI18n();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const isMobile = useIsMobile();
 
   const initials = (
     user?.user_metadata?.full_name?.charAt(0) ||
@@ -62,9 +64,10 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
 
   return (
     <header
-      className="sticky top-0 z-30 flex items-center px-5 gap-3"
+      className="sticky top-0 z-30 flex items-center gap-2 sm:gap-3"
       style={{
-        height: 56,
+        height: isMobile ? 52 : 56,
+        padding: isMobile ? '0 12px' : '0 20px',
         background: 'hsl(var(--background) / 0.8)',
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
@@ -75,6 +78,20 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
         <Button variant="ghost" size="icon" className="h-8 w-8 lg:hidden" onClick={onMenuToggle}>
           <Menu className="h-4 w-4" />
         </Button>
+      )}
+
+      {/* Mobile mini logo */}
+      {isMobile && (
+        <div
+          className="flex items-center justify-center rounded-[6px] text-white"
+          style={{
+            width: 26, height: 26,
+            background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+            fontSize: 13, fontWeight: 800, flexShrink: 0,
+          }}
+        >
+          C
+        </div>
       )}
 
       {/* Search */}
@@ -103,7 +120,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
 
       <div className="flex-1" />
 
-      <LocaleDropdown compact />
+      {!isMobile && <LocaleDropdown compact />}
 
       {/* Credits badge with tooltip */}
       <CreditTooltip credits={mockCredits.current}>
@@ -111,7 +128,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
           className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
           onClick={() => setShowUpgradeModal(true)}
           style={{
-            padding: '5px 12px',
+            padding: isMobile ? '4px 8px' : '5px 12px',
             borderRadius: 8,
             border: '1px solid hsl(var(--border))',
             background: 'hsl(var(--card))',
@@ -119,11 +136,11 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
             fontFamily: 'inherit',
           }}
         >
-          <svg width={15} height={15} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
+          <svg width={isMobile ? 14 : 15} height={isMobile ? 14 : 15} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
             <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
           </svg>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#ff713d' }}>{mockCredits.current}</span>
-          <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>créditos</span>
+          <span style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: '#ff713d' }}>{mockCredits.current}</span>
+          {!isMobile && <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>créditos</span>}
         </button>
       </CreditTooltip>
 
@@ -152,10 +169,10 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
       <div
         className="flex items-center justify-center rounded-full text-white"
         style={{
-          width: 30,
-          height: 30,
+          width: isMobile ? 28 : 30,
+          height: isMobile ? 28 : 30,
           background: 'linear-gradient(135deg, #ff713d, #141417)',
-          fontSize: 11.5,
+          fontSize: isMobile ? 10.5 : 11.5,
           fontWeight: 700,
           flexShrink: 0,
         }}

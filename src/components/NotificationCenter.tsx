@@ -2,9 +2,10 @@
 // CREATYNG — Notification dropdown in Topbar
 
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCircle, AlertTriangle, Info, XCircle, Sparkles, Check } from 'lucide-react';
+import { Bell, CheckCircle, AlertTriangle, Info, XCircle, Sparkles, Check, X } from 'lucide-react';
 import { useNotificationStore, type NotificationType } from '@/stores/useNotificationStore';
 import { useI18n } from '@/i18n';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ICON_MAP: Record<NotificationType, React.ElementType> = {
   success: CheckCircle,
@@ -35,19 +36,132 @@ function timeAgo(dateStr: string): string {
 
 export function NotificationCenter() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const count = unreadCount();
 
-  // Close on outside click
+  // Close on outside click (desktop only)
   useEffect(() => {
+    if (isMobile) return;
     const handler = (e: MouseEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     if (open) document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  }, [open, isMobile]);
+
+  // Lock body scroll on mobile when open
+  useEffect(() => {
+    if (isMobile && open) {
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = ''; };
+    }
+  }, [isMobile, open]);
+
+  const notificationList = (
+    <>
+      {notifications.length === 0 ? (
+        <div style={{
+          padding: '32px 16px', textAlign: 'center',
+          color: 'hsl(var(--muted-foreground))', fontSize: 13,
+        }}>
+          {t('notification.empty')}
+        </div>
+      ) : (
+        notifications.slice(0, 20).map((notif) => {
+          const Icon = ICON_MAP[notif.type];
+          const color = COLOR_MAP[notif.type];
+          return (
+            <button
+              key={notif.id}
+              onClick={() => markAsRead(notif.id)}
+              style={{
+                display: 'flex', gap: 10, padding: '10px 16px',
+                width: '100%', textAlign: 'left', cursor: 'pointer',
+                background: notif.read ? 'transparent' : 'hsl(var(--muted) / 0.5)',
+                borderBottom: '1px solid hsl(var(--border) / 0.5)',
+                transition: 'background 150ms',
+                border: 'none',
+              }}
+            >
+              <div style={{
+                width: 28, height: 28, borderRadius: 7, flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: `${color}15`,
+              }}>
+                <Icon style={{ width: 14, height: 14, color }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 13, fontWeight: notif.read ? 400 : 600,
+                  color: 'hsl(var(--foreground))',
+                }}>
+                  {notif.title}
+                </div>
+                <div style={{
+                  fontSize: 12, color: 'hsl(var(--muted-foreground))',
+                  marginTop: 2, lineHeight: 1.4,
+                }}>
+                  {notif.message}
+                </div>
+              </div>
+              <span style={{
+                fontSize: 11, color: 'hsl(var(--muted-foreground))',
+                whiteSpace: 'nowrap', flexShrink: 0,
+              }}>
+                {timeAgo(notif.createdAt)}
+              </span>
+            </button>
+          );
+        })
+      )}
+    </>
+  );
+
+  const header = (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      padding: isMobile ? '14px 16px' : '12px 16px',
+      borderBottom: '1px solid hsl(var(--border))',
+      position: isMobile ? 'sticky' : undefined,
+      top: isMobile ? 0 : undefined,
+      background: 'hsl(var(--card))',
+      zIndex: isMobile ? 1 : undefined,
+    }}>
+      <span style={{ fontSize: isMobile ? 16 : 14, fontWeight: 600, color: 'hsl(var(--foreground))' }}>
+        {t('notification.title')}
+      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {count > 0 && (
+          <button
+            onClick={() => markAllAsRead()}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              fontSize: 12, color: '#F97316', background: 'none',
+              border: 'none', cursor: 'pointer', fontWeight: 500,
+            }}
+          >
+            <Check style={{ width: 13, height: 13 }} />
+            {t('notification.mark_all_read')}
+          </button>
+        )}
+        {isMobile && (
+          <button
+            onClick={() => setOpen(false)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 32, height: 32, borderRadius: 8,
+              background: 'none', border: 'none', cursor: 'pointer',
+            }}
+          >
+            <X style={{ width: 18, height: 18, color: 'hsl(var(--muted-foreground))' }} />
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div ref={ref} style={{ position: 'relative', display: 'inline-flex' }}>
@@ -56,7 +170,7 @@ export function NotificationCenter() {
         onClick={() => setOpen((v) => !v)}
         style={{
           position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 34, height: 34, borderRadius: 9,
+          width: isMobile ? 32 : 34, height: isMobile ? 32 : 34, borderRadius: 9,
           border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))',
           cursor: 'pointer', flexShrink: 0, transition: 'background 150ms',
         }}
@@ -77,8 +191,22 @@ export function NotificationCenter() {
         )}
       </button>
 
-      {/* Dropdown */}
-      {open && (
+      {/* Mobile: full-screen modal | Desktop: dropdown */}
+      {open && isMobile && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'hsl(var(--card))',
+          zIndex: 200,
+          display: 'flex', flexDirection: 'column',
+        }}>
+          {header}
+          <div style={{ flex: 1, overflowY: 'auto' }}>
+            {notificationList}
+          </div>
+        </div>
+      )}
+
+      {open && !isMobile && (
         <div style={{
           position: 'absolute', top: 'calc(100% + 8px)', right: 0,
           width: 360, maxHeight: 420, overflowY: 'auto',
@@ -88,86 +216,8 @@ export function NotificationCenter() {
           boxShadow: '0 8px 30px rgba(0,0,0,0.08)',
           zIndex: 100,
         }}>
-          {/* Header */}
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '12px 16px',
-            borderBottom: '1px solid hsl(var(--border))',
-          }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'hsl(var(--foreground))' }}>
-              {t('notification.title')}
-            </span>
-            {count > 0 && (
-              <button
-                onClick={() => markAllAsRead()}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 4,
-                  fontSize: 12, color: '#F97316', background: 'none',
-                  border: 'none', cursor: 'pointer', fontWeight: 500,
-                }}
-              >
-                <Check style={{ width: 13, height: 13 }} />
-                {t('notification.mark_all_read')}
-              </button>
-            )}
-          </div>
-
-          {/* List */}
-          {notifications.length === 0 ? (
-            <div style={{
-              padding: '32px 16px', textAlign: 'center',
-              color: 'hsl(var(--muted-foreground))', fontSize: 13,
-            }}>
-              {t('notification.empty')}
-            </div>
-          ) : (
-            notifications.slice(0, 20).map((notif) => {
-              const Icon = ICON_MAP[notif.type];
-              const color = COLOR_MAP[notif.type];
-              return (
-                <button
-                  key={notif.id}
-                  onClick={() => markAsRead(notif.id)}
-                  style={{
-                    display: 'flex', gap: 10, padding: '10px 16px',
-                    width: '100%', textAlign: 'left', cursor: 'pointer',
-                    background: notif.read ? 'transparent' : 'hsl(var(--muted) / 0.5)',
-                    borderBottom: '1px solid hsl(var(--border) / 0.5)',
-                    transition: 'background 150ms',
-                    border: 'none',
-                  }}
-                >
-                  <div style={{
-                    width: 28, height: 28, borderRadius: 7, flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: `${color}15`,
-                  }}>
-                    <Icon style={{ width: 14, height: 14, color }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 13, fontWeight: notif.read ? 400 : 600,
-                      color: 'hsl(var(--foreground))',
-                    }}>
-                      {notif.title}
-                    </div>
-                    <div style={{
-                      fontSize: 12, color: 'hsl(var(--muted-foreground))',
-                      marginTop: 2, lineHeight: 1.4,
-                    }}>
-                      {notif.message}
-                    </div>
-                  </div>
-                  <span style={{
-                    fontSize: 11, color: 'hsl(var(--muted-foreground))',
-                    whiteSpace: 'nowrap', flexShrink: 0,
-                  }}>
-                    {timeAgo(notif.createdAt)}
-                  </span>
-                </button>
-              );
-            })
-          )}
+          {header}
+          {notificationList}
         </div>
       )}
     </div>
