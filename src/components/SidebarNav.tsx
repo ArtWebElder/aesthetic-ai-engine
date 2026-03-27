@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, FolderOpen, CreditCard,
-  Settings, HelpCircle, LogOut, Plus, ChevronLeft, ChevronRight, Shield, Workflow,
+  Settings, HelpCircle, LogOut, Plus, ChevronLeft, ChevronRight, Shield, Workflow, X,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
@@ -27,6 +27,7 @@ const RECENT_PROJECTS = [
 
 interface SidebarNavProps {
   onClose?: () => void;
+  forceExpanded?: boolean;
 }
 
 const NavItem = ({
@@ -69,7 +70,7 @@ const NavItem = ({
   );
 };
 
-const SidebarNav = ({ onClose }: SidebarNavProps) => {
+const SidebarNav = ({ onClose, forceExpanded }: SidebarNavProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
@@ -77,6 +78,8 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
   const devAdmin = import.meta.env.VITE_DEV_ADMIN === 'true';
   const [isSuperAdmin, setIsSuperAdmin] = useState(devAdmin);
   const [collapsed, setCollapsed] = useState(false);
+  const isMobileDrawer = Boolean(forceExpanded);
+  const isCollapsed = isMobileDrawer ? false : collapsed;
 
   useEffect(() => {
     if (devAdmin) { setIsSuperAdmin(true); return; }
@@ -99,36 +102,38 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
     <div
       className="flex flex-col h-full"
       style={{
-        width: collapsed ? 68 : 244,
+        width: isMobileDrawer ? '100%' : (isCollapsed ? 68 : 244),
         background: 'hsl(var(--sidebar-background))',
-        borderRight: '1px solid hsl(var(--sidebar-border))',
+        borderRight: isMobileDrawer ? 'none' : '1px solid hsl(var(--sidebar-border))',
         transition: 'width 260ms cubic-bezier(.4,0,.2,1)',
         overflow: 'visible',
         position: 'relative',
         flexShrink: 0,
       }}
     >
-      {/* Collapse toggle button — floats outside sidebar */}
-      <button
-        onClick={() => setCollapsed((v) => !v)}
-        className="absolute z-50 flex items-center justify-center rounded-full"
-        style={{
-          width: 28,
-          height: 28,
-          right: -14,
-          top: 72,
-          border: '1px solid hsl(var(--sidebar-border))',
-          background: 'hsl(var(--sidebar-background))',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        }}
-      >
-        {collapsed
-          ? <ChevronRight style={{ width: 14, height: 14, color: 'hsl(var(--sidebar-foreground))' }} />
-          : <ChevronLeft style={{ width: 14, height: 14, color: 'hsl(var(--sidebar-foreground))' }} />
-        }
-      </button>
+      {/* Collapse toggle button — floats outside sidebar (hidden on mobile drawer) */}
+      {!isMobileDrawer && (
+        <button
+          onClick={() => setCollapsed((v) => !v)}
+          className="absolute z-50 flex items-center justify-center rounded-full"
+          style={{
+            width: 28,
+            height: 28,
+            right: -14,
+            top: 72,
+            border: '1px solid hsl(var(--sidebar-border))',
+            background: 'hsl(var(--sidebar-background))',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          }}
+        >
+          {isCollapsed
+            ? <ChevronRight style={{ width: 14, height: 14, color: 'hsl(var(--sidebar-foreground))' }} />
+            : <ChevronLeft style={{ width: 14, height: 14, color: 'hsl(var(--sidebar-foreground))' }} />
+          }
+        </button>
+      )}
 
-      {/* Logo */}
+      {/* Logo + close button */}
       <div className="flex items-center gap-2.5 overflow-hidden" style={{ padding: '16px 18px', height: 60 }}>
         <div
           className="shrink-0 flex items-center justify-center rounded-[7px] text-white"
@@ -142,10 +147,19 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
         >
           C
         </div>
-        {!collapsed && (
+        {!isCollapsed && (
           <span className="whitespace-nowrap overflow-hidden" style={{ fontSize: 17, fontWeight: 700, color: 'hsl(var(--foreground))' }}>
             Creatyng
           </span>
+        )}
+        {isMobileDrawer && (
+          <button
+            onClick={onClose}
+            className="ml-auto flex items-center justify-center rounded-md hover:bg-foreground/5 transition-colors"
+            style={{ width: 32, height: 32 }}
+          >
+            <X style={{ width: 18, height: 18, color: 'hsl(var(--sidebar-foreground))' }} />
+          </button>
         )}
       </div>
 
@@ -163,12 +177,12 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
           }}
         >
           <Plus style={{ width: 17, height: 17 }} />
-          {!collapsed && <span>{t('nav.new_creation')}</span>}
+          {!isCollapsed && <span>{t('nav.new_creation')}</span>}
         </button>
       </div>
 
       {/* Studio button (secondary) */}
-      {!collapsed && (
+      {!isCollapsed && (
         <div style={{ marginLeft: 14, marginRight: 14, marginBottom: 8 }}>
           <button
             onClick={() => handleNav('/app/create/studio')}
@@ -189,7 +203,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
           </button>
         </div>
       )}
-      {collapsed && (
+      {isCollapsed && (
         <div style={{ marginLeft: 14, marginRight: 14, marginBottom: 8 }}>
           <button
             onClick={() => handleNav('/app/create/studio')}
@@ -216,13 +230,13 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
             icon={item.icon}
             label={t(item.labelKey)}
             isActive={location.pathname.startsWith(item.path)}
-            collapsed={collapsed}
+            collapsed={isCollapsed}
             onClick={() => handleNav(item.path)}
           />
         ))}
 
         {/* Recentes section (expanded only) */}
-        {!collapsed && (
+        {!isCollapsed && (
           <div className="mt-5 mb-2">
             <p
               className="px-[18px] mb-2 uppercase tracking-[0.1em]"
@@ -246,7 +260,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
               icon={item.icon}
               label={t(item.labelKey)}
               isActive={location.pathname.startsWith(item.path)}
-              collapsed={collapsed}
+              collapsed={isCollapsed}
               onClick={() => handleNav(item.path)}
             />
           ))}
@@ -257,7 +271,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
                 icon={Shield}
                 label="Super Admin"
                 isActive={location.pathname.startsWith('/admin')}
-                collapsed={collapsed}
+                collapsed={isCollapsed}
                 onClick={() => { navigate('/admin'); onClose?.(); }}
                 color="#EF4444"
               />
@@ -265,7 +279,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
               <div style={{
                 position: 'absolute',
                 top: 8,
-                right: collapsed ? 8 : 14,
+                right: isCollapsed ? 8 : 14,
                 width: 6,
                 height: 6,
                 borderRadius: '50%',
@@ -276,7 +290,7 @@ const SidebarNav = ({ onClose }: SidebarNavProps) => {
             </div>
           )}
 
-          <LogoutButton collapsed={collapsed} onLogout={() => { signOut(); navigate('/login'); }} label={t('nav.sign_out')} />
+          <LogoutButton collapsed={isCollapsed} onLogout={() => { signOut(); navigate('/login'); }} label={t('nav.sign_out')} />
         </div>
       </div>
     </div>

@@ -53,10 +53,10 @@ const AppShell = () => {
         <SidebarNav />
       </aside>
 
-      {/* Mobile sidebar */}
+      {/* Mobile sidebar — 280px drawer, always expanded */}
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-        <SheetContent side="left" className="p-0 w-60">
-          <SidebarNav onClose={() => setMobileOpen(false)} />
+        <SheetContent side="left" className="p-0 w-[280px]">
+          <SidebarNav onClose={() => setMobileOpen(false)} forceExpanded />
         </SheetContent>
       </Sheet>
 
@@ -77,11 +77,11 @@ const AppShell = () => {
           {pathname === '/app/create/studio' ? (
             <Outlet />
           ) : ['/app/projects', '/app/billing'].some(p => pathname.startsWith(p)) ? (
-            <div key={pathname} className="animate-fade-up max-w-6xl mx-auto w-full px-6 py-2">
+            <div key={pathname} className="animate-fade-up max-w-6xl mx-auto w-full px-4 py-2 md:px-6 lg:px-8">
               <Outlet />
             </div>
           ) : (
-            <div key={pathname} className="animate-fade-up">
+            <div key={pathname} className="animate-fade-up px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-7">
               <Outlet />
             </div>
           )}
