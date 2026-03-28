@@ -25,6 +25,8 @@ import { WizardStep3Text } from "./WizardStep3Text";
 import { analyzeReference } from "@/services/referenceAnalyzer";
 import { ExportModal } from "./ExportModal";
 import { ConfettiEffect } from "@/components/creatyng/ConfettiEffect";
+import { useCreditStore } from "@/stores/useCreditStore";
+import { calculateCost } from "@/lib/creditCosts";
 
 // ── Constants (idênticos ao original) ─────────────────────────────────────────
 
@@ -373,6 +375,21 @@ export function WizardPage() {
     htmlCompositionRef.current = null;
 
     try {
+      // ── Debit credits before generation ────────────────────────────────────
+      const presetId = state.selectedImagePresetId || "simple-gen";
+      const creditCost = calculateCost(presetId) || 5;
+      try {
+        await useCreditStore.getState().debitCredits(creditCost, `Generation — ${presetId}`);
+      } catch (debitErr: unknown) {
+        const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
+        if (msg === "insufficient_credits") {
+          setError("Créditos insuficientes. Recarregue para continuar.");
+          setGenerating(false);
+          return;
+        }
+        console.warn("[Wizard] debit failed, proceeding anyway:", msg);
+      }
+
       // ── Analyze reference (if present, before any pipeline) ─────────────────
       const hasRef = Boolean(state.referenceBase64 && !state.referenceBase64.startsWith("gallery:"));
       if (hasRef && !state.referenceAnalysis) {

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Command, Menu, Sparkles, Zap } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { NotificationCenter } from '@/components/NotificationCenter';
 import { Button } from '@/components/ui/button';
-import { mockCredits } from '@/lib/mocks/data';
+import { useCreditStore } from '@/stores/useCreditStore';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { LocaleDropdown } from '@/components/LocaleDropdown';
@@ -55,6 +55,18 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
   const { t } = useI18n();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const isMobile = useIsMobile();
+  const credits = useCreditStore((s) => s.credits);
+  const fetchCredits = useCreditStore((s) => s.fetchCredits);
+  const subscribeRealtime = useCreditStore((s) => s.subscribeRealtime);
+  const unsubscribeRealtime = useCreditStore((s) => s.unsubscribeRealtime);
+
+  useEffect(() => {
+    fetchCredits();
+    if (user?.id) {
+      subscribeRealtime(user.id);
+      return () => unsubscribeRealtime();
+    }
+  }, [user?.id, fetchCredits, subscribeRealtime, unsubscribeRealtime]);
 
   const initials = (
     user?.user_metadata?.full_name?.charAt(0) ||
@@ -123,7 +135,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
       {!isMobile && <LocaleDropdown compact />}
 
       {/* Credits badge with tooltip */}
-      <CreditTooltip credits={mockCredits.current}>
+      <CreditTooltip credits={credits}>
         <button
           className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
           onClick={() => setShowUpgradeModal(true)}
@@ -139,7 +151,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
           <svg width={isMobile ? 14 : 15} height={isMobile ? 14 : 15} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
             <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
           </svg>
-          <span style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: '#ff713d' }}>{mockCredits.current}</span>
+          <span style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: '#ff713d' }}>{credits}</span>
           {!isMobile && <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>créditos</span>}
         </button>
       </CreditTooltip>
@@ -182,7 +194,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
       <RechargeCreditsModal
         open={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
-        currentCredits={mockCredits.current}
+        currentCredits={credits}
         totalCredits={500}
       />
     </header>

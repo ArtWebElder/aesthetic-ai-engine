@@ -1020,5 +1020,30 @@
 
   "recent.title": "Recientes",
   "recent.empty": "Sin proyectos recientes",
-  "recent.empty_hint": "Crea tu primer creativo para verlo aquí."
+  "recent.empty_hint": "Crea tu primer creativo para verlo aquí.",
+
+  "recharge.title": "Recargar créditos",
+  "recharge.balance": "Saldo actual",
+  "recharge.credits": "créditos",
+  "recharge.credit_unit": "crédito",
+  "recharge.used": "usados",
+  "recharge.choose_package": "Elige tu paquete",
+  "recharge.save": "Ahorra",
+  "recharge.card": "Tarjeta",
+  "recharge.add": "Agregar",
+  "recharge.generate_pix": "Generar Pix",
+  "recharge.processing": "Procesando...",
+  "recharge.secure_stripe": "Pago seguro vía Stripe",
+  "recharge.secure_pix": "Pago seguro vía Pix",
+  "recharge.need_more": "¿Necesitas más?",
+  "recharge.contact_us": "Contáctanos",
+  "recharge.corporate_packages": "para paquetes corporativos.",
+  "recharge.scan_pix": "Escanea el QR Code",
+  "recharge.credits_for": "créditos por",
+  "recharge.copy_pix_code": "Copiar código Pix",
+  "recharge.waiting_payment": "Esperando pago...",
+  "recharge.pix_expired": "Pix expirado. Intenta de nuevo.",
+  "recharge.payment_confirmed": "¡Pago confirmado!",
+  "recharge.credits_added": "créditos agregados a tu cuenta",
+  "recharge.continue": "Continuar"
 }
