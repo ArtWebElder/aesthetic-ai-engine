@@ -1054,5 +1054,16 @@
   "verify_email.resend": "Resend email",
   "verify_email.resent": "Email resent! Check your inbox.",
   "verify_email.block_generate": "Please verify your email before generating. Check your inbox.",
-  "verify_email.block_purchase": "Please verify your email before purchasing credits."
+  "verify_email.block_purchase": "Please verify your email before purchasing credits.",
+  "verify_email.verify_now": "Verify now",
+  "verify_email.modal_title": "Verify your email",
+  "verify_email.modal_desc": "Enter the code sent to your inbox.",
+  "verify_email.modal_sent_to": "Code sent to",
+  "verify_email.otp_placeholder": "000000",
+  "verify_email.otp_invalid": "Invalid code. Please try again.",
+  "verify_email.verify_btn": "Verify email",
+  "verify_email.verifying": "Verifying...",
+  "verify_email.success_title": "Email verified!",
+  "verify_email.success_desc": "Your account now has full access.",
+  "verify_email.later": "Later"
 }

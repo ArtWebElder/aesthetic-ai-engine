@@ -23,7 +23,14 @@ export function normalizeLang(input?: string | null): Lang {
 export function getInitialLang(): Lang {
   if (typeof window === "undefined") return "en";
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  return normalizeLang(stored || window.navigator.language);
+  if (stored) return normalizeLang(stored);
+  // Check navigator.languages first (more specific), then navigator.language
+  const languages = window.navigator.languages ?? [];
+  for (const l of languages) {
+    const norm = normalizeLang(l);
+    if (norm !== "en") return norm; // prefer first non-English match
+  }
+  return normalizeLang(window.navigator.language);
 }
 
 export function persistLang(lang: Lang): void {

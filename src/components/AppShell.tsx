@@ -7,7 +7,7 @@ import SidebarNav from './SidebarNav';
 import Topbar from './Topbar';
 import CommandBar from './CommandBar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import { Mail, X, RefreshCw } from 'lucide-react';
+import { Mail, X, RefreshCw, CheckCircle, ShieldCheck } from 'lucide-react';
 
 const AppShell = () => {
   const { user, loading, emailVerified } = useAuth();
@@ -16,6 +16,11 @@ const AppShell = () => {
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpSuccess, setOtpSuccess] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
@@ -32,6 +37,34 @@ const AppShell = () => {
       setResending(false);
     }
   }, [user?.email, resending]);
+
+  const handleVerifyOtp = useCallback(async () => {
+    if (!user?.email || !otpCode.trim() || otpLoading) return;
+    setOtpLoading(true);
+    setOtpError(null);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: user.email,
+        token: otpCode.trim(),
+        type: 'signup',
+      });
+      if (error) {
+        setOtpError(t('verify_email.otp_invalid'));
+      } else {
+        setOtpSuccess(true);
+        setBannerDismissed(true);
+        setTimeout(() => {
+          setShowOtpModal(false);
+          setOtpSuccess(false);
+          setOtpCode('');
+        }, 2000);
+      }
+    } catch {
+      setOtpError(t('verify_email.otp_invalid'));
+    } finally {
+      setOtpLoading(false);
+    }
+  }, [user?.email, otpCode, otpLoading, t]);
 
   // Scroll to top on route change
   useEffect(() => {
@@ -87,7 +120,7 @@ const AppShell = () => {
           <Topbar onMenuToggle={() => setMobileOpen(true)} />
         )}
 
-        {/* Email verification banner */}
+        {/* Email verification banner — only for email/password users */}
         {!emailVerified && !bannerDismissed && (
           <div style={{
             background: 'linear-gradient(90deg, #FFF7ED, #FFEDD5)',
@@ -102,19 +135,33 @@ const AppShell = () => {
               {resent ? t('verify_email.resent') : t('verify_email.banner')}
             </span>
             {!resent && (
-              <button
-                onClick={handleResendEmail}
-                disabled={resending}
-                style={{
-                  padding: '4px 12px', borderRadius: 6, border: '1px solid #FDBA74',
-                  background: '#fff', color: '#EA580C', fontSize: 12, fontWeight: 600,
-                  cursor: resending ? 'default' : 'pointer', fontFamily: 'inherit',
-                  display: 'flex', alignItems: 'center', gap: 5, opacity: resending ? 0.6 : 1,
-                }}
-              >
-                <RefreshCw style={{ width: 13, height: 13, animation: resending ? 'spin 1s linear infinite' : 'none' }} />
-                {t('verify_email.resend')}
-              </button>
+              <>
+                <button
+                  onClick={() => setShowOtpModal(true)}
+                  style={{
+                    padding: '4px 14px', borderRadius: 6, border: 'none',
+                    background: '#EA580C', color: '#fff', fontSize: 12, fontWeight: 600,
+                    cursor: 'pointer', fontFamily: 'inherit',
+                    display: 'flex', alignItems: 'center', gap: 5,
+                  }}
+                >
+                  <ShieldCheck style={{ width: 13, height: 13 }} />
+                  {t('verify_email.verify_now')}
+                </button>
+                <button
+                  onClick={handleResendEmail}
+                  disabled={resending}
+                  style={{
+                    padding: '4px 12px', borderRadius: 6, border: '1px solid #FDBA74',
+                    background: '#fff', color: '#EA580C', fontSize: 12, fontWeight: 600,
+                    cursor: resending ? 'default' : 'pointer', fontFamily: 'inherit',
+                    display: 'flex', alignItems: 'center', gap: 5, opacity: resending ? 0.6 : 1,
+                  }}
+                >
+                  <RefreshCw style={{ width: 13, height: 13, animation: resending ? 'spin 1s linear infinite' : 'none' }} />
+                  {t('verify_email.resend')}
+                </button>
+              </>
             )}
             <button
               onClick={() => setBannerDismissed(true)}
@@ -122,6 +169,112 @@ const AppShell = () => {
             >
               <X style={{ width: 15, height: 15 }} />
             </button>
+          </div>
+        )}
+
+        {/* OTP Verification Modal */}
+        {showOtpModal && (
+          <div style={{
+            position: 'fixed', inset: 0, zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+          }} onClick={() => { if (!otpLoading) { setShowOtpModal(false); setOtpError(null); setOtpCode(''); } }}>
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                background: '#fff', borderRadius: 16, padding: '32px 28px', width: 380, maxWidth: '90vw',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                animation: 'scIn 200ms ease both',
+              }}
+            >
+              <style>{`@keyframes scIn{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}`}</style>
+
+              {otpSuccess ? (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <CheckCircle style={{ width: 48, height: 48, color: '#10B981', margin: '0 auto 16px' }} />
+                  <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>{t('verify_email.success_title')}</h3>
+                  <p style={{ fontSize: 13, color: '#8e8e96' }}>{t('verify_email.success_desc')}</p>
+                </div>
+              ) : (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 10,
+                      background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EA580C',
+                    }}>
+                      <Mail style={{ width: 20, height: 20 }} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: 16, fontWeight: 700 }}>{t('verify_email.modal_title')}</h3>
+                      <p style={{ fontSize: 12.5, color: '#8e8e96' }}>{t('verify_email.modal_desc')}</p>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: 13, color: '#5a5a60', marginBottom: 14 }}>
+                    {t('verify_email.modal_sent_to')} <strong>{user?.email}</strong>
+                  </p>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder={t('verify_email.otp_placeholder')}
+                    value={otpCode}
+                    onChange={e => { setOtpCode(e.target.value); setOtpError(null); }}
+                    onKeyDown={e => { if (e.key === 'Enter') handleVerifyOtp(); }}
+                    style={{
+                      width: '100%', padding: '11px 14px', borderRadius: 10, fontSize: 16,
+                      border: otpError ? '2px solid #EF4444' : '1px solid rgba(20,20,23,0.12)',
+                      outline: 'none', fontFamily: 'monospace', letterSpacing: 4, textAlign: 'center',
+                      marginBottom: 8,
+                    }}
+                  />
+
+                  {otpError && (
+                    <p style={{ fontSize: 12, color: '#EF4444', marginBottom: 8 }}>{otpError}</p>
+                  )}
+
+                  <button
+                    onClick={handleVerifyOtp}
+                    disabled={otpLoading || !otpCode.trim()}
+                    style={{
+                      width: '100%', padding: '11px 0', borderRadius: 10, border: 'none',
+                      background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff',
+                      fontSize: 14, fontWeight: 600, cursor: otpLoading || !otpCode.trim() ? 'default' : 'pointer',
+                      fontFamily: 'inherit', opacity: otpLoading || !otpCode.trim() ? 0.5 : 1,
+                      marginBottom: 12, transition: 'opacity 150ms',
+                    }}
+                  >
+                    {otpLoading ? t('verify_email.verifying') : t('verify_email.verify_btn')}
+                  </button>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <button
+                      onClick={handleResendEmail}
+                      disabled={resending}
+                      style={{
+                        background: 'none', border: 'none', color: '#EA580C', fontSize: 12.5,
+                        cursor: resending ? 'default' : 'pointer', fontFamily: 'inherit',
+                        opacity: resending ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 4,
+                      }}
+                    >
+                      <RefreshCw style={{ width: 12, height: 12, animation: resending ? 'spin 1s linear infinite' : 'none' }} />
+                      {resent ? t('verify_email.resent') : t('verify_email.resend')}
+                    </button>
+                    <button
+                      onClick={() => { setShowOtpModal(false); setOtpError(null); setOtpCode(''); }}
+                      style={{
+                        background: 'none', border: 'none', color: '#8e8e96', fontSize: 12.5,
+                        cursor: 'pointer', fontFamily: 'inherit',
+                      }}
+                    >
+                      {t('verify_email.later')}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         )}
 

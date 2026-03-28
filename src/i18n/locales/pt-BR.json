@@ -1056,5 +1056,16 @@
   "verify_email.resend": "Reenviar email",
   "verify_email.resent": "Email reenviado! Cheque sua caixa.",
   "verify_email.block_generate": "Verifique seu email antes de gerar. Cheque sua caixa de entrada.",
-  "verify_email.block_purchase": "Verifique seu email antes de comprar créditos."
+  "verify_email.block_purchase": "Verifique seu email antes de comprar créditos.",
+  "verify_email.verify_now": "Verificar agora",
+  "verify_email.modal_title": "Verifique seu email",
+  "verify_email.modal_desc": "Digite o código enviado para sua caixa de entrada.",
+  "verify_email.modal_sent_to": "Código enviado para",
+  "verify_email.otp_placeholder": "000000",
+  "verify_email.otp_invalid": "Código inválido. Tente novamente.",
+  "verify_email.verify_btn": "Verificar email",
+  "verify_email.verifying": "Verificando...",
+  "verify_email.success_title": "Email verificado!",
+  "verify_email.success_desc": "Sua conta agora tem acesso completo.",
+  "verify_email.later": "Depois"
 }

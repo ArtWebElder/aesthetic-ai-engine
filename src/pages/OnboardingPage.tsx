@@ -33,38 +33,45 @@ const SUBCATEGORIES: Record<ProfileId, { id: string; labelKey: string; Icon: Rea
     { id: 'fashion', labelKey: 'onboarding.sub.fashion', Icon: Shirt },
     { id: 'ecommerce', labelKey: 'onboarding.sub.ecommerce', Icon: ShoppingBag },
     { id: 'services', labelKey: 'onboarding.sub.local_biz', Icon: Briefcase },
+    { id: 'other', labelKey: 'onboarding.sub.other', Icon: Sparkles },
   ],
   designer: [
     { id: 'freelancer', labelKey: 'onboarding.sub.freelance', Icon: Palette },
     { id: 'agency', labelKey: 'onboarding.sub.agency', Icon: Monitor },
     { id: 'branding', labelKey: 'onboarding.sub.branding', Icon: Image },
     { id: 'social-design', labelKey: 'onboarding.sub.social_media', Icon: Hash },
+    { id: 'other', labelKey: 'onboarding.sub.other', Icon: Sparkles },
   ],
   traffic: [
     { id: 'meta-ads', labelKey: 'onboarding.sub.marketing', Icon: Target },
     { id: 'google-ads', labelKey: 'onboarding.sub.marketing', Icon: Globe },
     { id: 'multi-channel', labelKey: 'onboarding.sub.marketing', Icon: BarChart2 },
+    { id: 'other', labelKey: 'onboarding.sub.other', Icon: Sparkles },
   ],
   creator: [
     { id: 'youtube', labelKey: 'onboarding.sub.creative', Icon: Play },
     { id: 'tiktok', labelKey: 'onboarding.sub.creative', Icon: Video },
     { id: 'podcast', labelKey: 'onboarding.sub.creative', Icon: Mic },
     { id: 'streaming', labelKey: 'onboarding.sub.creative', Icon: Monitor },
+    { id: 'other', labelKey: 'onboarding.sub.other', Icon: Sparkles },
   ],
   webdev: [
     { id: 'landing', labelKey: 'onboarding.sub.saas', Icon: Monitor },
     { id: 'uiux', labelKey: 'onboarding.sub.ui_ux', Icon: Monitor },
     { id: 'saas', labelKey: 'onboarding.sub.saas', Icon: Code2 },
+    { id: 'other', labelKey: 'onboarding.sub.other', Icon: Sparkles },
   ],
   social: [
     { id: 'instagram', labelKey: 'onboarding.sub.social_media', Icon: Hash },
     { id: 'multi-social', labelKey: 'onboarding.sub.social_media', Icon: Globe },
     { id: 'influencer', labelKey: 'onboarding.sub.marketing', Icon: Megaphone },
+    { id: 'other', labelKey: 'onboarding.sub.other', Icon: Sparkles },
   ],
   photographer: [
     { id: 'product-photo', labelKey: 'onboarding.sub.product', Icon: Camera },
     { id: 'food-photo', labelKey: 'onboarding.sub.food', Icon: Utensils },
     { id: 'portrait', labelKey: 'onboarding.sub.portrait', Icon: Camera },
+    { id: 'other', labelKey: 'onboarding.sub.other', Icon: Sparkles },
   ],
   other: [
     { id: 'curious', labelKey: 'onboarding.sub.other', Icon: Sparkles },
@@ -99,15 +106,25 @@ export default function OnboardingPage() {
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
   const profileColor = PROFILES.find(p => p.id === profile)?.color || '#ff713d';
 
+  const canNext = () => {
+    if (step === 0) return !!profile;
+    if (step === 1) return !!subcat;
+    if (step === 2) return selectedGoals.length > 0;
+    if (step === 3) return !!plan;
+    return true;
+  };
+
   const go = (dir: number) => {
+    if (dir > 0 && !canNext()) return;
     setTrans(true);
     setTimeout(() => { setStep(s => s + dir); setTrans(false); }, 180);
   };
 
-  const markAndNavigate = async (dest: string) => {
+  const markAndNavigate = (dest: string) => {
     try { localStorage.setItem('creatyng_onboarding', JSON.stringify({ profile, subcat, goals: selectedGoals, plan, completed: true })); } catch { /* ignore */ }
+    // Fire-and-forget: update DB but navigate immediately regardless
     if (user) {
-      await supabase.from('profiles').update({ onboarded: true }).eq('id', user.id).catch(() => {});
+      supabase.from('profiles').update({ onboarded: true }).eq('id', user.id).then(() => {}).catch(() => {});
     }
     markOnboarded();
     navigate(dest, { replace: true });
@@ -391,9 +408,11 @@ export default function OnboardingPage() {
           <button onClick={() => go(1)} style={{
             padding: '9px 22px', borderRadius: 9, border: 'none',
             background: 'linear-gradient(135deg,#ff713d,#FF9B70)',
-            color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            color: '#fff', fontSize: 13, fontWeight: 600,
+            cursor: canNext() ? 'pointer' : 'not-allowed',
             fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
             boxShadow: '0 3px 12px rgba(255,113,61,0.27)', transition: 'all 180ms',
+            opacity: canNext() ? 1 : 0.4,
           }}>
             {t('onboarding.continue')} <ChevronRight size={18} />
           </button>

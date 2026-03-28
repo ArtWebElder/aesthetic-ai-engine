@@ -120,7 +120,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const markOnboarded = () => setOnboarded(true);
 
   // Google OAuth users always have confirmed email; email/password users need confirmation
-  const emailVerified = !user || !!user.email_confirmed_at;
+  const isGoogleUser = user?.app_metadata?.provider === 'google';
+  const emailVerified = !user || isGoogleUser || !!user.email_confirmed_at;
 
   return (
     <AuthCtx.Provider value={{ user, session, loading, onboarded, emailVerified, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, markOnboarded }}>
