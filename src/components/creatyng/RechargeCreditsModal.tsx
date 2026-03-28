@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { supabase } from '@/services/supabaseClient';
 import { useCreditStore } from '@/stores/useCreditStore';
 import { useI18n } from '@/i18n';
+import { useAuth } from '@/features/auth/AuthProvider';
 
 interface RechargeCreditsModalProps {
   open: boolean;
@@ -26,6 +27,7 @@ const RechargeCreditsModal = ({
   totalCredits = 500,
 }: RechargeCreditsModalProps) => {
   const { t } = useI18n();
+  const { emailVerified } = useAuth();
   const storeCredits = useCreditStore((s) => s.credits);
   const currentCredits = propCredits ?? storeCredits;
 
@@ -89,6 +91,10 @@ const RechargeCreditsModal = ({
 
   // ── Handle purchase ──
   async function handlePurchase() {
+    if (!emailVerified) {
+      setError(t('verify_email.block_purchase'));
+      return;
+    }
     setError(null);
     setLoading(true);
     const pkg = PACKAGES[selected];

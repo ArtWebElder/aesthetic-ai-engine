@@ -1051,5 +1051,10 @@
   "recharge.payment_confirmed": "Pagamento confirmado!",
   "recharge.credits_added": "créditos adicionados à sua conta",
   "recharge.continue": "Continuar",
-  "recharge.not_authenticated": "Faça login para comprar créditos"
+  "recharge.not_authenticated": "Faça login para comprar créditos",
+  "verify_email.banner": "Verifique seu email para ter acesso completo. Cheque sua caixa de entrada.",
+  "verify_email.resend": "Reenviar email",
+  "verify_email.resent": "Email reenviado! Cheque sua caixa.",
+  "verify_email.block_generate": "Verifique seu email antes de gerar. Cheque sua caixa de entrada.",
+  "verify_email.block_purchase": "Verifique seu email antes de comprar créditos."
 }

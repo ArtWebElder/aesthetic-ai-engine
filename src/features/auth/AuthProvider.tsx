@@ -7,6 +7,7 @@ interface AuthContext {
   session: Session | null;
   loading: boolean;
   onboarded: boolean | null;
+  emailVerified: boolean;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
@@ -118,8 +119,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const markOnboarded = () => setOnboarded(true);
 
+  // Google OAuth users always have confirmed email; email/password users need confirmation
+  const emailVerified = !user || !!user.email_confirmed_at;
+
   return (
-    <AuthCtx.Provider value={{ user, session, loading, onboarded, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, markOnboarded }}>
+    <AuthCtx.Provider value={{ user, session, loading, onboarded, emailVerified, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, markOnboarded }}>
       {children}
     </AuthCtx.Provider>
   );

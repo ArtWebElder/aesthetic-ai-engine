@@ -27,6 +27,8 @@ import { ExportModal } from "./ExportModal";
 import { ConfettiEffect } from "@/components/creatyng/ConfettiEffect";
 import { useCreditStore } from "@/stores/useCreditStore";
 import { calculateCost } from "@/lib/creditCosts";
+import { useAuth } from "@/features/auth/AuthProvider";
+import { useI18n } from "@/i18n";
 
 // ── Constants (idênticos ao original) ─────────────────────────────────────────
 
@@ -191,6 +193,8 @@ function WizCredTooltip({ credits, children }: { credits: number; children: Reac
 export function WizardPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { emailVerified } = useAuth();
+  const { t } = useI18n();
 
   const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [stageIndex, setStageIndex] = useState(0);
@@ -375,6 +379,13 @@ export function WizardPage() {
     htmlCompositionRef.current = null;
 
     try {
+      // ── Block unverified email users ───────────────────────────────────────
+      if (!emailVerified) {
+        setError(t('verify_email.block_generate'));
+        setGenerating(false);
+        return;
+      }
+
       // ── Debit credits before generation ────────────────────────────────────
       const presetId = state.selectedImagePresetId || "simple-gen";
       const creditCost = calculateCost(presetId) || 5;

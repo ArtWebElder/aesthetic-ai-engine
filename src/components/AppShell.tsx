@@ -1,16 +1,37 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useI18n } from '@/i18n';
+import { supabase } from '@/services/supabaseClient';
 import SidebarNav from './SidebarNav';
 import Topbar from './Topbar';
 import CommandBar from './CommandBar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Mail, X, RefreshCw } from 'lucide-react';
 
 const AppShell = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, emailVerified } = useAuth();
+  const { t } = useI18n();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
   const { pathname } = useLocation();
   const navigate = useNavigate();
+
+  const handleResendEmail = useCallback(async () => {
+    if (!user?.email || resending) return;
+    setResending(true);
+    try {
+      await supabase.auth.resend({ type: 'signup', email: user.email });
+      setResent(true);
+      setTimeout(() => setResent(false), 5000);
+    } catch {
+      // silent
+    } finally {
+      setResending(false);
+    }
+  }, [user?.email, resending]);
 
   // Scroll to top on route change
   useEffect(() => {
@@ -65,6 +86,45 @@ const AppShell = () => {
         {pathname !== '/app/create/studio' && (
           <Topbar onMenuToggle={() => setMobileOpen(true)} />
         )}
+
+        {/* Email verification banner */}
+        {!emailVerified && !bannerDismissed && (
+          <div style={{
+            background: 'linear-gradient(90deg, #FFF7ED, #FFEDD5)',
+            borderBottom: '1px solid #FDBA74',
+            padding: '10px 20px',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 13, color: '#9A3412',
+            flexWrap: 'wrap',
+          }}>
+            <Mail style={{ width: 16, height: 16, flexShrink: 0, color: '#EA580C' }} />
+            <span style={{ flex: 1 }}>
+              {resent ? t('verify_email.resent') : t('verify_email.banner')}
+            </span>
+            {!resent && (
+              <button
+                onClick={handleResendEmail}
+                disabled={resending}
+                style={{
+                  padding: '4px 12px', borderRadius: 6, border: '1px solid #FDBA74',
+                  background: '#fff', color: '#EA580C', fontSize: 12, fontWeight: 600,
+                  cursor: resending ? 'default' : 'pointer', fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', gap: 5, opacity: resending ? 0.6 : 1,
+                }}
+              >
+                <RefreshCw style={{ width: 13, height: 13, animation: resending ? 'spin 1s linear infinite' : 'none' }} />
+                {t('verify_email.resend')}
+              </button>
+            )}
+            <button
+              onClick={() => setBannerDismissed(true)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: '#9A3412' }}
+            >
+              <X style={{ width: 15, height: 15 }} />
+            </button>
+          </div>
+        )}
+
         <main className="flex-1 overflow-auto bg-background" style={
           pathname === '/app/create/studio' ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
             backgroundImage: [
