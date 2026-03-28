@@ -6,9 +6,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/features/auth/AuthProvider";
+import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { ToastProvider } from "@/features/toast/ToastProvider";
 
-import Index from "./pages/Index";
+// import Index from "./pages/Index"; // Landing page — not used yet
 import Login from "./pages/Login";
 import OnboardingPage from "./pages/OnboardingPage";
 import Dashboard from "./pages/Dashboard";
@@ -84,17 +85,16 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                {/* DEV: redirect root directly to dashboard for visual review */}
-                <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
-                {/* <Route path="/" element={<Index />} /> */}
+                {/* Root → login (if not authenticated, ProtectedRoute redirects) */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
 
-                <Route path="/app" element={<AppShell />}>
+                {/* All /app/* routes are protected — require active Supabase session */}
+                <Route path="/app" element={<ProtectedRoute><AppShell /></ProtectedRoute>}>
                   <Route index element={<Navigate to="dashboard" replace />} />
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="projects" element={<Projects />} />
-                  {/* Templates route removed — will be reimplemented */}
                   <Route path="create" element={<WizardPage />} />
                   <Route path="create/studio" element={<StudioPage />} />
                   <Route path="refine/:id" element={<RefinementPage />} />

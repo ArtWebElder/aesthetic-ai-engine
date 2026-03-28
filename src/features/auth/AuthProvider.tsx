@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/services/supabaseClient';
 
@@ -14,22 +14,67 @@ interface AuthContext {
 
 const AuthCtx = createContext<AuthContext | null>(null);
 
+/**
+ * Ensure a profiles row exists for the user (upsert on first login).
+ * Gives 50 free credits to new accounts.
+ */
+async function ensureProfile(user: User) {
+  try {
+    const { data: existing } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .single();
+
+    if (existing) return; // already exists
+
+    const name =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split('@')[0] ||
+      'User';
+
+    await supabase.from('profiles').insert({
+      id: user.id,
+      email: user.email,
+      name,
+      credits: 50,
+    });
+
+    console.log('[Auth] created profile for', user.email, '(50 free credits)');
+  } catch (err) {
+    // Non-blocking: profile creation failure shouldn't block the app
+    console.warn('[Auth] ensureProfile failed:', err);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const profileCheckedRef = useRef<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user && profileCheckedRef.current !== session.user.id) {
+        profileCheckedRef.current = session.user.id;
+        ensureProfile(session.user);
+      }
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      // Create profile on sign-in if it doesn't exist
+      if (event === 'SIGNED_IN' && session?.user && profileCheckedRef.current !== session.user.id) {
+        profileCheckedRef.current = session.user.id;
+        ensureProfile(session.user);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -57,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    profileCheckedRef.current = null;
     await supabase.auth.signOut();
   };
 
