@@ -75,23 +75,21 @@ const SidebarNav = ({ onClose, forceExpanded }: SidebarNavProps) => {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
   const { t } = useI18n();
-  const devAdmin = import.meta.env.VITE_DEV_ADMIN === 'true';
-  const [isSuperAdmin, setIsSuperAdmin] = useState(devAdmin);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const isMobileDrawer = Boolean(forceExpanded);
   const isCollapsed = isMobileDrawer ? false : collapsed;
 
   useEffect(() => {
-    if (devAdmin) { setIsSuperAdmin(true); return; }
     if (!user) return;
     supabase
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
-      .then(({ data }) => { if (data?.role === 'superadmin') setIsSuperAdmin(true); })
-      .catch(() => {});
-  }, [user, devAdmin]);
+      .then(({ data }) => { setIsSuperAdmin(data?.role === 'superadmin'); })
+      .catch(() => { setIsSuperAdmin(false); });
+  }, [user]);
 
   const handleNav = (path: string) => {
     navigate(path);

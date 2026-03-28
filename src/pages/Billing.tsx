@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import {
   Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp,
 } from 'lucide-react';
-import { mockCredits } from '@/lib/mocks/data';
 import RechargeCreditsModal from '@/components/creatyng/RechargeCreditsModal';
+import { useCreditStore } from '@/stores/useCreditStore';
+import { useAuth } from '@/features/auth/AuthProvider';
 
 /* ── Plans ───────────────────────────────────────────── */
 const PLANS = [
@@ -53,11 +54,24 @@ const Billing = () => {
   const [tab, setTab] = useState<'plans' | 'usage'>('plans');
   const [ready, setReady] = useState(false);
   const [showReloadModal, setShowReloadModal] = useState(false);
+  const { user } = useAuth();
+  const credits = useCreditStore((s) => s.credits);
+  const fetchCredits = useCreditStore((s) => s.fetchCredits);
+  const subscribeRealtime = useCreditStore((s) => s.subscribeRealtime);
+
   useEffect(() => { setReady(true); }, []);
+  useEffect(() => {
+    if (user) {
+      fetchCredits(user.id);
+      const unsub = subscribeRealtime(user.id);
+      return unsub;
+    }
+  }, [user, fetchCredits, subscribeRealtime]);
 
   const totalCredits = 500;
-  const usedCredits = totalCredits - mockCredits.current;
-  const pct = Math.round((usedCredits / totalCredits) * 100);
+  const currentCredits = credits ?? 0;
+  const usedCredits = totalCredits - currentCredits;
+  const pct = Math.round((Math.max(0, usedCredits) / totalCredits) * 100);
 
   return (
     <div style={{
@@ -196,8 +210,17 @@ const Billing = () => {
                 </div>
                 {/* CTA */}
                 <div style={{ padding: '0 20px 20px' }}>
-                  <button style={{
-                    width: '100%', padding: '10px 0', borderRadius: 9, cursor: 'pointer',
+                  <button
+                    onClick={() => {
+                      if (p.current) return;
+                      if (p.id === 'enterprise') {
+                        window.open('mailto:contato@creatyng.com?subject=Enterprise Plan', '_blank');
+                      } else {
+                        setShowReloadModal(true);
+                      }
+                    }}
+                    style={{
+                    width: '100%', padding: '10px 0', borderRadius: 9, cursor: p.current ? 'default' : 'pointer',
                     fontFamily: 'inherit', fontSize: 13, fontWeight: 600, transition: 'all 180ms',
                     ...(p.current ? {
                       border: '1px solid hsl(var(--border))', background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))',
@@ -222,7 +245,7 @@ const Billing = () => {
           {/* KPI cards */}
           <div style={{ display: 'flex', gap: 14, marginBottom: 28 }}>
             {[
-              { label: 'Créditos restantes', value: String(mockCredits.current), sub: `de ${totalCredits} este mês`, color: '#ff713d' },
+              { label: 'Créditos restantes', value: String(currentCredits), sub: `de ${totalCredits} este mês`, color: '#ff713d' },
               { label: 'Gerações este mês', value: '42', sub: '+12% vs mês anterior', color: '#7C3AED', trend: true },
               { label: 'Gasto médio / dia', value: '9.3', sub: 'créditos por dia', color: '#10B981' },
             ].map((s, i) => (
@@ -281,7 +304,7 @@ const Billing = () => {
       <RechargeCreditsModal
         open={showReloadModal}
         onClose={() => setShowReloadModal(false)}
-        currentCredits={mockCredits.current}
+        currentCredits={currentCredits}
         totalCredits={totalCredits}
       />
     </div>

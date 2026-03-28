@@ -6,6 +6,8 @@ import {
   Hash, Globe, Image, Package, Upload, Check, ChevronRight, ChevronLeft, Zap,
 } from 'lucide-react';
 import { useI18n } from '@/i18n';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { supabase } from '@/services/supabaseClient';
 
 /* ─── Types ──────────────────────────────────────────── */
 type ProfileId = 'designer' | 'webdev' | 'traffic' | 'business' | 'creator' | 'social' | 'photographer' | 'other';
@@ -95,6 +97,7 @@ const QUICK_CREATE_MAP: Record<string, { title: string; desc: string; suggestion
 export default function OnboardingPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { user, markOnboarded } = useAuth();
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<ProfileId | null>(null);
   const [subcat, setSubcat] = useState<string | null>(null);
@@ -122,8 +125,13 @@ export default function OnboardingPage() {
     return true;
   };
 
-  const finish = () => {
+  const finish = async () => {
     try { localStorage.setItem('creatyng_onboarding', JSON.stringify({ profile, subcat, goals: selectedGoals, plan, completed: true })); } catch { /* ignore */ }
+    // Mark onboarded in Supabase
+    if (user) {
+      await supabase.from('profiles').update({ onboarded: true }).eq('id', user.id).catch(() => {});
+    }
+    markOnboarded();
     navigate('/app/dashboard', { replace: true });
   };
 

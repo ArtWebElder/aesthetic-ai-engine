@@ -6,10 +6,12 @@ interface AuthContext {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  onboarded: boolean | null;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  markOnboarded: () => void;
 }
 
 const AuthCtx = createContext<AuthContext | null>(null);
@@ -17,16 +19,17 @@ const AuthCtx = createContext<AuthContext | null>(null);
 /**
  * Ensure a profiles row exists for the user (upsert on first login).
  * Gives 50 free credits to new accounts.
+ * Returns { onboarded } so the app can redirect new users.
  */
-async function ensureProfile(user: User) {
+async function ensureProfile(user: User): Promise<{ onboarded: boolean }> {
   try {
     const { data: existing } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, onboarded')
       .eq('id', user.id)
       .single();
 
-    if (existing) return; // already exists
+    if (existing) return { onboarded: existing.onboarded !== false };
 
     const name =
       user.user_metadata?.full_name ||
@@ -39,12 +42,17 @@ async function ensureProfile(user: User) {
       email: user.email,
       name,
       credits: 50,
+      plan: 'free',
+      onboarded: false,
+      role: 'user',
     });
 
     console.log('[Auth] created profile for', user.email, '(50 free credits)');
+    return { onboarded: false };
   } catch (err) {
     // Non-blocking: profile creation failure shouldn't block the app
     console.warn('[Auth] ensureProfile failed:', err);
+    return { onboarded: true }; // assume onboarded on error to not block
   }
 }
 
@@ -52,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
   const profileCheckedRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -60,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       if (session?.user && profileCheckedRef.current !== session.user.id) {
         profileCheckedRef.current = session.user.id;
-        ensureProfile(session.user);
+        ensureProfile(session.user).then(({ onboarded }) => setOnboarded(onboarded));
       }
       setLoading(false);
     });
@@ -73,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Create profile on sign-in if it doesn't exist
       if (event === 'SIGNED_IN' && session?.user && profileCheckedRef.current !== session.user.id) {
         profileCheckedRef.current = session.user.id;
-        ensureProfile(session.user);
+        ensureProfile(session.user).then(({ onboarded }) => setOnboarded(onboarded));
       }
     });
 
@@ -103,11 +112,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     profileCheckedRef.current = null;
+    setOnboarded(null);
     await supabase.auth.signOut();
   };
 
+  const markOnboarded = () => setOnboarded(true);
+
   return (
-    <AuthCtx.Provider value={{ user, session, loading, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut }}>
+    <AuthCtx.Provider value={{ user, session, loading, onboarded, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, markOnboarded }}>
       {children}
     </AuthCtx.Provider>
   );

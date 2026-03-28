@@ -8,14 +8,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Dev bypass: VITE_DEV_ADMIN=true skips role check
-  const devAdmin = import.meta.env.VITE_DEV_ADMIN === 'true';
-
   useEffect(() => {
-    if (devAdmin) {
-      setLoading(false);
-      return;
-    }
     if (!user) {
       setLoading(false);
       return;
@@ -34,7 +27,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
         setRole('user');
         setLoading(false);
       });
-  }, [user, devAdmin]);
+  }, [user]);
 
   if (authLoading || loading) {
     return (
@@ -49,8 +42,8 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!devAdmin && !user) return <Navigate to="/login" replace />;
-  if (!devAdmin && role !== 'superadmin') return <Navigate to="/app/dashboard" replace />;
+  if (!user) return <Navigate to="/login" replace />;
+  if (role !== 'superadmin') return <Navigate to="/app/dashboard" replace />;
 
   return <>{children}</>;
 }
