@@ -106,11 +106,21 @@ export const useCreditStore = create<CreditStore>()((set, get) => ({
     });
 
     if (error) {
-      // Check for 402 insufficient credits
-      const parsed = typeof error === 'object' && 'context' in error
-        ? error
-        : null;
-      throw parsed || new Error('debit_failed');
+      // supabase-js v2 wraps non-2xx as FunctionsHttpError with a `context` Response
+      let errBody: Record<string, unknown> | null = null;
+      try {
+        if (typeof error === 'object' && 'context' in error) {
+          errBody = await (error as { context: Response }).context.json();
+        }
+      } catch { /* ignore parse failures */ }
+
+      if (errBody?.error === 'insufficient_credits') {
+        const err = new Error('insufficient_credits') as Error & { current: number; required: number };
+        err.current = (errBody.current as number) ?? 0;
+        err.required = (errBody.required as number) ?? amount;
+        throw err;
+      }
+      throw new Error((errBody?.error as string) || 'debit_failed');
     }
 
     if (data?.error === 'insufficient_credits') {

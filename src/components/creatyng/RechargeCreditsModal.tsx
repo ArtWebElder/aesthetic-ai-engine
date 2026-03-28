@@ -69,9 +69,11 @@ const RechargeCreditsModal = ({
     if (pollRef.current) clearInterval(pollRef.current);
     pollRef.current = setInterval(async () => {
       try {
-        const { data } = await supabase.functions.invoke('check-pix-status', {
+        const { data, error: fnErr } = await supabase.functions.invoke('check-pix-status', {
           body: { payment_id: paymentId },
         });
+        // If invoke fails (401, network, etc), skip this cycle
+        if (fnErr) return;
         if (data?.status === 'paid') {
           if (pollRef.current) clearInterval(pollRef.current);
           setPixPaid(true);
@@ -92,12 +94,25 @@ const RechargeCreditsModal = ({
     const pkg = PACKAGES[selected];
 
     try {
+      // Ensure user is authenticated before calling edge functions
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error(t('recharge.not_authenticated') || 'Not authenticated');
+      }
+
       if (method === 'card') {
         const { data, error: fnErr } = await supabase.functions.invoke('create-stripe-checkout', {
           body: { package: pkg.id },
         });
-        if (fnErr || !data?.url) {
-          throw new Error(data?.error || 'stripe_error');
+        if (fnErr) {
+          // supabase-js wraps non-2xx responses — try to extract the body
+          const errBody = typeof fnErr === 'object' && 'context' in fnErr
+            ? await (fnErr as { context: { json: () => Promise<Record<string, string>> } }).context.json().catch(() => null)
+            : null;
+          throw new Error(errBody?.error || data?.error || 'stripe_error');
+        }
+        if (!data?.url) {
+          throw new Error(data?.error || 'stripe_no_url');
         }
         window.location.href = data.url;
         return; // redirect happening
@@ -107,8 +122,14 @@ const RechargeCreditsModal = ({
       const { data, error: fnErr } = await supabase.functions.invoke('create-pix-charge', {
         body: { package: pkg.id },
       });
-      if (fnErr || !data?.qr_code_image) {
-        throw new Error(data?.error || 'pix_error');
+      if (fnErr) {
+        const errBody = typeof fnErr === 'object' && 'context' in fnErr
+          ? await (fnErr as { context: { json: () => Promise<Record<string, string>> } }).context.json().catch(() => null)
+          : null;
+        throw new Error(errBody?.error || data?.error || 'pix_error');
+      }
+      if (!data?.qr_code_image) {
+        throw new Error(data?.error || 'pix_no_qr');
       }
 
       setPixQrImage(data.qr_code_image);

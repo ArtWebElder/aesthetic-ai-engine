@@ -1045,5 +1045,6 @@
   "recharge.pix_expired": "Pix expirado. Tente novamente.",
   "recharge.payment_confirmed": "Pagamento confirmado!",
   "recharge.credits_added": "créditos adicionados à sua conta",
-  "recharge.continue": "Continuar"
+  "recharge.continue": "Continuar",
+  "recharge.not_authenticated": "Faça login para comprar créditos"
 }
