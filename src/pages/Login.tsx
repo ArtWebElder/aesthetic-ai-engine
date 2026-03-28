@@ -125,8 +125,19 @@ const Login = () => {
         else navigate('/app/dashboard', { replace: true });
       } else {
         const { error } = await signUpWithEmail(email, password, name);
-        if (error) setError(error.message);
-        else navigate('/onboarding', { replace: true });
+        if (error) {
+          // Supabase returns "User already registered" for duplicate signups
+          const msg = error.message?.toLowerCase() || '';
+          if (msg.includes('already registered') || msg.includes('already been registered')) {
+            setError(t('auth.error_already_registered'));
+          } else {
+            setError(error.message);
+          }
+        } else {
+          // Signup succeeded — show verification notice and redirect to onboarding
+          setError('');
+          navigate('/onboarding', { replace: true });
+        }
       }
     } finally {
       setLoading(false);

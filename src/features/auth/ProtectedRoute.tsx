@@ -5,7 +5,8 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, onboarded } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  // Show loading spinner while auth or profile check is pending
+  if (loading || (user && onboarded === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: 'hsl(var(--background))' }}>
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff713d] to-[#FF9B70] flex items-center justify-center animate-pulse">

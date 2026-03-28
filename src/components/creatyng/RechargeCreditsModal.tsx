@@ -102,19 +102,23 @@ const RechargeCreditsModal = ({
     try {
       // Ensure user is authenticated before calling edge functions
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('[Payment] session check:', session ? 'authenticated' : 'NO SESSION');
       if (!session) {
         throw new Error(t('recharge.not_authenticated') || 'Not authenticated');
       }
 
       if (method === 'card') {
+        console.log('[Payment] invoking create-stripe-checkout, package:', pkg.id);
         const { data, error: fnErr } = await supabase.functions.invoke('create-stripe-checkout', {
           body: { package: pkg.id },
         });
+        console.log('[Payment] stripe response:', { data, fnErr });
         if (fnErr) {
           // supabase-js wraps non-2xx responses — try to extract the body
           const errBody = typeof fnErr === 'object' && 'context' in fnErr
             ? await (fnErr as { context: { json: () => Promise<Record<string, string>> } }).context.json().catch(() => null)
             : null;
+          console.error('[Payment] stripe error body:', errBody);
           throw new Error(errBody?.error || data?.error || 'stripe_error');
         }
         if (!data?.url) {
@@ -125,13 +129,16 @@ const RechargeCreditsModal = ({
       }
 
       // Pix
+      console.log('[Payment] invoking create-pix-charge, package:', pkg.id);
       const { data, error: fnErr } = await supabase.functions.invoke('create-pix-charge', {
         body: { package: pkg.id },
       });
+      console.log('[Payment] pix response:', { data, fnErr });
       if (fnErr) {
         const errBody = typeof fnErr === 'object' && 'context' in fnErr
           ? await (fnErr as { context: { json: () => Promise<Record<string, string>> } }).context.json().catch(() => null)
           : null;
+        console.error('[Payment] pix error body:', errBody);
         throw new Error(errBody?.error || data?.error || 'pix_error');
       }
       if (!data?.qr_code_image) {

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import {
-  Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp,
+  Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp, Clock, X,
 } from 'lucide-react';
 import RechargeCreditsModal from '@/components/creatyng/RechargeCreditsModal';
 import { useCreditStore } from '@/stores/useCreditStore';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useI18n } from '@/i18n';
+import { supabase } from '@/services/supabaseClient';
 
 /* ── Plans ───────────────────────────────────────────── */
 const PLANS = [
@@ -54,19 +56,22 @@ const Billing = () => {
   const [tab, setTab] = useState<'plans' | 'usage'>('plans');
   const [ready, setReady] = useState(false);
   const [showReloadModal, setShowReloadModal] = useState(false);
+  const [showComingSoon, setShowComingSoon] = useState<string | null>(null);
   const { user } = useAuth();
+  const { t } = useI18n();
   const credits = useCreditStore((s) => s.credits);
   const fetchCredits = useCreditStore((s) => s.fetchCredits);
   const subscribeRealtime = useCreditStore((s) => s.subscribeRealtime);
+  const unsubscribeRealtime = useCreditStore((s) => s.unsubscribeRealtime);
 
   useEffect(() => { setReady(true); }, []);
   useEffect(() => {
     if (user) {
-      fetchCredits(user.id);
-      const unsub = subscribeRealtime(user.id);
-      return unsub;
+      fetchCredits();
+      subscribeRealtime(user.id);
+      return () => unsubscribeRealtime();
     }
-  }, [user, fetchCredits, subscribeRealtime]);
+  }, [user, fetchCredits, subscribeRealtime, unsubscribeRealtime]);
 
   const totalCredits = 500;
   const currentCredits = credits ?? 0;
@@ -89,20 +94,20 @@ const Billing = () => {
         animation: ready ? 'fdUp 450ms ease both' : 'none',
       }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 3 }}>Planos & Faturamento</h1>
-          <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Gerencie seu plano, créditos e histórico de uso.</p>
+          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 3 }}>{t('billing.page_title')}</h1>
+          <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>{t('billing.page_subtitle')}</p>
         </div>
         <div style={{ display: 'flex', gap: 2, background: 'hsl(var(--muted))', borderRadius: 8, padding: 3 }}>
-          {[{ id: 'plans' as const, label: 'Planos' }, { id: 'usage' as const, label: 'Uso & Histórico' }].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)} style={{
+          {[{ id: 'plans' as const, label: t('billing.tab.plans') }, { id: 'usage' as const, label: t('billing.tab.usage') }].map(tb => (
+            <button key={tb.id} onClick={() => setTab(tb.id)} style={{
               padding: '6px 16px', borderRadius: 6, border: 'none', fontFamily: 'inherit',
-              background: tab === t.id ? 'hsl(var(--card))' : 'transparent',
-              color: tab === t.id ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
-              fontWeight: tab === t.id ? 600 : 400,
+              background: tab === tb.id ? 'hsl(var(--card))' : 'transparent',
+              color: tab === tb.id ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+              fontWeight: tab === tb.id ? 600 : 400,
               fontSize: 13, cursor: 'pointer',
-              boxShadow: tab === t.id ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+              boxShadow: tab === tb.id ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
               transition: 'all 150ms',
-            }}>{t.label}</button>
+            }}>{tb.label}</button>
           ))}
         </div>
       </div>
@@ -215,8 +220,14 @@ const Billing = () => {
                       if (p.current) return;
                       if (p.id === 'enterprise') {
                         window.open('mailto:contato@creatyng.com?subject=Enterprise Plan', '_blank');
+                      } else if (p.id === 'free') {
+                        // Downgrade to free
+                        if (user) {
+                          supabase.from('profiles').update({ plan: 'free' }).eq('id', user.id).then(() => {}).catch(() => {});
+                        }
                       } else {
-                        setShowReloadModal(true);
+                        // Pro / Team → subscription coming soon
+                        setShowComingSoon(p.name);
                       }
                     }}
                     style={{
@@ -231,7 +242,7 @@ const Billing = () => {
                       boxShadow: `0 3px 10px ${p.accent}33`,
                     }),
                   }}>
-                    {p.current ? 'Plano atual' : p.id === 'enterprise' ? 'Falar com vendas' : `Assinar ${p.name}`}
+                    {p.current ? t('billing.cta.current') : p.id === 'enterprise' ? t('billing.cta.contact_sales') : p.id === 'free' ? t('billing.cta.downgrade') : `${t('billing.cta.subscribe')} ${p.name}`}
                   </button>
                 </div>
               </div>
@@ -307,6 +318,69 @@ const Billing = () => {
         currentCredits={currentCredits}
         totalCredits={totalCredits}
       />
+
+      {/* Subscription Coming Soon Modal */}
+      {showComingSoon && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
+        }} onClick={() => setShowComingSoon(null)}>
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: 'hsl(var(--card))', borderRadius: 16, padding: '32px 28px', width: 400, maxWidth: '90vw',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+              animation: 'scIn 200ms ease both',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff713d',
+                }}>
+                  <Clock style={{ width: 20, height: 20 }} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 16, fontWeight: 700 }}>{showComingSoon} — {t('billing.coming_soon.title')}</h3>
+                  <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))' }}>{t('billing.coming_soon.desc')}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowComingSoon(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'hsl(var(--muted-foreground))' }}>
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+            <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 20, lineHeight: 1.5 }}>
+              {t('billing.coming_soon.body')}
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => { setShowComingSoon(null); setShowReloadModal(true); }}
+                style={{
+                  flex: 1, padding: '10px 0', borderRadius: 9, border: 'none',
+                  background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {t('billing.coming_soon.recharge')}
+              </button>
+              <button
+                onClick={() => setShowComingSoon(null)}
+                style={{
+                  flex: 1, padding: '10px 0', borderRadius: 9,
+                  border: '1px solid hsl(var(--border))', background: 'transparent',
+                  color: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {t('billing.coming_soon.close')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
