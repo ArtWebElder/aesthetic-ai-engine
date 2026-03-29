@@ -1107,7 +1107,7 @@
   "verify_email.modal_title": "Verify your email",
   "verify_email.modal_desc": "Enter the code sent to your inbox.",
   "verify_email.modal_sent_to": "Code sent to",
-  "verify_email.otp_placeholder": "000000",
+  "verify_email.otp_placeholder": "00000000",
   "verify_email.otp_invalid": "Invalid code. Please try again.",
   "verify_email.verify_btn": "Verify email",
   "verify_email.verifying": "Verifying...",
@@ -1116,7 +1116,7 @@
   "verify_email.later": "Later",
 
   "auth.verify_title": "Verify your email",
-  "auth.verify_subtitle": "We sent a 6-digit code to",
+  "auth.verify_subtitle": "We sent an 8-digit code to",
   "auth.verify_btn": "Verify",
   "auth.verify_success": "Email verified!",
   "auth.verify_redirecting": "Signing you in...",

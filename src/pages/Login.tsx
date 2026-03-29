@@ -358,19 +358,19 @@ const Login = () => {
                     type="text"
                     inputMode="numeric"
                     autoComplete="one-time-code"
-                    placeholder="000000"
-                    maxLength={6}
+                    placeholder="00000000"
+                    maxLength={8}
                     value={otpCode}
-                    onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setOtpError(''); }}
+                    onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8)); setOtpError(''); }}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleVerifyOtp(); }}
                     className="w-full bg-white outline-none transition-all duration-150"
                     style={{
                       height: 52,
                       borderRadius: 12,
                       border: otpError ? '2px solid #EF4444' : '1px solid rgba(20,20,23,0.12)',
-                      fontSize: 24,
+                      fontSize: 22,
                       fontFamily: 'monospace',
-                      letterSpacing: 8,
+                      letterSpacing: 6,
                       textAlign: 'center',
                       color: '#141417',
                       marginBottom: 8,
@@ -386,7 +386,7 @@ const Login = () => {
 
                   <button
                     onClick={handleVerifyOtp}
-                    disabled={otpLoading || otpCode.length < 6}
+                    disabled={otpLoading || otpCode.length < 8}
                     className="w-full flex items-center justify-center gap-2 text-white font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       height: 44,
