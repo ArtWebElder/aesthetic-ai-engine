@@ -20,6 +20,42 @@ const PACKAGES = [
 
 type PayMethod = 'card' | 'pix';
 
+// Detect if user is likely in Brazil
+function detectBrazil(): boolean {
+  try {
+    const lang = navigator.language || '';
+    if (lang.toLowerCase() === 'pt-br') return true;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+    if (tz.startsWith('America/') && [
+      'America/Sao_Paulo', 'America/Fortaleza', 'America/Recife',
+      'America/Bahia', 'America/Belem', 'America/Manaus',
+      'America/Cuiaba', 'America/Porto_Velho', 'America/Boa_Vista',
+      'America/Campo_Grande', 'America/Rio_Branco', 'America/Maceio',
+      'America/Araguaina', 'America/Noronha', 'America/Eirunepe',
+      'America/Santarem',
+    ].includes(tz)) return true;
+  } catch { /* fallback to false */ }
+  return false;
+}
+
+// Format CPF (000.000.000-00) or CNPJ (00.000.000/0000-00)
+function formatCpfCnpj(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 14);
+  if (digits.length <= 11) {
+    // CPF mask
+    return digits
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+  // CNPJ mask
+  return digits
+    .replace(/(\d{2})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1/$2')
+    .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+}
+
 const RechargeCreditsModal = ({
   open,
   onClose,
@@ -27,14 +63,19 @@ const RechargeCreditsModal = ({
   totalCredits = 500,
 }: RechargeCreditsModalProps) => {
   const { t } = useI18n();
-  const { emailVerified } = useAuth();
+  const { emailVerified, user } = useAuth();
   const storeCredits = useCreditStore((s) => s.credits);
   const currentCredits = propCredits ?? storeCredits;
 
+  const [isBrazil] = useState(detectBrazil);
   const [selected, setSelected] = useState(1);
   const [method, setMethod] = useState<PayMethod>('card');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // CPF/CNPJ state (Pix only)
+  const [cpfCnpj, setCpfCnpj] = useState('');
+  const [cpfError, setCpfError] = useState(false);
 
   // Pix state
   const [pixQrImage, setPixQrImage] = useState<string | null>(null);
@@ -43,6 +84,15 @@ const RechargeCreditsModal = ({
   const [pixPaid, setPixPaid] = useState(false);
   const [copied, setCopied] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Pre-fill CPF/CNPJ from profile
+  useEffect(() => {
+    if (!user || cpfCnpj) return;
+    supabase.from('profiles').select('cpf_cnpj').eq('id', user.id).single()
+      .then(({ data }) => {
+        if (data?.cpf_cnpj) setCpfCnpj(formatCpfCnpj(data.cpf_cnpj));
+      });
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cleanup polling on unmount/close
   useEffect(() => {
@@ -55,6 +105,7 @@ const RechargeCreditsModal = ({
       setError(null);
       setLoading(false);
       setCopied(false);
+      setCpfError(false);
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [open]);
@@ -96,8 +147,20 @@ const RechargeCreditsModal = ({
       return;
     }
     setError(null);
+    setCpfError(false);
     setLoading(true);
     const pkg = PACKAGES[selected];
+
+    // Validate CPF/CNPJ for Pix
+    if (method === 'pix') {
+      const digits = cpfCnpj.replace(/\D/g, '');
+      if (digits.length < 11) {
+        setCpfError(true);
+        setError(t('recharge.cpf_required'));
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       // Force token refresh to avoid "Invalid JWT" on edge function calls.
@@ -131,9 +194,10 @@ const RechargeCreditsModal = ({
       }
 
       // Pix
+      const cpfDigits = cpfCnpj.replace(/\D/g, '');
       console.log('[Payment] invoking create-pix-charge, package:', pkg.id);
       const { data, error: fnErr } = await supabase.functions.invoke('create-pix-charge', {
-        body: { package: pkg.id },
+        body: { package: pkg.id, cpfCnpj: cpfDigits },
       });
       console.log('[Payment] pix response:', { data, fnErr });
       if (fnErr) {
@@ -346,25 +410,55 @@ const RechargeCreditsModal = ({
 
         {/* ── Body ── */}
         <div style={{ padding: '22px 28px 24px' }}>
-          {/* Payment method toggle */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            {(['card', 'pix'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => { setMethod(m); setError(null); }}
+          {/* Payment method toggle — only show Pix for Brazil */}
+          {isBrazil ? (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              {(['card', 'pix'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => { setMethod(m); setError(null); setCpfError(false); }}
+                  style={{
+                    flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
+                    fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                    border: method === m ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.1)',
+                    background: method === m ? '#FFF0EA' : '#fff',
+                    color: method === m ? '#ff713d' : '#8e8e96',
+                    transition: 'all 150ms',
+                  }}
+                >
+                  {m === 'card' ? `💳 ${t('recharge.card')}` : `📱 Pix`}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
+          {/* CPF/CNPJ field — only when Pix is selected */}
+          {method === 'pix' && (
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8e8e96', marginBottom: 5 }}>
+                {t('recharge.cpf_label')}
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={cpfCnpj}
+                onChange={(e) => { setCpfCnpj(formatCpfCnpj(e.target.value)); setCpfError(false); }}
+                placeholder={t('recharge.cpf_placeholder')}
                 style={{
-                  flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
-                  fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                  border: method === m ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.1)',
-                  background: method === m ? '#FFF0EA' : '#fff',
-                  color: method === m ? '#ff713d' : '#8e8e96',
-                  transition: 'all 150ms',
+                  width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 14,
+                  fontFamily: 'inherit', boxSizing: 'border-box',
+                  border: cpfError ? '1.5px solid #ef4444' : '1px solid rgba(20,20,23,0.12)',
+                  background: '#fff', color: '#141417', outline: 'none',
+                  transition: 'border-color 150ms',
                 }}
-              >
-                {m === 'card' ? `💳 ${t('recharge.card')}` : `📱 Pix`}
-              </button>
-            ))}
-          </div>
+                onFocus={(e) => { e.target.style.borderColor = cpfError ? '#ef4444' : '#ff713d'; }}
+                onBlur={(e) => { e.target.style.borderColor = cpfError ? '#ef4444' : 'rgba(20,20,23,0.12)'; }}
+              />
+              <p style={{ fontSize: 10.5, color: cpfError ? '#ef4444' : '#b5b5bb', margin: '4px 0 0' }}>
+                {cpfError ? t('recharge.cpf_required') : t('recharge.cpf_helper')}
+              </p>
+            </div>
+          )}
 
           <div style={{ fontSize: 12, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
             {t('recharge.choose_package')}

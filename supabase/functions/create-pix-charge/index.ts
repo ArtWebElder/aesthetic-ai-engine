@@ -48,23 +48,33 @@ async function asaasFetch(
 async function findOrCreateCustomer(
   apiKey: string,
   email: string,
-  name: string
+  name: string,
+  cpfCnpj: string
 ): Promise<string> {
   // Search existing customer by email
   const searchRes = await asaasFetch(`/customers?email=${encodeURIComponent(email)}`, apiKey);
   if (searchRes.ok) {
     const searchData = await searchRes.json();
     if (searchData.data?.length > 0) {
-      return searchData.data[0].id;
+      const existing = searchData.data[0];
+      // Update cpfCnpj if missing on existing customer
+      if (!existing.cpfCnpj && cpfCnpj) {
+        await asaasFetch(`/customers/${existing.id}`, apiKey, {
+          method: "PUT",
+          body: JSON.stringify({ cpfCnpj }),
+        }).catch(() => {});
+      }
+      return existing.id;
     }
   }
 
-  // Create new customer
+  // Create new customer with CPF/CNPJ
   const createRes = await asaasFetch("/customers", apiKey, {
     method: "POST",
     body: JSON.stringify({
       name: name || email.split("@")[0],
       email,
+      cpfCnpj,
       notificationDisabled: true,
     }),
   });
@@ -141,6 +151,11 @@ Deno.serve(async (req: Request) => {
     // ── Parse body ──
     const body = await req.json();
     const pkg = String(body.package || "");
+    const cpfCnpj = String(body.cpfCnpj || "").replace(/\D/g, "");
+
+    if (!cpfCnpj || (cpfCnpj.length !== 11 && cpfCnpj.length !== 14)) {
+      return json({ error: "cpf_required", detail: "CPF (11 digits) or CNPJ (14 digits) is required for Pix" }, 400, cors);
+    }
 
     if (!PACKAGES[pkg]) {
       return json({ error: "invalid_package", valid: Object.keys(PACKAGES) }, 400, cors);
@@ -150,6 +165,14 @@ Deno.serve(async (req: Request) => {
 
     // ── Admin client ──
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+
+    // ── Save CPF/CNPJ to profile for next time ──
+    await adminClient
+      .from("profiles")
+      .update({ cpf_cnpj: cpfCnpj })
+      .eq("id", userId)
+      .then(() => {})
+      .catch((e: unknown) => console.warn("[create-pix-charge] cpf_cnpj save failed:", e));
 
     // ── Create pending payment ──
     const { data: payment, error: paymentError } = await adminClient
@@ -176,7 +199,7 @@ Deno.serve(async (req: Request) => {
     // ── Find or create Asaas customer ──
     let customerId: string;
     try {
-      customerId = await findOrCreateCustomer(asaasApiKey, userEmail, userName);
+      customerId = await findOrCreateCustomer(asaasApiKey, userEmail, userName, cpfCnpj);
     } catch (err) {
       console.error("[create-pix-charge] customer error:", err);
       return json({ error: "customer_create_failed", detail: String(err) }, 502, cors);
