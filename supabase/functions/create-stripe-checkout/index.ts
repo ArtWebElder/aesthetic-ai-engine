@@ -51,22 +51,34 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
 
+    console.log("[create-stripe-checkout] env:", {
+      url: supabaseUrl,
+      anonKeyExists: !!supabaseAnonKey,
+      serviceKeyExists: !!supabaseServiceKey,
+      stripeKeyExists: !!stripeSecretKey,
+      authHeader: authHeader.substring(0, 20) + "...",
+    });
+
     if (!stripeSecretKey) {
       console.error("[create-stripe-checkout] STRIPE_SECRET_KEY not configured");
       return json({ error: "stripe_not_configured" }, 500, cors);
     }
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { authorization: authHeader } },
+      global: { headers: { Authorization: authHeader } },
     });
 
-    const {
-      data: { user },
-      error: authError,
-    } = await userClient.auth.getUser();
-
-    if (authError || !user) {
-      return json({ error: "unauthorized", detail: authError?.message }, 401, cors);
+    let user;
+    try {
+      const { data, error: authError } = await userClient.auth.getUser();
+      user = data?.user;
+      console.log("[create-stripe-checkout] getUser:", { userId: user?.id, error: authError?.message });
+      if (authError || !user) {
+        return json({ error: "unauthorized", detail: authError?.message }, 401, cors);
+      }
+    } catch (e) {
+      console.error("[create-stripe-checkout] getUser CRASHED:", e);
+      return json({ error: "auth_error", detail: String(e) }, 401, cors);
     }
 
     const userId = user.id;

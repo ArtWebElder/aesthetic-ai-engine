@@ -101,22 +101,34 @@ Deno.serve(async (req: Request) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
 
+    console.log("[create-pix-charge] env:", {
+      url: supabaseUrl,
+      anonKeyExists: !!supabaseAnonKey,
+      serviceKeyExists: !!supabaseServiceKey,
+      asaasKeyExists: !!asaasApiKey,
+      authHeader: authHeader.substring(0, 20) + "...",
+    });
+
     if (!asaasApiKey) {
       console.error("[create-pix-charge] ASAAS_API_KEY not configured");
       return json({ error: "pix_not_configured" }, 500, cors);
     }
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { authorization: authHeader } },
+      global: { headers: { Authorization: authHeader } },
     });
 
-    const {
-      data: { user },
-      error: authError,
-    } = await userClient.auth.getUser();
-
-    if (authError || !user) {
-      return json({ error: "unauthorized", detail: authError?.message }, 401, cors);
+    let user;
+    try {
+      const { data, error: authError } = await userClient.auth.getUser();
+      user = data?.user;
+      console.log("[create-pix-charge] getUser:", { userId: user?.id, error: authError?.message });
+      if (authError || !user) {
+        return json({ error: "unauthorized", detail: authError?.message }, 401, cors);
+      }
+    } catch (e) {
+      console.error("[create-pix-charge] getUser CRASHED:", e);
+      return json({ error: "auth_error", detail: String(e) }, 401, cors);
     }
 
     const userId = user.id;
