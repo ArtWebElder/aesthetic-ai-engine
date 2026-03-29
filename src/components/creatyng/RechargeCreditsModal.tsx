@@ -231,7 +231,49 @@ const RechargeCreditsModal = ({
     }
   }
 
+  const plan = useCreditStore((s) => s.plan);
+
   if (!open) return null;
+
+  // Free plan users cannot recharge — redirect to billing
+  if (plan === 'free') {
+    return createPortal(
+      <div
+        style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+          background: 'rgba(20,20,23,0.4)', backdropFilter: 'blur(4px)',
+        }}
+        onClick={onClose}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            background: '#ffffff', borderRadius: 20, width: 380, maxWidth: '100%',
+            boxShadow: '0 24px 80px rgba(0,0,0,0.18)', textAlign: 'center',
+            padding: '36px 28px', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
+          }}
+        >
+          <div style={{ fontSize: 40, marginBottom: 12 }}>⭐</div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>{t('recharge.plan_required_title')}</h3>
+          <p style={{ fontSize: 13, color: '#5a5a60', margin: '0 0 20px', lineHeight: 1.5 }}>
+            {t('recharge.plan_required_desc')}
+          </p>
+          <button
+            onClick={() => { onClose(); window.location.href = '/app/billing'; }}
+            style={{
+              padding: '10px 28px', borderRadius: 10, border: 'none',
+              background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+              color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            {t('recharge.view_plans')}
+          </button>
+        </div>
+      </div>,
+      document.body
+    );
+  }
 
   const usedPct = Math.min(100, Math.round((currentCredits / totalCredits) * 100));
   const pkg = PACKAGES[selected];

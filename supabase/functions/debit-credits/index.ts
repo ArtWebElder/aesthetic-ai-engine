@@ -1,7 +1,8 @@
 /// <reference lib="deno.ns" />
 // supabase/functions/debit-credits/index.ts
 // CREATYNG — Edge Function: debit-credits
-// Debita créditos do usuário de forma atômica via RPC + insere em credit_history.
+// Debits credits atomically: plan_credits first, then bonus_credits.
+// Returns remaining_plan, remaining_bonus, remaining (total).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -24,7 +25,6 @@ Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   const cors = corsHeaders(origin);
 
-  // Preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: cors });
   }
@@ -34,7 +34,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // --- Auth: identify user via Authorization header ---
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       return json({ error: "missing_authorization" }, 401, cors);
@@ -44,9 +43,8 @@ Deno.serve(async (req: Request) => {
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // User client (anon key + user's JWT) to identify the caller
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { authorization: authHeader } },
+      global: { headers: { Authorization: authHeader } },
     });
 
     const {
@@ -60,7 +58,6 @@ Deno.serve(async (req: Request) => {
 
     const userId = user.id;
 
-    // --- Parse body ---
     const body = await req.json();
     const { amount, description, reference_id } = body as {
       amount?: number;
@@ -72,72 +69,56 @@ Deno.serve(async (req: Request) => {
       return json({ error: "invalid_amount", detail: "amount must be a positive integer" }, 400, cors);
     }
 
-    // --- Admin client for privileged operations ---
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // --- Check current balance ---
+    // Fetch current balances
     const { data: profile, error: profileError } = await adminClient
       .from("profiles")
-      .select("credits")
+      .select("plan_credits, bonus_credits, credits")
       .eq("id", userId)
       .single();
 
     if (profileError || !profile) {
-      return json(
-        { error: "profile_not_found", detail: profileError?.message },
-        404,
-        cors
-      );
+      return json({ error: "profile_not_found", detail: profileError?.message }, 404, cors);
     }
 
-    const currentCredits: number = profile.credits ?? 0;
+    const pc = profile.plan_credits ?? 0;
+    const bc = profile.bonus_credits ?? 0;
+    const total = pc + bc;
 
-    if (currentCredits < amount) {
+    if (total < amount) {
       return json(
-        {
-          error: "insufficient_credits",
-          current: currentCredits,
-          required: amount,
-        },
+        { error: "insufficient_credits", current: total, required: amount },
         402,
         cors
       );
     }
 
-    // --- Atomic debit via RPC ---
+    // Atomic debit via updated RPC
     const { error: rpcError } = await adminClient.rpc("debit_credits_atomic", {
       p_user_id: userId,
       p_amount: amount,
     });
 
     if (rpcError) {
-      // RPC raises exception if concurrent debit drained credits
       if (rpcError.message?.includes("Insufficient credits")) {
-        // Re-fetch current balance for accurate response
         const { data: freshProfile } = await adminClient
           .from("profiles")
-          .select("credits")
+          .select("plan_credits, bonus_credits")
           .eq("id", userId)
           .single();
 
+        const freshTotal = (freshProfile?.plan_credits ?? 0) + (freshProfile?.bonus_credits ?? 0);
         return json(
-          {
-            error: "insufficient_credits",
-            current: freshProfile?.credits ?? 0,
-            required: amount,
-          },
+          { error: "insufficient_credits", current: freshTotal, required: amount },
           402,
           cors
         );
       }
-      return json(
-        { error: "debit_failed", detail: rpcError.message },
-        500,
-        cors
-      );
+      return json({ error: "debit_failed", detail: rpcError.message }, 500, cors);
     }
 
-    // --- Insert credit_history record ---
+    // Insert credit_history
     const { error: historyError } = await adminClient
       .from("credit_history")
       .insert({
@@ -150,29 +131,31 @@ Deno.serve(async (req: Request) => {
 
     if (historyError) {
       console.error("[debit-credits] credit_history insert failed:", historyError.message);
-      // Non-blocking: debit already happened, log but don't fail the response
     }
 
-    // --- Fetch remaining balance ---
+    // Fetch updated balances
     const { data: updatedProfile } = await adminClient
       .from("profiles")
-      .select("credits")
+      .select("plan_credits, bonus_credits, credits")
       .eq("id", userId)
       .single();
 
-    const remaining = updatedProfile?.credits ?? currentCredits - amount;
+    const remainingPlan = updatedProfile?.plan_credits ?? 0;
+    const remainingBonus = updatedProfile?.bonus_credits ?? 0;
+    const remaining = updatedProfile?.credits ?? (remainingPlan + remainingBonus);
 
     console.log(
-      `[debit-credits] user=${userId} debited=${amount} remaining=${remaining} ref=${reference_id ?? "none"}`
+      `[debit-credits] user=${userId} debited=${amount} remaining=${remaining} (plan=${remainingPlan} bonus=${remainingBonus}) ref=${reference_id ?? "none"}`
     );
 
-    return json({ success: true, remaining }, 200, cors);
+    return json({
+      success: true,
+      remaining,
+      remaining_plan: remainingPlan,
+      remaining_bonus: remainingBonus,
+    }, 200, cors);
   } catch (err) {
     console.error("[debit-credits] unexpected error:", err);
-    return json(
-      { error: "internal_error", detail: String(err) },
-      500,
-      cors
-    );
+    return json({ error: "internal_error", detail: String(err) }, 500, cors);
   }
 });

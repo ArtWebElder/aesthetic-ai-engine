@@ -90,6 +90,20 @@ async function callSendEmail(
   }
 }
 
+// ── Helper: get bonus_credits for a user ──
+
+async function getBonus(
+  client: ReturnType<typeof createClient>,
+  userId: string
+): Promise<number> {
+  const { data } = await client
+    .from("profiles")
+    .select("bonus_credits")
+    .eq("id", userId)
+    .single();
+  return data?.bonus_credits ?? 0;
+}
+
 // ── Main handler ──
 
 Deno.serve(async (req: Request) => {
@@ -128,6 +142,66 @@ Deno.serve(async (req: Request) => {
       const session = event.data.object;
       const meta = session.metadata || {};
       const userId = meta.user_id;
+
+      // ── Subscription checkout ──
+      if (session.mode === "subscription") {
+        const plan = meta.plan; // "pro" | "team"
+        const credits = parseInt(meta.credits, 10);
+        const subscriptionId = session.subscription;
+
+        if (!userId || !plan || !credits) {
+          console.error("[stripe-webhook] subscription missing metadata:", meta);
+          return json({ received: true, warning: "missing_metadata" }, 200);
+        }
+
+        console.log(`[stripe-webhook] subscription activated — user=${userId} plan=${plan} credits=${credits}`);
+
+        const renewsAt = new Date();
+        renewsAt.setDate(renewsAt.getDate() + 30);
+
+        // Update profile with subscription info
+        const { error: updateErr } = await adminClient
+          .from("profiles")
+          .update({
+            plan,
+            plan_credits: credits,
+            stripe_subscription_id: subscriptionId,
+            plan_renews_at: renewsAt.toISOString(),
+            credits: credits + (await getBonus(adminClient, userId)),
+          })
+          .eq("id", userId);
+
+        if (updateErr) {
+          console.error("[stripe-webhook] profile update failed:", updateErr.message);
+        }
+
+        // Insert credit_history
+        await adminClient.from("credit_history").insert({
+          user_id: userId,
+          amount: credits,
+          type: "purchase",
+          description: `Plano ${plan.charAt(0).toUpperCase() + plan.slice(1)} ativado — ${credits} créditos`,
+          reference_id: subscriptionId,
+        });
+
+        // Send email
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("email")
+          .eq("id", userId)
+          .single();
+
+        if (profile?.email) {
+          await callSendEmail(supabaseUrl, supabaseServiceKey, profile.email, "plan-activated", {
+            plan: plan.charAt(0).toUpperCase() + plan.slice(1),
+            credits,
+          });
+        }
+
+        return json({ received: true, processed: "subscription_activated" }, 200);
+      }
+
+      // ── One-time payment checkout ──
       const paymentId = meta.payment_id;
       const credits = parseInt(meta.credits, 10);
 
@@ -169,19 +243,22 @@ Deno.serve(async (req: Request) => {
         console.error("[stripe-webhook] credit_history insert failed:", historyErr.message);
       }
 
-      // 3. Add credits to profile
+      // 3. Add credits to bonus_credits + credits
       const { data: profile } = await adminClient
         .from("profiles")
-        .select("credits, email")
+        .select("credits, bonus_credits, email")
         .eq("id", userId)
         .single();
 
+      const currentBonus = profile?.bonus_credits ?? 0;
       const currentCredits = profile?.credits ?? 0;
-      const newCredits = currentCredits + credits;
 
       const { error: creditErr } = await adminClient
         .from("profiles")
-        .update({ credits: newCredits })
+        .update({
+          bonus_credits: currentBonus + credits,
+          credits: currentCredits + credits,
+        })
         .eq("id", userId);
 
       if (creditErr) {
@@ -189,7 +266,7 @@ Deno.serve(async (req: Request) => {
       }
 
       console.log(
-        `[stripe-webhook] credits updated — ${currentCredits} → ${newCredits}`
+        `[stripe-webhook] bonus_credits ${currentBonus} → ${currentBonus + credits}`
       );
 
       // 4. Send confirmation email
@@ -202,6 +279,108 @@ Deno.serve(async (req: Request) => {
       }
 
       return json({ received: true, processed: "checkout.session.completed" }, 200);
+    }
+
+    // ── invoice.payment_succeeded (subscription renewal) ──
+    if (event.type === "invoice.payment_succeeded") {
+      const invoice = event.data.object;
+      // Only process subscription renewals (not the initial invoice)
+      if (invoice.billing_reason !== "subscription_cycle") {
+        return json({ received: true, skipped: "not_renewal" }, 200);
+      }
+
+      const customerId = invoice.customer;
+      if (!customerId) {
+        return json({ received: true, warning: "no_customer" }, 200);
+      }
+
+      // Find user by stripe_customer_id
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("id, plan, email, bonus_credits")
+        .eq("stripe_customer_id", customerId)
+        .single();
+
+      if (!profile) {
+        console.warn(`[stripe-webhook] no profile for customer=${customerId}`);
+        return json({ received: true, warning: "profile_not_found" }, 200);
+      }
+
+      const planCredits = profile.plan === "team" ? 2000 : profile.plan === "pro" ? 500 : 0;
+      if (planCredits === 0) {
+        return json({ received: true, warning: "free_plan" }, 200);
+      }
+
+      const renewsAt = new Date();
+      renewsAt.setDate(renewsAt.getDate() + 30);
+
+      // Reset plan_credits, keep bonus_credits, update total
+      await adminClient
+        .from("profiles")
+        .update({
+          plan_credits: planCredits,
+          credits: planCredits + (profile.bonus_credits ?? 0),
+          plan_renews_at: renewsAt.toISOString(),
+        })
+        .eq("id", profile.id);
+
+      await adminClient.from("credit_history").insert({
+        user_id: profile.id,
+        amount: planCredits,
+        type: "purchase",
+        description: `Renovação plano ${profile.plan.charAt(0).toUpperCase() + profile.plan.slice(1)} — ${planCredits} créditos`,
+        reference_id: invoice.id,
+      });
+
+      console.log(`[stripe-webhook] renewal — user=${profile.id} plan=${profile.plan} credits=${planCredits}`);
+
+      if (profile.email) {
+        const amountFormatted = (invoice.amount_paid / 100).toFixed(2).replace(".", ",");
+        await callSendEmail(supabaseUrl, supabaseServiceKey, profile.email, "payment-ok", {
+          amount: amountFormatted,
+          credits: planCredits,
+        });
+      }
+
+      return json({ received: true, processed: "invoice.payment_succeeded" }, 200);
+    }
+
+    // ── customer.subscription.deleted (cancellation) ──
+    if (event.type === "customer.subscription.deleted") {
+      const subscription = event.data.object;
+      const customerId = subscription.customer;
+
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("id, email, bonus_credits")
+        .eq("stripe_customer_id", customerId)
+        .single();
+
+      if (!profile) {
+        console.warn(`[stripe-webhook] no profile for customer=${customerId} (subscription.deleted)`);
+        return json({ received: true, warning: "profile_not_found" }, 200);
+      }
+
+      console.log(`[stripe-webhook] subscription deleted — user=${profile.id}`);
+
+      await adminClient
+        .from("profiles")
+        .update({
+          plan: "free",
+          plan_credits: 0,
+          stripe_subscription_id: null,
+          plan_renews_at: null,
+          credits: profile.bonus_credits ?? 0,
+        })
+        .eq("id", profile.id);
+
+      if (profile.email) {
+        await callSendEmail(supabaseUrl, supabaseServiceKey, profile.email, "credits-low", {
+          reason: "Plan cancelled — reverted to Free",
+        });
+      }
+
+      return json({ received: true, processed: "customer.subscription.deleted" }, 200);
     }
 
     // ── checkout.session.expired ──

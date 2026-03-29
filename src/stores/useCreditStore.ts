@@ -1,5 +1,6 @@
 // src/stores/useCreditStore.ts
 // CREATYNG — Credit system store (Zustand + Supabase realtime)
+// credits = plan_credits + bonus_credits
 
 import { create } from 'zustand';
 import { supabase } from '@/services/supabaseClient';
@@ -14,23 +15,18 @@ export interface CreditTransaction {
 
 interface CreditStore {
   credits: number;
+  planCredits: number;
+  bonusCredits: number;
+  plan: string;
+  planRenewsAt: string | null;
   loading: boolean;
   transactions: CreditTransaction[];
   _realtimeChannel: ReturnType<typeof supabase.channel> | null;
 
-  /** Fetch real credits from profiles.credits */
   fetchCredits: () => Promise<void>;
-
-  /** Subscribe to realtime changes on profiles table */
   subscribeRealtime: (userId: string) => void;
-
-  /** Unsubscribe from realtime */
   unsubscribeRealtime: () => void;
-
-  /** Debit credits via Edge Function (returns remaining or throws) */
   debitCredits: (amount: number, description: string, referenceId?: string) => Promise<number>;
-
-  /** Local-only helpers for optimistic UI */
   setCredits: (n: number) => void;
   addCreditsLocal: (amount: number, description: string) => void;
   getBalance: () => number;
@@ -38,6 +34,10 @@ interface CreditStore {
 
 export const useCreditStore = create<CreditStore>()((set, get) => ({
   credits: 0,
+  planCredits: 0,
+  bonusCredits: 0,
+  plan: 'free',
+  planRenewsAt: null,
   loading: true,
   transactions: [],
   _realtimeChannel: null,
@@ -50,12 +50,20 @@ export const useCreditStore = create<CreditStore>()((set, get) => ({
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('credits')
+        .select('credits, plan_credits, bonus_credits, plan, plan_renews_at')
         .eq('id', user.id)
         .single();
 
       if (!error && data) {
-        set({ credits: data.credits ?? 0 });
+        const pc = data.plan_credits ?? 0;
+        const bc = data.bonus_credits ?? 0;
+        set({
+          credits: data.credits ?? (pc + bc),
+          planCredits: pc,
+          bonusCredits: bc,
+          plan: data.plan ?? 'free',
+          planRenewsAt: data.plan_renews_at ?? null,
+        });
       }
     } catch (e) {
       console.warn('[CreditStore] fetchCredits failed:', e);
@@ -81,9 +89,17 @@ export const useCreditStore = create<CreditStore>()((set, get) => ({
           filter: `id=eq.${userId}`,
         },
         (payload) => {
-          const newCredits = payload.new?.credits;
-          if (typeof newCredits === 'number') {
-            set({ credits: newCredits });
+          const p = payload.new;
+          if (p) {
+            const pc = p.plan_credits ?? get().planCredits;
+            const bc = p.bonus_credits ?? get().bonusCredits;
+            set({
+              credits: p.credits ?? (pc + bc),
+              planCredits: pc,
+              bonusCredits: bc,
+              plan: p.plan ?? get().plan,
+              planRenewsAt: p.plan_renews_at ?? get().planRenewsAt,
+            });
           }
         }
       )
@@ -106,7 +122,6 @@ export const useCreditStore = create<CreditStore>()((set, get) => ({
     });
 
     if (error) {
-      // supabase-js v2 wraps non-2xx as FunctionsHttpError with a `context` Response
       let errBody: Record<string, unknown> | null = null;
       try {
         if (typeof error === 'object' && 'context' in error) {
@@ -133,6 +148,8 @@ export const useCreditStore = create<CreditStore>()((set, get) => ({
     if (data?.success) {
       set({
         credits: data.remaining,
+        planCredits: data.remaining_plan ?? get().planCredits,
+        bonusCredits: data.remaining_bonus ?? get().bonusCredits,
         transactions: [
           {
             id: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -155,6 +172,7 @@ export const useCreditStore = create<CreditStore>()((set, get) => ({
   addCreditsLocal: (amount, description) =>
     set((state) => ({
       credits: state.credits + amount,
+      bonusCredits: state.bonusCredits + amount,
       transactions: [
         {
           id: `tx-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
