@@ -9,3 +9,28 @@ entrypoint = "./functions/generate-image/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/generate-image/*.html" ]
+
+# Payment functions: verify_jwt = false because these functions handle auth
+# themselves via createClient(ANON_KEY) + getUser(). The gateway's default
+# JWT check rejects near-expiry tokens before the function code can run,
+# causing "Invalid JWT" errors even with valid sessions.
+
+[functions.create-stripe-checkout]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/create-stripe-checkout/index.ts"
+
+[functions.create-pix-charge]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/create-pix-charge/index.ts"
+
+[functions.check-pix-status]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/check-pix-status/index.ts"
+
+[functions.debit-credits]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/debit-credits/index.ts"
