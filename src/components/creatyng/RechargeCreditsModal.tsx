@@ -100,9 +100,11 @@ const RechargeCreditsModal = ({
     const pkg = PACKAGES[selected];
 
     try {
-      // Ensure user is authenticated before calling edge functions
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('[Payment] session check:', session ? 'authenticated' : 'NO SESSION');
+      // Force token refresh to avoid "Invalid JWT" on edge function calls.
+      // getSession() returns a cached token that may be expired; refreshSession()
+      // actually contacts Supabase to get a fresh access_token.
+      const { data: { session }, error: refreshError } = await supabase.auth.refreshSession();
+      console.log('[Payment] session refresh:', session ? 'authenticated' : 'NO SESSION', refreshError?.message || '');
       if (!session) {
         throw new Error(t('recharge.not_authenticated') || 'Not authenticated');
       }
