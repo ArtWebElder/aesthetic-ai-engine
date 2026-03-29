@@ -107,8 +107,11 @@ Deno.serve(async (req: Request) => {
     const asaasApiKey = Deno.env.get("ASAAS_API_KEY");
 
     if (!asaasApiKey) {
+      console.error("[create-asaas-subscription] ASAAS_API_KEY not configured");
       return json({ error: "pix_not_configured" }, 500, cors);
     }
+
+    console.log("[create-asaas-subscription] starting for user auth");
 
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -137,7 +140,10 @@ Deno.serve(async (req: Request) => {
     const planId = String(body.plan || "");
     const cpfCnpj = String(body.cpfCnpj || "").replace(/\D/g, "");
 
+    console.log(`[create-asaas-subscription] user=${userId} plan=${planId} cpfLen=${cpfCnpj.length}`);
+
     if (!cpfCnpj || (cpfCnpj.length !== 11 && cpfCnpj.length !== 14)) {
+      console.error(`[create-asaas-subscription] invalid cpfCnpj length: ${cpfCnpj.length}`);
       return json({ error: "cpf_required", detail: "CPF (11 digits) or CNPJ (14 digits) is required" }, 400, cors);
     }
 
@@ -169,9 +175,16 @@ Deno.serve(async (req: Request) => {
     // ── Find or create Asaas customer ──
     let customerId: string;
     try {
-      customerId = profile?.asaas_customer_id ||
-        await findOrCreateCustomer(asaasApiKey, userEmail, userName, cpfCnpj);
+      if (profile?.asaas_customer_id) {
+        customerId = profile.asaas_customer_id;
+        console.log(`[create-asaas-subscription] reusing existing customer=${customerId}`);
+      } else {
+        console.log(`[create-asaas-subscription] creating customer for email=${userEmail} cpf=${cpfCnpj.slice(0,3)}***`);
+        customerId = await findOrCreateCustomer(asaasApiKey, userEmail, userName, cpfCnpj);
+        console.log(`[create-asaas-subscription] customer created=${customerId}`);
+      }
     } catch (err) {
+      console.error(`[create-asaas-subscription] customer creation failed:`, String(err));
       return json({ error: "customer_create_failed", detail: String(err) }, 502, cors);
     }
 

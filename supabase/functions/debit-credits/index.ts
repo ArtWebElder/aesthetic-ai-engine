@@ -118,6 +118,20 @@ Deno.serve(async (req: Request) => {
       return json({ error: "debit_failed", detail: rpcError.message }, 500, cors);
     }
 
+    // Sync legacy credits column = plan_credits + bonus_credits
+    const { data: syncProfile } = await adminClient
+      .from("profiles")
+      .select("plan_credits, bonus_credits")
+      .eq("id", userId)
+      .single();
+    if (syncProfile) {
+      const syncTotal = (syncProfile.plan_credits ?? 0) + (syncProfile.bonus_credits ?? 0);
+      await adminClient
+        .from("profiles")
+        .update({ credits: syncTotal })
+        .eq("id", userId);
+    }
+
     // Insert credit_history
     const { error: historyError } = await adminClient
       .from("credit_history")

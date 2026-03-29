@@ -2,7 +2,7 @@
 // CREATYNG — Smart credit upsell system (5 behavioral triggers)
 
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { X, Sparkles, AlertTriangle, Zap, Star, Heart, ArrowRight, CreditCard } from 'lucide-react';
 import { useCreditStore } from '@/stores/useCreditStore';
 import { useI18n } from '@/i18n';
@@ -294,16 +294,20 @@ function SatisfactionPopup({ onClose }: { onClose: () => void }) {
 /* ─── Main CreditUpsell Orchestrator ───────────────────── */
 export default function CreditUpsell() {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { credits, plan } = useCreditStore();
   const [showFirstGen, setShowFirstGen] = useState(false);
   const [showLowBanner, setShowLowBanner] = useState(false);
   const [showCriticalModal, setShowCriticalModal] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
   const [showSatisfaction, setShowSatisfaction] = useState(false);
   const [criticalShownThisSession, setCriticalShownThisSession] = useState(false);
 
+  // BUG 6: never show upsell modals on billing, settings, or onboarding pages
+  const isSuppressedRoute = /\/(billing|settings|onboarding)/.test(pathname);
+
   // Check behavioral triggers
   useEffect(() => {
+    if (isSuppressedRoute) return;
     const genCount = getGenCount();
 
     // A. First generation toast — show once after 1st gen
@@ -325,18 +329,16 @@ export default function CreditUpsell() {
         }
       } catch { /* */ }
     }
-  }, []);
+  }, [isSuppressedRoute]);
 
   // Credit-based triggers
+  // BUG 7: PaywallModal (credits === 0) removed from here — only shown in WizardPage on generate attempt
+  // Critical modal threshold lowered from <=5 to <=2
   useEffect(() => {
-    // D. Paywall (0 credits)
-    if (credits === 0) {
-      setShowPaywall(true);
-      return;
-    }
+    if (isSuppressedRoute) return;
 
-    // C. Critical (≤5 credits) — once per session
-    if (credits <= 5 && !criticalShownThisSession) {
+    // C. Critical (≤2 credits) — once per session, dismissable, non-blocking
+    if (credits > 0 && credits <= 2 && !criticalShownThisSession) {
       setShowCriticalModal(true);
       setCriticalShownThisSession(true);
       return;
@@ -349,7 +351,7 @@ export default function CreditUpsell() {
         if (!dismissed) setShowLowBanner(true);
       } catch { setShowLowBanner(true); }
     }
-  }, [credits, criticalShownThisSession]);
+  }, [credits, criticalShownThisSession, isSuppressedRoute]);
 
   const handleDismissLow = useCallback(() => {
     setShowLowBanner(false);
@@ -360,6 +362,9 @@ export default function CreditUpsell() {
     navigate('/app/billing');
   }, [navigate]);
 
+  // BUG 6: suppress everything on billing/settings/onboarding
+  if (isSuppressedRoute) return null;
+
   return (
     <>
       <style>{`
@@ -368,14 +373,14 @@ export default function CreditUpsell() {
       `}</style>
 
       {/* B. Low credits banner */}
-      {showLowBanner && !showCriticalModal && !showPaywall && (
+      {showLowBanner && !showCriticalModal && (
         <LowCreditsBanner credits={credits} onDismiss={handleDismissLow} onUpgrade={goToBilling} />
       )}
 
       {/* A. First gen toast */}
       {showFirstGen && <FirstGenToast onClose={() => setShowFirstGen(false)} />}
 
-      {/* C. Critical credits modal */}
+      {/* C. Critical credits modal (≤2, non-blocking, dismissable) */}
       {showCriticalModal && (
         <CriticalCreditsModal
           credits={credits}
@@ -384,13 +389,8 @@ export default function CreditUpsell() {
         />
       )}
 
-      {/* D. Paywall modal */}
-      {showPaywall && (
-        <PaywallModal plan={plan} onClose={() => setShowPaywall(false)} />
-      )}
-
       {/* E. Satisfaction popup */}
-      {showSatisfaction && !showFirstGen && !showCriticalModal && !showPaywall && (
+      {showSatisfaction && !showFirstGen && !showCriticalModal && (
         <SatisfactionPopup onClose={() => setShowSatisfaction(false)} />
       )}
     </>

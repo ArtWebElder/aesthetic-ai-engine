@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp, Clock, X, CreditCard, QrCode,
+  Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp, X, CreditCard, QrCode,
 } from 'lucide-react';
 import RechargeCreditsModal from '@/components/creatyng/RechargeCreditsModal';
 import { useCreditStore } from '@/stores/useCreditStore';
@@ -54,16 +54,13 @@ const PLANS = [
   },
 ];
 
-/* ── History (placeholder) ─────────────────────────────── */
-const HISTORY = [
-  { date: 'Hoje', action: 'Food/Pop — Burger Artesanal', credits: -5, type: 'gen' },
-  { date: 'Hoje', action: 'Chat AI — Refinamento', credits: -1, type: 'chat' },
-  { date: 'Ontem', action: 'Pop Design — Açaí Bowl', credits: -8, type: 'gen' },
-  { date: 'Ontem', action: 'Food/Pop — Sushi Festival', credits: -5, type: 'gen' },
-  { date: '08 Mar', action: 'Recarga avulsa — 200 créditos', credits: 200, type: 'topup' },
-  { date: '05 Mar', action: 'Food/Pop — Pizza Weekend', credits: -5, type: 'gen' },
-  { date: '01 Mar', action: 'Renovação mensal — Plano Pro', credits: 500, type: 'renew' },
-];
+/* ── History types ─────────────────────────────────────── */
+interface HistoryRow {
+  date: string;
+  action: string;
+  credits: number;
+  type: string;
+}
 
 /* ── Component ────────────────────────────────────────── */
 const Billing = () => {
@@ -77,6 +74,8 @@ const Billing = () => {
   const [payMethod, setPayMethod] = useState<'card' | 'pix'>('card');
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [cpfCnpjRaw, setCpfCnpjRaw] = useState('');
+  const [history, setHistory] = useState<HistoryRow[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const { user } = useAuth();
   const { t } = useI18n();
   const credits = useCreditStore((s) => s.credits);
@@ -89,6 +88,43 @@ const Billing = () => {
   const unsubscribeRealtime = useCreditStore((s) => s.unsubscribeRealtime);
 
   useEffect(() => { setReady(true); }, []);
+
+  // Fetch real credit history when usage tab is open
+  useEffect(() => {
+    if (tab !== 'usage' || !user) return;
+    let cancelled = false;
+    setHistoryLoading(true);
+    (async () => {
+      try {
+        const { data, error: err } = await supabase
+          .from('credit_history')
+          .select('id, amount, type, description, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        if (!err && data && !cancelled) {
+          const rows: HistoryRow[] = data.map((row: { amount: number; type: string; description: string | null; created_at: string }) => {
+            const d = new Date(row.created_at);
+            const now = new Date();
+            const isToday = d.toDateString() === now.toDateString();
+            const yesterday = new Date(now);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const isYesterday = d.toDateString() === yesterday.toDateString();
+            const dateStr = isToday ? t('billing.history.today') : isYesterday ? t('billing.history.yesterday') : d.toLocaleDateString();
+            return {
+              date: dateStr,
+              action: row.description || row.type,
+              credits: row.amount,
+              type: row.type,
+            };
+          });
+          setHistory(rows);
+        }
+      } catch { /* silent */ }
+      finally { if (!cancelled) setHistoryLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [tab, user, t]);
   useEffect(() => {
     if (user) {
       fetchCredits();
@@ -497,36 +533,46 @@ const Billing = () => {
             <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h3 style={{ fontSize: 14, fontWeight: 600 }}>{t('billing.history.title')}</h3>
             </div>
-            {HISTORY.map((h, i) => (
-              <div key={i} style={{
-                padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                borderBottom: i < HISTORY.length - 1 ? '1px solid hsl(var(--border))' : 'none',
-                transition: 'background 120ms',
-              }}
-                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--muted))'}
-                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{
-                    width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: h.credits > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(255,113,61,0.12)',
-                    color: h.credits > 0 ? '#10B981' : '#ff713d',
-                  }}>
-                    {h.credits > 0 ? <Plus size={15} /> : <Sparkles size={15} />}
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 500 }}>{h.action}</div>
-                    <div style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 1 }}>{h.date}</div>
-                  </div>
-                </div>
-                <span style={{
-                  fontSize: 13, fontWeight: 600, fontFamily: 'monospace',
-                  color: h.credits > 0 ? '#10B981' : 'hsl(var(--muted-foreground))',
-                }}>
-                  {h.credits > 0 ? '+' : ''}{h.credits}
-                </span>
+            {historyLoading ? (
+              <div style={{ padding: '32px 20px', textAlign: 'center', color: 'hsl(var(--muted-foreground))', fontSize: 13 }}>
+                {t('billing.history.loading')}
               </div>
-            ))}
+            ) : history.length === 0 ? (
+              <div style={{ padding: '32px 20px', textAlign: 'center', color: 'hsl(var(--muted-foreground))', fontSize: 13 }}>
+                {t('billing.history.empty')}
+              </div>
+            ) : (
+              history.map((h, i) => (
+                <div key={i} style={{
+                  padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  borderBottom: i < history.length - 1 ? '1px solid hsl(var(--border))' : 'none',
+                  transition: 'background 120ms',
+                }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'hsl(var(--muted))'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: h.credits > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(255,113,61,0.12)',
+                      color: h.credits > 0 ? '#10B981' : '#ff713d',
+                    }}>
+                      {h.credits > 0 ? <Plus size={15} /> : <Sparkles size={15} />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>{h.action}</div>
+                      <div style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 1 }}>{h.date}</div>
+                    </div>
+                  </div>
+                  <span style={{
+                    fontSize: 13, fontWeight: 600, fontFamily: 'monospace',
+                    color: h.credits > 0 ? '#10B981' : 'hsl(var(--muted-foreground))',
+                  }}>
+                    {h.credits > 0 ? '+' : ''}{h.credits}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

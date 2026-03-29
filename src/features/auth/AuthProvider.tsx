@@ -49,6 +49,18 @@ async function ensureProfile(user: User): Promise<{ onboarded: boolean }> {
     });
 
     console.log('[Auth] created profile for', user.email, '(50 free credits)');
+
+    // Send welcome email (fire and forget)
+    if (user.email) {
+      supabase.functions.invoke('send-email', {
+        body: {
+          to: user.email,
+          template: 'welcome',
+          data: { name },
+        },
+      }).catch((err) => console.warn('[Auth] welcome email failed:', err));
+    }
+
     return { onboarded: false };
   } catch (err) {
     // Non-blocking: profile creation failure shouldn't block the app

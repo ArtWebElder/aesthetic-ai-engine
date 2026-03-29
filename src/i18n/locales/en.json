@@ -1151,5 +1151,15 @@
   "upsell.credits_zero.close": "Close",
   "upsell.satisfaction.title": "Enjoying Creatyng?",
   "upsell.satisfaction.desc": "You've created 3 designs already! Unlock unlimited potential with Pro.",
-  "upsell.satisfaction.upgrade": "See Pro plan"
+  "upsell.satisfaction.upgrade": "See Pro plan",
+
+  "auth.change_email": "Use a different email",
+  "auth.resend_success": "Code resent! Check your inbox.",
+  "auth.resend_rate_limit": "Please wait before resending.",
+  "auth.rate_limit": "Too many attempts. Please wait a few minutes before trying again.",
+
+  "billing.history.today": "Today",
+  "billing.history.yesterday": "Yesterday",
+  "billing.history.loading": "Loading history...",
+  "billing.history.empty": "No activity yet"
 }

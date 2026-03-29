@@ -55,10 +55,16 @@ export const useCreditStore = create<CreditStore>()((set, get) => ({
         .single();
 
       if (!error && data) {
-        const pc = data.plan_credits ?? 0;
-        const bc = data.bonus_credits ?? 0;
+        let pc = data.plan_credits ?? 0;
+        let bc = data.bonus_credits ?? 0;
+        // BUG 5 fix: if both plan_credits and bonus_credits are 0 but legacy
+        // credits column has a balance, treat it as bonus_credits
+        if (pc === 0 && bc === 0 && (data.credits ?? 0) > 0) {
+          bc = data.credits;
+        }
+        const total = pc + bc;
         set({
-          credits: data.credits ?? (pc + bc),
+          credits: total,
           planCredits: pc,
           bonusCredits: bc,
           plan: data.plan ?? 'free',
@@ -91,10 +97,15 @@ export const useCreditStore = create<CreditStore>()((set, get) => ({
         (payload) => {
           const p = payload.new;
           if (p) {
-            const pc = p.plan_credits ?? get().planCredits;
-            const bc = p.bonus_credits ?? get().bonusCredits;
+            let pc = p.plan_credits ?? get().planCredits;
+            let bc = p.bonus_credits ?? get().bonusCredits;
+            // BUG 5 fix: legacy credits column fallback
+            if (pc === 0 && bc === 0 && (p.credits ?? 0) > 0) {
+              bc = p.credits;
+            }
+            const total = pc + bc;
             set({
-              credits: p.credits ?? (pc + bc),
+              credits: total,
               planCredits: pc,
               bonusCredits: bc,
               plan: p.plan ?? get().plan,

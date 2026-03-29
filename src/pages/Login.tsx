@@ -111,6 +111,7 @@ const Login = () => {
   const [otpSuccess, setOtpSuccess] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const navigate = useNavigate();
@@ -139,9 +140,10 @@ const Login = () => {
         if (error) {
           const msg = error.message?.toLowerCase() || '';
           if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
-            // Unverified email — show OTP verification view
             setView('verify');
             setResendCooldown(60);
+          } else if (msg.includes('email rate limit exceeded') || msg.includes('rate limit')) {
+            setError(t('auth.rate_limit'));
           } else {
             setError(error.message);
           }
@@ -154,11 +156,12 @@ const Login = () => {
           const msg = error.message?.toLowerCase() || '';
           if (msg.includes('already registered') || msg.includes('already been registered')) {
             setError(t('auth.error_already_registered'));
+          } else if (msg.includes('email rate limit exceeded') || msg.includes('rate limit')) {
+            setError(t('auth.rate_limit'));
           } else {
             setError(error.message);
           }
         } else {
-          // Signup succeeded — show OTP verification view
           setView('verify');
           setResendCooldown(60);
         }
@@ -209,12 +212,38 @@ const Login = () => {
   const handleResendCode = useCallback(async () => {
     if (!email || resending || resendCooldown > 0) return;
     setResending(true);
+    setOtpError('');
     try {
-      await supabase.auth.resend({ type: 'signup', email });
-      setResendCooldown(60);
-    } catch { /* silent */ }
-    finally { setResending(false); }
-  }, [email, resending, resendCooldown]);
+      const { error: resendErr } = await supabase.auth.resend({ type: 'signup', email });
+      if (resendErr) {
+        const msg = resendErr.message?.toLowerCase() || '';
+        if (msg.includes('rate limit') || msg.includes('too many')) {
+          setOtpError(t('auth.resend_rate_limit'));
+        } else {
+          setOtpError(resendErr.message);
+        }
+      } else {
+        setResendCooldown(60);
+        setOtpError('');
+        // Brief success feedback via inline message
+        setResendSuccess(true);
+        setTimeout(() => setResendSuccess(false), 3000);
+      }
+    } catch {
+      setOtpError(t('auth.resend_rate_limit'));
+    } finally {
+      setResending(false);
+    }
+  }, [email, resending, resendCooldown, t]);
+
+  const handleChangeEmail = useCallback(() => {
+    setView('form');
+    setOtpCode('');
+    setOtpError('');
+    setOtpSuccess(false);
+    setResendCooldown(0);
+    setResendSuccess(false);
+  }, []);
 
   const handleSkipVerification = () => {
     // Let user in without verification — they can verify later via AppShell banner
@@ -311,9 +340,19 @@ const Login = () => {
                   <h1 style={{ fontSize: 24, fontWeight: 700, color: '#141417', letterSpacing: '-0.03em', lineHeight: 1.2, marginBottom: 6 }}>
                     {t('auth.verify_title')}
                   </h1>
-                  <p style={{ fontSize: 14, color: '#5a5a60', marginBottom: 24 }}>
+                  <p style={{ fontSize: 14, color: '#5a5a60', marginBottom: 8 }}>
                     {t('auth.verify_subtitle')} <strong style={{ color: '#141417' }}>{email}</strong>
                   </p>
+                  <button
+                    onClick={handleChangeEmail}
+                    style={{
+                      background: 'none', border: 'none', color: '#ff713d',
+                      fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: 0,
+                      marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    {t('auth.change_email')} <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
 
                   <input
                     type="text"
@@ -369,6 +408,10 @@ const Login = () => {
                       </>
                     )}
                   </button>
+
+                  {resendSuccess && (
+                    <p className="text-xs mb-2" style={{ color: '#10B981' }}>{t('auth.resend_success')}</p>
+                  )}
 
                   <div className="flex items-center justify-between">
                     <button
