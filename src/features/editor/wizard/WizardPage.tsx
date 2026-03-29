@@ -28,6 +28,7 @@ import { ConfettiEffect } from "@/components/creatyng/ConfettiEffect";
 import { useCreditStore } from "@/stores/useCreditStore";
 import { calculateCost } from "@/lib/creditCosts";
 import { useAuth } from "@/features/auth/AuthProvider";
+import { incrementGenCount, PaywallModal } from "@/components/creatyng/CreditUpsell";
 import { useI18n } from "@/i18n";
 
 // ── Constants (idênticos ao original) ─────────────────────────────────────────
@@ -202,6 +203,7 @@ export function WizardPage() {
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
   const confettiTriggered = useRef(false);
 
   // existing generation state (idênticos ao original)
@@ -394,7 +396,7 @@ export function WizardPage() {
       } catch (debitErr: unknown) {
         const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
         if (msg === "insufficient_credits") {
-          setError("Créditos insuficientes. Recarregue para continuar.");
+          setShowPaywall(true);
           setGenerating(false);
           return;
         }
@@ -561,6 +563,7 @@ export function WizardPage() {
 
         setPopDesignStep("");
         setGenerationDone(true);
+        incrementGenCount();
         return;
       }
 
@@ -652,6 +655,7 @@ export function WizardPage() {
       setComposedBase64(composed);
       setComposedImage(composed);
       setGenerationDone(true);
+      incrementGenCount();
       toast.success("Criativo gerado com sucesso!");
     } catch (e) {
       const msg = e instanceof GenerateError ? e.message : "Erro inesperado. Tente novamente.";
@@ -715,6 +719,7 @@ export function WizardPage() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, hsl(var(--background))`, color: 'hsl(var(--foreground))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
       <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} count={80} duration={3500} />
+      {showPaywall && <PaywallModal plan={useCreditStore.getState().plan} onClose={() => setShowPaywall(false)} />}
       <style>{`
         @keyframes wizSpin { to { transform: rotate(360deg); } }
         @keyframes wizPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }

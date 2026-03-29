@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, RefreshCw, ShieldCheck, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
+import { supabase } from '@/services/supabaseClient';
 
 /* ─── Carousel card data ─────────────────────────────── */
 const CARDS = [
@@ -97,12 +98,19 @@ function GoogleIcon() {
 /* ─── Main component ─────────────────────────────────── */
 const Login = () => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [view, setView] = useState<'form' | 'verify'>('form');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [otpSuccess, setOtpSuccess] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
   const navigate = useNavigate();
@@ -111,6 +119,13 @@ const Login = () => {
   useEffect(() => {
     if (user) navigate('/app/dashboard', { replace: true });
   }, [user, navigate]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const pwStrength = mode === 'signup' ? getPasswordStrength(password) : null;
 
@@ -121,12 +136,21 @@ const Login = () => {
     try {
       if (mode === 'login') {
         const { error } = await signInWithEmail(email, password);
-        if (error) setError(error.message);
-        else navigate('/app/dashboard', { replace: true });
+        if (error) {
+          const msg = error.message?.toLowerCase() || '';
+          if (msg.includes('email not confirmed') || msg.includes('not confirmed')) {
+            // Unverified email — show OTP verification view
+            setView('verify');
+            setResendCooldown(60);
+          } else {
+            setError(error.message);
+          }
+        } else {
+          navigate('/app/dashboard', { replace: true });
+        }
       } else {
         const { error } = await signUpWithEmail(email, password, name);
         if (error) {
-          // Supabase returns "User already registered" for duplicate signups
           const msg = error.message?.toLowerCase() || '';
           if (msg.includes('already registered') || msg.includes('already been registered')) {
             setError(t('auth.error_already_registered'));
@@ -134,9 +158,9 @@ const Login = () => {
             setError(error.message);
           }
         } else {
-          // Signup succeeded — show verification notice and redirect to onboarding
-          setError('');
-          navigate('/onboarding', { replace: true });
+          // Signup succeeded — show OTP verification view
+          setView('verify');
+          setResendCooldown(60);
         }
       }
     } finally {
@@ -147,6 +171,54 @@ const Login = () => {
   const handleGoogle = async () => {
     setError('');
     await signInWithGoogle();
+  };
+
+  const handleVerifyOtp = useCallback(async () => {
+    if (!email || !otpCode.trim() || otpLoading) return;
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email,
+        token: otpCode.trim(),
+        type: 'signup',
+      });
+      if (error) {
+        setOtpError(t('auth.otp_invalid'));
+      } else {
+        setOtpSuccess(true);
+        // After verification, try signing in automatically
+        setTimeout(async () => {
+          const { error: loginErr } = await signInWithEmail(email, password);
+          if (!loginErr) {
+            navigate('/app/dashboard', { replace: true });
+          } else {
+            // Verified but auto-login failed — go back to form
+            setView('form');
+            setOtpSuccess(false);
+          }
+        }, 1500);
+      }
+    } catch {
+      setOtpError(t('auth.otp_invalid'));
+    } finally {
+      setOtpLoading(false);
+    }
+  }, [email, otpCode, otpLoading, password, signInWithEmail, navigate, t]);
+
+  const handleResendCode = useCallback(async () => {
+    if (!email || resending || resendCooldown > 0) return;
+    setResending(true);
+    try {
+      await supabase.auth.resend({ type: 'signup', email });
+      setResendCooldown(60);
+    } catch { /* silent */ }
+    finally { setResending(false); }
+  }, [email, resending, resendCooldown]);
+
+  const handleSkipVerification = () => {
+    // Let user in without verification — they can verify later via AppShell banner
+    navigate('/app/dashboard', { replace: true });
   };
 
   return (
@@ -211,210 +283,343 @@ const Login = () => {
         </div>
 
         <div className="w-full max-w-sm animate-fade-up">
-          {/* Toggle login/signup */}
-          <div
-            className="flex mb-6"
-            style={{ background: 'rgba(20,20,23,0.04)', borderRadius: 9, padding: 3 }}
-          >
-            {(['login', 'signup'] as const).map((m) => (
-              <button
-                key={m}
-                onClick={() => { setMode(m); setError(''); }}
-                className="flex-1 py-2 text-sm rounded-[7px] transition-all duration-200"
-                style={{
-                  fontWeight: mode === m ? 600 : 400,
-                  color: mode === m ? '#141417' : '#8e8e96',
-                  background: mode === m ? '#ffffff' : 'transparent',
-                  boxShadow: mode === m ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-                }}
+          {view === 'verify' ? (
+            /* ── OTP Verification View ─────────────────────── */
+            <div>
+              {otpSuccess ? (
+                <div className="text-center py-8">
+                  <div
+                    className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
+                    style={{ background: 'rgba(16,185,129,0.1)' }}
+                  >
+                    <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                  </div>
+                  <h2 style={{ fontSize: 22, fontWeight: 700, color: '#141417', marginBottom: 6 }}>
+                    {t('auth.verify_success')}
+                  </h2>
+                  <p style={{ fontSize: 14, color: '#8e8e96' }}>{t('auth.verify_redirecting')}</p>
+                </div>
+              ) : (
+                <>
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
+                    style={{ background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))' }}
+                  >
+                    <ShieldCheck className="w-7 h-7" style={{ color: '#ff713d' }} />
+                  </div>
+
+                  <h1 style={{ fontSize: 24, fontWeight: 700, color: '#141417', letterSpacing: '-0.03em', lineHeight: 1.2, marginBottom: 6 }}>
+                    {t('auth.verify_title')}
+                  </h1>
+                  <p style={{ fontSize: 14, color: '#5a5a60', marginBottom: 24 }}>
+                    {t('auth.verify_subtitle')} <strong style={{ color: '#141417' }}>{email}</strong>
+                  </p>
+
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="000000"
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setOtpError(''); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleVerifyOtp(); }}
+                    className="w-full bg-white outline-none transition-all duration-150"
+                    style={{
+                      height: 52,
+                      borderRadius: 12,
+                      border: otpError ? '2px solid #EF4444' : '1px solid rgba(20,20,23,0.12)',
+                      fontSize: 24,
+                      fontFamily: 'monospace',
+                      letterSpacing: 8,
+                      textAlign: 'center',
+                      color: '#141417',
+                      marginBottom: 8,
+                    }}
+                    onFocus={(e) => { if (!otpError) e.currentTarget.style.borderColor = '#ff713d'; }}
+                    onBlur={(e) => { if (!otpError) e.currentTarget.style.borderColor = 'rgba(20,20,23,0.12)'; }}
+                    autoFocus
+                  />
+
+                  {otpError && (
+                    <p className="text-xs mb-2" style={{ color: '#EF4444' }}>{otpError}</p>
+                  )}
+
+                  <button
+                    onClick={handleVerifyOtp}
+                    disabled={otpLoading || otpCode.length < 6}
+                    className="w-full flex items-center justify-center gap-2 text-white font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      height: 44,
+                      borderRadius: 10,
+                      background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      boxShadow: '0 3px 10px rgba(255,113,61,0.3)',
+                      marginTop: 8,
+                      marginBottom: 16,
+                    }}
+                  >
+                    {otpLoading ? (
+                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    ) : (
+                      <>
+                        {t('auth.verify_btn')}
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={handleResendCode}
+                      disabled={resending || resendCooldown > 0}
+                      className="flex items-center gap-1.5 transition-opacity"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#ff713d',
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: resending || resendCooldown > 0 ? 'default' : 'pointer',
+                        opacity: resending || resendCooldown > 0 ? 0.5 : 1,
+                      }}
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" style={{ animation: resending ? 'spin 1s linear infinite' : 'none' }} />
+                      {resendCooldown > 0
+                        ? `${t('auth.resend_code')} (${resendCooldown}s)`
+                        : t('auth.resend_code')}
+                    </button>
+
+                    <button
+                      onClick={handleSkipVerification}
+                      className="flex items-center gap-1 transition-colors"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#8e8e96',
+                        fontSize: 13,
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#5a5a60'; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96'; }}
+                    >
+                      {t('auth.verify_later')}
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            /* ── Login / Signup Form ───────────────────────── */
+            <>
+              {/* Toggle login/signup */}
+              <div
+                className="flex mb-6"
+                style={{ background: 'rgba(20,20,23,0.04)', borderRadius: 9, padding: 3 }}
               >
-                {m === 'login' ? t('auth.tab_login') : t('auth.tab_signup')}
+                {(['login', 'signup'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => { setMode(m); setError(''); }}
+                    className="flex-1 py-2 text-sm rounded-[7px] transition-all duration-200"
+                    style={{
+                      fontWeight: mode === m ? 600 : 400,
+                      color: mode === m ? '#141417' : '#8e8e96',
+                      background: mode === m ? '#ffffff' : 'transparent',
+                      boxShadow: mode === m ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
+                    }}
+                  >
+                    {m === 'login' ? t('auth.tab_login') : t('auth.tab_signup')}
+                  </button>
+                ))}
+              </div>
+
+              {/* Heading */}
+              <div className="mb-6">
+                <h1 style={{ fontSize: 26, fontWeight: 700, color: '#141417', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
+                  {mode === 'login' ? t('auth.login.heading') : t('auth.signup.heading')}
+                </h1>
+                <p style={{ fontSize: 14, color: '#5a5a60', marginTop: 4 }}>{t('auth.subtitle')}</p>
+              </div>
+
+              {/* Google */}
+              <button
+                onClick={handleGoogle}
+                className="w-full flex items-center justify-center gap-3 transition-colors"
+                style={{
+                  padding: '11px 16px',
+                  borderRadius: 10,
+                  border: '1px solid rgba(20,20,23,0.1)',
+                  background: '#ffffff',
+                  fontSize: 13.5,
+                  fontWeight: 500,
+                  color: '#141417',
+                  marginBottom: 16,
+                }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#f5f5f3'; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#ffffff'; }}
+              >
+                <GoogleIcon />
+                {t('auth.continue_google')}
               </button>
-            ))}
-          </div>
 
-          {/* Heading */}
-          <div className="mb-6">
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#141417', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
-              {mode === 'login' ? t('auth.login.heading') : t('auth.signup.heading')}
-            </h1>
-            <p style={{ fontSize: 14, color: '#5a5a60', marginTop: 4 }}>{t('auth.subtitle')}</p>
-          </div>
+              {/* Divider */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px" style={{ background: 'rgba(20,20,23,0.1)' }} />
+                <span style={{ fontSize: 12, color: '#b5b5bb' }}>{t('auth.or_email')}</span>
+                <div className="flex-1 h-px" style={{ background: 'rgba(20,20,23,0.1)' }} />
+              </div>
 
-          {/* Google */}
-          <button
-            onClick={handleGoogle}
-            className="w-full flex items-center justify-center gap-3 transition-colors"
-            style={{
-              padding: '11px 16px',
-              borderRadius: 10,
-              border: '1px solid rgba(20,20,23,0.1)',
-              background: '#ffffff',
-              fontSize: 13.5,
-              fontWeight: 500,
-              color: '#141417',
-              marginBottom: 16,
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#f5f5f3'; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#ffffff'; }}
-          >
-            <GoogleIcon />
-            {t('auth.continue_google')}
-          </button>
+              {/* Form */}
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {mode === 'signup' && (
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
+                    <input
+                      type="text"
+                      placeholder={t('auth.name_placeholder')}
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full pl-10 pr-4 bg-white text-sm outline-none transition-all duration-150"
+                      style={{
+                        height: 44,
+                        borderRadius: 10,
+                        border: '1px solid rgba(20,20,23,0.1)',
+                        color: '#141417',
+                        fontSize: 13.5,
+                      }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                      onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
+                    />
+                  </div>
+                )}
 
-          {/* Divider */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="flex-1 h-px" style={{ background: 'rgba(20,20,23,0.1)' }} />
-            <span style={{ fontSize: 12, color: '#b5b5bb' }}>{t('auth.or_email')}</span>
-            <div className="flex-1 h-px" style={{ background: 'rgba(20,20,23,0.1)' }} />
-          </div>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
+                  <input
+                    type="email"
+                    placeholder={t('auth.email_placeholder')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 bg-white text-sm outline-none transition-all duration-150"
+                    style={{
+                      height: 44,
+                      borderRadius: 10,
+                      border: '1px solid rgba(20,20,23,0.1)',
+                      color: '#141417',
+                      fontSize: 13.5,
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
+                  />
+                </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3">
-            {mode === 'signup' && (
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
-                <input
-                  type="text"
-                  placeholder={t('auth.name_placeholder')}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  className="w-full pl-10 pr-4 bg-white text-sm outline-none transition-all duration-150"
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
+                  <input
+                    type={showPw ? 'text' : 'password'}
+                    placeholder={t('auth.password_placeholder')}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-10 bg-white text-sm outline-none transition-all duration-150"
+                    style={{
+                      height: 44,
+                      borderRadius: 10,
+                      border: '1px solid rgba(20,20,23,0.1)',
+                      color: '#141417',
+                      fontSize: 13.5,
+                    }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw((v) => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: '#b5b5bb' }}
+                  >
+                    {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Password strength (signup only) */}
+                {mode === 'signup' && pwStrength && password.length > 0 && (
+                  <div className="space-y-1.5">
+                    <div className="flex gap-1">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className={`flex-1 h-1 rounded-full transition-all duration-300 ${
+                            i < pwStrength.score ? pwStrength.color : 'bg-[rgba(20,20,23,0.08)]'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-xs" style={{ color: '#8e8e96' }}>{pwStrength.label}</p>
+                  </div>
+                )}
+
+                {error && (
+                  <p className="text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600">
+                    {error}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 text-white font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{
                     height: 44,
                     borderRadius: 10,
-                    border: '1px solid rgba(20,20,23,0.1)',
-                    color: '#141417',
+                    background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
                     fontSize: 13.5,
+                    fontWeight: 600,
+                    boxShadow: '0 3px 10px rgba(255,113,61,0.3)',
+                    marginTop: 4,
                   }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
-                />
-              </div>
-            )}
+                >
+                  {loading ? (
+                    <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  ) : (
+                    <>
+                      {mode === 'login' ? t('auth.sign_in') : t('auth.create_account')}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
 
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
-              <input
-                type="email"
-                placeholder={t('auth.email_placeholder')}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full pl-10 pr-4 bg-white text-sm outline-none transition-all duration-150"
-                style={{
-                  height: 44,
-                  borderRadius: 10,
-                  border: '1px solid rgba(20,20,23,0.1)',
-                  color: '#141417',
-                  fontSize: 13.5,
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
-              />
-            </div>
-
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
-              <input
-                type={showPw ? 'text' : 'password'}
-                placeholder={t('auth.password_placeholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full pl-10 pr-10 bg-white text-sm outline-none transition-all duration-150"
-                style={{
-                  height: 44,
-                  borderRadius: 10,
-                  border: '1px solid rgba(20,20,23,0.1)',
-                  color: '#141417',
-                  fontSize: 13.5,
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                style={{ color: '#b5b5bb' }}
-              >
-                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-
-            {/* Password strength (signup only) */}
-            {mode === 'signup' && pwStrength && password.length > 0 && (
-              <div className="space-y-1.5">
-                <div className="flex gap-1">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className={`flex-1 h-1 rounded-full transition-all duration-300 ${
-                        i < pwStrength.score ? pwStrength.color : 'bg-[rgba(20,20,23,0.08)]'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs" style={{ color: '#8e8e96' }}>{pwStrength.label}</p>
-              </div>
-            )}
-
-            {error && (
-              <p className="text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600">
-                {error}
-              </p>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full flex items-center justify-center gap-2 text-white font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
-              style={{
-                height: 44,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
-                fontSize: 13.5,
-                fontWeight: 600,
-                boxShadow: '0 3px 10px rgba(255,113,61,0.3)',
-                marginTop: 4,
-              }}
-            >
-              {loading ? (
-                <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-              ) : (
-                <>
-                  {mode === 'login' ? t('auth.sign_in') : t('auth.create_account')}
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Social proof */}
-          <div
-            className="mt-8 p-4 rounded-xl"
-            style={{ background: 'rgba(20,20,23,0.03)', border: '1px solid rgba(20,20,23,0.06)' }}
-          >
-            <div className="flex items-start gap-3">
+              {/* Social proof */}
               <div
-                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
-                style={{ background: 'linear-gradient(135deg, #f97316, #e11d48)' }}
+                className="mt-8 p-4 rounded-xl"
+                style={{ background: 'rgba(20,20,23,0.03)', border: '1px solid rgba(20,20,23,0.06)' }}
               >
-                M
+                <div className="flex items-start gap-3">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
+                    style={{ background: 'linear-gradient(135deg, #f97316, #e11d48)' }}
+                  >
+                    M
+                  </div>
+                  <div>
+                    <p className="text-xs leading-relaxed" style={{ color: '#5a5a60' }}>
+                      {t('auth.testimonial')}
+                    </p>
+                    <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#8e8e96' }}>
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                      {t('auth.testimonial_author')}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-xs leading-relaxed" style={{ color: '#5a5a60' }}>
-                  {t('auth.testimonial')}
-                </p>
-                <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#8e8e96' }}>
-                  <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                  {t('auth.testimonial_author')}
-                </p>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
 

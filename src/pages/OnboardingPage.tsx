@@ -4,7 +4,7 @@ import {
   Palette, Code2, Target, Briefcase, Play, Megaphone, Camera, Sparkles,
   Utensils, Shirt, ShoppingBag, BarChart2, Video, Mic, Monitor,
   Hash, Globe, Image, Check, ChevronRight, ChevronLeft,
-  Zap, Users, ExternalLink, Loader2,
+  Wand2, LayoutGrid, ArrowRight, PartyPopper,
 } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -12,7 +12,6 @@ import { supabase } from '@/services/supabaseClient';
 
 /* ─── Types ──────────────────────────────────────────── */
 type ProfileId = 'designer' | 'webdev' | 'traffic' | 'business' | 'creator' | 'social' | 'photographer' | 'other';
-type ObjectiveId = 'social_posts' | 'promotions' | 'ads' | 'thumbnails' | 'brand' | 'product_photos';
 
 /* ─── Data ───────────────────────────────────────────── */
 const PROFILES: { id: ProfileId; labelKey: string; subKey: string; Icon: React.FC<{ size?: number; stroke?: string }>; color: string }[] = [
@@ -78,14 +77,7 @@ const SUBCATEGORIES: Record<ProfileId, { id: string; labelKey: string; Icon: Rea
   ],
 };
 
-const GOALS: { id: ObjectiveId; labelKey: string; descKey: string; Icon: React.FC<{ size?: number; stroke?: string }> }[] = [
-  { id: 'social_posts', labelKey: 'onboarding.obj.social_posts', descKey: 'onboarding.obj.social_posts', Icon: Hash },
-  { id: 'promotions', labelKey: 'onboarding.obj.promotions', descKey: 'onboarding.obj.promotions', Icon: Megaphone },
-  { id: 'ads', labelKey: 'onboarding.obj.ads', descKey: 'onboarding.obj.ads', Icon: Target },
-  { id: 'thumbnails', labelKey: 'onboarding.obj.thumbnails', descKey: 'onboarding.obj.thumbnails', Icon: Image },
-  { id: 'brand', labelKey: 'onboarding.obj.brand', descKey: 'onboarding.obj.brand', Icon: Palette },
-  { id: 'product_photos', labelKey: 'onboarding.obj.product_photos', descKey: 'onboarding.obj.product_photos', Icon: Camera },
-];
+/* Goals removed — simplified onboarding */
 
 /* ─── Main component ─────────────────────────────────── */
 export default function OnboardingPage() {
@@ -95,22 +87,18 @@ export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [profile, setProfile] = useState<ProfileId | null>(null);
   const [subcat, setSubcat] = useState<string | null>(null);
-  const [selectedGoals, setSelectedGoals] = useState<ObjectiveId[]>([]);
   const [ready, setReady] = useState(false);
   const [trans, setTrans] = useState(false);
-  const [subLoading, setSubLoading] = useState<string | null>(null);
-  const [subError, setSubError] = useState<string | null>(null);
 
   useEffect(() => { setReady(true); }, []);
 
-  const TOTAL_STEPS = 4;
+  const TOTAL_STEPS = 3;
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
   const profileColor = PROFILES.find(p => p.id === profile)?.color || '#ff713d';
 
   const canNext = () => {
     if (step === 0) return !!profile;
     if (step === 1) return !!subcat;
-    if (step === 2) return selectedGoals.length > 0;
     return true;
   };
 
@@ -121,8 +109,7 @@ export default function OnboardingPage() {
   };
 
   const markAndNavigate = (dest: string) => {
-    try { localStorage.setItem('creatyng_onboarding', JSON.stringify({ profile, subcat, goals: selectedGoals, plan, completed: true })); } catch { /* ignore */ }
-    // Fire-and-forget: update DB but navigate immediately regardless
+    try { localStorage.setItem('creatyng_onboarding', JSON.stringify({ profile, subcat, completed: true })); } catch { /* ignore */ }
     if (user) {
       supabase.from('profiles').update({ onboarded: true }).eq('id', user.id).then(() => {}).catch(() => {});
     }
@@ -130,42 +117,10 @@ export default function OnboardingPage() {
     navigate(dest, { replace: true });
   };
 
-  async function handleSubscribe(planId: string) {
-    setSubError(null);
-    setSubLoading(planId);
-    try {
-      const { data: { session } } = await supabase.auth.refreshSession();
-      if (!session) throw new Error('Not authenticated');
-
-      const { data, error: fnErr } = await supabase.functions.invoke('create-subscription', {
-        body: { plan: planId },
-      });
-      if (fnErr) {
-        const errBody = typeof fnErr === 'object' && 'context' in fnErr
-          ? await (fnErr as { context: { json: () => Promise<Record<string, string>> } }).context.json().catch(() => null)
-          : null;
-        throw new Error(errBody?.error || data?.error || 'subscription_error');
-      }
-      if (!data?.url) throw new Error(data?.error || 'no_checkout_url');
-      // Save onboarding data before redirect
-      try { localStorage.setItem('creatyng_onboarding', JSON.stringify({ profile, subcat, goals: selectedGoals, plan: planId, completed: true })); } catch { /* ignore */ }
-      if (user) {
-        supabase.from('profiles').update({ onboarded: true }).eq('id', user.id).then(() => {}).catch(() => {});
-      }
-      markOnboarded();
-      window.location.href = data.url;
-    } catch (err: unknown) {
-      setSubError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setSubLoading(null);
-    }
-  }
-
   const STEP_INFO = [
     { title: t('onboarding.step1.title'), sub: t('onboarding.step1.subtitle') },
     { title: t('onboarding.step2.title'), sub: t('onboarding.step2.subtitle') },
-    { title: t('onboarding.step3.title'), sub: t('onboarding.step3.subtitle') },
-    { title: t('onboarding.plan_choice.title'), sub: t('onboarding.plan_choice.subtitle') },
+    { title: t('onboarding.done.title'), sub: t('onboarding.done.subtitle') },
   ];
 
   const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
@@ -275,149 +230,104 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* STEP 2: Goals (multi-select) */}
+        {/* STEP 2: All set! — Wizard/Studio cards */}
         {step === 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {GOALS.map((g, i) => {
-              const sel = selectedGoals.includes(g.id);
-              return (
-                <button key={g.id} className="ob-btn" onClick={() => setSelectedGoals(prev => sel ? prev.filter(x => x !== g.id) : [...prev, g.id])} style={{
-                  padding: '13px 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
-                  border: sel ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
-                  background: sel ? '#FFF0EA' : '#ffffff', color: '#141417',
-                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', width: '100%',
-                  animation: ready ? `scIn 280ms ${i * 40}ms ease both` : 'none',
-                }}>
-                  <div style={{
-                    width: 22, height: 22, borderRadius: 6, flexShrink: 0,
-                    border: sel ? '2px solid #ff713d' : '2px solid rgba(20,20,23,0.1)',
-                    background: sel ? '#ff713d' : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {sel && <Check size={13} color="#fff" />}
-                  </div>
-                  <div style={{
-                    width: 34, height: 34, borderRadius: 8, flexShrink: 0,
-                    background: sel ? 'rgba(255,113,61,0.12)' : 'rgba(20,20,23,0.03)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: sel ? '#ff713d' : '#8e8e96',
-                  }}>
-                    <g.Icon size={16} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13.5, fontWeight: sel ? 600 : 500 }}>{t(g.labelKey)}</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* STEP 3: Plan choice (Free / Pro / Team) */}
-        {step === 3 && (
           <div style={{ animation: 'fdUp 400ms ease both' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
-              {([
-                {
-                  id: 'free' as const, accent: '#8e8e96', Icon: Sparkles,
-                  name: t('onboarding.plan.free'), price: t('onboarding.plan.free_price'), credits: '50',
-                  feats: [t('onboarding.plan_choice.feat_templates_basic'), t('onboarding.plan_choice.feat_export_png'), t('onboarding.plan_choice.feat_watermark')],
-                },
-                {
-                  id: 'pro' as const, accent: '#ff713d', Icon: Zap, popular: true,
-                  name: t('onboarding.plan.pro'), price: t('onboarding.plan.pro_price'), credits: '500',
-                  feats: [t('onboarding.plan_choice.feat_all_templates'), t('onboarding.plan_choice.feat_all_exports'), t('onboarding.plan_choice.feat_no_watermark'), t('onboarding.plan_choice.feat_chat_ai')],
-                },
-                {
-                  id: 'team' as const, accent: '#7C3AED', Icon: Users,
-                  name: t('onboarding.plan_choice.team'), price: t('onboarding.plan_choice.team_price'), credits: '2.000',
-                  feats: [t('onboarding.plan_choice.feat_all_templates'), t('onboarding.plan_choice.feat_all_formats'), t('onboarding.plan_choice.feat_brand_kit'), t('onboarding.plan_choice.feat_collaborators'), t('onboarding.plan_choice.feat_priority_support')],
-                },
-              ]).map((p, i) => (
-                <div key={p.id} style={{
-                  background: '#ffffff', borderRadius: 14, padding: '22px 18px', position: 'relative',
-                  border: p.popular ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
-                  transition: 'all 150ms', display: 'flex', flexDirection: 'column',
-                  animation: ready ? `scIn 300ms ${i * 60}ms ease both` : 'none',
-                }}>
-                  {p.popular && (
-                    <div style={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%) translateY(-50%)', padding: '3px 12px', borderRadius: 6, background: '#ff713d', color: '#fff', fontSize: 10, fontWeight: 700 }}>
-                      {t('onboarding.plan.popular')}
-                    </div>
-                  )}
-                  <div style={{
-                    width: 40, height: 40, borderRadius: 10, marginBottom: 14,
-                    background: `${p.accent}14`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.accent,
-                  }}>
-                    <p.Icon size={20} />
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>{p.name}</div>
-                  <div style={{ fontSize: 20, fontWeight: 700, color: p.accent, marginBottom: 2 }}>{p.price}</div>
-                  <div style={{ fontSize: 12, color: '#8e8e96', marginBottom: 16 }}>{p.credits} {t('onboarding.plan_choice.credits_month')}</div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
-                    {p.feats.map((f, j) => (
-                      <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#5a5a60' }}>
-                        <Check size={14} color="#10B981" style={{ flexShrink: 0 }} />{f}
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => {
-                      if (p.id === 'free') {
-                        markAndNavigate('/app/dashboard');
-                      } else {
-                        handleSubscribe(p.id);
-                      }
-                    }}
-                    disabled={!!subLoading}
-                    style={{
-                      width: '100%', padding: '10px 0', borderRadius: 9, marginTop: 18,
-                      border: p.id === 'free' ? '1.5px solid rgba(20,20,23,0.1)' : 'none',
-                      background: p.id === 'free' ? '#ffffff' : `linear-gradient(135deg, ${p.accent}, ${p.accent}cc)`,
-                      color: p.id === 'free' ? '#141417' : '#fff',
-                      fontSize: 13, fontWeight: 600, cursor: subLoading ? 'default' : 'pointer',
-                      fontFamily: 'inherit', opacity: subLoading && subLoading !== p.id ? 0.4 : 1,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                      boxShadow: p.id !== 'free' ? `0 3px 12px ${p.accent}40` : 'none',
-                      transition: 'opacity 150ms',
-                    }}
-                  >
-                    {subLoading === p.id ? (
-                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                    ) : (
-                      p.id === 'free' ? t('onboarding.plan_choice.start_free') : t('onboarding.plan_choice.subscribe')
-                    )}
-                  </button>
-                </div>
-              ))}
+            <div style={{ textAlign: 'center', marginBottom: 28 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
+                background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <PartyPopper size={28} style={{ color: '#ff713d' }} />
+              </div>
             </div>
 
-            {subError && (
-              <p style={{ fontSize: 12, color: '#EF4444', textAlign: 'center', marginTop: 12 }}>{subError}</p>
-            )}
-
-            {/* Compare plans link */}
-            <div style={{ textAlign: 'center', marginTop: 20 }}>
-              <a
-                href="/app/billing"
-                target="_blank"
-                rel="noopener noreferrer"
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
+              {/* Wizard card */}
+              <button
+                onClick={() => markAndNavigate('/app/create')}
+                className="ob-card ob-btn"
                 style={{
-                  color: '#8e8e96', fontSize: 13, fontFamily: 'inherit',
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  textDecoration: 'none',
+                  background: '#ffffff', borderRadius: 14, padding: '24px 20px',
+                  border: '1px solid rgba(20,20,23,0.06)', cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left',
+                  animation: ready ? 'scIn 300ms ease both' : 'none',
                 }}
               >
-                {t('onboarding.plan_choice.compare_plans')} <ExternalLink size={13} />
-              </a>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12, marginBottom: 14,
+                  background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff713d',
+                }}>
+                  <Wand2 size={22} />
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#141417', marginBottom: 4 }}>
+                  {t('onboarding.done.wizard_title')}
+                </div>
+                <div style={{ fontSize: 12.5, color: '#8e8e96', lineHeight: 1.5, marginBottom: 14 }}>
+                  {t('onboarding.done.wizard_desc')}
+                </div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 5, color: '#ff713d',
+                  fontSize: 13, fontWeight: 600, marginTop: 'auto',
+                }}>
+                  {t('onboarding.done.try_wizard')} <ArrowRight size={14} />
+                </div>
+              </button>
+
+              {/* Studio card */}
+              <button
+                onClick={() => markAndNavigate('/app/create/studio')}
+                className="ob-card ob-btn"
+                style={{
+                  background: '#ffffff', borderRadius: 14, padding: '24px 20px',
+                  border: '1px solid rgba(20,20,23,0.06)', cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left',
+                  animation: ready ? 'scIn 300ms 60ms ease both' : 'none',
+                }}
+              >
+                <div style={{
+                  width: 44, height: 44, borderRadius: 12, marginBottom: 14,
+                  background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(139,92,246,0.08))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7C3AED',
+                }}>
+                  <LayoutGrid size={22} />
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: '#141417', marginBottom: 4 }}>
+                  {t('onboarding.done.studio_title')}
+                </div>
+                <div style={{ fontSize: 12.5, color: '#8e8e96', lineHeight: 1.5, marginBottom: 14 }}>
+                  {t('onboarding.done.studio_desc')}
+                </div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 5, color: '#7C3AED',
+                  fontSize: 13, fontWeight: 600, marginTop: 'auto',
+                }}>
+                  {t('onboarding.done.try_studio')} <ArrowRight size={14} />
+                </div>
+              </button>
+            </div>
+
+            {/* Explore dashboard link */}
+            <div style={{ textAlign: 'center' }}>
+              <button
+                onClick={() => markAndNavigate('/app/dashboard')}
+                style={{
+                  background: 'none', border: 'none', color: '#8e8e96', fontSize: 13,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                {t('onboarding.done.explore_dashboard')} <ArrowRight size={13} />
+              </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Navigation — only for steps 0-2 */}
-      {step < 3 && (
+      {/* Navigation — only for steps 0-1 */}
+      {step < 2 && (
         <div style={{ width: '100%', maxWidth: 680, padding: '20px 24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {step > 0 ? (
             <button onClick={() => go(-1)} style={{
@@ -443,9 +353,9 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Skip link — only for steps 0-2 */}
-      {step < 3 && (
-        <button onClick={() => { setStep(3); }} style={{
+      {/* Skip link — only for steps 0-1 */}
+      {step < 2 && (
+        <button onClick={() => { setStep(2); }} style={{
           background: 'none', border: 'none', color: '#b5b5bb', fontSize: 12,
           cursor: 'pointer', fontFamily: 'inherit', paddingBottom: 20,
         }}>{t('onboarding.skip')}</button>

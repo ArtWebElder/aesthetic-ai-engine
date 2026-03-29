@@ -8,6 +8,7 @@ import Topbar from './Topbar';
 import CommandBar from './CommandBar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Mail, X, RefreshCw, CheckCircle, ShieldCheck } from 'lucide-react';
+import CreditUpsell from '@/components/creatyng/CreditUpsell';
 
 const AppShell = () => {
   const { user, loading, emailVerified } = useAuth();
@@ -171,6 +172,9 @@ const AppShell = () => {
             </button>
           </div>
         )}
+
+        {/* Credit upsell banners/modals */}
+        <CreditUpsell />
 
         {/* OTP Verification Modal */}
         {showOtpModal && (
