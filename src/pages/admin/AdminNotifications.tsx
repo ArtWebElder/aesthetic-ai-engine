@@ -26,9 +26,9 @@ const RECIPIENT_CONFIG: Record<Recipients, { icon: React.ElementType; label: str
 
 type HistoryItem = typeof MOCK_NOTIFICATIONS[number];
 
-const cardStyle: React.CSSProperties = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' };
-const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
-const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+const cardStyle: React.CSSProperties = { background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' };
+const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid rgba(0,0,0,0.06)' };
+const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#1A1A1A', borderBottom: '1px solid rgba(0,0,0,0.04)' };
 
 export default function AdminNotifications() {
   const [loading, setLoading] = useState(true);
@@ -86,8 +86,8 @@ export default function AdminNotifications() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13,
-    border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff',
-    color: '#141417', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+    border: '1px solid rgba(0,0,0,0.1)', background: '#ffffff',
+    color: '#1A1A1A', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
   };
 
   const typeConf = TYPE_CONFIG[type];
@@ -99,14 +99,14 @@ export default function AdminNotifications() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         {/* Compose Form */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Bell style={{ width: 15, height: 15, color: '#ff713d' }} />
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Bell style={{ width: 15, height: 15, color: '#F97316' }} />
             Enviar Notificação
           </div>
 
           {/* Type selector */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Tipo</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Tipo</label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {(Object.keys(TYPE_CONFIG) as NotifType[]).map((t) => {
                 const conf = TYPE_CONFIG[t];
@@ -118,7 +118,7 @@ export default function AdminNotifications() {
                     fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
                     background: active ? `${conf.color}12` : 'transparent',
                     border: active ? `1px solid ${conf.color}33` : '1px solid transparent',
-                    color: active ? conf.color : '#8e8e96',
+                    color: active ? conf.color : '#9CA3AF',
                   }}>
                     <Icon style={{ width: 13, height: 13 }} />
                     {conf.label}
@@ -130,7 +130,7 @@ export default function AdminNotifications() {
 
           {/* Recipients selector */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Destinatários</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Destinatários</label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {(Object.keys(RECIPIENT_CONFIG) as Recipients[]).map((r) => {
                 const conf = RECIPIENT_CONFIG[r];
@@ -141,8 +141,8 @@ export default function AdminNotifications() {
                     display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8,
                     fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
                     background: active ? '#FFF0EA' : 'transparent',
-                    border: active ? '1px solid rgba(255,113,61,0.2)' : '1px solid transparent',
-                    color: active ? '#ff713d' : '#8e8e96',
+                    border: active ? '1px solid rgba(249,115,22,0.2)' : '1px solid transparent',
+                    color: active ? '#F97316' : '#9CA3AF',
                   }}>
                     <Icon style={{ width: 13, height: 13 }} />
                     {conf.label}
@@ -154,7 +154,7 @@ export default function AdminNotifications() {
 
           {/* Title */}
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Título</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Título</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -165,7 +165,7 @@ export default function AdminNotifications() {
 
           {/* Message */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Mensagem</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Mensagem</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -175,18 +175,30 @@ export default function AdminNotifications() {
             />
           </div>
 
-          {/* Toggles */}
-          <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12, color: '#5a5a60' }}>
-              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} style={{ accentColor: '#ff713d' }} />
-              <Mail style={{ width: 13, height: 13 }} />
-              Enviar por email
-            </label>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12, color: '#5a5a60' }}>
-              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} style={{ accentColor: '#ff713d' }} />
+          {/* Pin toggle */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12, color: '#6B7280' }}>
+              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} style={{ accentColor: '#F97316' }} />
               <Pin style={{ width: 13, height: 13 }} />
               Fixar no topo
             </label>
+          </div>
+
+          {/* Email — secondary/optional section */}
+          <div style={{
+            padding: '12px 14px', borderRadius: 10, marginBottom: 16,
+            background: '#FAFAF8', border: '1px solid rgba(0,0,0,0.06)',
+          }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12, color: '#6B7280' }}>
+              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} style={{ accentColor: '#F97316' }} />
+              <Mail style={{ width: 13, height: 13 }} />
+              Enviar também por email
+            </label>
+            {sendEmail && (
+              <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 6, marginBottom: 0, lineHeight: 1.4 }}>
+                Emails são enviados via Resend. Use para comunicações importantes como promoções e novidades.
+              </p>
+            )}
           </div>
 
           {/* Send button */}
@@ -195,8 +207,8 @@ export default function AdminNotifications() {
             disabled={sending !== 'idle' || !title.trim() || !message.trim()}
             style={{
               width: '100%', padding: '10px 0', borderRadius: 9, border: 'none',
-              background: sending === 'success' ? '#10B981' : (!title.trim() || !message.trim()) ? 'rgba(20,20,23,0.08)' : 'linear-gradient(135deg, #ff713d, #FF9B70)',
-              color: sending === 'success' ? '#fff' : (!title.trim() || !message.trim()) ? '#b5b5bb' : '#fff',
+              background: sending === 'success' ? '#10B981' : (!title.trim() || !message.trim()) ? 'rgba(0,0,0,0.08)' : 'linear-gradient(135deg, #F97316, #FB923C)',
+              color: sending === 'success' ? '#fff' : (!title.trim() || !message.trim()) ? '#9CA3AF' : '#fff',
               fontSize: 13, fontWeight: 600, cursor: sending !== 'idle' || !title.trim() || !message.trim() ? 'default' : 'pointer',
               fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               transition: 'all 180ms',
@@ -211,17 +223,17 @@ export default function AdminNotifications() {
 
         {/* Preview */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 16 }}>Preview do usuário</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A', marginBottom: 16 }}>Preview do usuário</div>
           <div style={{
-            background: '#f5f5f3', borderRadius: 12, padding: 16, minHeight: 180,
+            background: '#FAFAF8', borderRadius: 12, padding: 16, minHeight: 180,
             display: 'flex', flexDirection: 'column', gap: 12,
           }}>
             {/* Simulated notification card */}
             <div style={{
               background: '#ffffff', borderRadius: 10, padding: '12px 14px',
-              border: '1px solid rgba(20,20,23,0.06)',
+              border: '1px solid rgba(0,0,0,0.06)',
               display: 'flex', gap: 10,
-              boxShadow: '0 1px 3px rgba(20,20,23,0.04)',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             }}>
               <div style={{
                 width: 32, height: 32, borderRadius: 8, flexShrink: 0,
@@ -232,15 +244,15 @@ export default function AdminNotifications() {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>
                     {title || 'Título da notificação'}
                   </span>
-                  {pinned && <Pin style={{ width: 11, height: 11, color: '#ff713d' }} />}
+                  {pinned && <Pin style={{ width: 11, height: 11, color: '#F97316' }} />}
                 </div>
-                <div style={{ fontSize: 12, color: '#5a5a60', lineHeight: 1.4 }}>
+                <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.4 }}>
                   {message || 'Corpo da mensagem aparecerá aqui...'}
                 </div>
-                <div style={{ fontSize: 10, color: '#b5b5bb', marginTop: 4 }}>agora</div>
+                <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 4 }}>agora</div>
               </div>
             </div>
 
@@ -249,7 +261,7 @@ export default function AdminNotifications() {
               <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: `${typeConf.color}12`, color: typeConf.color }}>
                 {typeConf.label}
               </span>
-              <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(255,113,61,0.08)', color: '#ff713d' }}>
+              <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
                 {RECIPIENT_CONFIG[recipients].label}
               </span>
               {sendEmail && (
@@ -258,7 +270,7 @@ export default function AdminNotifications() {
                 </span>
               )}
               {pinned && (
-                <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(255,113,61,0.08)', color: '#ff713d' }}>
+                <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
                   Fixada
                 </span>
               )}
@@ -268,8 +280,8 @@ export default function AdminNotifications() {
       </div>
 
       {/* History table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Últimas notificações enviadas</div>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>Últimas notificações enviadas</div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>
             {['Tipo', 'Título', 'Dest.', 'Email', 'Fixada', 'Data'].map((h) => (
@@ -283,7 +295,7 @@ export default function AdminNotifications() {
               const recConf = RECIPIENT_CONFIG[(item.recipients as Recipients)] || RECIPIENT_CONFIG.all;
               return (
                 <tr key={item.id} style={{ transition: 'background 100ms' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(0,0,0,0.015)'}
                   onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
                 >
                   <td style={tdStyle}>
@@ -295,27 +307,27 @@ export default function AdminNotifications() {
                   <td style={tdStyle}>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: 13 }}>{item.title}</div>
-                      <div style={{ fontSize: 11, color: '#8e8e96', marginTop: 1 }}>{item.message.slice(0, 60)}{item.message.length > 60 ? '...' : ''}</div>
+                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 1 }}>{item.message.slice(0, 60)}{item.message.length > 60 ? '...' : ''}</div>
                     </div>
                   </td>
                   <td style={tdStyle}>
-                    <span style={{ fontSize: 11, color: '#5a5a60' }}>{recConf.label}</span>
+                    <span style={{ fontSize: 11, color: '#6B7280' }}>{recConf.label}</span>
                   </td>
                   <td style={tdStyle}>
                     {item.send_email ? (
                       <Mail style={{ width: 13, height: 13, color: '#3B82F6' }} />
                     ) : (
-                      <span style={{ fontSize: 11, color: '#b5b5bb' }}>—</span>
+                      <span style={{ fontSize: 11, color: '#9CA3AF' }}>—</span>
                     )}
                   </td>
                   <td style={tdStyle}>
                     {item.pinned ? (
-                      <Pin style={{ width: 13, height: 13, color: '#ff713d' }} />
+                      <Pin style={{ width: 13, height: 13, color: '#F97316' }} />
                     ) : (
-                      <span style={{ fontSize: 11, color: '#b5b5bb' }}>—</span>
+                      <span style={{ fontSize: 11, color: '#9CA3AF' }}>—</span>
                     )}
                   </td>
-                  <td style={{ ...tdStyle, color: '#b5b5bb', fontSize: 11 }}>
+                  <td style={{ ...tdStyle, color: '#9CA3AF', fontSize: 11 }}>
                     {new Date(item.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </td>
                 </tr>
@@ -323,7 +335,7 @@ export default function AdminNotifications() {
             })}
             {history.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ ...tdStyle, textAlign: 'center', color: '#b5b5bb', padding: '24px 20px' }}>
+                <td colSpan={6} style={{ ...tdStyle, textAlign: 'center', color: '#9CA3AF', padding: '24px 20px' }}>
                   Nenhuma notificação enviada ainda.
                 </td>
               </tr>
