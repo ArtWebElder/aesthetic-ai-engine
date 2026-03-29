@@ -171,18 +171,19 @@ function WizCredTooltip({ credits, children }: { credits: number; children: Reac
       {children}
       {show && (
         <div style={{
-          position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
           padding: '6px 12px', borderRadius: 8, background: 'hsl(var(--popover))', color: 'hsl(var(--popover-foreground))',
           fontSize: 11.5, fontWeight: 500, whiteSpace: 'nowrap',
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)', zIndex: 50, pointerEvents: 'none',
+          border: '1px solid hsl(var(--border))',
         }}>
+          <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '5px solid hsl(var(--popover))' }} />
           <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
               <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
             </svg>
             {credits} créditos restantes
           </span>
-          <div style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid hsl(var(--popover))' }} />
         </div>
       )}
     </div>
@@ -196,6 +197,7 @@ export function WizardPage() {
   const toast = useToast();
   const { emailVerified } = useAuth();
   const { t } = useI18n();
+  const storeCredits = useCreditStore((s) => s.credits);
 
   const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
   const [stageIndex, setStageIndex] = useState(0);
@@ -391,6 +393,7 @@ export function WizardPage() {
       // ── Debit credits before generation ────────────────────────────────────
       const presetId = state.selectedImagePresetId || "simple-gen";
       const creditCost = calculateCost(presetId) || 5;
+      console.log(`[Debit] Debitando ${creditCost} créditos para preset "${presetId}"...`);
       try {
         await useCreditStore.getState().debitCredits(creditCost, `Generation — ${presetId}`);
       } catch (debitErr: unknown) {
@@ -747,12 +750,12 @@ export function WizardPage() {
           <StepIndicator current={uiStep} />
         </div>
         {/* Credits badge with tooltip */}
-        <WizCredTooltip credits={221}>
+        <WizCredTooltip credits={storeCredits}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontSize: 12, fontWeight: 600, color: '#ff713d', cursor: 'default' }}>
             <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
               <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
             </svg>
-            <span>221</span> <span style={{ fontWeight: 400, color: 'hsl(var(--muted-foreground))' }}>créditos</span>
+            <span>{storeCredits}</span> <span style={{ fontWeight: 400, color: 'hsl(var(--muted-foreground))' }}>créditos</span>
           </div>
         </WizCredTooltip>
       </header>

@@ -35,11 +35,15 @@ import { StudioNodePanel } from './studio/StudioNodePanel';
 import { StudioProperties } from './studio/StudioProperties';
 import { FlowSelector } from './studio/FlowSelector';
 import { useI18n } from '@/i18n';
+import { useCreditStore } from '@/stores/useCreditStore';
+import { calculateCost } from '@/lib/creditCosts';
+import { PaywallModal } from '@/components/creatyng/CreditUpsell';
 
 // Credits badge top-right
 function CreditsBar({ propertiesOpen }: { propertiesOpen: boolean }) {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const credits = useCreditStore((s) => s.credits);
   // Shift left by properties panel width (224px) + gap when it's open
   const rightPos = propertiesOpen ? 14 + 224 + 10 : 14;
   return (
@@ -53,21 +57,26 @@ function CreditsBar({ propertiesOpen }: { propertiesOpen: boolean }) {
       gap: 8,
       transition: 'right 0.15s ease',
     }}>
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 5,
-        padding: '5px 10px',
-        background: 'hsl(var(--card))',
-        border: '1px solid hsl(var(--border))',
-        borderRadius: 8,
-        fontSize: 12,
-        fontWeight: 600,
-        color: '#ff713d',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 5,
+          padding: '5px 10px',
+          background: 'hsl(var(--card))',
+          border: '1px solid hsl(var(--border))',
+          borderRadius: 8,
+          fontSize: 12,
+          fontWeight: 600,
+          color: '#ff713d',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          position: 'relative',
+          cursor: 'default',
+        }}
+        title={`${credits} créditos`}
+      >
         <Sparkles size={13} />
-        <span>120</span>
+        <span>{credits}</span>
       </div>
       <button
         onClick={() => navigate('/app/billing')}
@@ -103,6 +112,8 @@ export function StudioPage() {
   const [nodeOutputs, setNodeOutputs] = useState<NodeOutputs>({});
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [flowRunning, setFlowRunning] = useState(false);
+  const [activeFlowId, setActiveFlowId] = useState<string | null>(null);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   // Canvas state
   const [zoom, setZoom] = useState(100);
@@ -124,6 +135,9 @@ export function StudioPage() {
   const connectionsRef = useRef(connections);
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
   useEffect(() => { connectionsRef.current = connections; }, [connections]);
+
+  // Fetch credits on mount
+  useEffect(() => { useCreditStore.getState().fetchCredits(); }, []);
 
   const pushSnapshot = useCallback(() => {
     const snap: Snapshot = {
@@ -260,6 +274,22 @@ export function StudioPage() {
 
   const handleRunAll = useCallback(async () => {
     if (flowRunning) return;
+
+    // ── Debit credits before execution ──
+    const flowCostKey = activeFlowId || 'simple-gen';
+    const creditCost = calculateCost(flowCostKey) || 5;
+    console.log(`[Debit] Debitando ${creditCost} créditos para fluxo "${flowCostKey}"...`);
+    try {
+      await useCreditStore.getState().debitCredits(creditCost, `Studio — ${flowCostKey}`);
+    } catch (debitErr: unknown) {
+      const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
+      if (msg === 'insufficient_credits') {
+        setShowPaywall(true);
+        return;
+      }
+      console.warn('[Studio] debit failed, proceeding anyway:', msg);
+    }
+
     setFlowRunning(true);
     setExecStates({});
     setNodeOutputs({});
@@ -295,7 +325,7 @@ export function StudioPage() {
     );
 
     setFlowRunning(false);
-  }, [nodes, connections, flowRunning]);
+  }, [nodes, connections, flowRunning, activeFlowId]);
 
   const handleNodeDataChange = useCallback((nodeId: string, key: string, value: string) => {
     setNodes(prev => prev.map(n => {
@@ -406,6 +436,7 @@ export function StudioPage() {
     setExecStates({});
     setNodeOutputs({});
     setSelectedNodeId(null);
+    setActiveFlowId(flowId);
     setShowFlowSelector(false);
   }, [pushSnapshot]);
 
@@ -489,6 +520,7 @@ export function StudioPage() {
       />
 
       <CreditsBar propertiesOpen={showProperties} />
+      {showPaywall && <PaywallModal plan={useCreditStore.getState().plan} onClose={() => setShowPaywall(false)} />}
 
       {/* Run All + Download result buttons */}
       <div style={{

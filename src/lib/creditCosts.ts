@@ -8,12 +8,12 @@ export const CREDIT_COSTS: Record<string, number> = {
   'export-multi-format': 0,
   'text-edit': 0,
   'styled-photo': 5,
-  'creative-banner': 12,
+  'creative-banner': 8,
   'simple-gen': 3,
 };
 
 export function calculateCost(action: string): number {
-  return CREDIT_COSTS[action] ?? 0;
+  return CREDIT_COSTS[action] ?? 5;
 }
 
 export function hasEnoughCredits(balance: number, action: string): boolean {
