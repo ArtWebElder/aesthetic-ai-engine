@@ -8,6 +8,7 @@ const MODULE_TITLES: Record<string, string> = {
   '/admin/finance': 'Financeiro',
   '/admin/generations': 'Gerações',
   '/admin/tokens': 'Tokens',
+  '/admin/notifications': 'Notificações',
 };
 
 export function AdminShell() {

@@ -2,8 +2,9 @@
 // CREATYNG — Notification dropdown in Topbar
 
 import { useState, useRef, useEffect } from 'react';
-import { Bell, CheckCircle, AlertTriangle, Info, XCircle, Sparkles, Check, X } from 'lucide-react';
+import { Bell, CheckCircle, AlertTriangle, Info, XCircle, Sparkles, Check, X, Pin, RefreshCw, DollarSign } from 'lucide-react';
 import { useNotificationStore, type NotificationType } from '@/stores/useNotificationStore';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -13,6 +14,9 @@ const ICON_MAP: Record<NotificationType, React.ElementType> = {
   warning: AlertTriangle,
   error: XCircle,
   credit: Sparkles,
+  promo: Sparkles,
+  update: RefreshCw,
+  billing: DollarSign,
 };
 
 const COLOR_MAP: Record<NotificationType, string> = {
@@ -21,6 +25,9 @@ const COLOR_MAP: Record<NotificationType, string> = {
   warning: '#F59E0B',
   error: '#EF4444',
   credit: '#F97316',
+  promo: '#8B5CF6',
+  update: '#10B981',
+  billing: '#F97316',
 };
 
 function timeAgo(dateStr: string): string {
@@ -37,10 +44,26 @@ function timeAgo(dateStr: string): string {
 export function NotificationCenter() {
   const { t } = useI18n();
   const isMobile = useIsMobile();
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
+  const { user } = useAuth();
+  const { notifications, markAsRead, markAllAsRead, unreadCount, fetchFromSupabase, subscribeRealtime, unsubscribeRealtime } = useNotificationStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const count = unreadCount();
+
+  // Fetch from Supabase on mount + subscribe to realtime
+  useEffect(() => {
+    if (!user) return;
+    fetchFromSupabase();
+    subscribeRealtime(user.id);
+    return () => unsubscribeRealtime();
+  }, [user, fetchFromSupabase, subscribeRealtime, unsubscribeRealtime]);
+
+  // Refresh from Supabase when dropdown opens
+  useEffect(() => {
+    if (open && user) {
+      fetchFromSupabase();
+    }
+  }, [open, user, fetchFromSupabase]);
 
   // Close on outside click (desktop only)
   useEffect(() => {
@@ -97,8 +120,10 @@ export function NotificationCenter() {
                 <div style={{
                   fontSize: 13, fontWeight: notif.read ? 400 : 600,
                   color: 'hsl(var(--foreground))',
+                  display: 'flex', alignItems: 'center', gap: 4,
                 }}>
                   {notif.title}
+                  {notif.pinned && <Pin style={{ width: 10, height: 10, color: '#F97316', flexShrink: 0 }} />}
                 </div>
                 <div style={{
                   fontSize: 12, color: 'hsl(var(--muted-foreground))',

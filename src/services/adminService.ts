@@ -75,6 +75,14 @@ export const MOCK_TRANSACTIONS = [
   { user: 'Nando Gomes', type: 'subscription', amount: 79.0, date: '2026-03-09' },
 ];
 
+export const MOCK_NOTIFICATIONS = [
+  { id: 'notif_001', type: 'promo', recipients: 'all', title: 'Black Friday Creatyng!', message: 'Créditos com 50% de desconto até 30/11.', send_email: false, pinned: true, sent_by: null, created_at: '2026-03-28T14:00:00Z' },
+  { id: 'notif_002', type: 'update', recipients: 'paid', title: 'Studio 2.0 disponível', message: 'Nova versão do Studio com nodes de tipografia e color grade.', send_email: true, pinned: false, sent_by: null, created_at: '2026-03-27T10:30:00Z' },
+  { id: 'notif_003', type: 'info', recipients: 'all', title: 'Manutenção programada', message: 'Dia 01/04 das 02h às 04h. Geração temporariamente indisponível.', send_email: true, pinned: false, sent_by: null, created_at: '2026-03-25T18:00:00Z' },
+  { id: 'notif_004', type: 'billing', recipients: 'free', title: 'Upgrade com desconto', message: 'Migre para o Pro com 30% off no primeiro mês!', send_email: false, pinned: false, sent_by: null, created_at: '2026-03-24T09:00:00Z' },
+  { id: 'notif_005', type: 'warning', recipients: 'all', title: 'Instabilidade no provider', message: 'O Replicate está com latência elevada. Priorizando Gemini.', send_email: false, pinned: true, sent_by: null, created_at: '2026-03-23T16:45:00Z' },
+];
+
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export const adminService = {
@@ -178,5 +186,58 @@ export const adminService = {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
+  },
+
+  async sendNotification(data: {
+    type: string;
+    recipients: string;
+    specific_user_ids?: string[];
+    title: string;
+    message: string;
+    send_email: boolean;
+    pinned: boolean;
+  }) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data: result, error } = await supabase
+        .from('admin_notifications')
+        .insert({
+          ...data,
+          specific_user_ids: data.specific_user_ids || [],
+          sent_by: user?.id || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // If send_email is true, call the edge function (fire-and-forget)
+      if (data.send_email && result?.id) {
+        supabase.functions.invoke('send-notification-email', {
+          body: { notificationId: result.id },
+        }).catch((e) => console.warn('[adminService] email send failed:', e));
+      }
+
+      return result;
+    } catch (e) {
+      console.warn('[adminService] sendNotification failed, using mock:', e);
+      return { id: `mock-${Date.now()}`, ...data, created_at: new Date().toISOString() };
+    }
+  },
+
+  async getNotificationHistory() {
+    try {
+      const { data, error } = await supabase
+        .from('admin_notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data || MOCK_NOTIFICATIONS;
+    } catch (e) {
+      console.warn('[adminService] getNotificationHistory failed, using mock:', e);
+      return MOCK_NOTIFICATIONS;
+    }
   },
 };

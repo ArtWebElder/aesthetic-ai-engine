@@ -5,6 +5,7 @@ import {
   DollarSign,
   Image,
   Zap,
+  Bell,
   ArrowLeft,
   LogOut,
 } from 'lucide-react';
@@ -16,6 +17,7 @@ const adminNavItems = [
   { labelKey: 'admin.finance', icon: DollarSign, path: '/admin/finance' },
   { labelKey: 'admin.generations', icon: Image, path: '/admin/generations' },
   { labelKey: 'admin.tokens', icon: Zap, path: '/admin/tokens' },
+  { labelKey: 'admin.notifications', icon: Bell, path: '/admin/notifications' },
 ];
 
 const LABELS: Record<string, string> = {
@@ -24,6 +26,7 @@ const LABELS: Record<string, string> = {
   'admin.finance': 'Financeiro',
   'admin.generations': 'Gerações',
   'admin.tokens': 'Tokens',
+  'admin.notifications': 'Notificações',
 };
 
 export function AdminSidebar() {

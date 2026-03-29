@@ -32,6 +32,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminFinance from "./pages/admin/AdminFinance";
 import AdminGenerations from "./pages/admin/AdminGenerations";
 import AdminTokens from "./pages/admin/AdminTokens";
+import AdminNotifications from "./pages/admin/AdminNotifications";
 
 // ── Error Boundary — exibe erro real em vez de tela branca ──────────────────
 class AppErrorBoundary extends Component<
@@ -110,6 +111,7 @@ const App = () => (
                   <Route path="finance" element={<AdminFinance />} />
                   <Route path="generations" element={<AdminGenerations />} />
                   <Route path="tokens" element={<AdminTokens />} />
+                  <Route path="notifications" element={<AdminNotifications />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
