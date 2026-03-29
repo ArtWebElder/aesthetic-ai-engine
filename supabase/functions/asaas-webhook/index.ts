@@ -126,6 +126,62 @@ async function processPaymentConfirmed(
   return { processed: true };
 }
 
+const PLAN_CREDITS: Record<string, number> = {
+  pro: 500,
+  team: 2000,
+};
+
+async function processSubscriptionPayment(
+  adminClient: ReturnType<typeof createClient>,
+  subscriptionId: string,
+  asaasPaymentId: string
+): Promise<{ processed: boolean; detail?: string }> {
+  // Find user by asaas_subscription_id
+  const { data: profile, error: findErr } = await adminClient
+    .from("profiles")
+    .select("id, plan, plan_credits, bonus_credits, email")
+    .eq("asaas_subscription_id", subscriptionId)
+    .single();
+
+  if (findErr || !profile) {
+    console.warn(`[asaas-webhook] subscription profile not found for sub=${subscriptionId}`);
+    return { processed: false, detail: "subscription_profile_not_found" };
+  }
+
+  const planCredits = PLAN_CREDITS[profile.plan || "pro"] || 500;
+  const bc = profile.bonus_credits ?? 0;
+  const nextRenew = new Date();
+  nextRenew.setMonth(nextRenew.getMonth() + 1);
+
+  // Reset plan_credits for renewal
+  const { error: updateErr } = await adminClient
+    .from("profiles")
+    .update({
+      plan_credits: planCredits,
+      credits: planCredits + bc,
+      plan_renews_at: nextRenew.toISOString(),
+    })
+    .eq("id", profile.id);
+
+  if (updateErr) {
+    console.error("[asaas-webhook] subscription credit reset failed:", updateErr.message);
+  }
+
+  // Insert credit_history
+  await adminClient
+    .from("credit_history")
+    .insert({
+      user_id: profile.id,
+      amount: planCredits,
+      type: "subscription_renewal",
+      description: `Asaas Pix — renovação ${profile.plan}`,
+      reference_id: asaasPaymentId,
+    });
+
+  console.log(`[asaas-webhook] subscription payment confirmed — user=${profile.id} plan=${profile.plan} credits=${planCredits}`);
+  return { processed: true };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") {
     return json({ received: true }, 200);
@@ -159,8 +215,21 @@ Deno.serve(async (req: Request) => {
       return json({ received: true, warning: "no_payment_id" }, 200);
     }
 
+    const subscriptionId = asaasPayment.subscription || null;
+
     // ── PAYMENT_CONFIRMED / PAYMENT_RECEIVED ──
     if (event === "PAYMENT_CONFIRMED" || event === "PAYMENT_RECEIVED") {
+      // Check if this is a subscription payment
+      if (subscriptionId) {
+        const result = await processSubscriptionPayment(
+          adminClient,
+          subscriptionId,
+          asaasPayment.id
+        );
+        return json({ received: true, ...result }, 200);
+      }
+
+      // One-time Pix payment
       const result = await processPaymentConfirmed(
         adminClient,
         supabaseUrl,
@@ -178,6 +247,38 @@ Deno.serve(async (req: Request) => {
         .from("payments")
         .update({ status: "failed", updated_at: new Date().toISOString() })
         .eq("external_id", asaasPayment.id);
+
+      return json({ received: true, processed: event }, 200);
+    }
+
+    // ── SUBSCRIPTION_DELETED / SUBSCRIPTION_INACTIVE ──
+    if (event === "SUBSCRIPTION_DELETED" || event === "SUBSCRIPTION_INACTIVE") {
+      console.log(`[asaas-webhook] ${event} sub=${subscriptionId || body.subscription?.id}`);
+
+      const subId = subscriptionId || body.subscription?.id;
+      if (subId) {
+        const { data: subProfile } = await adminClient
+          .from("profiles")
+          .select("id, bonus_credits")
+          .eq("asaas_subscription_id", subId)
+          .single();
+
+        if (subProfile) {
+          const bc = subProfile.bonus_credits ?? 0;
+          await adminClient
+            .from("profiles")
+            .update({
+              plan: "free",
+              plan_credits: 0,
+              credits: bc,
+              asaas_subscription_id: null,
+              plan_renews_at: null,
+            })
+            .eq("id", subProfile.id);
+
+          console.log(`[asaas-webhook] subscription cancelled for user=${subProfile.id}`);
+        }
+      }
 
       return json({ received: true, processed: event }, 200);
     }

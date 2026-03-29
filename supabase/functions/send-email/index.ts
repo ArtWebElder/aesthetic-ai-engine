@@ -41,7 +41,8 @@ function json(
 
 // ── Shared styles ──
 
-const PURPLE = "#7C3AED";
+const ACCENT = "#ff713d";
+const ACCENT_GRADIENT = "linear-gradient(135deg,#ff713d,#FF9B70)";
 const GRAY_BG = "#F3F4F6";
 const DARK = "#111827";
 const MUTED = "#6B7280";
@@ -55,7 +56,7 @@ function wrapHtml(title: string, body: string): string {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
   <!-- Header -->
-  <tr><td style="background:${PURPLE};padding:24px 32px;text-align:center;">
+  <tr><td style="background:${ACCENT};padding:24px 32px;text-align:center;">
     <span style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">Creatyng</span>
   </td></tr>
   <!-- Body -->
@@ -74,7 +75,7 @@ function wrapHtml(title: string, body: string): string {
 
 function ctaButton(label: string, url: string): string {
   return `<table cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
-<tr><td style="background:${PURPLE};border-radius:8px;padding:12px 28px;">
+<tr><td style="background:${ACCENT};border-radius:8px;padding:12px 28px;">
   <a href="${url}" style="color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;">${label}</a>
 </td></tr></table>`;
 }

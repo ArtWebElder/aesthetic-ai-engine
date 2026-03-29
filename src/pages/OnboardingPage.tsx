@@ -4,7 +4,7 @@ import {
   Palette, Code2, Target, Briefcase, Play, Megaphone, Camera, Sparkles,
   Utensils, Shirt, ShoppingBag, BarChart2, Video, Mic, Monitor,
   Hash, Globe, Image, Check, ChevronRight, ChevronLeft,
-  Wand2, Workflow,
+  Zap, Users, ExternalLink, Loader2,
 } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -96,13 +96,14 @@ export default function OnboardingPage() {
   const [profile, setProfile] = useState<ProfileId | null>(null);
   const [subcat, setSubcat] = useState<string | null>(null);
   const [selectedGoals, setSelectedGoals] = useState<ObjectiveId[]>([]);
-  const [plan, setPlan] = useState<'free' | 'pro' | null>(null);
   const [ready, setReady] = useState(false);
   const [trans, setTrans] = useState(false);
+  const [subLoading, setSubLoading] = useState<string | null>(null);
+  const [subError, setSubError] = useState<string | null>(null);
 
   useEffect(() => { setReady(true); }, []);
 
-  const TOTAL_STEPS = 5;
+  const TOTAL_STEPS = 4;
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
   const profileColor = PROFILES.find(p => p.id === profile)?.color || '#ff713d';
 
@@ -110,7 +111,6 @@ export default function OnboardingPage() {
     if (step === 0) return !!profile;
     if (step === 1) return !!subcat;
     if (step === 2) return selectedGoals.length > 0;
-    if (step === 3) return !!plan;
     return true;
   };
 
@@ -130,12 +130,42 @@ export default function OnboardingPage() {
     navigate(dest, { replace: true });
   };
 
+  async function handleSubscribe(planId: string) {
+    setSubError(null);
+    setSubLoading(planId);
+    try {
+      const { data: { session } } = await supabase.auth.refreshSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const { data, error: fnErr } = await supabase.functions.invoke('create-subscription', {
+        body: { plan: planId },
+      });
+      if (fnErr) {
+        const errBody = typeof fnErr === 'object' && 'context' in fnErr
+          ? await (fnErr as { context: { json: () => Promise<Record<string, string>> } }).context.json().catch(() => null)
+          : null;
+        throw new Error(errBody?.error || data?.error || 'subscription_error');
+      }
+      if (!data?.url) throw new Error(data?.error || 'no_checkout_url');
+      // Save onboarding data before redirect
+      try { localStorage.setItem('creatyng_onboarding', JSON.stringify({ profile, subcat, goals: selectedGoals, plan: planId, completed: true })); } catch { /* ignore */ }
+      if (user) {
+        supabase.from('profiles').update({ onboarded: true }).eq('id', user.id).then(() => {}).catch(() => {});
+      }
+      markOnboarded();
+      window.location.href = data.url;
+    } catch (err: unknown) {
+      setSubError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSubLoading(null);
+    }
+  }
+
   const STEP_INFO = [
     { title: t('onboarding.step1.title'), sub: t('onboarding.step1.subtitle') },
     { title: t('onboarding.step2.title'), sub: t('onboarding.step2.subtitle') },
     { title: t('onboarding.step3.title'), sub: t('onboarding.step3.subtitle') },
-    { title: t('onboarding.step4.title'), sub: t('onboarding.step4.subtitle') },
-    { title: t('onboarding.step5.title'), sub: t('onboarding.step5.subtitle') },
+    { title: t('onboarding.plan_choice.title'), sub: t('onboarding.plan_choice.subtitle') },
   ];
 
   const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
@@ -283,117 +313,111 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* STEP 3: Plan upsell */}
+        {/* STEP 3: Plan choice (Free / Pro / Team) */}
         {step === 3 && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            {([
-              { id: 'free' as const, name: t('onboarding.plan.free'), price: t('onboarding.plan.free_price'), credits: '50', feats: ['2 templates', 'Export PNG'], cta: t('onboarding.plan.free'), outline: true },
-              { id: 'pro' as const, name: t('onboarding.plan.pro'), price: t('onboarding.plan.pro_price'), credits: '500', badge: t('onboarding.plan.popular'), feats: ['All templates', 'Chat AI', 'Brand Kit'], cta: t('onboarding.plan.pro'), outline: false },
-            ]).map((p, i) => (
-              <div key={p.id} onClick={() => setPlan(p.id)} style={{
-                background: '#ffffff', borderRadius: 14, padding: '22px 20px', cursor: 'pointer',
-                border: plan === p.id ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
-                transition: 'all 150ms', position: 'relative',
-                animation: ready ? `scIn 300ms ${i * 60}ms ease both` : 'none',
-              }}>
-                {p.badge && (
-                  <div style={{ position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 6, background: '#ff713d', color: '#fff', fontSize: 10, fontWeight: 700 }}>{p.badge}</div>
-                )}
-                <div style={{ fontSize: 12, fontWeight: 600, color: p.outline ? '#8e8e96' : '#ff713d', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>{p.name}</div>
-                <div style={{ fontSize: 22, fontWeight: 700, color: p.outline ? '#141417' : '#ff713d', marginBottom: 2 }}>{p.price}</div>
-                <div style={{ fontSize: 13, color: '#8e8e96', marginBottom: 18 }}>{p.credits} credits / month</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                  {p.feats.map((f, j) => (
-                    <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: '#5a5a60' }}>
-                      <Check size={16} color="#10B981" />{f}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* STEP 4: Completion — Wizard vs Studio choice */}
-        {step === 4 && (
           <div style={{ animation: 'fdUp 400ms ease both' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {/* Wizard card */}
-              <div
-                className="ob-card"
-                onClick={() => markAndNavigate('/app/create')}
-                style={{
-                  background: '#ffffff', borderRadius: 16, padding: '28px 24px', cursor: 'pointer',
-                  border: '1px solid rgba(20,20,23,0.06)', transition: 'all 200ms',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                  animation: ready ? 'scIn 300ms ease both' : 'none',
-                }}
-              >
-                <div style={{
-                  width: 56, height: 56, borderRadius: 14, marginBottom: 16,
-                  background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#ff713d',
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
+              {([
+                {
+                  id: 'free' as const, accent: '#8e8e96', Icon: Sparkles,
+                  name: t('onboarding.plan.free'), price: t('onboarding.plan.free_price'), credits: '50',
+                  feats: [t('onboarding.plan_choice.feat_templates_basic'), t('onboarding.plan_choice.feat_export_png'), t('onboarding.plan_choice.feat_watermark')],
+                },
+                {
+                  id: 'pro' as const, accent: '#ff713d', Icon: Zap, popular: true,
+                  name: t('onboarding.plan.pro'), price: t('onboarding.plan.pro_price'), credits: '500',
+                  feats: [t('onboarding.plan_choice.feat_all_templates'), t('onboarding.plan_choice.feat_all_exports'), t('onboarding.plan_choice.feat_no_watermark'), t('onboarding.plan_choice.feat_chat_ai')],
+                },
+                {
+                  id: 'team' as const, accent: '#7C3AED', Icon: Users,
+                  name: t('onboarding.plan_choice.team'), price: t('onboarding.plan_choice.team_price'), credits: '2.000',
+                  feats: [t('onboarding.plan_choice.feat_all_templates'), t('onboarding.plan_choice.feat_all_formats'), t('onboarding.plan_choice.feat_brand_kit'), t('onboarding.plan_choice.feat_collaborators'), t('onboarding.plan_choice.feat_priority_support')],
+                },
+              ]).map((p, i) => (
+                <div key={p.id} style={{
+                  background: '#ffffff', borderRadius: 14, padding: '22px 18px', position: 'relative',
+                  border: p.popular ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.06)',
+                  transition: 'all 150ms', display: 'flex', flexDirection: 'column',
+                  animation: ready ? `scIn 300ms ${i * 60}ms ease both` : 'none',
                 }}>
-                  <Wand2 size={26} />
+                  {p.popular && (
+                    <div style={{ position: 'absolute', top: -1, left: '50%', transform: 'translateX(-50%) translateY(-50%)', padding: '3px 12px', borderRadius: 6, background: '#ff713d', color: '#fff', fontSize: 10, fontWeight: 700 }}>
+                      {t('onboarding.plan.popular')}
+                    </div>
+                  )}
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, marginBottom: 14,
+                    background: `${p.accent}14`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: p.accent,
+                  }}>
+                    <p.Icon size={20} />
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>{p.name}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: p.accent, marginBottom: 2 }}>{p.price}</div>
+                  <div style={{ fontSize: 12, color: '#8e8e96', marginBottom: 16 }}>{p.credits} {t('onboarding.plan_choice.credits_month')}</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                    {p.feats.map((f, j) => (
+                      <div key={j} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#5a5a60' }}>
+                        <Check size={14} color="#10B981" style={{ flexShrink: 0 }} />{f}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (p.id === 'free') {
+                        markAndNavigate('/app/dashboard');
+                      } else {
+                        handleSubscribe(p.id);
+                      }
+                    }}
+                    disabled={!!subLoading}
+                    style={{
+                      width: '100%', padding: '10px 0', borderRadius: 9, marginTop: 18,
+                      border: p.id === 'free' ? '1.5px solid rgba(20,20,23,0.1)' : 'none',
+                      background: p.id === 'free' ? '#ffffff' : `linear-gradient(135deg, ${p.accent}, ${p.accent}cc)`,
+                      color: p.id === 'free' ? '#141417' : '#fff',
+                      fontSize: 13, fontWeight: 600, cursor: subLoading ? 'default' : 'pointer',
+                      fontFamily: 'inherit', opacity: subLoading && subLoading !== p.id ? 0.4 : 1,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      boxShadow: p.id !== 'free' ? `0 3px 12px ${p.accent}40` : 'none',
+                      transition: 'opacity 150ms',
+                    }}
+                  >
+                    {subLoading === p.id ? (
+                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+                    ) : (
+                      p.id === 'free' ? t('onboarding.plan_choice.start_free') : t('onboarding.plan_choice.subscribe')
+                    )}
+                  </button>
                 </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{t('onboarding.step5.wizard_title')}</h3>
-                <p style={{ fontSize: 13, color: '#8e8e96', marginBottom: 20, lineHeight: 1.5 }}>{t('onboarding.step5.wizard_desc')}</p>
-                <button style={{
-                  width: '100%', padding: '11px 0', borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff',
-                  fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                  boxShadow: '0 3px 12px rgba(255,113,61,0.27)',
-                }}>{t('onboarding.step5.wizard_cta')}</button>
-              </div>
-
-              {/* Studio card */}
-              <div
-                className="ob-card"
-                onClick={() => markAndNavigate('/app/create/studio')}
-                style={{
-                  background: '#ffffff', borderRadius: 16, padding: '28px 24px', cursor: 'pointer',
-                  border: '1px solid rgba(20,20,23,0.06)', transition: 'all 200ms',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
-                  animation: ready ? 'scIn 300ms 60ms ease both' : 'none',
-                }}
-              >
-                <div style={{
-                  width: 56, height: 56, borderRadius: 14, marginBottom: 16,
-                  background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(124,58,237,0.05))',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#7C3AED',
-                }}>
-                  <Workflow size={26} />
-                </div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>{t('onboarding.step5.studio_title')}</h3>
-                <p style={{ fontSize: 13, color: '#8e8e96', marginBottom: 20, lineHeight: 1.5 }}>{t('onboarding.step5.studio_desc')}</p>
-                <button style={{
-                  width: '100%', padding: '11px 0', borderRadius: 10,
-                  border: '1.5px solid rgba(20,20,23,0.1)', background: '#ffffff',
-                  color: '#141417', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                }}>{t('onboarding.step5.studio_cta')}</button>
-              </div>
+              ))}
             </div>
 
-            {/* Dashboard link */}
-            <div style={{ textAlign: 'center', marginTop: 24 }}>
-              <button
-                onClick={() => markAndNavigate('/app/dashboard')}
+            {subError && (
+              <p style={{ fontSize: 12, color: '#EF4444', textAlign: 'center', marginTop: 12 }}>{subError}</p>
+            )}
+
+            {/* Compare plans link */}
+            <div style={{ textAlign: 'center', marginTop: 20 }}>
+              <a
+                href="/app/billing"
+                target="_blank"
+                rel="noopener noreferrer"
                 style={{
-                  background: 'none', border: 'none', color: '#8e8e96', fontSize: 13,
-                  cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4,
+                  color: '#8e8e96', fontSize: 13, fontFamily: 'inherit',
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  textDecoration: 'none',
                 }}
               >
-                {t('onboarding.step5.dashboard_link')} <ChevronRight size={14} />
-              </button>
+                {t('onboarding.plan_choice.compare_plans')} <ExternalLink size={13} />
+              </a>
             </div>
           </div>
         )}
       </div>
 
-      {/* Navigation — only for steps 0-3 */}
-      {step < 4 && (
+      {/* Navigation — only for steps 0-2 */}
+      {step < 3 && (
         <div style={{ width: '100%', maxWidth: 680, padding: '20px 24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           {step > 0 ? (
             <button onClick={() => go(-1)} style={{
@@ -419,9 +443,9 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* Skip link — only for steps 0-3 */}
-      {step < 4 && (
-        <button onClick={() => { setStep(4); }} style={{
+      {/* Skip link — only for steps 0-2 */}
+      {step < 3 && (
+        <button onClick={() => { setStep(3); }} style={{
           background: 'none', border: 'none', color: '#b5b5bb', fontSize: 12,
           cursor: 'pointer', fontFamily: 'inherit', paddingBottom: 20,
         }}>{t('onboarding.skip')}</button>

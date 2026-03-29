@@ -1,12 +1,26 @@
 import { useState, useEffect } from 'react';
 import {
-  Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp, Clock, X,
+  Sparkles, Zap, Users, Building2, Check, Plus, TrendingUp, Clock, X, CreditCard, QrCode,
 } from 'lucide-react';
 import RechargeCreditsModal from '@/components/creatyng/RechargeCreditsModal';
 import { useCreditStore } from '@/stores/useCreditStore';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { supabase } from '@/services/supabaseClient';
+
+/* ── Brazil detection ─────────────────────────────────── */
+const BR_TIMEZONES = ['America/Sao_Paulo', 'America/Recife', 'America/Fortaleza', 'America/Belem',
+  'America/Manaus', 'America/Cuiaba', 'America/Porto_Velho', 'America/Boa_Vista',
+  'America/Campo_Grande', 'America/Maceio', 'America/Bahia', 'America/Araguaina',
+  'America/Noronha', 'America/Rio_Branco'];
+
+function detectBrazil(): boolean {
+  try {
+    if (navigator.language === 'pt-BR') return true;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return BR_TIMEZONES.includes(tz);
+  } catch { return false; }
+}
 
 /* ── Plans ───────────────────────────────────────────── */
 const PLANS = [
@@ -59,6 +73,10 @@ const Billing = () => {
   const [subLoading, setSubLoading] = useState<string | null>(null);
   const [cancelLoading, setCancelLoading] = useState(false);
   const [subError, setSubError] = useState<string | null>(null);
+  const [isBrazil] = useState(() => detectBrazil());
+  const [payMethod, setPayMethod] = useState<'card' | 'pix'>('card');
+  const [cpfCnpj, setCpfCnpj] = useState('');
+  const [cpfCnpjRaw, setCpfCnpjRaw] = useState('');
   const { user } = useAuth();
   const { t } = useI18n();
   const credits = useCreditStore((s) => s.credits);
@@ -139,6 +157,45 @@ const Billing = () => {
     }
   }
 
+  async function handleAsaasSubscribe(planId: string) {
+    const digits = cpfCnpjRaw.replace(/\D/g, '');
+    if (!digits || (digits.length !== 11 && digits.length !== 14)) {
+      setSubError(t('billing.cpf_required'));
+      return;
+    }
+    setSubError(null);
+    setSubLoading(planId);
+    try {
+      const { data: { session } } = await supabase.auth.refreshSession();
+      if (!session) throw new Error('Not authenticated');
+
+      const { data, error: fnErr } = await supabase.functions.invoke('create-asaas-subscription', {
+        body: { plan: planId, cpfCnpj: digits },
+      });
+      if (fnErr) {
+        const errBody = typeof fnErr === 'object' && 'context' in fnErr
+          ? await (fnErr as { context: { json: () => Promise<Record<string, string>> } }).context.json().catch(() => null)
+          : null;
+        throw new Error(errBody?.error || data?.error || 'subscription_error');
+      }
+      if (data?.error) throw new Error(data.error);
+      // Refresh credits — subscription was activated immediately
+      fetchCredits();
+    } catch (err: unknown) {
+      setSubError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSubLoading(null);
+    }
+  }
+
+  function formatCpfCnpj(raw: string): string {
+    const d = raw.replace(/\D/g, '').slice(0, 14);
+    if (d.length <= 11) {
+      return d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    }
+    return d.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+  }
+
   function getPlanCta(p: typeof PLANS[number]) {
     if (p.id === currentPlan) return t('billing.cta.current');
     if (p.id === 'enterprise') return t('billing.cta.contact_sales');
@@ -152,6 +209,8 @@ const Billing = () => {
       window.open('mailto:contato@creatyng.com?subject=Enterprise Plan', '_blank');
     } else if (p.id === 'free') {
       handleCancel();
+    } else if (payMethod === 'pix') {
+      handleAsaasSubscribe(p.id);
     } else {
       handleSubscribe(p.id);
     }
@@ -277,6 +336,51 @@ const Billing = () => {
             }}>
               <span>{subError}</span>
               <button onClick={() => setSubError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626' }}><X size={14} /></button>
+            </div>
+          )}
+
+          {/* Payment method toggle (Brazil only) */}
+          {isBrazil && currentPlan === 'free' && (
+            <div style={{
+              marginBottom: 16, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+              animation: ready ? 'fdUp 450ms 120ms ease both' : 'none',
+            }}>
+              <div style={{ display: 'flex', gap: 2, background: 'hsl(var(--muted))', borderRadius: 8, padding: 3 }}>
+                <button onClick={() => setPayMethod('card')} style={{
+                  padding: '6px 14px', borderRadius: 6, border: 'none', fontFamily: 'inherit',
+                  background: payMethod === 'card' ? 'hsl(var(--card))' : 'transparent',
+                  color: payMethod === 'card' ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                  fontWeight: payMethod === 'card' ? 600 : 400, fontSize: 12.5, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 5, boxShadow: payMethod === 'card' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                }}>
+                  <CreditCard size={14} /> {t('billing.pay_card')}
+                </button>
+                <button onClick={() => setPayMethod('pix')} style={{
+                  padding: '6px 14px', borderRadius: 6, border: 'none', fontFamily: 'inherit',
+                  background: payMethod === 'pix' ? 'hsl(var(--card))' : 'transparent',
+                  color: payMethod === 'pix' ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                  fontWeight: payMethod === 'pix' ? 600 : 400, fontSize: 12.5, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 5, boxShadow: payMethod === 'pix' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                }}>
+                  <QrCode size={14} /> Pix
+                </button>
+              </div>
+              {payMethod === 'pix' && (
+                <input
+                  placeholder={t('billing.cpf_placeholder')}
+                  value={cpfCnpj}
+                  onChange={e => {
+                    const raw = e.target.value;
+                    setCpfCnpjRaw(raw);
+                    setCpfCnpj(formatCpfCnpj(raw));
+                  }}
+                  style={{
+                    padding: '7px 12px', borderRadius: 8, border: '1px solid hsl(var(--border))',
+                    fontSize: 13, fontFamily: 'monospace', width: 200, outline: 'none',
+                    background: 'hsl(var(--card))',
+                  }}
+                />
+              )}
             </div>
           )}
 
