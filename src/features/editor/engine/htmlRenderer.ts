@@ -361,7 +361,7 @@ function resolvePosition(pos: LayerPosition): string {
 
 function textStyleToCSS(style: TextStyle): string {
   let css = `
-    font-family: '${style.fontFamily}', sans-serif;
+    font-family: ${style.fontFamily}, sans-serif;
     font-weight: ${style.fontWeight};
     font-size: ${style.fontSize};
     font-style: ${style.fontStyle};
@@ -391,12 +391,16 @@ function textStyleToCSS(style: TextStyle): string {
     css += `transform: ${style.transform};`;
   }
 
-  // BACKGROUND-CLIP: TEXT — the killer feature
+  // BACKGROUND-CLIP: TEXT — gradient text support
+  // html2canvas has limited support for background-clip:text, so we use
+  // an SVG fallback approach when the composition is exported.
+  // For live preview (DOM), we apply the CSS directly.
   if (style.backgroundClip === 'text' && style.backgroundImage) {
     css += `
       background-image: ${style.backgroundImage};
       -webkit-background-clip: text;
       background-clip: text;
+      -webkit-text-fill-color: transparent;
       color: transparent;
     `;
   }

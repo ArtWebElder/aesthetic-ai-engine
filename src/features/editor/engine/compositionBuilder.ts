@@ -7,6 +7,9 @@ import type {
 import { segmentHeadline } from './textRenderer';
 import { extractDecorativeWord, chooseDecorativeConfig } from './exportComposed';
 import { chooseBadgeVariant, chooseContactVariant } from './textRenderer';
+import { GRADIENT_OVERLAYS, SIZE_HIERARCHY, getAspectConfig } from '@/data/compositionRules';
+import { getPresetForNiche, getPresetById, type TypographyPreset } from '@/data/typographyPresets';
+import { detectNicheFromText } from '@/data/contextualAssets';
 
 export interface CompositionPalette {
   accent: string;
@@ -36,6 +39,8 @@ export interface CompositionInput {
   palette: CompositionPalette;
   fontFamily?: string;        // override de fonte
   headlineSizeFactor?: number; // override de tamanho
+  typographyPresetId?: string; // e.g. 'bold-impact', 'gold-serif'
+  aspectRatio?: string;        // e.g. '1:1', '9:16', '16:9', '4:5'
 }
 
 export function buildComposition(input: CompositionInput): CreatygnComposition {
@@ -43,11 +48,24 @@ export function buildComposition(input: CompositionInput): CreatygnComposition {
     sceneBase64, bgBase64, subjectBase64,
     headline, subheadline, cta, price, whatsapp, instagram,
     preset, palette, fontFamily, headlineSizeFactor = 1.0,
+    typographyPresetId, aspectRatio = '1:1',
   } = input;
 
   const isPopDesign = preset === 'sys-img-pop-design';
   const isFoodPop = !isPopDesign;
-  const font = fontFamily || 'Montserrat';
+
+  // Resolve typography preset — by ID, by niche detection, or fallback
+  const allText = [headline, subheadline, cta].filter(Boolean).join(' ');
+  const typoPreset: TypographyPreset | undefined = typographyPresetId
+    ? getPresetById(typographyPresetId)
+    : getPresetForNiche(detectNicheFromText(allText));
+
+  const font = fontFamily || (typoPreset?.headline.fontFamily?.split(',')[0]?.replace(/'/g, '').trim()) || 'Montserrat';
+
+  // Aspect ratio config
+  const arConfig = getAspectConfig(aspectRatio);
+  const canvasW = arConfig.dimensions.width;
+  const canvasH = arConfig.dimensions.height;
 
   const layers: CompositionLayer[] = [];
   let zIndex = 0;
@@ -82,11 +100,16 @@ export function buildComposition(input: CompositionInput): CreatygnComposition {
     });
   }
 
-  // ===== CAMADA: GRADIENT OVERLAY (Food/Pop only) =====
+  // ===== CAMADA: DUAL GRADIENT OVERLAYS (top + bottom for text legibility) =====
   if (isFoodPop) {
     layers.push({
       type: 'gradient-overlay',
-      css: `linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.15) 30%, transparent 50%, rgba(0,0,0,0.25) 60%, rgba(0,0,0,0.82) 100%)`,
+      css: GRADIENT_OVERLAYS.top,
+      zIndex: ++zIndex,
+    });
+    layers.push({
+      type: 'gradient-overlay',
+      css: GRADIENT_OVERLAYS.bottom,
       zIndex: ++zIndex,
     });
   }
@@ -143,39 +166,53 @@ export function buildComposition(input: CompositionInput): CreatygnComposition {
   if (headline) {
     const segments = segmentHeadline(headline);
     const bgIsDark = isFoodPop || (isPopDesign && Boolean(bgBase64));
+    const hl = typoPreset?.headline;
 
     const headlineSegments: HeadlineSegment[] = segments.map(seg => {
       const baseFontSize = seg.isAccent ? 14 : 6;
       const adjustedSize = baseFontSize * headlineSizeFactor;
 
+      // If we have a typography preset, apply its styles for impact segments
+      const presetFont = hl?.fontFamily || font;
+      const presetColor = seg.isAccent
+        ? (hl?.color || (bgIsDark ? '#FFFFFF' : palette.accent))
+        : (bgIsDark ? 'rgba(255,255,255,0.88)' : '#2D2D2D');
+
       return {
         text: seg.text,
         role: seg.isAccent ? 'impact' as const : 'context' as const,
         style: {
-          fontFamily: font,
-          fontWeight: seg.weight,
+          fontFamily: seg.isAccent ? presetFont : font,
+          fontWeight: seg.isAccent ? (hl?.fontWeight || seg.weight) : seg.weight,
           fontSize: `${adjustedSize}vw`,
-          fontStyle: (seg.isAccent && isFoodPop) ? 'italic' as const : 'normal' as const,
-          color: bgIsDark
-            ? (seg.isAccent ? '#FFFFFF' : 'rgba(255,255,255,0.88)')
-            : (seg.isAccent ? palette.accent : '#2D2D2D'),
-          textTransform: 'uppercase' as const,
-          letterSpacing: seg.isAccent ? '-0.02em' : '0.02em',
+          fontStyle: 'normal' as const,
+          color: presetColor,
+          textTransform: (hl?.textTransform || 'uppercase') as 'uppercase' | 'lowercase' | 'capitalize' | 'none',
+          letterSpacing: seg.isAccent ? (hl?.letterSpacing || '-0.02em') : '0.02em',
           lineHeight: seg.isAccent ? '0.85' : '1.05',
           textAlign: 'center' as const,
-          textShadow: bgIsDark
-            ? '0 2px 15px rgba(0,0,0,0.3), 0 4px 30px rgba(0,0,0,0.15)'
-            : 'none',
+          textShadow: seg.isAccent
+            ? (hl?.textShadow || (bgIsDark ? '0 2px 15px rgba(0,0,0,0.3), 0 4px 30px rgba(0,0,0,0.15)' : 'none'))
+            : (bgIsDark ? '0 2px 8px rgba(0,0,0,0.3)' : 'none'),
+          // Premium features from typography preset
+          ...(seg.isAccent && hl?.webkitTextStroke ? { webkitTextStroke: hl.webkitTextStroke } : {}),
+          ...(seg.isAccent && hl?.backgroundImage ? {
+            backgroundImage: hl.backgroundImage,
+            backgroundClip: 'text' as const,
+          } : {}),
         },
       };
     });
+
+    // Use aspect-ratio-aware zone for headline position
+    const headlineZone = arConfig.zones.headline;
 
     layers.push({
       type: 'headline',
       segments: headlineSegments,
       position: {
         x: '50%',
-        y: isFoodPop ? '5%' : '4%',
+        y: `${Math.round(headlineZone.yStart * 100)}%`,
         anchor: 'top-center',
       },
       gap: '8px',
@@ -186,22 +223,24 @@ export function buildComposition(input: CompositionInput): CreatygnComposition {
   // ===== CAMADA: SUBHEADLINE =====
   if (subheadline) {
     const bgIsDark = isFoodPop || (isPopDesign && Boolean(bgBase64));
+    const sub = typoPreset?.subheadline;
+    const subZone = arConfig.zones.subheadline;
 
     layers.push({
       type: 'subheadline',
       text: subheadline,
       style: {
-        fontFamily: font,
-        fontWeight: 400,
+        fontFamily: sub?.fontFamily || font,
+        fontWeight: sub?.fontWeight || 400,
         fontSize: `${2.8 * headlineSizeFactor}vw`,
         fontStyle: 'normal',
-        color: bgIsDark ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.55)',
-        textTransform: 'none',
-        letterSpacing: '0.02em',
+        color: sub?.color || (bgIsDark ? 'rgba(255,255,255,0.72)' : 'rgba(0,0,0,0.55)'),
+        textTransform: (sub?.textTransform || 'none') as 'uppercase' | 'lowercase' | 'capitalize' | 'none',
+        letterSpacing: sub?.letterSpacing || '0.02em',
         lineHeight: '1.3',
         textAlign: 'center',
       },
-      position: { x: '50%', y: 'auto', anchor: 'top-center' },
+      position: { x: '50%', y: `${Math.round(subZone.yStart * 100)}%`, anchor: 'top-center' },
       zIndex: zIndex + 11,
     });
   }
@@ -268,14 +307,18 @@ export function buildComposition(input: CompositionInput): CreatygnComposition {
           type: 'cta' as const,
           text: (cta || 'PEÇA JÁ').toUpperCase(),
           style: {
-            fontFamily: font, fontWeight: 600, fontSize: '2vw',
-            fontStyle: 'normal' as const, color: '#FFFFFF',
-            textTransform: 'uppercase' as const, letterSpacing: '0.06em',
+            fontFamily: typoPreset?.cta.fontFamily || font,
+            fontWeight: typoPreset?.cta.fontWeight || 600,
+            fontSize: '2vw',
+            fontStyle: 'normal' as const,
+            color: typoPreset?.cta.color || '#FFFFFF',
+            textTransform: 'uppercase' as const,
+            letterSpacing: typoPreset?.cta.letterSpacing || '0.06em',
             lineHeight: '1', textAlign: 'center' as const,
           },
           background: {
-            color: palette.accent,
-            borderRadius: '6px',
+            color: typoPreset?.cta.background || palette.accent,
+            borderRadius: typoPreset?.cta.borderRadius || '6px',
           },
         },
       ],
@@ -329,7 +372,7 @@ export function buildComposition(input: CompositionInput): CreatygnComposition {
   return {
     version: '1.0',
     preset,
-    canvasSize: { width: 1080, height: 1080 },
+    canvasSize: { width: canvasW, height: canvasH },
     layers,
   };
 }

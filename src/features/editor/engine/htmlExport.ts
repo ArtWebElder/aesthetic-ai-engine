@@ -1,13 +1,28 @@
-// LEGACY — Stage 3 suspenso. Mantido porque WizardPage.tsx importa exportCompositionToPNG.
-// Remover quando o WizardPage for refatorado para não depender deste módulo.
+// CREATYNG — HTML Composition → PNG export via html2canvas.
+// Injects premium Google Fonts and waits for them before rasterizing.
 import html2canvas from 'html2canvas';
 import type { CreatygnComposition } from '@/types/composition';
 import { renderCompositionToHTML } from './htmlRenderer';
+import { PREMIUM_FONTS_URL } from '@/data/typographyPresets';
+
+/** Ensure premium Google Fonts are loaded (idempotent) */
+function ensurePremiumFonts(): void {
+  const id = 'creatyng-premium-fonts';
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = PREMIUM_FONTS_URL;
+  document.head.appendChild(link);
+}
 
 export async function exportCompositionToPNG(
   composition: CreatygnComposition,
   scale: number = 2  // 2x = 2160x2160 → 2K quality
 ): Promise<string> {
+  // 0. Inject Google Fonts
+  ensurePremiumFonts();
+
   // 1. Render DOM
   const container = renderCompositionToHTML(composition);
 
@@ -20,7 +35,6 @@ export async function exportCompositionToPNG(
   // 3. Wait for fonts and images
   await document.fonts.ready;
 
-  // Wait for all images to load
   const images = container.querySelectorAll('img');
   await Promise.all(
     Array.from(images).map(img =>
@@ -31,7 +45,7 @@ export async function exportCompositionToPNG(
   );
 
   // Small delay for rendering to settle
-  await new Promise(resolve => setTimeout(resolve, 100));
+  await new Promise(resolve => setTimeout(resolve, 150));
 
   // 4. Rasterize
   const canvas = await html2canvas(container, {
