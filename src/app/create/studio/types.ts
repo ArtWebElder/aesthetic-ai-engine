@@ -306,7 +306,7 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     descriptionEs: 'Tu producto real + fondo profesional + copy y composición IA',
     icon: 'LayoutTemplate',
     color: '#ff713d',
-    credits: 12,
+    credits: 8,
     nodes: [
       // Row 1: Reference → Analyze → Copy IA → Image Gen → Composition IA → Overlay → Export
       { id: 'ref', type: 'reference_upload', x: 60, y: 60, data: { label: 'Referência do Banner' } },

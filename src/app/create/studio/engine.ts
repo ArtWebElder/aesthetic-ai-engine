@@ -766,19 +766,97 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
     }
 
     case 'export': {
-      const image = inputs.generatedImage || inputs.image;
+      // Prefer final (text_overlay) → color_grade → composed → generated → any image
+      const finalUp = findUpstreamByType(inputs, 'final');
+      const colorUp = findUpstreamByType(inputs, 'color_grade');
+      const composedUp = findUpstreamByType(inputs, 'composed');
+      const generatedUp = findUpstreamByType(inputs, 'generated');
+
+      const image = finalUp?.image
+        || colorUp?.image
+        || composedUp?.image
+        || generatedUp?.image
+        || inputs.generatedImage
+        || inputs.image;
+
+      if (!image) {
+        console.warn('[Studio:export] No image found in upstream — check connections');
+      }
+
+      const format = (node.data.format as string) || 'png';
+      console.log('[Studio:export] Format:', format, '| Image found:', Boolean(image));
+
       return {
         image,
         finalImage: image,
-        format: (node.data.format as string) || 'png',
+        format,
         type: 'export',
       };
     }
 
-    case 'typography':
-    case 'color_grade':
+    case 'typography': {
+      // Typography config node — passes through upstream data + adds typography config
+      const typographyConfig = {
+        fontFamily: (node.data.fontFamily as string) || 'Inter, sans-serif',
+        fontWeight: (node.data.fontWeight as number) || 700,
+        fontSize: (node.data.fontSize as number) || 48,
+        color: (node.data.color as string) || '#FFFFFF',
+        letterSpacing: (node.data.letterSpacing as number) || 0,
+        textShadow: (node.data.textShadow as string) || 'none',
+        textTransform: (node.data.textTransform as string) || 'none',
+      };
+      console.log('[Studio:typography] Config:', typographyConfig.fontFamily, typographyConfig.fontSize + 'px');
+      return {
+        ...inputs,
+        typographyConfig,
+        type: 'typography',
+      };
+    }
+
+    case 'color_grade': {
+      // Color grading node — applies CSS-like filters to upstream image
+      const image = inputs.image || inputs.generatedImage;
+      if (!image) {
+        console.warn('[Studio:color_grade] No image to grade — passing through');
+        return { ...inputs, type: 'color_grade' };
+      }
+
+      const mode = (node.data.mode as string) || 'warm';
+      const filterMap: Record<string, string> = {
+        warm: 'brightness(1.05) contrast(1.08) saturate(1.15) sepia(0.08)',
+        cold: 'brightness(1.02) contrast(1.05) saturate(0.9) hue-rotate(10deg)',
+        vivid: 'brightness(1.05) contrast(1.15) saturate(1.35)',
+        muted: 'brightness(0.98) contrast(0.95) saturate(0.7)',
+        dramatic: 'brightness(0.92) contrast(1.25) saturate(1.1)',
+        vintage: 'brightness(1.05) contrast(0.9) saturate(0.8) sepia(0.2)',
+      };
+      const filterStr = filterMap[mode] || filterMap.warm;
+      console.log('[Studio:color_grade] Applying mode:', mode, '→', filterStr);
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image for color grading'));
+        img.src = image;
+      });
+
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      ctx.filter = filterStr;
+      ctx.drawImage(img, 0, 0);
+
+      const gradedImage = canvas.toDataURL('image/png');
+      return {
+        image: gradedImage,
+        type: 'color_grade',
+      };
+    }
+
     default:
-      // Pass-through for nodes not yet implemented
       return { ...inputs, type: node.type };
   }
 }
@@ -828,13 +906,18 @@ export function prePopulateInputOutputs(
           console.log(`[Engine:prePopulate] ${node.id} (reference_upload) → reference image (${String(node.data.imageBase64).length} chars)`);
         }
         break;
-      case 'text_input':
-        outputs[node.id] = { text: (node.data.text as string) || '' };
+      case 'text_input': {
+        const hasFields = node.data.fields && typeof node.data.fields === 'object';
+        outputs[node.id] = hasFields
+          ? { text: (node.data.text as string) || '', fields: node.data.fields, type: 'text' }
+          : { text: (node.data.text as string) || '', type: 'text' };
         break;
+      }
       case 'brand_input':
         outputs[node.id] = {
           brandName: (node.data.brandName as string) || '',
           description: (node.data.description as string) || '',
+          type: 'brand',
         };
         break;
     }

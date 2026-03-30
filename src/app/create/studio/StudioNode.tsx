@@ -49,7 +49,7 @@ const RUN_NODES: NodeTypeId[] = [
   'prompt_builder', 'scene_gen', 'image_gen',
   'reference_analyzer', 'bg_removal', 'export',
   'background_gen', 'compositor', 'text_overlay',
-  'copy_ai', 'composition_ai',
+  'copy_ai', 'composition_ai', 'color_grade',
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
