@@ -252,32 +252,38 @@ export async function executeNode(
       console.log('[Studio:image_gen] CompositionMode:', isCompositionMode, '| CopyData:', copyUp?.copyData ? 'present' : 'none');
 
       // ── composition_visual: 2-layer pipeline (visual + Konva text) ──
+      // Generate a VISUAL-ONLY image — NO text baked in. All text handled by text_overlay node.
       if (isCompositionMode && analysis) {
         const style = analysis.style || {};
         const layout = analysis.layout || {};
         const textLayout = analysis.textLayout || {};
         const scene = analysis.sceneDescription || analysis.composition?.description || '';
 
-        prompt = `Create a professional advertisement/banner image.
+        prompt = `Create a professional product photography image for an advertisement.
 
-SCENE (recreate this exact style and atmosphere):
+CRITICAL — SUBJECT PRESERVATION:
+- The uploaded photo contains the REAL product being advertised
+- You MUST preserve the exact product from the photo with maximum fidelity
+- Maintain the exact shape, texture, color, proportions of every detail
+- Do NOT generate a new product, do NOT replace it with a generic version
+- The product must be instantly recognizable as the SAME item from the photo
+
+SCENE AND ENVIRONMENT:
 ${scene}
-
-${style.backgroundDescription ? `BACKGROUND: ${style.backgroundDescription}` : ''}
-MOOD: ${style.mood || 'professional'}
-COLOR PALETTE: ${(style.colorScheme || ['#1a1a1a', '#333333']).join(', ')}
+${style.backgroundDescription ? `Background: ${style.backgroundDescription}` : ''}
+Mood: ${style.mood || 'professional'}
+Color palette: ${(style.colorScheme || ['#1a1a1a', '#333333']).join(', ')}
 
 PRODUCT PLACEMENT:
-- Position the product/subject ${layout.productPosition || 'center'}, ${layout.productSize || 'medium'} size
-- The product in the input image must be the HERO of the composition
-- Maintain the product's EXACT appearance — do not alter its colors, shape, or details
-- Integrate the product naturally into the scene with proper lighting, shadows, and reflections
+- Position the product ${layout.productPosition || 'center'}, ${layout.productSize || 'medium'} size
+- Integrate the product naturally with proper lighting, shadows, and reflections
+- The product is the HERO — it must be the focal point
 
-ABSOLUTE RULES — ZERO TEXT:
-- DO NOT render ANY text, letters, numbers, words, typography, or watermarks in the image
+ABSOLUTE RULES — ZERO TEXT IN IMAGE:
+- DO NOT render ANY text, letters, numbers, words, typography, or watermarks
 - DO NOT write headlines, prices, CTAs, brand names, or logos
 - The image must contain ONLY visual elements (product, background, lighting, effects)
-- All text will be added in a separate layer via Canvas 2D — the image must be text-free
+- Text will be added separately via Canvas 2D overlay — the image MUST be completely text-free
 
 BREATHING SPACE FOR TEXT OVERLAY:
 - Overall layout: ${textLayout.overallLayout || 'product centered, text at bottom'}
@@ -285,12 +291,7 @@ BREATHING SPACE FOR TEXT OVERLAY:
 - Breathing areas: ${(textLayout.breathingSpaceAreas || ['bottom strip']).join(', ')}
 - These areas should have slightly darker/simpler background for text readability
 
-${textLayout.ctaStyle && textLayout.ctaStyle !== 'none' ? `CTA BUTTON SHAPE:
-- Generate a VISUAL SHAPE (not text) at ${textLayout.ctaPosition || 'bottom'} that looks like a ${textLayout.ctaStyle} button
-- This shape should be a colored element (gradient, glow, 3D effect) where CTA text will be placed later
-- Make it visually prominent and match the overall style` : ''}
-
-Ultra high quality, 8K detail, proper depth of field.
+Ultra high quality, 8K detail, proper depth of field, photorealistic.
 ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.customPrompt}` : ''}`;
       }
 
@@ -347,38 +348,14 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
         module: (isSceneMode || isCompositionMode) ? 'sys-img-banner' : ((node.data.module as string) || 'studio'),
       };
 
-      // 2-layer pipeline: pass compositionMode + copyData + textLayout to Edge Function
+      // NOTE: compositionMode is intentionally NOT sent to the Edge Function.
+      // Imagen 4 (compositionMode=true) bakes text INTO the generated image, producing
+      // placeholder text like "(Headline)" and poor typography. Instead, we generate
+      // a clean visual-only image here, and the text_overlay node renders all text
+      // via Konva/html2canvas with perfect control over typography.
       if (isCompositionMode && copyUp?.copyData) {
-        payload.compositionMode = true;
-        payload.copyData = {
-          headline: copyUp.copyData.headline || '',
-          subheadline: copyUp.copyData.subheadline || '',
-          priceFormatted: copyUp.copyData.priceFormatted || '',
-          priceBadgeText: copyUp.copyData.priceBadgeText || '',
-          cta: copyUp.copyData.cta || '',
-        };
-
-        // Build verbal description of subject for Imagen 4 (text-to-image, no inline images)
-        const subjectDesc: string =
-          (copyUp.copyData.productName as string)
-          || (inputs.brandName as string)
-          || (analysis?.subject?.description as string)
-          || '';
-        if (subjectDesc) {
-          payload.subjectDescription = subjectDesc;
-        }
-
-        if (analysis?.textLayout) {
-          payload.textLayout = {
-            headlinePosition: analysis.textLayout.headlinePosition,
-            headlineSize: analysis.textLayout.headlineSize,
-            ctaPosition: analysis.textLayout.ctaPosition,
-            ctaStyle: analysis.textLayout.ctaStyle,
-            breathingSpaceAreas: analysis.textLayout.breathingSpaceAreas,
-            overallLayout: analysis.textLayout.overallLayout,
-          };
-        }
-        console.log('[Studio:image_gen] compositionMode payload added — headline:', payload.copyData.headline?.slice(0, 30), '| subjectDesc:', subjectDesc?.slice(0, 40));
+        console.log('[Studio:image_gen] composition_visual mode — generating visual-only image (text via text_overlay node)');
+        console.log('[Studio:image_gen] Copy data available — headline:', copyUp.copyData.headline?.slice(0, 40), '| cta:', copyUp.copyData.cta?.slice(0, 20));
       }
 
       if (subject) {
@@ -612,7 +589,29 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
         || Object.values(inputs).find((v: unknown) => (v as Record<string, unknown>)?.type === 'generated')?.image;
 
       // Prefer copy data from Copy IA node, fallback to text_input fields
-      const copyData = copyUp?.copyData || inputs.copyData;
+      const rawCopyData = copyUp?.copyData || inputs.copyData;
+
+      // Sanitize: strip placeholder markers that AI models sometimes inject
+      function stripPlaceholders(text: string | undefined): string {
+        if (!text) return '';
+        return text
+          .replace(/\(Headline\)/gi, '')
+          .replace(/\(Subheadline\)/gi, '')
+          .replace(/\(Price\)/gi, '')
+          .replace(/\(CTA\)/gi, '')
+          .replace(/\(Bluro?\)/gi, '')
+          .replace(/\(Contact\)/gi, '')
+          .trim();
+      }
+
+      const copyData = rawCopyData ? {
+        ...rawCopyData,
+        headline: stripPlaceholders(rawCopyData.headline),
+        subheadline: stripPlaceholders(rawCopyData.subheadline),
+        priceFormatted: stripPlaceholders(rawCopyData.priceFormatted),
+        cta: stripPlaceholders(rawCopyData.cta),
+      } : null;
+
       const texts = copyData
         ? {
             headline: copyData.headline || '',
@@ -621,6 +620,13 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
             contact: '',
           }
         : (inputs.fields || inputs.text || {});
+
+      console.log('[Studio:text_overlay] Texts to render:', {
+        headline: typeof texts === 'object' ? texts.headline?.slice(0, 40) : 'string',
+        price: typeof texts === 'object' ? texts.price : '',
+        cta: typeof texts === 'object' ? texts.cta : '',
+        hasCopyData: Boolean(copyData),
+      });
       const analysis = inputs.analysis
         || Object.values(inputs).find((v: unknown) => (v as Record<string, unknown>)?.analysis)?.analysis;
 
@@ -632,7 +638,26 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       const h = (node.data.height as number) || composedData?.height || 1080;
 
       // If compositionData from Composição IA is available, use AI-driven layout
-      const compositionData = compositionUp?.compositionData || inputs.compositionData;
+      const rawCompositionData = compositionUp?.compositionData || inputs.compositionData;
+
+      // Clamp composition layout to canvas bounds — prevents text from rendering off-screen
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const compositionData = rawCompositionData ? (() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cd = JSON.parse(JSON.stringify(rawCompositionData)) as any;
+        if (cd.layout) {
+          cd.layout.textBlockX = Math.max(20, Math.min(cd.layout.textBlockX || 0, w * 0.7));
+          cd.layout.textBlockY = Math.max(20, Math.min(cd.layout.textBlockY || 0, h * 0.85));
+          cd.layout.textBlockMaxWidth = Math.max(200, Math.min(cd.layout.textBlockMaxWidth || w * 0.5, w * 0.9));
+        }
+        // Clamp font sizes to reasonable range
+        if (cd.headline) cd.headline.fontSize = Math.max(24, Math.min(cd.headline.fontSize || 48, w * 0.08));
+        if (cd.price) cd.price.fontSize = Math.max(16, Math.min(cd.price.fontSize || 32, w * 0.06));
+        if (cd.cta) cd.cta.fontSize = Math.max(12, Math.min(cd.cta.fontSize || 18, w * 0.03));
+        if (cd.subheadline) cd.subheadline.fontSize = Math.max(12, Math.min(cd.subheadline.fontSize || 20, w * 0.035));
+        return cd;
+      })() : null;
+
       if (compositionData && copyData) {
         console.log('[Studio:text_overlay] Using Konva renderer (AI composition layout)');
         try {
