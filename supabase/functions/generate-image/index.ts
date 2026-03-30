@@ -1006,11 +1006,14 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
         strictPayloadKind = result.payloadKind || "strict_unknown";
         strictRaw = result.raw ?? null;
       } catch (primaryError) {
+        const primaryDetails = String((primaryError as { message?: string })?.message ?? primaryError).slice(0, 1200);
+        console.error(`[generate-image] Primary provider (${selectedProvider.name}) failed:`, primaryDetails);
         strictProviderErrors.push({
           providerName: selectedProvider.name,
-          details: String((primaryError as { message?: string })?.message ?? primaryError).slice(0, 1200),
+          details: primaryDetails,
         });
         if (fallbackProvider) {
+          console.log(`[generate-image] Attempting fallback provider: ${fallbackProvider.name}`);
           fallbackAttempted = true;
           lastProviderName = fallbackProvider.name;
           strictProviderName = fallbackProvider.name;
@@ -1033,9 +1036,11 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
             );
             strictRaw = fallbackResult.meta;
           } catch (fallbackError) {
+            const fallbackDetails = String((fallbackError as { message?: string })?.message ?? fallbackError).slice(0, 1200);
+            console.error(`[generate-image] Fallback provider (${fallbackProvider.name}) also failed:`, fallbackDetails);
             strictProviderErrors.push({
               providerName: fallbackProvider.name,
-              details: String((fallbackError as { message?: string })?.message ?? fallbackError).slice(0, 1200),
+              details: fallbackDetails,
             });
           }
         }

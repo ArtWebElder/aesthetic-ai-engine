@@ -87,6 +87,30 @@ function findUpstreamByType(inputs: Record<string, any>, type: string): any {
   return all.find((v) => v?.type === type);
 }
 
+/** Resize base64 image if > 4MB to avoid Edge Function payload limits */
+async function resizeImageIfNeeded(base64: string, maxWidth = 1024): Promise<string> {
+  // Rough check: base64 encodes ~33% overhead, so 4MB base64 ≈ 3MB binary
+  if (base64.length < 4 * 1024 * 1024) return base64;
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      if (img.width <= maxWidth) { resolve(base64); return; }
+      const ratio = maxWidth / img.width;
+      const canvas = document.createElement('canvas');
+      canvas.width = maxWidth;
+      canvas.height = Math.round(img.height * ratio);
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const resized = canvas.toDataURL('image/jpeg', 0.85);
+      console.log(`[ImageGen] Resized image: ${img.width}x${img.height} → ${canvas.width}x${canvas.height} (${Math.round(base64.length / 1024)}KB → ${Math.round(resized.length / 1024)}KB)`);
+      resolve(resized);
+    };
+    img.onerror = () => resolve(base64); // fallback to original on error
+    img.src = base64;
+  });
+}
+
 /**
  * Execute a single node with its collected inputs.
  */
@@ -359,23 +383,33 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       }
 
       if (subject) {
-        payload.subjectBase64 = subject;
+        payload.subjectBase64 = await resizeImageIfNeeded(subject, 1024);
       }
       if (reference) {
-        payload.styleReferenceBase64 = reference;
+        payload.styleReferenceBase64 = await resizeImageIfNeeded(reference, 1024);
       }
 
+      const url = `${supabaseUrl}/functions/v1/generate-image`;
+      const bodyStr = JSON.stringify(payload);
       console.log('[Studio:image_gen] Payload keys:', Object.keys(payload));
+      console.log('[Studio:image_gen] URL:', url, '| Payload size:', Math.round(bodyStr.length / 1024), 'KB');
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/generate-image`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-        },
-        body: JSON.stringify(payload),
-      });
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+          },
+          body: bodyStr,
+        });
+      } catch (fetchErr) {
+        const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+        console.error('[Studio:image_gen] Fetch failed:', msg, '| URL:', url, '| Payload size:', Math.round(bodyStr.length / 1024), 'KB');
+        throw new Error(`Falha na conexão com o servidor de geração. Verifique sua internet e tente novamente. (${msg})`);
+      }
 
       if (!response.ok) {
         const err = await response.text();
