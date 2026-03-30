@@ -87,10 +87,9 @@ function findUpstreamByType(inputs: Record<string, any>, type: string): any {
   return all.find((v) => v?.type === type);
 }
 
-/** Resize base64 image if > 4MB to avoid Edge Function payload limits */
+/** Resize base64 image if > 2MB to keep total payload under Edge Function 6MB limit */
 async function resizeImageIfNeeded(base64: string, maxWidth = 1024): Promise<string> {
-  // Rough check: base64 encodes ~33% overhead, so 4MB base64 ≈ 3MB binary
-  if (base64.length < 4 * 1024 * 1024) return base64;
+  if (base64.length < 2 * 1024 * 1024) return base64;
 
   return new Promise((resolve) => {
     const img = new Image();
@@ -385,8 +384,13 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       if (subject) {
         payload.subjectBase64 = await resizeImageIfNeeded(subject, 1024);
       }
-      if (reference) {
+      // Only send styleReferenceBase64 when no analysis is available.
+      // When reference_analyzer already ran, the prompt contains the full scene
+      // description — sending the raw reference image again wastes ~4MB of payload.
+      if (reference && !analysis) {
         payload.styleReferenceBase64 = await resizeImageIfNeeded(reference, 1024);
+      } else if (reference && analysis) {
+        console.log('[Studio:image_gen] Skipping styleReferenceBase64 — analysis already captured style (saves ~4MB payload)');
       }
 
       const url = `${supabaseUrl}/functions/v1/generate-image`;

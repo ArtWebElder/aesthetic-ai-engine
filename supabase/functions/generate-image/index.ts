@@ -669,13 +669,25 @@ async function updateGenerationError(
 }
 
 Deno.serve(async (req: Request) => {
+  // CORS headers computed FIRST — must be available even if body parsing crashes
   const origin = req.headers.get("origin");
   const headers = corsHeaders(origin);
 
+  // Preflight must be handled before ANYTHING else
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers });
   if (req.method !== "POST") return json({ error: "method_not_allowed", details: "Use POST." }, 405, headers);
 
   try {
+    // Check Content-Length to reject obviously oversized payloads early
+    const contentLength = Number(req.headers.get("content-length") || "0");
+    if (contentLength > 6 * 1024 * 1024) {
+      console.error(`[generate-image] Payload too large: ${Math.round(contentLength / 1024)}KB — rejecting before parse`);
+      return json({
+        error: "payload_too_large",
+        details: `Request body is ${Math.round(contentLength / 1024 / 1024)}MB. Maximum is 6MB. Reduce image sizes before sending.`,
+      }, 413, headers);
+    }
+
     let bodyRaw: unknown;
     try {
       bodyRaw = await req.json();
