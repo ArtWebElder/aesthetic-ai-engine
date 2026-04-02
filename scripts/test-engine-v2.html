@@ -286,7 +286,7 @@ async function generateCreative() {
 
   try {
     const body = collectBody();
-    const data = await callGenerate(body, modelName);
+    const data = await callGenerate(body, modelLabel);
 
     document.getElementById('result-area').innerHTML = renderResultCard(data, modelLabel);
     document.getElementById('prompt-used').textContent = data.prompt_used || '—';
