@@ -34,7 +34,7 @@ interface GenerateBody {
   model?: "flux-kontext" | "imagen4";
 }
 
-// ── Prompt builder ─────────────────────────────────────────────────────────────
+// ── Prompt builders ────────────────────────────────────────────────────────────
 
 function pickAspectRatio(format: string | undefined): string {
   const map: Record<string, string> = {
@@ -43,84 +43,94 @@ function pickAspectRatio(format: string | undefined): string {
   return map[format ?? ""] || "1:1";
 }
 
-function buildPrompt(body: GenerateBody): string {
+/**
+ * Short, direct prompt for Flux Kontext Pro.
+ * Flux works best with concise instructions (< 200 words).
+ */
+function buildFluxPrompt(body: GenerateBody): string {
   const variation = Math.max(0, Math.min(100, body.variation ?? 30));
   const parts: string[] = [];
 
-  // Base instruction based on variation level
+  if (variation <= 20) {
+    parts.push("Recreate this exact advertisement with the same layout, colors, and typography. Keep all text sharp and legible.");
+  } else if (variation <= 60) {
+    parts.push("Create a similar advertisement inspired by this reference. Keep the same style and mood with some creative variation.");
+  } else {
+    parts.push("Reimagine this advertisement concept with significant creative freedom. Same purpose, new design.");
+  }
+
+  if (body.subject_image) {
+    parts.push("Replace the main subject with the provided photo.");
+  }
+
+  if (body.text_replacements && body.text_replacements.length > 0) {
+    const changes = body.text_replacements
+      .filter(r => r.original && r.replacement && r.original !== r.replacement)
+      .map(r => `Change text '${r.original}' to '${r.replacement}'.`);
+    if (changes.length > 0) {
+      parts.push(changes.join(" "));
+    }
+  }
+
+  if (body.color_palette && body.color_palette.length > 0) {
+    parts.push(`Use these colors: ${body.color_palette.join(", ")}.`);
+  }
+
+  if (body.extra_instructions && body.extra_instructions.trim()) {
+    parts.push(body.extra_instructions.trim());
+  }
+
+  parts.push("All text must be perfectly sharp and readable. Professional quality.");
+
+  return parts.join(" ");
+}
+
+/**
+ * Detailed prompt for Imagen 4.
+ * Imagen 4 handles longer, structured prompts well.
+ */
+function buildImagen4Prompt(body: GenerateBody): string {
+  const variation = Math.max(0, Math.min(100, body.variation ?? 30));
+  const parts: string[] = [];
+
   if (variation <= 20) {
     parts.push(
-      "Recreate this image exactly, maintaining the same layout, typography style, colors, composition, and overall visual treatment. " +
-      "Preserve the exact text positioning, font styles, decorative elements, and color scheme. " +
-      "The output should be nearly indistinguishable from the original in terms of design and structure."
+      "Recreate this advertisement image exactly, preserving the same layout, typography, colors, composition, and visual treatment."
     );
   } else if (variation <= 60) {
     parts.push(
-      "Create a similar image inspired by this reference, keeping the overall style, layout structure, and visual language but with creative freedom. " +
-      "Maintain the same mood, professional quality, and general composition."
+      "Create a similar advertisement inspired by this reference, keeping the style, layout, and visual language with some creative freedom."
     );
   } else {
     parts.push(
-      "Create a new image loosely inspired by this reference, reimagining the concept with significant creative freedom. " +
-      "Keep the same general category and purpose but explore new compositions, colors, and visual approaches."
+      "Create a new advertisement inspired by this reference, reimagining the concept with creative freedom while keeping the same purpose."
     );
   }
 
-  // Subject replacement — explicit and directive
   if (body.subject_image) {
-    parts.push(
-      "SUBJECT SWAP: Edit this advertisement image. Replace the main product/person visible in the image with the subject from the provided reference photo. " +
-      "Keep everything else IDENTICAL: same layout, same text positions, same typography, same colors, same decorative elements, same background. " +
-      "The new subject must be integrated naturally with matching lighting, shadows, and scale."
-    );
+    parts.push("Replace the main product/person with the provided subject photo, integrating it naturally with matching lighting and scale.");
   }
 
-  // Text replacements — per-text specificity
   if (body.text_replacements && body.text_replacements.length > 0) {
-    const validReplacements = body.text_replacements.filter(r => r.original && r.replacement);
-    if (validReplacements.length > 0) {
-      parts.push("TEXT CHANGES (apply these exact replacements, keep same font style, size, weight, and position for each):");
-      for (const r of validReplacements) {
-        parts.push(`• Change "${r.original}" → "${r.replacement}"`);
+    const changes = body.text_replacements
+      .filter(r => r.original && r.replacement && r.original !== r.replacement);
+    if (changes.length > 0) {
+      parts.push("Text changes:");
+      for (const r of changes) {
+        parts.push(`- "${r.original}" → "${r.replacement}"`);
       }
     }
   }
 
-  // Color palette — mandatory and specific
   if (body.color_palette && body.color_palette.length > 0) {
-    const colors = body.color_palette;
-    const assignments: string[] = [];
-    if (colors[0]) assignments.push(`background/primary areas: ${colors[0]}`);
-    if (colors[1]) assignments.push(`accents and highlights: ${colors[1]}`);
-    if (colors[2]) assignments.push(`secondary elements: ${colors[2]}`);
-    if (colors[3]) assignments.push(`text color: ${colors[3]}`);
-    if (colors[4]) assignments.push(`subtle details: ${colors[4]}`);
-
-    parts.push(
-      `MANDATORY COLOR PALETTE: The dominant colors of this image MUST be: ${colors.join(", ")}. ` +
-      `Replace the original color scheme with: ${assignments.join("; ")}. ` +
-      `Ensure text maintains high contrast and readability against the new background colors.`
-    );
+    parts.push(`Color palette: ${body.color_palette.join(", ")}. Apply to backgrounds, accents, and decorative elements.`);
   }
 
-  // Text quality directive
-  parts.push(
-    "CRITICAL TEXT RENDERING: All text in the image MUST be perfectly legible, crisp, and sharp. " +
-    "Render text with clean edges, proper kerning, and high contrast against backgrounds. " +
-    "Small text must be just as readable as large text. No blurry, distorted, warped, or melted text. " +
-    "Every letter must be correctly formed — no missing characters, no extra characters, no misspellings."
-  );
-
-  // Extra instructions
   if (body.extra_instructions && body.extra_instructions.trim()) {
-    parts.push(`ADDITIONAL INSTRUCTIONS: ${body.extra_instructions.trim()}`);
+    parts.push(body.extra_instructions.trim());
   }
 
-  // Quality directive
-  parts.push(
-    "OUTPUT QUALITY: Professional advertisement grade. Sharp details, proper contrast, " +
-    "clean edges on all elements, photorealistic where applicable. 8K quality rendering."
-  );
+  parts.push("All text must be perfectly legible with clean edges and proper kerning. Professional advertisement quality, sharp details.");
 
   return parts.join("\n\n");
 }
@@ -129,8 +139,8 @@ function buildPrompt(body: GenerateBody): string {
 
 const REPLICATE_OWNER = "black-forest-labs";
 const REPLICATE_MODEL = "flux-kontext-pro";
-const REPLICATE_TIMEOUT_MS = 120_000;
-const REPLICATE_POLL_MS = 1_500;
+const REPLICATE_TIMEOUT_MS = 300_000; // 5 minutes
+const REPLICATE_POLL_MS = 2_000;
 
 function pickOutputUrl(raw: Record<string, unknown>): string | null {
   const output = raw?.output;
@@ -156,7 +166,7 @@ async function generateWithFluxKontext(
   };
 
   const createUrl = `https://api.replicate.com/v1/models/${REPLICATE_OWNER}/${REPLICATE_MODEL}/predictions`;
-  console.log(`[generate-creative:flux] Calling Replicate: ${createUrl}`);
+  console.log(`[generate-creative:flux] Prompt (${prompt.length} chars): ${prompt.slice(0, 200)}`);
 
   const createResp = await fetch(createUrl, {
     method: "POST",
@@ -199,7 +209,7 @@ async function generateWithFluxKontext(
   }
 
   if (String(last?.status ?? "") !== "succeeded") {
-    throw new Error("replicate_timeout: Generation timed out after 120s.");
+    throw new Error(`replicate_timeout: Generation timed out after ${Math.round(REPLICATE_TIMEOUT_MS / 1000)}s.`);
   }
 
   const outputUrl = pickOutputUrl(last);
@@ -216,26 +226,56 @@ async function generateWithFluxKontext(
 
 const IMAGEN4_MODEL = "imagen-4.0-generate-001";
 
+function stripBase64Prefix(b64: string): string {
+  return b64.replace(/^data:image\/\w+;base64,/, "");
+}
+
 async function generateWithImagen4(
   prompt: string,
   refImageBase64: string | null,
+  subjectImageBase64: string | null,
   aspectRatio: string,
   apiKey: string,
 ): Promise<{ image: string; model: string; duration_ms: number }> {
   const startedAt = Date.now();
 
-  // Imagen 4 via Gemini generateImages endpoint (REST predict)
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN4_MODEL}:predict?key=${encodeURIComponent(apiKey)}`;
+  console.log(`[generate-creative:imagen4] Calling: ${url.split("?")[0]}`);
 
-  console.log(`[generate-creative:imagen4] Calling Imagen 4: ${url.split("?")[0]}`);
-
-  // Map aspect ratio to Imagen 4 supported values
   const imagen4AR: Record<string, string> = {
     "1:1": "1:1", "4:5": "3:4", "9:16": "9:16", "16:9": "16:9",
   };
 
-  const requestBody: Record<string, unknown> = {
-    instances: [{ prompt }],
+  // Build instance with reference images
+  // deno-lint-ignore no-explicit-any
+  const instance: Record<string, any> = { prompt };
+
+  const referenceImages: Array<Record<string, unknown>> = [];
+
+  // Style reference (the creative being recreated)
+  if (refImageBase64) {
+    referenceImages.push({
+      referenceImage: { bytesBase64Encoded: stripBase64Prefix(refImageBase64) },
+      referenceId: 1,
+      referenceType: "REFERENCE_TYPE_STYLE",
+    });
+  }
+
+  // Subject reference (product/person to swap in)
+  if (subjectImageBase64) {
+    referenceImages.push({
+      referenceImage: { bytesBase64Encoded: stripBase64Prefix(subjectImageBase64) },
+      referenceId: 2,
+      referenceType: "REFERENCE_TYPE_SUBJECT",
+    });
+  }
+
+  if (referenceImages.length > 0) {
+    instance.referenceImages = referenceImages;
+  }
+
+  const requestBody = {
+    instances: [instance],
     parameters: {
       sampleCount: 1,
       aspectRatio: imagen4AR[aspectRatio] || "1:1",
@@ -244,14 +284,7 @@ async function generateWithImagen4(
     },
   };
 
-  // If reference image is available, include it for style guidance
-  if (refImageBase64) {
-    const clean = refImageBase64.replace(/^data:image\/\w+;base64,/, "");
-    (requestBody.instances as Record<string, unknown>[])[0].referenceImages = [{
-      referenceImage: { bytesBase64Encoded: clean },
-      referenceType: "REFERENCE_TYPE_STYLE",
-    }];
-  }
+  console.log(`[generate-creative:imagen4] References: ${referenceImages.length} | AR: ${imagen4AR[aspectRatio] || "1:1"} | Prompt: ${prompt.length} chars`);
 
   const response = await fetch(url, {
     method: "POST",
@@ -264,7 +297,7 @@ async function generateWithImagen4(
 
   if (!response.ok) {
     const errText = await response.text();
-    console.error(`[generate-creative:imagen4] HTTP ${response.status}:`, errText.slice(0, 300));
+    console.error(`[generate-creative:imagen4] HTTP ${response.status}:`, errText.slice(0, 400));
     throw new Error(`imagen4_http_${response.status}: ${errText.slice(0, 300)}`);
   }
 
@@ -278,7 +311,6 @@ async function generateWithImagen4(
     throw new Error("imagen4_no_image: Imagen 4 returned no image data.");
   }
 
-  // Return as data URI
   return {
     image: `data:image/png;base64,${b64}`,
     model: IMAGEN4_MODEL,
@@ -312,7 +344,6 @@ Deno.serve(async (req: Request) => {
     }
 
     const selectedModel = body.model || "flux-kontext";
-    const prompt = buildPrompt(body);
     const aspectRatio = pickAspectRatio(body.format);
 
     // Ensure reference_image is a data URI
@@ -320,20 +351,23 @@ Deno.serve(async (req: Request) => {
       ? body.reference_image
       : `data:image/png;base64,${body.reference_image}`;
 
+    // Build model-specific prompt
+    const prompt = selectedModel === "imagen4"
+      ? buildImagen4Prompt(body)
+      : buildFluxPrompt(body);
+
     console.log(`[generate-creative] Model: ${selectedModel} | Variation: ${body.variation ?? 30} | Format: ${aspectRatio} | Prompt: ${prompt.length} chars`);
-    console.log(`[generate-creative] Texts: ${body.text_replacements?.length ?? 0} | Subject: ${body.subject_image ? "yes" : "no"} | Colors: ${body.color_palette?.length ?? 0}`);
 
     let result: { image: string; model: string; duration_ms: number };
 
     if (selectedModel === "imagen4") {
-      // ── Imagen 4 via Gemini API ──
       const apiKey = String(Deno.env.get("GEMINI_API_KEY") ?? "").trim();
       if (!apiKey) {
         return json({ error: "missing_api_key", details: "GEMINI_API_KEY not configured for Imagen 4." }, 500, cors);
       }
-      result = await generateWithImagen4(prompt, refImage, aspectRatio, apiKey);
+      const subjectImage = body.subject_image || null;
+      result = await generateWithImagen4(prompt, refImage, subjectImage, aspectRatio, apiKey);
     } else {
-      // ── Flux Kontext Pro (default) ──
       const token = String(Deno.env.get("REPLICATE_API_TOKEN") ?? "").trim();
       if (!token) {
         return json({ error: "missing_api_token", details: "REPLICATE_API_TOKEN not configured." }, 500, cors);
