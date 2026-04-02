@@ -268,7 +268,8 @@ async function callGenerate(body, label) {
 }
 
 function renderResultCard(data, label) {
-  return '<div class="result-card"><h4>' + label + '</h4>' +
+  const multiTag = data.multi_image ? ' <span style="background:#7C3AED;color:#fff;padding:2px 6px;border-radius:4px;font-size:10px">MULTI-IMAGE</span>' : '';
+  return '<div class="result-card"><h4>' + label + multiTag + '</h4>' +
     '<img src="' + data.image + '" class="result-img">' +
     '<div class="meta">' + data.model + ' &middot; ' + Math.round(data.duration_ms / 1000) + 's &middot; ' + data.format + '</div></div>';
 }
@@ -277,15 +278,17 @@ async function generateCreative() {
   if (!images.ref) return alert('Upload a reference image first');
   const btn = document.getElementById('btn-generate');
   const status = document.getElementById('generate-status');
-  const modelName = document.getElementById('model-select').selectedOptions[0].text;
+  const modelSel = document.getElementById('model-select').value;
+  const hasSubject = Boolean(images.sub);
+  const modelLabel = modelSel === 'imagen4' ? 'Imagen 4' : (hasSubject ? 'Multi-Image Kontext Pro (subject swap)' : 'Flux Kontext Pro');
   btn.disabled = true;
-  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ' + modelName + '...</div>';
+  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ' + modelLabel + '...</div>';
 
   try {
     const body = collectBody();
     const data = await callGenerate(body, modelName);
 
-    document.getElementById('result-area').innerHTML = renderResultCard(data, modelName);
+    document.getElementById('result-area').innerHTML = renderResultCard(data, modelLabel);
     document.getElementById('prompt-used').textContent = data.prompt_used || '—';
     status.innerHTML = '<span style="color:#10b981;font-size:12px">&#10003; Geração concluída</span>';
   } catch (err) {
