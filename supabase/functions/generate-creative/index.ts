@@ -1,7 +1,7 @@
 /// <reference lib="deno.ns" />
 // supabase/functions/generate-creative/index.ts
-// CREATYNG — Engine v2: Generate a creative using Flux Kontext Pro via Replicate.
-// Takes a reference image + optional subject + text replacements + variation level.
+// CREATYNG — Engine v2: Multi-model creative generation.
+// Supports: Flux Kontext Pro (Replicate) + Imagen 4 (Gemini API).
 
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -16,10 +16,7 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-const REPLICATE_OWNER = "black-forest-labs";
-const REPLICATE_MODEL = "flux-kontext-pro";
-const REPLICATE_TIMEOUT_MS = 120_000;
-const REPLICATE_POLL_MS = 1_500;
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 interface TextReplacement {
   original: string;
@@ -34,14 +31,14 @@ interface GenerateBody {
   variation?: number;
   extra_instructions?: string;
   format?: string;
+  model?: "flux-kontext" | "imagen4";
 }
+
+// ── Prompt builder ─────────────────────────────────────────────────────────────
 
 function pickAspectRatio(format: string | undefined): string {
   const map: Record<string, string> = {
-    "1:1": "1:1",
-    "4:5": "4:5",
-    "9:16": "9:16",
-    "16:9": "16:9",
+    "1:1": "1:1", "4:5": "4:5", "9:16": "9:16", "16:9": "16:9",
   };
   return map[format ?? ""] || "1:1";
 }
@@ -54,12 +51,13 @@ function buildPrompt(body: GenerateBody): string {
   if (variation <= 20) {
     parts.push(
       "Recreate this image exactly, maintaining the same layout, typography style, colors, composition, and overall visual treatment. " +
-      "Preserve the exact text positioning, font styles, decorative elements, and color scheme."
+      "Preserve the exact text positioning, font styles, decorative elements, and color scheme. " +
+      "The output should be nearly indistinguishable from the original in terms of design and structure."
     );
   } else if (variation <= 60) {
     parts.push(
       "Create a similar image inspired by this reference, keeping the overall style, layout structure, and visual language but with creative freedom. " +
-      "Maintain the same mood and professional quality."
+      "Maintain the same mood, professional quality, and general composition."
     );
   } else {
     parts.push(
@@ -68,40 +66,71 @@ function buildPrompt(body: GenerateBody): string {
     );
   }
 
-  // Subject replacement
+  // Subject replacement — explicit and directive
   if (body.subject_image) {
     parts.push(
-      "Replace the main person/product in the image with the provided subject photo. " +
-      "Preserve the subject's exact appearance, pose integration, and natural lighting match with the scene."
+      "SUBJECT SWAP: Edit this advertisement image. Replace the main product/person visible in the image with the subject from the provided reference photo. " +
+      "Keep everything else IDENTICAL: same layout, same text positions, same typography, same colors, same decorative elements, same background. " +
+      "The new subject must be integrated naturally with matching lighting, shadows, and scale."
     );
   }
 
-  // Text replacements
+  // Text replacements — per-text specificity
   if (body.text_replacements && body.text_replacements.length > 0) {
-    const replacements = body.text_replacements
-      .filter(r => r.original && r.replacement)
-      .map(r => `"${r.original}" → "${r.replacement}"`)
-      .join("; ");
-    if (replacements) {
-      parts.push(`Change the following texts in the image: ${replacements}. Maintain the same font style, size, and position for each replaced text.`);
+    const validReplacements = body.text_replacements.filter(r => r.original && r.replacement);
+    if (validReplacements.length > 0) {
+      parts.push("TEXT CHANGES (apply these exact replacements, keep same font style, size, weight, and position for each):");
+      for (const r of validReplacements) {
+        parts.push(`• Change "${r.original}" → "${r.replacement}"`);
+      }
     }
   }
 
-  // Color palette
+  // Color palette — mandatory and specific
   if (body.color_palette && body.color_palette.length > 0) {
-    parts.push(`Adjust the color palette to use these colors: ${body.color_palette.join(", ")}. Apply them to backgrounds, accents, and decorative elements while keeping text readable.`);
+    const colors = body.color_palette;
+    const assignments: string[] = [];
+    if (colors[0]) assignments.push(`background/primary areas: ${colors[0]}`);
+    if (colors[1]) assignments.push(`accents and highlights: ${colors[1]}`);
+    if (colors[2]) assignments.push(`secondary elements: ${colors[2]}`);
+    if (colors[3]) assignments.push(`text color: ${colors[3]}`);
+    if (colors[4]) assignments.push(`subtle details: ${colors[4]}`);
+
+    parts.push(
+      `MANDATORY COLOR PALETTE: The dominant colors of this image MUST be: ${colors.join(", ")}. ` +
+      `Replace the original color scheme with: ${assignments.join("; ")}. ` +
+      `Ensure text maintains high contrast and readability against the new background colors.`
+    );
   }
+
+  // Text quality directive
+  parts.push(
+    "CRITICAL TEXT RENDERING: All text in the image MUST be perfectly legible, crisp, and sharp. " +
+    "Render text with clean edges, proper kerning, and high contrast against backgrounds. " +
+    "Small text must be just as readable as large text. No blurry, distorted, warped, or melted text. " +
+    "Every letter must be correctly formed — no missing characters, no extra characters, no misspellings."
+  );
 
   // Extra instructions
   if (body.extra_instructions && body.extra_instructions.trim()) {
-    parts.push(body.extra_instructions.trim());
+    parts.push(`ADDITIONAL INSTRUCTIONS: ${body.extra_instructions.trim()}`);
   }
 
   // Quality directive
-  parts.push("Output must be high quality, professional advertisement grade, sharp details, proper contrast.");
+  parts.push(
+    "OUTPUT QUALITY: Professional advertisement grade. Sharp details, proper contrast, " +
+    "clean edges on all elements, photorealistic where applicable. 8K quality rendering."
+  );
 
   return parts.join("\n\n");
 }
+
+// ── Flux Kontext Pro (Replicate) ───────────────────────────────────────────────
+
+const REPLICATE_OWNER = "black-forest-labs";
+const REPLICATE_MODEL = "flux-kontext-pro";
+const REPLICATE_TIMEOUT_MS = 120_000;
+const REPLICATE_POLL_MS = 1_500;
 
 function pickOutputUrl(raw: Record<string, unknown>): string | null {
   const output = raw?.output;
@@ -113,6 +142,151 @@ function pickOutputUrl(raw: Record<string, unknown>): string | null {
   }
   return null;
 }
+
+async function generateWithFluxKontext(
+  prompt: string,
+  refImage: string,
+  aspectRatio: string,
+  token: string,
+): Promise<{ image: string; model: string; duration_ms: number }> {
+  const replicateInput: Record<string, unknown> = {
+    prompt,
+    input_image: refImage,
+    aspect_ratio: aspectRatio,
+  };
+
+  const createUrl = `https://api.replicate.com/v1/models/${REPLICATE_OWNER}/${REPLICATE_MODEL}/predictions`;
+  console.log(`[generate-creative:flux] Calling Replicate: ${createUrl}`);
+
+  const createResp = await fetch(createUrl, {
+    method: "POST",
+    headers: {
+      authorization: `Token ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ input: replicateInput }),
+  });
+
+  const createText = await createResp.text();
+  if (!createResp.ok) {
+    throw new Error(`replicate_create_failed (${createResp.status}): ${createText.slice(0, 300)}`);
+  }
+
+  let last: Record<string, unknown>;
+  try {
+    last = JSON.parse(createText) as Record<string, unknown>;
+  } catch {
+    throw new Error("replicate_invalid_response: Could not parse Replicate response.");
+  }
+
+  const pollUrl = String((last.urls as Record<string, string>)?.get ?? "").trim();
+  if (!pollUrl) throw new Error("replicate_no_poll_url");
+
+  console.log(`[generate-creative:flux] Polling: ${pollUrl}`);
+
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < REPLICATE_TIMEOUT_MS) {
+    const status = String(last?.status ?? "");
+    if (status === "succeeded") break;
+    if (status === "failed" || status === "canceled") {
+      throw new Error(`replicate_${status}: ${String(last?.error ?? "Unknown error").slice(0, 300)}`);
+    }
+    await sleep(REPLICATE_POLL_MS);
+    const pollResp = await fetch(pollUrl, { headers: { authorization: `Token ${token}` } });
+    if (!pollResp.ok) continue;
+    const pollText = await pollResp.text();
+    try { last = JSON.parse(pollText) as Record<string, unknown>; } catch { continue; }
+  }
+
+  if (String(last?.status ?? "") !== "succeeded") {
+    throw new Error("replicate_timeout: Generation timed out after 120s.");
+  }
+
+  const outputUrl = pickOutputUrl(last);
+  if (!outputUrl) throw new Error("replicate_no_output: Replicate returned no output image.");
+
+  return {
+    image: outputUrl,
+    model: `${REPLICATE_OWNER}/${REPLICATE_MODEL}`,
+    duration_ms: Date.now() - startedAt,
+  };
+}
+
+// ── Imagen 4 (Gemini API) ──────────────────────────────────────────────────────
+
+const IMAGEN4_MODEL = "imagen-4.0-generate-001";
+
+async function generateWithImagen4(
+  prompt: string,
+  refImageBase64: string | null,
+  aspectRatio: string,
+  apiKey: string,
+): Promise<{ image: string; model: string; duration_ms: number }> {
+  const startedAt = Date.now();
+
+  // Imagen 4 via Gemini generateImages endpoint (REST predict)
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${IMAGEN4_MODEL}:predict?key=${encodeURIComponent(apiKey)}`;
+
+  console.log(`[generate-creative:imagen4] Calling Imagen 4: ${url.split("?")[0]}`);
+
+  // Map aspect ratio to Imagen 4 supported values
+  const imagen4AR: Record<string, string> = {
+    "1:1": "1:1", "4:5": "3:4", "9:16": "9:16", "16:9": "16:9",
+  };
+
+  const requestBody: Record<string, unknown> = {
+    instances: [{ prompt }],
+    parameters: {
+      sampleCount: 1,
+      aspectRatio: imagen4AR[aspectRatio] || "1:1",
+      safetyFilterLevel: "block_only_high",
+      personGeneration: "allow_adult",
+    },
+  };
+
+  // If reference image is available, include it for style guidance
+  if (refImageBase64) {
+    const clean = refImageBase64.replace(/^data:image\/\w+;base64,/, "");
+    (requestBody.instances as Record<string, unknown>[])[0].referenceImages = [{
+      referenceImage: { bytesBase64Encoded: clean },
+      referenceType: "REFERENCE_TYPE_STYLE",
+    }];
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
+    body: JSON.stringify(requestBody),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    console.error(`[generate-creative:imagen4] HTTP ${response.status}:`, errText.slice(0, 300));
+    throw new Error(`imagen4_http_${response.status}: ${errText.slice(0, 300)}`);
+  }
+
+  const data = await response.json();
+  const b64 = data?.predictions?.[0]?.bytesBase64Encoded
+    || data?.predictions?.[0]?.image?.bytesBase64Encoded
+    || null;
+
+  if (!b64) {
+    console.error(`[generate-creative:imagen4] No image in response:`, JSON.stringify(data).slice(0, 300));
+    throw new Error("imagen4_no_image: Imagen 4 returned no image data.");
+  }
+
+  // Return as data URI
+  return {
+    image: `data:image/png;base64,${b64}`,
+    model: IMAGEN4_MODEL,
+    duration_ms: Date.now() - startedAt,
+  };
+}
+
+// ── Main handler ───────────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
@@ -126,11 +300,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const token = String(Deno.env.get("REPLICATE_API_TOKEN") ?? "").trim();
-    if (!token) {
-      return json({ error: "missing_api_token", details: "REPLICATE_API_TOKEN not configured." }, 500, cors);
-    }
-
     let body: GenerateBody;
     try {
       body = await req.json() as GenerateBody;
@@ -142,119 +311,49 @@ Deno.serve(async (req: Request) => {
       return json({ error: "missing_reference", details: "Field 'reference_image' (base64 or data URI) is required." }, 400, cors);
     }
 
+    const selectedModel = body.model || "flux-kontext";
+    const prompt = buildPrompt(body);
+    const aspectRatio = pickAspectRatio(body.format);
+
     // Ensure reference_image is a data URI
     const refImage = body.reference_image.startsWith("data:")
       ? body.reference_image
       : `data:image/png;base64,${body.reference_image}`;
 
-    const prompt = buildPrompt(body);
-    const aspectRatio = pickAspectRatio(body.format);
+    console.log(`[generate-creative] Model: ${selectedModel} | Variation: ${body.variation ?? 30} | Format: ${aspectRatio} | Prompt: ${prompt.length} chars`);
+    console.log(`[generate-creative] Texts: ${body.text_replacements?.length ?? 0} | Subject: ${body.subject_image ? "yes" : "no"} | Colors: ${body.color_palette?.length ?? 0}`);
 
-    console.log(`[generate-creative] Variation: ${body.variation ?? 30} | Format: ${aspectRatio} | Prompt length: ${prompt.length}`);
-    console.log(`[generate-creative] Text replacements: ${body.text_replacements?.length ?? 0} | Subject: ${body.subject_image ? "yes" : "no"} | Colors: ${body.color_palette?.length ?? 0}`);
+    let result: { image: string; model: string; duration_ms: number };
 
-    // Build Replicate input
-    const replicateInput: Record<string, unknown> = {
-      prompt,
-      input_image: refImage,
-      aspect_ratio: aspectRatio,
-    };
-
-    // If subject_image provided, include as prompt instruction (Kontext doesn't have a separate subject input)
-    // The subject is referenced in the prompt; Kontext handles image editing based on the input_image + prompt.
-    // For true subject swaps, the subject_image needs to be passed as a separate reference.
-    // Kontext Pro accepts input_image as the base — we pass the reference as input and describe the subject swap in prompt.
-
-    const createUrl = `https://api.replicate.com/v1/models/${REPLICATE_OWNER}/${REPLICATE_MODEL}/predictions`;
-
-    console.log(`[generate-creative] Calling Replicate: ${createUrl}`);
-
-    const createResp = await fetch(createUrl, {
-      method: "POST",
-      headers: {
-        authorization: `Token ${token}`,
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({ input: replicateInput }),
-    });
-
-    const createText = await createResp.text();
-    if (!createResp.ok) {
-      console.error(`[generate-creative] Replicate create failed (${createResp.status}):`, createText.slice(0, 300));
-      return json({
-        error: "replicate_create_failed",
-        details: createText.slice(0, 300),
-        status: createResp.status,
-      }, 502, cors);
-    }
-
-    let last: Record<string, unknown>;
-    try {
-      last = JSON.parse(createText) as Record<string, unknown>;
-    } catch {
-      return json({ error: "replicate_invalid_response", details: "Could not parse Replicate response." }, 502, cors);
-    }
-
-    const pollUrl = String((last.urls as Record<string, string>)?.get ?? "").trim();
-    if (!pollUrl) {
-      return json({ error: "replicate_no_poll_url", details: "Replicate did not return a polling URL." }, 502, cors);
-    }
-
-    console.log(`[generate-creative] Prediction created. Polling: ${pollUrl}`);
-
-    // Poll for completion
-    const startedAt = Date.now();
-    while (Date.now() - startedAt < REPLICATE_TIMEOUT_MS) {
-      const status = String(last?.status ?? "");
-
-      if (status === "succeeded") break;
-      if (status === "failed" || status === "canceled") {
-        const errMsg = String(last?.error ?? "Unknown error").slice(0, 300);
-        console.error(`[generate-creative] Replicate ${status}:`, errMsg);
-        return json({ error: `replicate_${status}`, details: errMsg }, 502, cors);
+    if (selectedModel === "imagen4") {
+      // ── Imagen 4 via Gemini API ──
+      const apiKey = String(Deno.env.get("GEMINI_API_KEY") ?? "").trim();
+      if (!apiKey) {
+        return json({ error: "missing_api_key", details: "GEMINI_API_KEY not configured for Imagen 4." }, 500, cors);
       }
-
-      await sleep(REPLICATE_POLL_MS);
-
-      const pollResp = await fetch(pollUrl, {
-        headers: { authorization: `Token ${token}` },
-      });
-      if (!pollResp.ok) {
-        const pollErr = await pollResp.text();
-        console.error(`[generate-creative] Poll failed (${pollResp.status}):`, pollErr.slice(0, 200));
-        continue;
+      result = await generateWithImagen4(prompt, refImage, aspectRatio, apiKey);
+    } else {
+      // ── Flux Kontext Pro (default) ──
+      const token = String(Deno.env.get("REPLICATE_API_TOKEN") ?? "").trim();
+      if (!token) {
+        return json({ error: "missing_api_token", details: "REPLICATE_API_TOKEN not configured." }, 500, cors);
       }
-      const pollText = await pollResp.text();
-      try {
-        last = JSON.parse(pollText) as Record<string, unknown>;
-      } catch {
-        continue;
-      }
+      result = await generateWithFluxKontext(prompt, refImage, aspectRatio, token);
     }
 
-    if (String(last?.status ?? "") !== "succeeded") {
-      console.error("[generate-creative] Replicate timeout after", Math.round((Date.now() - startedAt) / 1000), "s");
-      return json({ error: "replicate_timeout", details: "Generation timed out after 120s." }, 504, cors);
-    }
-
-    const outputUrl = pickOutputUrl(last);
-    if (!outputUrl) {
-      return json({ error: "replicate_no_output", details: "Replicate returned no output image." }, 502, cors);
-    }
-
-    const durationMs = Date.now() - startedAt;
-    console.log(`[generate-creative] Success in ${Math.round(durationMs / 1000)}s — output: ${outputUrl.slice(0, 80)}...`);
+    console.log(`[generate-creative] Success — ${result.model} in ${Math.round(result.duration_ms / 1000)}s`);
 
     return json({
-      image: outputUrl,
+      image: result.image,
       prompt_used: prompt,
-      model: `${REPLICATE_OWNER}/${REPLICATE_MODEL}`,
-      duration_ms: durationMs,
+      model: result.model,
+      duration_ms: result.duration_ms,
       variation: body.variation ?? 30,
       format: aspectRatio,
     }, 200, cors);
   } catch (err) {
-    console.error("[generate-creative] Unexpected error:", err);
-    return json({ error: "internal_error", details: String((err as Error)?.message ?? err) }, 500, cors);
+    const msg = String((err as Error)?.message ?? err);
+    console.error("[generate-creative] Error:", msg);
+    return json({ error: "generation_failed", details: msg.slice(0, 500) }, 502, cors);
   }
 });

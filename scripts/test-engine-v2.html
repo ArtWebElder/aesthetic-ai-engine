@@ -23,6 +23,8 @@
   .btn-primary { background: #ff713d; color: #fff; }
   .btn-primary:hover:not(:disabled) { opacity: 0.85; }
   .btn-secondary { background: #2a2a35; color: #ccc; }
+  .btn-compare { background: #7C3AED; color: #fff; }
+  .btn-compare:hover:not(:disabled) { opacity: 0.85; }
   .btn-danger { background: #dc2626; color: #fff; font-size: 11px; padding: 4px 8px; }
   input[type="text"], textarea, select { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid #333; background: #12121a; color: #e0e0e0; font-size: 13px; font-family: inherit; }
   textarea { resize: vertical; min-height: 60px; }
@@ -36,17 +38,22 @@
   .slider-row span { font-size: 13px; color: #ff713d; font-weight: 700; min-width: 36px; }
   pre { background: #12121a; border: 1px solid #2a2a35; border-radius: 8px; padding: 12px; font-size: 11px; overflow: auto; max-height: 400px; white-space: pre-wrap; word-break: break-all; color: #8f8; }
   .result-img { width: 100%; border-radius: 8px; margin-top: 8px; }
+  .result-card { background: #12121a; border: 1px solid #2a2a35; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .result-card h4 { font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+  .result-card .meta { font-size: 11px; color: #666; margin-top: 6px; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .loading { display: flex; align-items: center; gap: 8px; color: #ff713d; font-size: 13px; margin: 12px 0; }
   .loading .spin { width: 16px; height: 16px; border: 2px solid #ff713d; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 4px; }
   .error { color: #f87171; background: #1c0a0a; border: 1px solid #7f1d1d; border-radius: 8px; padding: 10px; font-size: 12px; margin: 8px 0; }
+  .model-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .model-row select { width: auto; min-width: 180px; }
 </style>
 </head>
 <body>
 
 <h1>Creatyng Engine v2</h1>
-<h2>Test Page — analyze-creative + generate-creative</h2>
+<h2>Test Page — analyze-creative + generate-creative (multi-model)</h2>
 
 <div class="grid">
   <!-- LEFT PANEL -->
@@ -109,8 +116,17 @@
     <h3>6. Instruções Extras</h3>
     <textarea id="extra" placeholder="Ex: Usar tons mais quentes, adicionar efeito bokeh..."></textarea>
 
-    <div style="margin-top:16px">
-      <button class="btn-primary" id="btn-generate" onclick="generateCreative()" disabled style="width:100%;padding:14px">Gerar Criativo</button>
+    <h3>7. Modelo</h3>
+    <div class="model-row">
+      <select id="model-select">
+        <option value="flux-kontext">Flux Kontext Pro (Replicate)</option>
+        <option value="imagen4">Imagen 4 (Google)</option>
+      </select>
+    </div>
+
+    <div style="margin-top:16px; display:flex; gap:8px;">
+      <button class="btn-primary" id="btn-generate" onclick="generateCreative()" disabled style="flex:1;padding:14px">Gerar Criativo</button>
+      <button class="btn-compare" id="btn-compare" onclick="generateBoth()" disabled style="padding:14px;white-space:nowrap">Comparar Ambos</button>
     </div>
     <div id="generate-status"></div>
   </div>
@@ -145,8 +161,10 @@ function handleUpload(input, key) {
   reader.onload = () => {
     images[key] = reader.result;
     const zone = document.getElementById('zone-' + key);
-    zone.innerHTML = `<img src="${reader.result}"><input type="file" accept="image/*" onchange="handleUpload(this, '${key}')">`;
-    if (key === 'ref') document.getElementById('btn-analyze').disabled = false;
+    zone.innerHTML = '<img src="' + reader.result + '"><input type="file" accept="image/*" onchange="handleUpload(this, \'' + key + '\')">';
+    if (key === 'ref') {
+      document.getElementById('btn-analyze').disabled = false;
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -156,12 +174,47 @@ function addTextRow(type, content) {
   if (list.querySelector('p')) list.innerHTML = '';
   const row = document.createElement('div');
   row.className = 'text-row';
-  row.innerHTML = `
-    <select><option value="title"${type==='title'?' selected':''}>title</option><option value="subtitle"${type==='subtitle'?' selected':''}>subtitle</option><option value="label"${type==='label'?' selected':''}>label</option><option value="cta"${type==='cta'?' selected':''}>cta</option><option value="price"${type==='price'?' selected':''}>price</option><option value="contact"${type==='contact'?' selected':''}>contact</option></select>
-    <input type="text" value="${(content||'').replace(/"/g,'&quot;')}">
-    <button class="btn-danger" onclick="this.parentElement.remove()">✕</button>
-  `;
+  const safeContent = (content || '').replace(/"/g, '&quot;');
+  row.innerHTML =
+    '<select>' +
+    '<option value="title"' + (type === 'title' ? ' selected' : '') + '>title</option>' +
+    '<option value="subtitle"' + (type === 'subtitle' ? ' selected' : '') + '>subtitle</option>' +
+    '<option value="label"' + (type === 'label' ? ' selected' : '') + '>label</option>' +
+    '<option value="cta"' + (type === 'cta' ? ' selected' : '') + '>cta</option>' +
+    '<option value="price"' + (type === 'price' ? ' selected' : '') + '>price</option>' +
+    '<option value="contact"' + (type === 'contact' ? ' selected' : '') + '>contact</option>' +
+    '</select>' +
+    '<input type="text" value="' + safeContent + '">' +
+    '<button class="btn-danger" onclick="this.parentElement.remove()">&#10005;</button>';
   list.appendChild(row);
+}
+
+function collectBody(modelOverride) {
+  const textRows = document.querySelectorAll('#texts-list .text-row');
+  const text_replacements = [];
+  textRows.forEach(row => {
+    const orig = row.querySelector('input[type="text"]').value;
+    if (orig.trim()) {
+      text_replacements.push({ original: orig, replacement: orig });
+    }
+  });
+
+  const colorInputs = document.querySelectorAll('#colors-row input[type="color"]');
+  const color_palette = Array.from(colorInputs).map(i => i.value);
+
+  const body = {
+    reference_image: images.ref,
+    variation: parseInt(document.getElementById('variation').value),
+    format: document.getElementById('format').value,
+    model: modelOverride || document.getElementById('model-select').value,
+    color_palette: color_palette,
+    extra_instructions: document.getElementById('extra').value || undefined,
+  };
+
+  if (text_replacements.length > 0) body.text_replacements = text_replacements;
+  if (images.sub) body.subject_image = images.sub;
+
+  return body;
 }
 
 async function analyzeReference() {
@@ -183,20 +236,19 @@ async function analyzeReference() {
     document.getElementById('analysis-json').textContent = JSON.stringify(data, null, 2);
 
     const analysis = data.analysis;
-    // Populate texts
     const list = document.getElementById('texts-list');
     list.innerHTML = '';
     if (Array.isArray(analysis.texts)) {
       analysis.texts.forEach(t => addTextRow(t.type, t.content));
     }
-    // Populate colors
     if (Array.isArray(analysis.colors)) {
       const colorInputs = document.querySelectorAll('#colors-row input');
       analysis.colors.slice(0, 5).forEach((c, i) => { if (colorInputs[i]) colorInputs[i].value = c; });
     }
 
-    status.innerHTML = '<span style="color:#10b981;font-size:12px">✓ Análise concluída (' + (data.model || '?') + ')</span>';
+    status.innerHTML = '<span style="color:#10b981;font-size:12px">&#10003; Análise concluída (' + (data.model || '?') + ')</span>';
     document.getElementById('btn-generate').disabled = false;
+    document.getElementById('btn-compare').disabled = false;
   } catch (err) {
     status.innerHTML = '<div class="error">' + err.message + '</div>';
   } finally {
@@ -204,57 +256,85 @@ async function analyzeReference() {
   }
 }
 
+async function callGenerate(body, label) {
+  const resp = await fetch(API_BASE + '/generate-creative', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error('[' + label + '] ' + (data.details || data.error || 'Failed'));
+  return data;
+}
+
+function renderResultCard(data, label) {
+  return '<div class="result-card"><h4>' + label + '</h4>' +
+    '<img src="' + data.image + '" class="result-img">' +
+    '<div class="meta">' + data.model + ' &middot; ' + Math.round(data.duration_ms / 1000) + 's &middot; ' + data.format + '</div></div>';
+}
+
 async function generateCreative() {
   if (!images.ref) return alert('Upload a reference image first');
   const btn = document.getElementById('btn-generate');
   const status = document.getElementById('generate-status');
+  const modelName = document.getElementById('model-select').selectedOptions[0].text;
   btn.disabled = true;
-  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com Flux Kontext Pro... (pode levar até 2 min)</div>';
-
-  // Collect text replacements
-  const textRows = document.querySelectorAll('#texts-list .text-row');
-  const text_replacements = [];
-  textRows.forEach(row => {
-    const orig = row.querySelector('input[type="text"]').value;
-    if (orig.trim()) {
-      text_replacements.push({ original: orig, replacement: orig });
-    }
-  });
-
-  // Collect colors
-  const colorInputs = document.querySelectorAll('#colors-row input[type="color"]');
-  const color_palette = Array.from(colorInputs).map(i => i.value);
-
-  const body = {
-    reference_image: images.ref,
-    variation: parseInt(document.getElementById('variation').value),
-    format: document.getElementById('format').value,
-    color_palette,
-    extra_instructions: document.getElementById('extra').value || undefined,
-  };
-
-  if (text_replacements.length > 0) body.text_replacements = text_replacements;
-  if (images.sub) body.subject_image = images.sub;
+  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ' + modelName + '...</div>';
 
   try {
-    const resp = await fetch(API_BASE + '/generate-creative', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    const data = await resp.json();
-    if (!resp.ok) throw new Error(data.details || data.error || 'Failed');
+    const body = collectBody();
+    const data = await callGenerate(body, modelName);
 
-    const resultArea = document.getElementById('result-area');
-    resultArea.innerHTML = `<img src="${data.image}" class="result-img"><p style="font-size:11px;color:#666;margin-top:6px">${data.model} · ${Math.round(data.duration_ms/1000)}s · ${data.format}</p>`;
+    document.getElementById('result-area').innerHTML = renderResultCard(data, modelName);
     document.getElementById('prompt-used').textContent = data.prompt_used || '—';
-
-    status.innerHTML = '<span style="color:#10b981;font-size:12px">✓ Geração concluída</span>';
+    status.innerHTML = '<span style="color:#10b981;font-size:12px">&#10003; Geração concluída</span>';
   } catch (err) {
     status.innerHTML = '<div class="error">' + err.message + '</div>';
   } finally {
     btn.disabled = false;
   }
+}
+
+async function generateBoth() {
+  if (!images.ref) return alert('Upload a reference image first');
+  const btn = document.getElementById('btn-compare');
+  const btnGen = document.getElementById('btn-generate');
+  const status = document.getElementById('generate-status');
+  btn.disabled = true;
+  btnGen.disabled = true;
+  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ambos os modelos (Flux + Imagen 4)...</div>';
+
+  const resultArea = document.getElementById('result-area');
+  resultArea.innerHTML = '<div class="compare-grid"><div id="slot-flux"><div class="loading"><div class="spin"></div>Flux Kontext Pro...</div></div><div id="slot-imagen"><div class="loading"><div class="spin"></div>Imagen 4...</div></div></div>';
+
+  const bodyFlux = collectBody('flux-kontext');
+  const bodyImagen = collectBody('imagen4');
+
+  const results = await Promise.allSettled([
+    callGenerate(bodyFlux, 'Flux Kontext Pro'),
+    callGenerate(bodyImagen, 'Imagen 4'),
+  ]);
+
+  const slotFlux = document.getElementById('slot-flux');
+  const slotImagen = document.getElementById('slot-imagen');
+
+  if (results[0].status === 'fulfilled') {
+    slotFlux.innerHTML = renderResultCard(results[0].value, 'Flux Kontext Pro');
+    document.getElementById('prompt-used').textContent = results[0].value.prompt_used || '—';
+  } else {
+    slotFlux.innerHTML = '<div class="error">Flux: ' + results[0].reason.message + '</div>';
+  }
+
+  if (results[1].status === 'fulfilled') {
+    slotImagen.innerHTML = renderResultCard(results[1].value, 'Imagen 4');
+  } else {
+    slotImagen.innerHTML = '<div class="error">Imagen 4: ' + results[1].reason.message + '</div>';
+  }
+
+  const ok = [results[0], results[1]].filter(r => r.status === 'fulfilled').length;
+  status.innerHTML = '<span style="color:' + (ok > 0 ? '#10b981' : '#f87171') + ';font-size:12px">' + ok + '/2 modelos concluídos</span>';
+  btn.disabled = false;
+  btnGen.disabled = false;
 }
 </script>
 </body>
