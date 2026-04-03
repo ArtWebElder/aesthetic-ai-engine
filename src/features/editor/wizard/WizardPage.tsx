@@ -51,7 +51,7 @@ const DEFAULT_FORMAT_ID = "instagram_feed";
 
 // ── Step labels ───────────────────────────────────────────────────────────────
 
-const STEP_LABELS = ["Upload", "Referência", "Estilo", "Textos", "Gerando", "Resultado"];
+const STEP_LABELS = ["Upload", "Conteúdo", "Configurar", "Resultado"];
 
 // ── Generation stages ─────────────────────────────────────────────────────────
 
@@ -195,7 +195,15 @@ export function WizardPage() {
   const { t } = useI18n();
   const storeCredits = useCreditStore((s) => s.credits);
 
-  const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4 | 5 | 6>(1);
+  const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4>(1);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [v2Analysis, setV2Analysis] = useState<Record<string, unknown> | null>(null);
+  const [analysisTexts, setAnalysisTexts] = useState<Array<{ type: string; content: string }>>([]);
+  const [editedTexts, setEditedTexts] = useState<Array<{ type: string; content: string }>>([]);
+  const [colorPalette, setColorPalette] = useState<string[]>(['#ff713d', '#1a1a2e', '#ffffff', '#333333', '#666666']);
+  const [variationSlider, setVariationSlider] = useState(10);
+  const [formatSelect, setFormatSelect] = useState('1:1');
+  const [extraInstructions, setExtraInstructions] = useState('');
   const [stageIndex, setStageIndex] = useState(0);
   const [generationDone, setGenerationDone] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -401,60 +409,29 @@ export function WizardPage() {
         console.warn("[Wizard] debit failed, proceeding anyway:", msg);
       }
 
-      // ── Step 1: Analyze reference with Gemini (if not already done) ────────
-      let v2Analysis = state.referenceAnalysis as Record<string, unknown> | null;
-      const hasRef = Boolean(state.referenceBase64 && !state.referenceBase64.startsWith("gallery:"));
+      // ── Use analysis from Step 1 (already stored in v2Analysis state) ──────
+      const currentAnalysis = v2Analysis;
 
-      if (hasRef && !v2Analysis) {
-        setPopDesignStep("Analisando referência com Gemini...");
-        try {
-          const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke('analyze-creative', {
-            body: { image: state.referenceBase64 },
-          });
-          if (analyzeErr) throw analyzeErr;
-          v2Analysis = analyzeData?.analysis ?? null;
-          if (v2Analysis) {
-            setReferenceAnalysis(v2Analysis as never);
-            console.log("[V2] Analysis OK:", Object.keys(v2Analysis));
-          }
-        } catch (e) {
-          console.warn("[V2] Analysis failed, proceeding without:", e);
-        }
-      }
-
-      // ── Step 2: Build text_replacements from wizard state ──────────────────
+      // ── Build text_replacements from edited texts vs original analysis ─────
       const textReplacements: Array<{ original: string; replacement: string }> = [];
-      const analysisTexts = (v2Analysis as { texts?: Array<{ type: string; content: string }> } | null)?.texts || [];
-
-      // Map wizard fields to text types for matching
-      const userTexts: Record<string, string> = {};
-      if (state.headline) userTexts.title = state.headline;
-      if (state.subheadline) userTexts.subtitle = state.subheadline;
-      if (state.cta) userTexts.cta = state.cta;
-      if (state.price?.value) userTexts.price = `${state.price.prefix || ''} ${state.price.value}`.trim();
-
-      for (const at of analysisTexts) {
-        const userText = userTexts[at.type];
-        if (userText) {
-          textReplacements.push({ original: at.content, replacement: userText });
-        } else {
-          textReplacements.push({ original: at.content, replacement: at.content });
-        }
-      }
-      // Add user texts that weren't in analysis
-      for (const [type, text] of Object.entries(userTexts)) {
-        if (!textReplacements.some(r => r.replacement === text)) {
-          textReplacements.push({ original: text, replacement: text });
+      for (let i = 0; i < editedTexts.length; i++) {
+        const edited = editedTexts[i];
+        const original = analysisTexts[i];
+        if (edited.content) {
+          textReplacements.push({
+            original: original?.content || edited.content,
+            replacement: edited.content,
+          });
         }
       }
 
-      // ── Step 3: Generate with Nano Banana Pro ──────────────────────────────
+      // ── Generate with Nano Banana Pro ──────────────────────────────────────
       setPopDesignStep("Gerando criativo com IA...");
 
       const generateBody: Record<string, unknown> = {
         reference_image: state.referenceBase64 || state.subjectBase64,
-        variation: 10,
-        format: "1:1",
+        variation: variationSlider,
+        format: formatSelect,
         model: "nano-banana",
       };
 
@@ -464,11 +441,14 @@ export function WizardPage() {
       if (textReplacements.length > 0) {
         generateBody.text_replacements = textReplacements;
       }
-      if (v2Analysis) {
-        generateBody.analysis = v2Analysis;
+      if (colorPalette.length > 0) {
+        generateBody.color_palette = colorPalette;
       }
-      if (state.freeInstructions) {
-        generateBody.extra_instructions = state.freeInstructions;
+      if (currentAnalysis) {
+        generateBody.analysis = currentAnalysis;
+      }
+      if (extraInstructions) {
+        generateBody.extra_instructions = extraInstructions;
       }
 
       console.log("[V2] Calling generate-creative:", Object.keys(generateBody));
@@ -531,6 +511,7 @@ export function WizardPage() {
       setPopDesignStep("");
       setGenerating(false);
       setGenerationDone(true);
+      setUiStep(4);
       incrementGenCount();
       return;
       // V1 pipeline removed — all generation now handled by V2 above
@@ -785,36 +766,54 @@ export function WizardPage() {
     }
   }
 
-  // Navigation
+  // Navigation — 4 steps: Upload(1) → Content(2) → Configure(3) → Result(4)
   const canAdvance =
-    uiStep === 1 ? Boolean(subjectBase64) :
-    uiStep === 2 ? true :                         // reference is optional
-    uiStep === 3 ? true :                         // style step auto-passes for clone-criativo
-    uiStep === 4 ? Boolean(headline?.trim()) :
+    uiStep === 1 ? Boolean(referenceBase64 && !referenceBase64.startsWith('gallery:')) :
+    uiStep === 2 ? true :
     false;
 
-  function handleNext() {
-    if (uiStep < 4 && canAdvance) {
-      setUiStep((s) => (s + 1) as 1 | 2 | 3 | 4 | 5 | 6);
-    } else if (uiStep === 4 && canAdvance) {
-      setUiStep(5);
-      handleGenerate();
+  async function handleAnalyzeAndAdvance() {
+    if (!referenceBase64 || referenceBase64.startsWith('gallery:')) return;
+    setAnalysisLoading(true);
+    try {
+      const { data, error: err } = await supabase.functions.invoke('analyze-creative', {
+        body: { image: referenceBase64 },
+      });
+      if (!err && data?.analysis) {
+        const analysis = data.analysis as Record<string, unknown>;
+        setV2Analysis(analysis);
+        const texts = (analysis.texts as Array<{ type: string; content: string }>) || [];
+        setAnalysisTexts(texts);
+        setEditedTexts(texts.map(t => ({ ...t })));
+        const colors = (analysis.colors as string[]) || [];
+        if (colors.length >= 5) setColorPalette(colors.slice(0, 5));
+        else if (colors.length > 0) setColorPalette([...colors, ...colorPalette.slice(colors.length)]);
+      }
+    } catch (e) {
+      console.warn('[Wizard] Analysis failed:', e);
+    } finally {
+      setAnalysisLoading(false);
     }
+    setUiStep(2);
+  }
+
+  function handleNext() {
+    if (uiStep === 1 && canAdvance) {
+      handleAnalyzeAndAdvance();
+    } else if (uiStep === 2) {
+      setUiStep(3);
+    }
+    // Step 3 → generate is handled by the button in the step itself
   }
 
   function handleBack() {
-    if (uiStep >= 2 && uiStep <= 4) {
-      setUiStep((s) => (s - 1) as 1 | 2 | 3 | 4);
-    } else if (uiStep === 6) {
+    if (uiStep === 2) setUiStep(1);
+    else if (uiStep === 3 && !generating) setUiStep(2);
+    else if (uiStep === 4) {
       clearGeneration();
       setComposedBase64(null);
       setGenerationDone(false);
-      setUiStep(4);
-    } else if (uiStep === 5 && generationError) {
-      setGenerationError(null);
-      setGenerating(false);
-      setComposing(false);
-      setUiStep(4);
+      setUiStep(2);
     }
   }
 
@@ -824,8 +823,7 @@ export function WizardPage() {
     setGenerationDone(false);
     setRefinementOverrides({});
     htmlCompositionRef.current = null;
-    setUiStep(5);
-    handleGenerate();
+    setUiStep(3);
   }
 
   const displayBase64 = composedBase64 ?? currentGeneration?.imageBase64;
@@ -876,50 +874,176 @@ export function WizardPage() {
 
       {/* Content */}
       <main style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 24px' }}>
 
-          {/* Step 1: Upload */}
+          {/* Step 1: Upload (Reference + Subject) */}
           {uiStep === 1 && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Envie sua imagem</h1>
-                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Foto do produto, pessoa ou marca. O motor analisa e sugere o melhor estilo.</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Suba suas imagens</h1>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Arte de referência + foto do produto ou pessoa (opcional).</p>
               </div>
-              <WizardStep1Subject />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                {/* Reference Upload */}
+                <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Arte de Referência</span>
+                    <span style={{ fontSize: 10, background: '#ff713d', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>Obrigatório</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Print do post, anúncio ou arte que quer clonar</p>
+                  {referenceBase64 && !referenceBase64.startsWith('gallery:') ? (
+                    <div style={{ position: 'relative' }}>
+                      <img src={referenceBase64} alt="Referência" style={{ width: '100%', borderRadius: 8, maxHeight: 240, objectFit: 'cover' }} />
+                      <button onClick={() => { useWizardStore.getState().clearReference(); }} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                    </div>
+                  ) : (
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, border: '2px dashed hsl(var(--border))', borderRadius: 10, cursor: 'pointer', transition: 'border-color 150ms' }}>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => useWizardStore.getState().setReference(reader.result as string, 'upload');
+                        reader.readAsDataURL(file);
+                      }} />
+                      <span style={{ fontSize: 24, marginBottom: 8 }}>📎</span>
+                      <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Clique ou arraste</span>
+                    </label>
+                  )}
+                </div>
+                {/* Subject Upload */}
+                <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Subject</span>
+                    <span style={{ fontSize: 10, background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Foto do produto ou pessoa pra substituir</p>
+                  {subjectBase64 ? (
+                    <div style={{ position: 'relative' }}>
+                      <img src={subjectBase64} alt="Subject" style={{ width: '100%', borderRadius: 8, maxHeight: 240, objectFit: 'cover' }} />
+                      <button onClick={() => { useWizardStore.getState().setSubject('', ''); }} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                    </div>
+                  ) : (
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, border: '2px dashed hsl(var(--border))', borderRadius: 10, cursor: 'pointer', transition: 'border-color 150ms' }}>
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => useWizardStore.getState().setSubject(reader.result as string, '');
+                        reader.readAsDataURL(file);
+                      }} />
+                      <span style={{ fontSize: 24, marginBottom: 8 }}>🖼</span>
+                      <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Clique ou arraste</span>
+                    </label>
+                  )}
+                </div>
+              </div>
+              {analysisLoading && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, color: '#ff713d', fontSize: 13 }}>
+                  <div style={{ width: 16, height: 16, border: '2px solid #ff713d', borderTopColor: 'transparent', borderRadius: '50%', animation: 'wizSpin 0.8s linear infinite' }} />
+                  Analisando referência com Gemini...
+                </div>
+              )}
             </div>
           )}
 
-          {/* Step 2: Reference */}
+          {/* Step 2: Edit Content (texts + colors from analysis) */}
           {uiStep === 2 && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
-              <WizardStep2Reference />
+              <div style={{ marginBottom: 24 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Edite os textos e cores</h1>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Os textos foram extraídos automaticamente. Edite como quiser.</p>
+              </div>
+              {/* Texts */}
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Textos detectados</h3>
+                {editedTexts.map((txt, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                    <select value={txt.type} onChange={(e) => {
+                      const next = [...editedTexts];
+                      next[idx] = { ...next[idx], type: e.target.value };
+                      setEditedTexts(next);
+                    }} style={{ width: 100, padding: '6px 8px', borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 12, fontFamily: 'inherit' }}>
+                      {['title', 'subtitle', 'price', 'label', 'cta', 'contact'].map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                    <input type="text" value={txt.content} onChange={(e) => {
+                      const next = [...editedTexts];
+                      next[idx] = { ...next[idx], content: e.target.value };
+                      setEditedTexts(next);
+                    }} style={{ flex: 1, padding: '6px 10px', borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 13, fontFamily: 'inherit' }} />
+                    <button onClick={() => setEditedTexts(editedTexts.filter((_, i) => i !== idx))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'transparent', color: '#EF4444', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                  </div>
+                ))}
+                <button onClick={() => setEditedTexts([...editedTexts, { type: 'label', content: '' }])} style={{ fontSize: 12, color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, marginTop: 4 }}>+ Adicionar texto</button>
+                <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 8 }}>Textos curtos funcionam melhor. Evite frases longas.</p>
+              </div>
+              {/* Colors */}
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Paleta de cores</h3>
+                <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Clique pra alterar as cores do criativo</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {colorPalette.map((color, idx) => (
+                    <input key={idx} type="color" value={color} onChange={(e) => {
+                      const next = [...colorPalette];
+                      next[idx] = e.target.value;
+                      setColorPalette(next);
+                    }} style={{ width: 40, height: 36, borderRadius: 8, border: '1px solid hsl(var(--border))', cursor: 'pointer', background: 'none' }} />
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Step 3: Preset */}
-          {uiStep === 3 && (
+          {/* Step 3: Configure + Generate */}
+          {uiStep === 3 && !generating && !generationDone && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Escolha o estilo</h1>
-                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>O preset define a atmosfera, iluminação e composição do criativo.</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Configure a geração</h1>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Ajuste a variação criativa, formato e instruções extras.</p>
               </div>
-              <WizardStep2Style />
+              {/* Variation slider */}
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Variação Criativa</h3>
+                <input type="range" min={0} max={100} value={variationSlider} onChange={(e) => setVariationSlider(Number(e.target.value))} style={{ width: '100%' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 4 }}>
+                  <span>Cópia exata</span>
+                  <span style={{ color: '#ff713d', fontWeight: 700 }}>{variationSlider}%</span>
+                  <span>Reinterpretação</span>
+                </div>
+              </div>
+              {/* Format */}
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Formato</h3>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {[{ v: '1:1', l: '1:1 Feed' }, { v: '4:5', l: '4:5 Feed' }, { v: '9:16', l: '9:16 Story' }, { v: '16:9', l: '16:9 Banner' }].map(f => (
+                    <button key={f.v} onClick={() => setFormatSelect(f.v)} style={{
+                      padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+                      border: formatSelect === f.v ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+                      background: formatSelect === f.v ? 'hsl(var(--primary) / 0.1)' : 'transparent',
+                      color: formatSelect === f.v ? '#ff713d' : 'hsl(var(--muted-foreground))',
+                    }}>{f.l}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Extra instructions */}
+              <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Instruções extras</h3>
+                <textarea value={extraInstructions} onChange={(e) => setExtraInstructions(e.target.value)} placeholder="Ex: manter fundo escuro, trocar a roupa por camisa branca..." style={{ width: '100%', minHeight: 70, padding: '8px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }} />
+              </div>
+              {/* Generate button */}
+              <button onClick={() => handleGenerate()} disabled={generating} style={{
+                width: '100%', padding: '16px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+                background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+                boxShadow: '0 4px 16px rgba(255,113,61,0.35)', transition: 'all 200ms',
+              }}>
+                ✦ Gerar Criativo — 10 créditos
+              </button>
             </div>
           )}
 
-          {/* Step 4: Texts */}
-          {uiStep === 4 && (
-            <div style={{ animation: 'wizFdUp 350ms ease both' }}>
-              <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Adicione os textos</h1>
-                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Headline, preço, CTA e contato. A tipografia é renderizada em alta qualidade.</p>
-              </div>
-              <WizardStep3Text />
-            </div>
-          )}
-
-          {/* Step 5: Generating */}
-          {uiStep === 5 && (
+          {/* Step 3 — Generating state */}
+          {uiStep === 3 && generating && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 32, padding: '48px 0', animation: 'wizFdUp 350ms ease both' }}>
               {generationError ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center', maxWidth: 320 }}>
@@ -981,8 +1105,8 @@ export function WizardPage() {
             </div>
           )}
 
-          {/* Step 6: Result */}
-          {uiStep === 6 && currentGeneration && (
+          {/* Step 4: Result */}
+          {uiStep === 4 && currentGeneration && (
             <div style={{ display: 'flex', gap: 24, animation: 'wizFdUp 350ms ease both', flexWrap: 'wrap' }}>
               {/* Preview */}
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: '1 1 300px' }}>
@@ -1023,25 +1147,42 @@ export function WizardPage() {
                 {!isWorking && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%' }}>
                     <button
-                      onClick={() => setShowExportModal(true)}
+                      onClick={() => {
+                        if (!displayBase64) return;
+                        const a = document.createElement('a');
+                        a.href = displayBase64;
+                        a.download = `creatyng-clone-${Date.now()}.jpg`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                      }}
                       style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
-                      ↓ Exportar
-                    </button>
-                    <button
-                      onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)}
-                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                      ↗ Expandir
+                      ↓ Download
                     </button>
                     <button
                       onClick={handleRegenerateFromResult}
                       style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
-                      ↺ Regerar
+                      ↺ Gerar novamente
+                    </button>
+                    <button
+                      onClick={() => setUiStep(2)}
+                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      ✎ Editar textos
+                    </button>
+                    <button
+                      onClick={() => { clearGeneration(); setComposedBase64(null); setGenerationDone(false); setUiStep(1); }}
+                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
+                    >
+                      + Nova referência
                     </button>
                   </div>
                 )}
+                <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 8 }}>
+                  Créditos restantes: <span style={{ color: '#ff713d', fontWeight: 600 }}>{storeCredits}</span>
+                </p>
               </div>
 
               {/* Mini chat */}
@@ -1089,8 +1230,8 @@ export function WizardPage() {
         </div>
       </main>
 
-      {/* Footer navigation (steps 1-4) */}
-      {uiStep <= 4 && (
+      {/* Footer navigation (steps 1-2 only; step 3 has its own button, step 4 is result) */}
+      {uiStep <= 2 && (
         <footer style={{
           flexShrink: 0, borderTop: '1px solid hsl(var(--border))',
           background: 'hsl(var(--background) / 0.9)', backdropFilter: 'blur(8px)',
@@ -1121,7 +1262,7 @@ export function WizardPage() {
                 opacity: canAdvance ? 1 : 0.6, fontFamily: 'inherit', transition: 'all 200ms',
               }}
             >
-              {uiStep === 4 ? "✦ Gerar criativo — 5 créditos" : "Continuar →"}
+              {uiStep === 1 ? (analysisLoading ? "Analisando..." : "Analisar e Continuar →") : "Próximo →"}
             </button>
           </div>
         </footer>
