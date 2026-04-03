@@ -116,17 +116,8 @@
     <h3>6. Instruções Extras</h3>
     <textarea id="extra" placeholder="Ex: Usar tons mais quentes, adicionar efeito bokeh..."></textarea>
 
-    <h3>7. Modelo</h3>
-    <div class="model-row">
-      <select id="model-select">
-        <option value="nano-banana">Nano Banana Pro (Google) — padrão</option>
-        <option value="flux-kontext">Flux Kontext Pro (Black Forest Labs)</option>
-      </select>
-    </div>
-
-    <div style="margin-top:16px; display:flex; gap:8px;">
-      <button class="btn-primary" id="btn-generate" onclick="generateCreative()" disabled style="flex:1;padding:14px">Gerar Criativo</button>
-      <button class="btn-compare" id="btn-compare" onclick="generateBoth()" disabled style="padding:14px;white-space:nowrap">Comparar Ambos</button>
+    <div style="margin-top:16px">
+      <button class="btn-primary" id="btn-generate" onclick="generateCreative()" disabled style="width:100%;padding:14px">Gerar Criativo (Gemini)</button>
     </div>
     <div id="generate-status"></div>
   </div>
@@ -191,7 +182,7 @@ function addTextRow(type, content) {
   list.appendChild(row);
 }
 
-function collectBody(modelOverride) {
+function collectBody() {
   // Build text_replacements by comparing edited texts with originals
   const textRows = document.querySelectorAll('#texts-list .text-row');
   const text_replacements = [];
@@ -211,7 +202,6 @@ function collectBody(modelOverride) {
     reference_image: images.ref,
     variation: parseInt(document.getElementById('variation').value),
     format: document.getElementById('format').value,
-    model: modelOverride || document.getElementById('model-select').value,
     color_palette: color_palette,
     extra_instructions: document.getElementById('extra').value || undefined,
   };
@@ -262,7 +252,7 @@ async function analyzeReference() {
 
     status.innerHTML = '<span style="color:#10b981;font-size:12px">&#10003; Análise concluída (' + (data.model || '?') + ')</span>';
     document.getElementById('btn-generate').disabled = false;
-    document.getElementById('btn-compare').disabled = false;
+    // compare button removed
   } catch (err) {
     status.innerHTML = '<div class="error">' + err.message + '</div>';
   } finally {
@@ -292,13 +282,9 @@ async function generateCreative() {
   if (!images.ref) return alert('Upload a reference image first');
   const btn = document.getElementById('btn-generate');
   const status = document.getElementById('generate-status');
-  const modelSel = document.getElementById('model-select').value;
-  const hasSubject = Boolean(images.sub);
-  const modelLabel = modelSel === 'nano-banana'
-    ? (hasSubject ? 'Nano Banana Pro (subject swap)' : 'Nano Banana Pro')
-    : (hasSubject ? 'Flux Kontext Pro (subject swap)' : 'Flux Kontext Pro');
+  const modelLabel = 'Gemini (gemini-3-pro-image-preview)';
   btn.disabled = true;
-  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ' + modelLabel + '...</div>';
+  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com Gemini...</div>';
 
   try {
     const body = collectBody();
@@ -314,50 +300,7 @@ async function generateCreative() {
   }
 }
 
-async function generateBoth() {
-  if (!images.ref) return alert('Upload a reference image first');
-  const btn = document.getElementById('btn-compare');
-  const btnGen = document.getElementById('btn-generate');
-  const status = document.getElementById('generate-status');
-  btn.disabled = true;
-  btnGen.disabled = true;
-  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ambos os modelos (Nano Banana + Flux)...</div>';
-
-  const resultArea = document.getElementById('result-area');
-  resultArea.innerHTML = '<div class="compare-grid"><div id="slot-nano"><div class="loading"><div class="spin"></div>Nano Banana Pro...</div></div><div id="slot-flux"><div class="loading"><div class="spin"></div>Flux Kontext Pro...</div></div></div>';
-
-  const bodyNano = collectBody('nano-banana');
-  const bodyFlux = collectBody('flux-kontext');
-
-  const results = await Promise.allSettled([
-    callGenerate(bodyNano, 'Nano Banana Pro'),
-    callGenerate(bodyFlux, 'Flux Kontext Pro'),
-  ]);
-
-  const slotNano = document.getElementById('slot-nano');
-  const slotFlux = document.getElementById('slot-flux');
-
-  if (results[0].status === 'fulfilled') {
-    slotNano.innerHTML = renderResultCard(results[0].value, 'Nano Banana Pro');
-    document.getElementById('prompt-used').textContent = results[0].value.prompt_used || '—';
-  } else {
-    slotNano.innerHTML = '<div class="error">Nano Banana: ' + results[0].reason.message + '</div>';
-  }
-
-  if (results[1].status === 'fulfilled') {
-    slotFlux.innerHTML = renderResultCard(results[1].value, 'Flux Kontext Pro');
-    if (results[0].status !== 'fulfilled') {
-      document.getElementById('prompt-used').textContent = results[1].value.prompt_used || '—';
-    }
-  } else {
-    slotFlux.innerHTML = '<div class="error">Flux: ' + results[1].reason.message + '</div>';
-  }
-
-  const ok = [results[0], results[1]].filter(r => r.status === 'fulfilled').length;
-  status.innerHTML = '<span style="color:' + (ok > 0 ? '#10b981' : '#f87171') + ';font-size:12px">' + ok + '/2 modelos concluídos</span>';
-  btn.disabled = false;
-  btnGen.disabled = false;
-}
+// generateBoth removed — single model (Gemini) only
 </script>
 </body>
 </html>
