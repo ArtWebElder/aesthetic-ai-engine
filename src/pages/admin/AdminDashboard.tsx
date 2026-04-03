@@ -1,205 +1,142 @@
 import { useEffect, useState } from 'react';
-import {
-  AreaChart, Area, PieChart, Pie, Cell, BarChart, Bar,
-  XAxis, YAxis, Tooltip, ResponsiveContainer,
-} from 'recharts';
-import { adminService } from '@/services/adminService';
-import { TrendingUp, Users, Image, AlertTriangle } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { adminService, type DashboardKPIs } from '@/services/adminService';
+import { TrendingUp, Users, Image, DollarSign, UserPlus, Zap, RefreshCw } from 'lucide-react';
 import { Skeleton } from '@/components/creatyng';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 
-interface OverviewStats {
-  mrr: number;
-  activeUsers: number;
-  gensToday: number;
-  errorRate: number;
-}
-
-interface KPICardProps {
-  icon: React.ElementType;
-  label: string;
-  numericValue: number;
-  prefix?: string;
-  suffix?: string;
-  decimals?: number;
-  change: string;
-  positive: boolean;
-}
-
-function KPICard({ icon: Icon, label, numericValue, prefix = '', suffix = '', decimals = 0, change, positive }: KPICardProps) {
-  const animated = useAnimatedCounter(numericValue);
-  const display = decimals > 0
-    ? (animated / Math.pow(10, decimals)).toFixed(decimals)
-    : animated.toLocaleString('pt-BR');
-
+function KPICard({ icon: Icon, label, value, prefix = '', suffix = '', color = '#ff713d' }: {
+  icon: React.ElementType; label: string; value: number; prefix?: string; suffix?: string; color?: string;
+}) {
+  const animated = useAnimatedCounter(value);
   return (
-    <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ color: '#8e8e96', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(20,20,23,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon style={{ width: 15, height: 15, color: '#8e8e96' }} />
+    <div style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: 12, padding: '16px 18px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon size={16} style={{ color }} />
         </div>
+        <span style={{ fontSize: 12, color: '#71717a', fontWeight: 500 }}>{label}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>{prefix}{display}{suffix}</span>
-        <span style={{ fontSize: 11.5, fontWeight: 600, color: positive ? '#10B981' : '#EF4444' }}>{change}</span>
+      <div style={{ fontSize: 24, fontWeight: 700, color: '#fafafa' }}>
+        {prefix}{animated.toLocaleString('pt-BR')}{suffix}
       </div>
     </div>
   );
 }
 
-const CHART_STYLE = {
-  fontSize: 11,
-  fill: '#8e8e96',
-};
-
 export default function AdminDashboard() {
+  const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
+  const [revenue, setRevenue] = useState<Array<{ date: string; revenue: number }>>([]);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<OverviewStats>({ mrr: 8400, activeUsers: 127, gensToday: 379, errorRate: 2.1 });
-  const [mrrData, setMrrData] = useState<{ month: string; mrr: number }[]>([]);
-  const [featureData, setFeatureData] = useState<{ name: string; value: number; color: string }[]>([]);
-  const [dailyData, setDailyData] = useState<{ day: string; count: number }[]>([]);
-  const [logs, setLogs] = useState<typeof import('@/services/adminService').MOCK_LOGS>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([
-      adminService.getOverviewStats(),
-      adminService.getMRRHistory(),
-      adminService.getFeatureUsage(),
-      adminService.getDailyGens(),
-      adminService.getGenerationLogs(),
-    ]).then(([s, mrr, feat, daily, { logs }]) => {
-      setStats(s);
-      setMrrData(mrr);
-      setFeatureData(feat);
-      setDailyData(daily);
-      setLogs(logs.slice(0, 5));
-      setTimeout(() => setLoading(false), 600);
-    });
-  }, []);
+  async function loadData() {
+    setLoading(true);
+    setError(null);
+    try {
+      const [k, r] = await Promise.all([
+        adminService.fetchDashboardKPIs(),
+        adminService.fetchRevenueByPeriod(30),
+      ]);
+      setKpis(k);
+      setRevenue(r);
+    } catch (e) {
+      setError(String((e as Error)?.message || e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { loadData(); }, []);
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[0,1,2,3].map((i) => <Skeleton key={i} height="88px" rounded className="rounded-xl" />)}
+      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <Skeleton style={{ height: 32, width: 200 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} style={{ height: 100, borderRadius: 12 }} />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <Skeleton height="220px" rounded className="lg:col-span-2 rounded-xl" />
-          <Skeleton height="220px" rounded className="rounded-xl" />
-          <Skeleton height="220px" rounded className="rounded-xl" />
-        </div>
-        <Skeleton height="240px" rounded className="rounded-xl" />
+        <Skeleton style={{ height: 200, borderRadius: 12 }} />
       </div>
     );
   }
 
-  const tooltipStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', borderRadius: 8, color: '#141417', fontSize: 12, boxShadow: '0 4px 16px rgba(20,20,23,0.08)' };
-  const cardStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' };
-  const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
-  const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+  if (error) {
+    return (
+      <div style={{ padding: 24, color: '#ef4444' }}>
+        <p>Erro ao carregar dashboard: {error}</p>
+        <button onClick={loadData} style={{ marginTop: 12, padding: '8px 16px', borderRadius: 8, background: '#27272a', color: '#fafafa', border: 'none', cursor: 'pointer' }}>Tentar novamente</button>
+      </div>
+    );
+  }
+
+  if (!kpis) return null;
+
+  const planData = [
+    { name: 'Free', value: kpis.totalFree, color: '#71717a' },
+    { name: 'Pro', value: kpis.totalPro, color: '#ff713d' },
+    { name: 'Team', value: kpis.totalTeam, color: '#7c3aed' },
+  ];
+  const planTotal = kpis.totalUsers || 1;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
-        <KPICard icon={TrendingUp} label="MRR" numericValue={stats.mrr} prefix="R$ " change="+12.5% este mês" positive />
-        <KPICard icon={Users} label="Usuários Ativos" numericValue={stats.activeUsers} change="+8 esta semana" positive />
-        <KPICard icon={Image} label="Gerações Hoje" numericValue={stats.gensToday} change="+15% vs ontem" positive />
-        <KPICard icon={AlertTriangle} label="Taxa de Erro" numericValue={Math.round(stats.errorRate * 10)} suffix="%" decimals={1} change="-0.3% vs ontem" positive />
+    <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fafafa' }}>Dashboard</h1>
+          <p style={{ fontSize: 13, color: '#71717a' }}>Visão geral do Creatyng</p>
+        </div>
+        <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, background: '#27272a', border: '1px solid #3f3f46', color: '#a1a1aa', fontSize: 12, cursor: 'pointer' }}>
+          <RefreshCw size={14} /> Atualizar
+        </button>
       </div>
 
-      {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 14 }}>
-        {/* MRR Area Chart */}
-        <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>Receita Mensal (MRR)</div>
-          <ResponsiveContainer width="100%" height={160}>
-            <AreaChart data={mrrData}>
-              <defs>
-                <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ff713d" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#ff713d" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="month" tick={CHART_STYLE} axisLine={false} tickLine={false} />
-              <YAxis tick={CHART_STYLE} axisLine={false} tickLine={false} width={45} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, 'MRR']} />
-              <Area type="monotone" dataKey="mrr" stroke="#ff713d" fill="url(#mrrGrad)" strokeWidth={2.5} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+      {/* KPI Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
+        <KPICard icon={Users} label="Total Usuários" value={kpis.totalUsers} />
+        <KPICard icon={UserPlus} label="Novos (7d)" value={kpis.newUsersWeek} color="#10b981" />
+        <KPICard icon={Zap} label="Ativos (7d)" value={kpis.activeUsersWeek} color="#3b82f6" />
+        <KPICard icon={Image} label="Gerações" value={kpis.totalGenerations} color="#8b5cf6" />
+        <KPICard icon={DollarSign} label="Receita Total" value={kpis.totalRevenue} prefix="R$ " color="#10b981" />
+        <KPICard icon={TrendingUp} label="MRR" value={Math.round(kpis.mrr)} prefix="R$ " color="#ff713d" />
+        <KPICard icon={Zap} label="Créditos Consumidos" value={kpis.totalCreditsConsumed} color="#f59e0b" />
+        <KPICard icon={UserPlus} label="Novos Hoje" value={kpis.newUsersToday} color="#ec4899" />
+      </div>
 
-        {/* Pie Chart */}
-        <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 10 }}>Features mais usadas</div>
-          <ResponsiveContainer width="100%" height={120}>
-            <PieChart>
-              <Pie data={featureData} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" paddingAngle={3} strokeWidth={0}>
-                {featureData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-              </Pie>
-              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v}%`, '']} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
-            {featureData.map((f) => (
-              <div key={f.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: f.color, display: 'inline-block', flexShrink: 0 }} />
-                  <span style={{ fontSize: 10.5, color: '#5a5a60' }}>{f.name}</span>
-                </div>
-                <span style={{ fontSize: 10.5, fontWeight: 500, color: '#141417' }}>{f.value}%</span>
-              </div>
-            ))}
-          </div>
+      {/* Plan Distribution Bar */}
+      <div style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: 12, padding: 18 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: '#fafafa', marginBottom: 12 }}>Distribuição de Planos</h3>
+        <div style={{ display: 'flex', height: 10, borderRadius: 5, overflow: 'hidden', gap: 2 }}>
+          {planData.map(p => (
+            <div key={p.name} style={{ width: `${(p.value / planTotal) * 100}%`, background: p.color, minWidth: p.value > 0 ? 4 : 0 }} />
+          ))}
         </div>
+        <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
+          {planData.map(p => (
+            <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#a1a1aa' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: p.color }} />
+              {p.name}: {p.value} ({Math.round((p.value / planTotal) * 100)}%)
+            </div>
+          ))}
+        </div>
+      </div>
 
-        {/* Bar Chart */}
-        <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>Gerações por dia</div>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={dailyData}>
-              <XAxis dataKey="day" tick={CHART_STYLE} axisLine={false} tickLine={false} />
-              <YAxis tick={CHART_STYLE} axisLine={false} tickLine={false} width={28} />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Bar dataKey="count" fill="#ff713d" radius={[6, 6, 0, 0]} />
+      {/* Revenue Chart (last 30 days) */}
+      <div style={{ background: '#18181b', border: '1px solid #27272a', borderRadius: 12, padding: 18 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600, color: '#fafafa', marginBottom: 12 }}>Receita (últimos 30 dias)</h3>
+        {revenue.length === 0 ? (
+          <p style={{ fontSize: 13, color: '#52525b', textAlign: 'center', padding: 32 }}>Sem dados de receita ainda</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={revenue}>
+              <XAxis dataKey="date" tick={{ fill: '#52525b', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: '#52525b', fontSize: 10 }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={{ background: '#27272a', border: '1px solid #3f3f46', borderRadius: 8, color: '#fafafa', fontSize: 12 }} />
+              <Bar dataKey="revenue" fill="#ff713d" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Latest generations table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Últimas gerações</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr>
-            {['Usuário', 'Feature', 'Status', 'Créditos', 'Duração', 'Hora'].map((h) => (
-              <th key={h} style={thStyle}>{h}</th>
-            ))}
-          </tr></thead>
-          <tbody>
-            {logs.map((log) => (
-              <tr key={log.id} style={{ transition: 'background 100ms' }}
-                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
-                onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
-              >
-                <td style={tdStyle}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(20,20,23,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#5a5a60' }}>
-                      {log.userName.charAt(0)}
-                    </div>
-                    <span style={{ color: '#5a5a60', fontSize: 12 }}>{log.userName}</span>
-                  </div>
-                </td>
-                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, background: 'rgba(255,113,61,0.08)', color: '#ff713d', fontSize: 10.5, fontWeight: 600 }}>{log.feature}</span></td>
-                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: log.status === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', color: log.status === 'success' ? '#10B981' : '#EF4444' }}>{log.status === 'success' ? 'Sucesso' : 'Erro'}</span></td>
-                <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 12 }}>{log.credits > 0 ? log.credits : '—'}</td>
-                <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 12 }}>{log.duration}</td>
-                <td style={{ ...tdStyle, color: '#b5b5bb', fontSize: 12 }}>{log.time}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        )}
       </div>
     </div>
   );
