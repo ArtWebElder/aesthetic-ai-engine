@@ -149,6 +149,8 @@
 <script>
 const API_BASE = 'https://nyociqngelznlamokmqc.supabase.co/functions/v1';
 const images = { ref: null, sub: null, logo: null };
+let lastAnalysis = null;     // Store the full analysis JSON from analyze-creative
+let originalTexts = [];       // Store original texts from analysis for diff
 
 document.getElementById('variation').addEventListener('input', (e) => {
   document.getElementById('variation-val').textContent = e.target.value + '%';
@@ -190,13 +192,16 @@ function addTextRow(type, content) {
 }
 
 function collectBody(modelOverride) {
+  // Build text_replacements by comparing edited texts with originals
   const textRows = document.querySelectorAll('#texts-list .text-row');
   const text_replacements = [];
+  let idx = 0;
   textRows.forEach(row => {
-    const orig = row.querySelector('input[type="text"]').value;
-    if (orig.trim()) {
-      text_replacements.push({ original: orig, replacement: orig });
-    }
+    const edited = row.querySelector('input[type="text"]').value.trim();
+    if (!edited) { idx++; return; }
+    const orig = (originalTexts[idx] && originalTexts[idx].content) || edited;
+    text_replacements.push({ original: orig, replacement: edited });
+    idx++;
   });
 
   const colorInputs = document.querySelectorAll('#colors-row input[type="color"]');
@@ -213,6 +218,9 @@ function collectBody(modelOverride) {
 
   if (text_replacements.length > 0) body.text_replacements = text_replacements;
   if (images.sub) body.subject_image = images.sub;
+
+  // Include Gemini analysis if available
+  if (lastAnalysis) body.analysis = lastAnalysis;
 
   return body;
 }
@@ -236,10 +244,16 @@ async function analyzeReference() {
     document.getElementById('analysis-json').textContent = JSON.stringify(data, null, 2);
 
     const analysis = data.analysis;
+    lastAnalysis = analysis;
+    originalTexts = [];
+
     const list = document.getElementById('texts-list');
     list.innerHTML = '';
     if (Array.isArray(analysis.texts)) {
-      analysis.texts.forEach(t => addTextRow(t.type, t.content));
+      analysis.texts.forEach(t => {
+        addTextRow(t.type, t.content);
+        originalTexts.push({ type: t.type, content: t.content });
+      });
     }
     if (Array.isArray(analysis.colors)) {
       const colorInputs = document.querySelectorAll('#colors-row input');

@@ -1,8 +1,9 @@
 /// <reference lib="deno.ns" />
 // supabase/functions/generate-creative/index.ts
-// CREATYNG — Engine v2: Multi-model creative generation.
-// Primary: Nano Banana Pro (google/nano-banana-pro) — best subject swap + text quality
+// CREATYNG — Engine v2: Gemini analysis + Nano Banana Pro generation pipeline.
+// Primary: Nano Banana Pro (google/nano-banana-pro)
 // Fallback: Flux Kontext Pro (black-forest-labs/flux-kontext-pro)
+// When analysis from analyze-creative is provided, uses fullPrompt as base.
 
 import { corsHeaders } from "../_shared/cors.ts";
 
@@ -24,6 +25,15 @@ interface TextReplacement {
   replacement: string;
 }
 
+interface AnalysisData {
+  fullPrompt?: string;
+  texts?: Array<{ type: string; content: string; position?: string }>;
+  colors?: string[];
+  layout?: string;
+  style?: string;
+  [key: string]: unknown;
+}
+
 interface GenerateBody {
   reference_image: string;
   subject_image?: string;
@@ -33,6 +43,7 @@ interface GenerateBody {
   extra_instructions?: string;
   format?: string;
   model?: "nano-banana" | "flux-kontext";
+  analysis?: AnalysisData;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -48,9 +59,70 @@ function ensureDataUri(b64: string): string {
   return b64.startsWith("data:") ? b64 : `data:image/png;base64,${b64}`;
 }
 
-/** Shared modifiers: text replacements, colors, extra instructions */
-function buildModifiers(body: GenerateBody): string {
+// ── Prompt builders ────────────────────────────────────────────────────────────
+
+/**
+ * Build prompt using Gemini analysis as foundation.
+ * Combines: fullPrompt + subject swap + edited texts + colors + variation + extras.
+ */
+function buildAnalysisPrompt(body: GenerateBody): string {
+  const analysis = body.analysis!;
+  const variation = Math.max(0, Math.min(100, body.variation ?? 30));
   const parts: string[] = [];
+
+  // Part 1 — Gemini's detailed scene description as base
+  parts.push(analysis.fullPrompt || "Recreate this professional advertisement with the same style, layout, and visual quality.");
+
+  // Part 2 — Subject swap
+  if (body.subject_image) {
+    parts.push("Use the product/person from image 2 as the main subject, replacing the original subject. Maintain natural integration with the scene, matching lighting and scale.");
+  }
+
+  // Part 3 — Edited texts (only texts that changed)
+  if (body.text_replacements && body.text_replacements.length > 0) {
+    const changed = body.text_replacements.filter(r => r.original && r.replacement);
+    if (changed.length > 0) {
+      const textLines = changed.map(r => `- ${r.replacement}`).join("\n");
+      parts.push(`The following texts must appear exactly as written, sharp and legible:\n${textLines}`);
+    }
+  }
+
+  // Part 4 — Color palette
+  if (body.color_palette && body.color_palette.length > 0) {
+    parts.push(`Apply this color scheme: ${body.color_palette.join(", ")}.`);
+  }
+
+  // Part 5 — Variation level
+  if (variation <= 10) {
+    parts.push("Recreate the exact same layout and composition.");
+  } else if (variation > 0) {
+    parts.push(`Take ${variation}% creative liberty while keeping the overall style.`);
+  }
+
+  // Part 6 — Extra instructions
+  if (body.extra_instructions && body.extra_instructions.trim()) {
+    parts.push(body.extra_instructions.trim());
+  }
+
+  return parts.join("\n\n");
+}
+
+/** Generic prompt when no analysis is available */
+function buildGenericPrompt(body: GenerateBody): string {
+  const variation = Math.max(0, Math.min(100, body.variation ?? 30));
+  const parts: string[] = [];
+
+  if (body.subject_image) {
+    parts.push("Use the style, layout, and design from image 1 to create an advertisement featuring the product/person from image 2.");
+  } else {
+    parts.push("Use the style, layout, and design from image 1 to create an advertisement.");
+  }
+
+  if (variation <= 20) {
+    parts.push("Keep the layout and design as close to image 1 as possible.");
+  } else if (variation > 50) {
+    parts.push("Take creative liberties while keeping the general style.");
+  }
 
   if (body.text_replacements && body.text_replacements.length > 0) {
     const changes = body.text_replacements
@@ -67,39 +139,11 @@ function buildModifiers(body: GenerateBody): string {
     parts.push(body.extra_instructions.trim());
   }
 
-  return parts.join(" ");
-}
-
-// ── Prompt builders ────────────────────────────────────────────────────────────
-
-/** Prompt for Nano Banana Pro (supports multi-image natively) */
-function buildNanaBananaPrompt(body: GenerateBody): string {
-  const variation = Math.max(0, Math.min(100, body.variation ?? 30));
-  const parts: string[] = [];
-
-  if (body.subject_image) {
-    // Multi-image: reference (image 1) + subject (image 2)
-    parts.push("Use the style, layout, and design from image 1 to create an advertisement featuring the product/person from image 2.");
-  } else {
-    // Single image: recreate the reference
-    parts.push("Use the style, layout, and design from image 1 to create an advertisement.");
-  }
-
-  if (variation <= 20) {
-    parts.push("Keep the layout and design as close to image 1 as possible.");
-  } else if (variation > 50) {
-    parts.push("Take creative liberties while keeping the general style.");
-  }
-
-  const mods = buildModifiers(body);
-  if (mods) parts.push(mods);
-
   parts.push("All text must be sharp, legible, and professional.");
-
   return parts.join(" ");
 }
 
-/** Prompt for single-image Flux Kontext Pro (fallback) */
+/** Flux fallback prompt */
 function buildFluxPrompt(body: GenerateBody): string {
   const variation = Math.max(0, Math.min(100, body.variation ?? 30));
   let base: string;
@@ -116,9 +160,22 @@ function buildFluxPrompt(body: GenerateBody): string {
     base += " Replace the main subject with the provided photo.";
   }
 
-  const mods = buildModifiers(body);
-  const full = mods ? `${base} ${mods}` : base;
-  return `${full} All text must be sharp and readable.`;
+  if (body.text_replacements && body.text_replacements.length > 0) {
+    const changes = body.text_replacements
+      .filter(r => r.original && r.replacement && r.original !== r.replacement)
+      .map(r => `Change '${r.original}' to '${r.replacement}'.`);
+    if (changes.length > 0) base += " " + changes.join(" ");
+  }
+
+  if (body.color_palette && body.color_palette.length > 0) {
+    base += ` Use colors: ${body.color_palette.join(", ")}.`;
+  }
+
+  if (body.extra_instructions && body.extra_instructions.trim()) {
+    base += " " + body.extra_instructions.trim();
+  }
+
+  return `${base} All text must be sharp and readable.`;
 }
 
 // ── Replicate polling ──────────────────────────────────────────────────────────
@@ -145,7 +202,6 @@ async function pollReplicate(
 ): Promise<string> {
   let last = initial;
   const startedAt = Date.now();
-
   while (Date.now() - startedAt < REPLICATE_TIMEOUT_MS) {
     const status = String(last?.status ?? "");
     if (status === "succeeded") break;
@@ -158,11 +214,9 @@ async function pollReplicate(
     const text = await resp.text();
     try { last = JSON.parse(text); } catch { continue; }
   }
-
   if (String(last?.status ?? "") !== "succeeded") {
     throw new Error(`replicate_timeout: timed out after ${Math.round(REPLICATE_TIMEOUT_MS / 1000)}s.`);
   }
-
   const outputUrl = pickOutputUrl(last);
   if (!outputUrl) throw new Error("replicate_no_output");
   return outputUrl;
@@ -175,7 +229,6 @@ async function callReplicate(
 ): Promise<{ outputUrl: string; duration_ms: number }> {
   const startedAt = Date.now();
   const createUrl = `https://api.replicate.com/v1/models/${modelPath}/predictions`;
-
   console.log(`[replicate] ${modelPath} | Input keys: ${Object.keys(input).join(", ")}`);
 
   const resp = await fetch(createUrl, {
@@ -183,7 +236,6 @@ async function callReplicate(
     headers: { authorization: `Token ${token}`, "content-type": "application/json" },
     body: JSON.stringify({ input }),
   });
-
   const text = await resp.text();
   if (!resp.ok) throw new Error(`replicate_create_failed (${resp.status}): ${text.slice(0, 300)}`);
 
@@ -193,54 +245,31 @@ async function callReplicate(
 
   console.log(`[replicate] Polling: ${pollUrl}`);
   const outputUrl = await pollReplicate(pollUrl, token, parsed);
-
   return { outputUrl, duration_ms: Date.now() - startedAt };
 }
 
-// ── Nano Banana Pro (primary) ──────────────────────────────────────────────────
+// ── Model functions ────────────────────────────────────────────────────────────
 
 const NANO_BANANA_MODEL = "google/nano-banana-pro";
+const FLUX_MODEL = "black-forest-labs/flux-kontext-pro";
 
 async function generateWithNanaBanana(
-  prompt: string,
-  refImage: string,
-  subjectImage: string | null,
-  aspectRatio: string,
-  token: string,
+  prompt: string, refImage: string, subjectImage: string | null, aspectRatio: string, token: string,
 ): Promise<{ image: string; model: string; duration_ms: number }> {
   // deno-lint-ignore no-explicit-any
-  const input: Record<string, any> = {
-    prompt,
-    image_1: refImage,
-    aspect_ratio: aspectRatio,
-  };
-
-  if (subjectImage) {
-    input.image_2 = subjectImage;
-  }
-
-  console.log(`[nano-banana] Subject: ${subjectImage ? "yes (image_2)" : "no"} | Prompt: ${prompt.slice(0, 150)}`);
-
+  const input: Record<string, any> = { prompt, image_1: refImage, aspect_ratio: aspectRatio };
+  if (subjectImage) input.image_2 = subjectImage;
   const { outputUrl, duration_ms } = await callReplicate(NANO_BANANA_MODEL, input, token);
   return { image: outputUrl, model: NANO_BANANA_MODEL, duration_ms };
 }
 
-// ── Flux Kontext Pro (fallback) ────────────────────────────────────────────────
-
-const FLUX_SINGLE_MODEL = "black-forest-labs/flux-kontext-pro";
-
 async function generateWithFlux(
-  prompt: string,
-  refImage: string,
-  aspectRatio: string,
-  token: string,
+  prompt: string, refImage: string, aspectRatio: string, token: string,
 ): Promise<{ image: string; model: string; duration_ms: number }> {
-  const { outputUrl, duration_ms } = await callReplicate(FLUX_SINGLE_MODEL, {
-    prompt,
-    input_image: refImage,
-    aspect_ratio: aspectRatio,
+  const { outputUrl, duration_ms } = await callReplicate(FLUX_MODEL, {
+    prompt, input_image: refImage, aspect_ratio: aspectRatio,
   }, token);
-  return { image: outputUrl, model: FLUX_SINGLE_MODEL, duration_ms };
+  return { image: outputUrl, model: FLUX_MODEL, duration_ms };
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────────
@@ -248,7 +277,6 @@ async function generateWithFlux(
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get("origin");
   const cors = corsHeaders(origin);
-
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: cors });
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405, cors);
 
@@ -262,37 +290,38 @@ Deno.serve(async (req: Request) => {
     }
 
     const token = String(Deno.env.get("REPLICATE_API_TOKEN") ?? "").trim();
-    if (!token) {
-      return json({ error: "missing_api_token", details: "REPLICATE_API_TOKEN not configured." }, 500, cors);
-    }
+    if (!token) return json({ error: "missing_api_token", details: "REPLICATE_API_TOKEN not configured." }, 500, cors);
 
     const selectedModel = body.model || "nano-banana";
     const aspectRatio = pickAspectRatio(body.format);
     const refImage = ensureDataUri(body.reference_image);
     const hasSubject = Boolean(body.subject_image);
     const subjectImage = hasSubject ? ensureDataUri(body.subject_image!) : null;
+    const hasAnalysis = Boolean(body.analysis?.fullPrompt);
 
-    console.log(`[generate-creative] Model: ${selectedModel} | Subject: ${hasSubject} | Variation: ${body.variation ?? 30} | Format: ${aspectRatio}`);
+    console.log(`[generate-creative] Model: ${selectedModel} | HasAnalysis: ${hasAnalysis} | Subject: ${hasSubject} | Variation: ${body.variation ?? 30} | Format: ${aspectRatio}`);
+    console.log(`[generate-creative] Text replacements: ${body.text_replacements?.length ?? 0}`);
 
     let result: { image: string; model: string; duration_ms: number };
     let prompt: string;
 
     if (selectedModel === "flux-kontext") {
-      // ── Flux Kontext Pro (explicit choice) ──
       prompt = buildFluxPrompt(body);
+      console.log(`[generate-creative] Prompt length: ${prompt.length} | Mode: flux-direct`);
       result = await generateWithFlux(prompt, refImage, aspectRatio, token);
     } else {
-      // ── Nano Banana Pro (default) with Flux fallback ──
-      prompt = buildNanaBananaPrompt(body);
+      // Nano Banana with analysis-aware prompt
+      prompt = hasAnalysis ? buildAnalysisPrompt(body) : buildGenericPrompt(body);
+      console.log(`[generate-creative] Prompt length: ${prompt.length} | Mode: ${hasAnalysis ? "analysis-driven" : "generic"}`);
+
       try {
         result = await generateWithNanaBanana(prompt, refImage, subjectImage, aspectRatio, token);
-      } catch (nanaBananaErr) {
-        const errMsg = String((nanaBananaErr as Error)?.message ?? nanaBananaErr);
-        console.warn(`[generate-creative] Nano Banana failed: ${errMsg.slice(0, 200)} — falling back to Flux Kontext`);
-
+      } catch (err) {
+        const errMsg = String((err as Error)?.message ?? err);
+        console.warn(`[generate-creative] Nano Banana failed: ${errMsg.slice(0, 200)} — falling back to Flux`);
         prompt = buildFluxPrompt(body);
         result = await generateWithFlux(prompt, refImage, aspectRatio, token);
-        result.model = `${result.model} (fallback from nano-banana)`;
+        result.model = `${result.model} (fallback)`;
       }
     }
 
@@ -305,6 +334,7 @@ Deno.serve(async (req: Request) => {
       duration_ms: result.duration_ms,
       variation: body.variation ?? 30,
       format: aspectRatio,
+      analysis_used: hasAnalysis,
     }, 200, cors);
   } catch (err) {
     const msg = String((err as Error)?.message ?? err);
