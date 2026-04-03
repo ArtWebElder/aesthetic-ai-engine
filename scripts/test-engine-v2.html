@@ -119,8 +119,8 @@
     <h3>7. Modelo</h3>
     <div class="model-row">
       <select id="model-select">
-        <option value="flux-kontext">Flux Kontext Pro (Replicate)</option>
-        <option value="imagen4">Imagen 4 (Google)</option>
+        <option value="nano-banana">Nano Banana Pro (Google) — padrão</option>
+        <option value="flux-kontext">Flux Kontext Pro (Black Forest Labs)</option>
       </select>
     </div>
 
@@ -280,7 +280,9 @@ async function generateCreative() {
   const status = document.getElementById('generate-status');
   const modelSel = document.getElementById('model-select').value;
   const hasSubject = Boolean(images.sub);
-  const modelLabel = modelSel === 'imagen4' ? 'Imagen 4' : (hasSubject ? 'Multi-Image Kontext Pro (subject swap)' : 'Flux Kontext Pro');
+  const modelLabel = modelSel === 'nano-banana'
+    ? (hasSubject ? 'Nano Banana Pro (subject swap)' : 'Nano Banana Pro')
+    : (hasSubject ? 'Flux Kontext Pro (subject swap)' : 'Flux Kontext Pro');
   btn.disabled = true;
   status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ' + modelLabel + '...</div>';
 
@@ -305,33 +307,36 @@ async function generateBoth() {
   const status = document.getElementById('generate-status');
   btn.disabled = true;
   btnGen.disabled = true;
-  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ambos os modelos (Flux + Imagen 4)...</div>';
+  status.innerHTML = '<div class="loading"><div class="spin"></div>Gerando com ambos os modelos (Nano Banana + Flux)...</div>';
 
   const resultArea = document.getElementById('result-area');
-  resultArea.innerHTML = '<div class="compare-grid"><div id="slot-flux"><div class="loading"><div class="spin"></div>Flux Kontext Pro...</div></div><div id="slot-imagen"><div class="loading"><div class="spin"></div>Imagen 4...</div></div></div>';
+  resultArea.innerHTML = '<div class="compare-grid"><div id="slot-nano"><div class="loading"><div class="spin"></div>Nano Banana Pro...</div></div><div id="slot-flux"><div class="loading"><div class="spin"></div>Flux Kontext Pro...</div></div></div>';
 
+  const bodyNano = collectBody('nano-banana');
   const bodyFlux = collectBody('flux-kontext');
-  const bodyImagen = collectBody('imagen4');
 
   const results = await Promise.allSettled([
+    callGenerate(bodyNano, 'Nano Banana Pro'),
     callGenerate(bodyFlux, 'Flux Kontext Pro'),
-    callGenerate(bodyImagen, 'Imagen 4'),
   ]);
 
+  const slotNano = document.getElementById('slot-nano');
   const slotFlux = document.getElementById('slot-flux');
-  const slotImagen = document.getElementById('slot-imagen');
 
   if (results[0].status === 'fulfilled') {
-    slotFlux.innerHTML = renderResultCard(results[0].value, 'Flux Kontext Pro');
+    slotNano.innerHTML = renderResultCard(results[0].value, 'Nano Banana Pro');
     document.getElementById('prompt-used').textContent = results[0].value.prompt_used || '—';
   } else {
-    slotFlux.innerHTML = '<div class="error">Flux: ' + results[0].reason.message + '</div>';
+    slotNano.innerHTML = '<div class="error">Nano Banana: ' + results[0].reason.message + '</div>';
   }
 
   if (results[1].status === 'fulfilled') {
-    slotImagen.innerHTML = renderResultCard(results[1].value, 'Imagen 4');
+    slotFlux.innerHTML = renderResultCard(results[1].value, 'Flux Kontext Pro');
+    if (results[0].status !== 'fulfilled') {
+      document.getElementById('prompt-used').textContent = results[1].value.prompt_used || '—';
+    }
   } else {
-    slotImagen.innerHTML = '<div class="error">Imagen 4: ' + results[1].reason.message + '</div>';
+    slotFlux.innerHTML = '<div class="error">Flux: ' + results[1].reason.message + '</div>';
   }
 
   const ok = [results[0], results[1]].filter(r => r.status === 'fulfilled').length;
