@@ -1,3 +1,10 @@
+# =========================
+# ENV / SECRETS (CRÍTICO)
+# =========================
+.env
+.env.*
+!.env.example
+
 # Logs
 logs
 *.log
@@ -7,12 +14,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Build
 dist
 dist-ssr
+
+# Local configs
 *.local
 
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -23,13 +35,13 @@ dist-ssr
 *.sln
 *.sw?
 
+# Misc
 buildlog.txt
 
-
+# JSON sensíveis
 skilful-answer-*.json
-
-# Google Service Account
 *-h8-*.json
 *.service-account.json
 
+# Supabase temp
 supabase/.temp/
