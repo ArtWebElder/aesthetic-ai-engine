@@ -61,50 +61,107 @@ function ensureDataUri(b64: string): string {
 
 // ── Prompt builders ────────────────────────────────────────────────────────────
 
+/** Resolve the final text for each item: use replacement if changed, else original */
+function resolveAllTexts(body: GenerateBody): Array<{ type: string; text: string }> {
+  const replacements = body.text_replacements || [];
+  // Build a map of original→replacement
+  const repMap = new Map<string, string>();
+  for (const r of replacements) {
+    if (r.original && r.replacement) repMap.set(r.original, r.replacement);
+  }
+  // Start from analysis texts if available, then overlay replacements
+  const analysisTexts = body.analysis?.texts || [];
+  if (analysisTexts.length > 0) {
+    return analysisTexts.map(t => ({
+      type: t.type,
+      text: repMap.get(t.content) || t.content,
+    }));
+  }
+  // Fallback: just use replacements as final texts
+  return replacements.filter(r => r.replacement).map(r => ({
+    type: 'text',
+    text: r.replacement,
+  }));
+}
+
 /**
  * Build prompt using Gemini analysis as foundation.
- * Combines: fullPrompt + subject swap + edited texts + colors + variation + extras.
+ * Structured sections: layout, subject, texts, colors, variation, output rules.
  */
 function buildAnalysisPrompt(body: GenerateBody): string {
   const analysis = body.analysis!;
   const variation = Math.max(0, Math.min(100, body.variation ?? 30));
-  const parts: string[] = [];
+  const sections: string[] = [];
 
-  // Part 1 — Gemini's detailed scene description as base
-  parts.push(analysis.fullPrompt || "Recreate this professional advertisement with the same style, layout, and visual quality.");
-
-  // Part 2 — Subject swap
+  // Header
   if (body.subject_image) {
-    parts.push("IMPORTANT: The main product in the final image MUST be the exact product shown in the second input image. Do not generate a new product — use the product from the second image exactly as it appears, with the same details, textures, and proportions. Place it in the scene and layout from the first image, with natural lighting and scale.");
+    sections.push("Recreate this advertisement exactly as described below, using the product/person from the second input image as the main subject.");
+  } else {
+    sections.push("Recreate this advertisement exactly as described below.");
   }
 
-  // Part 3 — Edited texts (only texts that changed)
-  if (body.text_replacements && body.text_replacements.length > 0) {
-    const changed = body.text_replacements.filter(r => r.original && r.replacement);
-    if (changed.length > 0) {
-      const textLines = changed.map(r => `- ${r.replacement}`).join("\n");
-      parts.push(`The following texts must appear exactly as written, sharp and legible:\n${textLines}`);
-    }
+  // LAYOUT AND COMPOSITION
+  sections.push(
+    `LAYOUT AND COMPOSITION:\n${analysis.fullPrompt || "Professional advertisement with clean layout, balanced typography, and commercial-grade visual quality."}`
+  );
+
+  // SUBJECT REPLACEMENT
+  if (body.subject_image) {
+    sections.push(
+      `SUBJECT REPLACEMENT:\nThe main subject in the final image MUST be the exact product/person shown in the second input image. Copy every detail from it: exact shape, colors, textures, proportions, branding. Do NOT generate a new subject — use the second image as-is and integrate it into the scene from the first image with natural lighting, shadows, and scale.`
+    );
   }
 
-  // Part 4 — Color palette
+  // EXACT TEXT CONTENT — list ALL texts
+  const allTexts = resolveAllTexts(body);
+  if (allTexts.length > 0) {
+    const textLines = allTexts.map(t => {
+      const label = t.type.charAt(0).toUpperCase() + t.type.slice(1);
+      return `${label}: "${t.text}"`;
+    }).join("\n");
+    sections.push(
+      `EXACT TEXT CONTENT (render these texts exactly as written, with perfect spelling):\n${textLines}`
+    );
+  }
+
+  // COLOR PALETTE
   if (body.color_palette && body.color_palette.length > 0) {
-    parts.push(`Apply this color scheme: ${body.color_palette.join(", ")}.`);
+    const c = body.color_palette;
+    const assignments: string[] = [];
+    if (c[0]) assignments.push(`Primary/Background: ${c[0]}`);
+    if (c[1]) assignments.push(`Secondary/Accents: ${c[1]}`);
+    if (c[2]) assignments.push(`Highlights: ${c[2]}`);
+    if (c[3]) assignments.push(`Text primary: ${c[3]}`);
+    if (c[4]) assignments.push(`Text secondary: ${c[4]}`);
+    sections.push(
+      `COLOR PALETTE (MANDATORY — override the original colors):\n${assignments.join("\n")}\nThese colors MUST replace the original color scheme. Do not keep the original colors.`
+    );
   }
 
-  // Part 5 — Variation level
-  if (variation <= 10) {
-    parts.push("Recreate the exact same layout and composition.");
-  } else if (variation > 0) {
-    parts.push(`Take ${variation}% creative liberty while keeping the overall style.`);
+  // VARIATION LEVEL
+  let variationDesc: string;
+  if (variation === 0) {
+    variationDesc = "This must be an exact recreation. Same layout, same positions, same proportions.";
+  } else if (variation <= 30) {
+    variationDesc = "Minor creative adjustments allowed but maintain the core layout and structure.";
+  } else if (variation <= 60) {
+    variationDesc = "Moderate creative freedom. Keep the general concept but reimagine details.";
+  } else {
+    variationDesc = "Full creative reinterpretation. Use the reference as loose inspiration only.";
   }
+  sections.push(`VARIATION LEVEL: ${variation}%\n${variationDesc}`);
 
-  // Part 6 — Extra instructions
+  // EXTRA INSTRUCTIONS
   if (body.extra_instructions && body.extra_instructions.trim()) {
-    parts.push(body.extra_instructions.trim());
+    sections.push(`ADDITIONAL INSTRUCTIONS:\n${body.extra_instructions.trim()}`);
   }
 
-  return parts.join("\n\n");
+  // OUTPUT REQUIREMENTS
+  sections.push(
+    `OUTPUT REQUIREMENTS:\n- Professional advertisement quality\n- All text must be perfectly legible, sharp, and correctly spelled\n- No watermarks, no signatures, no AI artifacts\n- Clean, commercial-ready output`
+  );
+
+  return sections.join("\n\n");
 }
 
 /** Generic prompt when no analysis is available */
@@ -113,34 +170,34 @@ function buildGenericPrompt(body: GenerateBody): string {
   const parts: string[] = [];
 
   if (body.subject_image) {
-    parts.push("Use the style, layout, and design from the first image to create an advertisement. IMPORTANT: The main product MUST be the exact product from the second image — use it exactly as it appears, same details, textures, and proportions. Do not generate a new product.");
+    parts.push("Use the style, layout, and design from the first image to create an advertisement. The main subject MUST be the exact product/person from the second image — copy every detail exactly as it appears. Do not generate a new subject.");
   } else {
-    parts.push("Use the style, layout, and design from the provided image to create an advertisement.");
+    parts.push("Recreate this advertisement with the same style, layout, and design.");
   }
 
   if (variation <= 20) {
-    parts.push("Keep the layout and design as close to image 1 as possible.");
+    parts.push("Keep the layout and design as close as possible to the original.");
   } else if (variation > 50) {
     parts.push("Take creative liberties while keeping the general style.");
   }
 
-  if (body.text_replacements && body.text_replacements.length > 0) {
-    const changes = body.text_replacements
-      .filter(r => r.original && r.replacement && r.original !== r.replacement)
-      .map(r => `Change the text '${r.original}' to '${r.replacement}'.`);
-    if (changes.length > 0) parts.push(changes.join(" "));
+  // List ALL texts (not just changed ones)
+  const allTexts = resolveAllTexts(body);
+  if (allTexts.length > 0) {
+    const textLines = allTexts.map(t => `- ${t.type}: "${t.text}"`).join("\n");
+    parts.push(`These exact texts must appear in the image:\n${textLines}`);
   }
 
   if (body.color_palette && body.color_palette.length > 0) {
-    parts.push(`Use this color scheme: ${body.color_palette.join(", ")}.`);
+    parts.push(`MANDATORY colors: ${body.color_palette.join(", ")}. Replace the original color scheme entirely.`);
   }
 
   if (body.extra_instructions && body.extra_instructions.trim()) {
     parts.push(body.extra_instructions.trim());
   }
 
-  parts.push("All text must be sharp, legible, and professional.");
-  return parts.join(" ");
+  parts.push("All text must be sharp and legible. No watermarks or AI artifacts. Professional quality.");
+  return parts.join("\n\n");
 }
 
 /** Flux fallback prompt */
