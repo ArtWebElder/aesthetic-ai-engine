@@ -240,11 +240,98 @@ export async function executeNode(
 
       const isSceneMode = node.data.mode === 'scene_with_subject';
       const isCompositionMode = node.data.mode === 'composition_visual';
+      const isCloneV2 = node.data.mode === 'clone_creative_v2';
 
       // Find copy data from upstream Copy IA node (for composition_visual mode)
       const copyUp = findUpstreamByType(inputs, 'copy');
 
       console.log('[Studio:image_gen] Mode:', node.data.mode || 'default');
+
+      // ── clone_creative_v2: use V2 engine (analyze-creative + generate-creative) ──
+      if (isCloneV2) {
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+        if (!supabaseUrl || !supabaseKey) throw new Error('Supabase não configurado');
+
+        const refData = findUpstreamByType(inputs, 'reference');
+        const refImage = refData?.image || reference;
+        const subImage = subject;
+        const textData = findUpstreamByType(inputs, 'text');
+        const analysisData = inputs.analysis;
+
+        // Step 1: Analyze if we have analysis from upstream
+        let v2Analysis = analysisData || null;
+        if (!v2Analysis && refImage) {
+          console.log('[Studio:clone_v2] Analyzing reference...');
+          try {
+            const analyzeResp = await fetch(`${supabaseUrl}/functions/v1/analyze-creative`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+              body: JSON.stringify({ image: refImage }),
+            });
+            if (analyzeResp.ok) {
+              const analyzeResult = await analyzeResp.json();
+              v2Analysis = analyzeResult.analysis;
+              console.log('[Studio:clone_v2] Analysis OK');
+            }
+          } catch (e) {
+            console.warn('[Studio:clone_v2] Analysis failed:', e);
+          }
+        }
+
+        // Step 2: Generate
+        console.log('[Studio:clone_v2] Generating with Nano Banana Pro...');
+        const generateBody: Record<string, unknown> = {
+          reference_image: refImage || subImage,
+          model: 'nano-banana',
+          variation: 10,
+          format: '1:1',
+        };
+        if (subImage && refImage) generateBody.subject_image = subImage;
+        if (v2Analysis) generateBody.analysis = v2Analysis;
+        if (textData?.fields) {
+          const fields = textData.fields as Record<string, string>;
+          const replacements = Object.entries(fields)
+            .filter(([, v]) => v)
+            .map(([, v]) => ({ original: v, replacement: v }));
+          if (replacements.length > 0) generateBody.text_replacements = replacements;
+        }
+
+        const genResp = await fetch(`${supabaseUrl}/functions/v1/generate-creative`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: JSON.stringify(generateBody),
+        });
+
+        if (!genResp.ok) {
+          const err = await genResp.text();
+          throw new Error(`Clone V2 generation failed (${genResp.status}): ${err.slice(0, 200)}`);
+        }
+
+        const genResult = await genResp.json();
+        let genImage: string;
+        if (genResult.image?.startsWith('data:')) {
+          genImage = genResult.image;
+        } else if (genResult.image) {
+          const imgResp = await fetch(genResult.image);
+          const blob = await imgResp.blob();
+          genImage = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } else {
+          throw new Error('No image in generate-creative response');
+        }
+
+        return {
+          image: genImage,
+          generatedImage: genImage,
+          type: 'generated',
+          provider: genResult.model || 'nano-banana-pro',
+          analysis: v2Analysis,
+        };
+      }
       console.log('[Studio:image_gen] Prompt length:', prompt.length);
       console.log('[Studio:image_gen] Subject:', subject ? `(${subject.length} chars)` : 'MISSING');
       console.log('[Studio:image_gen] Reference:', reference ? `(${reference.length} chars)` : 'none');

@@ -1,6 +1,6 @@
 import {
   Palette, Sparkles, Plus,
-  LayoutTemplate,
+  LayoutTemplate, Copy,
 } from 'lucide-react';
 import { PRESET_FLOWS, type PresetFlow } from './types';
 import { useI18n } from '@/i18n';
@@ -9,6 +9,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Palette,
   Sparkles,
   LayoutTemplate,
+  Copy,
 };
 
 interface FlowSelectorProps {

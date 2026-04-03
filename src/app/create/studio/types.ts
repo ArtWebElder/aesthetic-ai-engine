@@ -268,6 +268,35 @@ export interface PresetFlow {
 }
 
 export const PRESET_FLOWS: Record<string, PresetFlow> = {
+  'clone-criativo': {
+    id: 'clone-criativo',
+    name: 'Clone Criativo',
+    nameEn: 'Creative Clone',
+    nameEs: 'Clon Creativo',
+    description: 'Clone qualquer anúncio com IA. Troque textos, cores e subject.',
+    descriptionEn: 'Clone any ad with AI. Swap texts, colors and subject.',
+    descriptionEs: 'Clona cualquier anuncio con IA. Cambia textos, colores y sujeto.',
+    icon: 'Copy',
+    color: '#ff713d',
+    credits: 10,
+    nodes: [
+      { id: 'ref', type: 'reference_upload', x: 60, y: 60, data: { label: 'Referência (anúncio a clonar)' } },
+      { id: 'sub', type: 'image_upload', x: 60, y: 300, data: { label: 'Subject (opcional)' } },
+      { id: 'txt', type: 'text_input', x: 60, y: 520, data: { text: '', fields: { headline: '', price: '', cta: '', contact: '' } } },
+      { id: 'analyze', type: 'reference_analyzer', x: 440, y: 60, data: {} },
+      { id: 'generate', type: 'image_gen', x: 820, y: 160, data: { width: 1080, height: 1080, mode: 'clone_creative_v2' } },
+      { id: 'export', type: 'export', x: 1200, y: 160, data: { format: 'png' } },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'ref', fromPort: 'output', toNode: 'analyze', toPort: 'input' },
+      { id: 'c2', fromNode: 'sub', fromPort: 'output', toNode: 'analyze', toPort: 'input' },
+      { id: 'c3', fromNode: 'analyze', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c4', fromNode: 'sub', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c5', fromNode: 'ref', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c6', fromNode: 'txt', fromPort: 'output', toNode: 'generate', toPort: 'input' },
+      { id: 'c7', fromNode: 'generate', fromPort: 'output', toNode: 'export', toPort: 'input' },
+    ],
+  },
   'styled-photo': {
     id: 'styled-photo',
     name: 'Foto no Estilo',

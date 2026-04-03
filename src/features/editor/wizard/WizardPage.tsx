@@ -7,14 +7,10 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/features/toast/useToast";
 import { useWizardStore } from "@/stores/useWizardStore";
-import { generateFromWizard, GenerateError } from "@/services/generateService";
-import { exportComposed, FORMAT_BY_ID, type FoodPalette } from "../engine/exportComposed";
-import { composePopDesign, composePopDesignV2, type PopTexts } from "../engine/popDesign";
+import { GenerateError } from "@/services/generateService";
+import { FORMAT_BY_ID, type FoodPalette } from "../engine/exportComposed";
 import { RefinementChat } from "./RefinementChat";
 import { type RefinementOverrides } from "../engine/chatApply";
-import { buildComposition } from "../engine/compositionBuilder";
-import { exportCompositionToPNG } from "../engine/htmlExport";
-import { applyChatToComposition } from "../engine/chatApplyComposition";
 import type { CreatygnComposition } from "@/types/composition";
 import { getPresetById } from "@/lib/presetUtils";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
@@ -22,7 +18,6 @@ import { WizardStep1Subject } from "./WizardStep1Subject";
 import { WizardStep2Reference } from "./WizardStep2Reference";
 import { WizardStep2Style } from "./WizardStep2Style";
 import { WizardStep3Text } from "./WizardStep3Text";
-import { analyzeReference } from "@/services/referenceAnalyzer";
 import { ExportModal } from "./ExportModal";
 import { ConfettiEffect } from "@/components/creatyng/ConfettiEffect";
 import { useCreditStore } from "@/stores/useCreditStore";
@@ -30,6 +25,7 @@ import { calculateCost } from "@/lib/creditCosts";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { incrementGenCount, PaywallModal } from "@/components/creatyng/CreditUpsell";
 import { useI18n } from "@/i18n";
+import { supabase } from "@/services/supabaseClient";
 
 // ── Constants (idênticos ao original) ─────────────────────────────────────────
 
@@ -60,11 +56,11 @@ const STEP_LABELS = ["Upload", "Referência", "Estilo", "Textos", "Gerando", "Re
 // ── Generation stages ─────────────────────────────────────────────────────────
 
 const GENERATION_STAGES = [
-  "Analisando sua imagem...",
-  "Construindo prompt de 6 camadas...",
-  "Gemini gerando cena cinematográfica...",
-  "Aplicando tipografia profissional...",
-  "Renderizando composição final...",
+  "Analisando referência com Gemini...",
+  "Montando prompt otimizado...",
+  "Gerando criativo com IA...",
+  "Aguardando resultado...",
+  "Processando imagem...",
   "Finalizando seu criativo!",
 ];
 
@@ -368,7 +364,7 @@ export function WizardPage() {
     }
   }
 
-  // handleGenerate (idêntico ao original, com setGenerationDone no final)
+  // handleGenerate — V2 engine (Gemini analyze + Nano Banana Pro generate)
   async function handleGenerate() {
     const state = useWizardStore.getState();
     setError(null);
@@ -391,11 +387,10 @@ export function WizardPage() {
       }
 
       // ── Debit credits before generation ────────────────────────────────────
-      const presetId = state.selectedImagePresetId || "simple-gen";
-      const creditCost = calculateCost(presetId) || 5;
-      console.log(`[Debit] Debitando ${creditCost} créditos para preset "${presetId}"...`);
+      const creditCost = calculateCost("clone-criativo") || 10;
+      console.log(`[Debit] Debitando ${creditCost} créditos para clone-criativo...`);
       try {
-        await useCreditStore.getState().debitCredits(creditCost, `Generation — ${presetId}`);
+        await useCreditStore.getState().debitCredits(creditCost, `Clone Criativo`);
       } catch (debitErr: unknown) {
         const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
         if (msg === "insufficient_credits") {
@@ -406,24 +401,143 @@ export function WizardPage() {
         console.warn("[Wizard] debit failed, proceeding anyway:", msg);
       }
 
-      // ── Analyze reference (if present, before any pipeline) ─────────────────
+      // ── Step 1: Analyze reference with Gemini (if not already done) ────────
+      let v2Analysis = state.referenceAnalysis as Record<string, unknown> | null;
       const hasRef = Boolean(state.referenceBase64 && !state.referenceBase64.startsWith("gallery:"));
-      if (hasRef && !state.referenceAnalysis) {
-        setPopDesignStep("Analisando referência visual...");
+
+      if (hasRef && !v2Analysis) {
+        setPopDesignStep("Analisando referência com Gemini...");
         try {
-          const analysis = await analyzeReference(
-            state.referenceBase64!,
-            state.subjectBase64,
-            { headline: state.headline, cta: state.cta },
-          );
-          setReferenceAnalysis(analysis);
+          const { data: analyzeData, error: analyzeErr } = await supabase.functions.invoke('analyze-creative', {
+            body: { image: state.referenceBase64 },
+          });
+          if (analyzeErr) throw analyzeErr;
+          v2Analysis = analyzeData?.analysis ?? null;
+          if (v2Analysis) {
+            setReferenceAnalysis(v2Analysis as never);
+            console.log("[V2] Analysis OK:", Object.keys(v2Analysis));
+          }
         } catch (e) {
-          console.warn("[Reference] Analysis failed, proceeding without:", e);
+          console.warn("[V2] Analysis failed, proceeding without:", e);
         }
       }
 
-      // ── Pop Design pipeline ─────────────────────────────────────────────────
-      if (state.selectedImagePresetId === "sys-img-pop-design") {
+      // ── Step 2: Build text_replacements from wizard state ──────────────────
+      const textReplacements: Array<{ original: string; replacement: string }> = [];
+      const analysisTexts = (v2Analysis as { texts?: Array<{ type: string; content: string }> } | null)?.texts || [];
+
+      // Map wizard fields to text types for matching
+      const userTexts: Record<string, string> = {};
+      if (state.headline) userTexts.title = state.headline;
+      if (state.subheadline) userTexts.subtitle = state.subheadline;
+      if (state.cta) userTexts.cta = state.cta;
+      if (state.price?.value) userTexts.price = `${state.price.prefix || ''} ${state.price.value}`.trim();
+
+      for (const at of analysisTexts) {
+        const userText = userTexts[at.type];
+        if (userText) {
+          textReplacements.push({ original: at.content, replacement: userText });
+        } else {
+          textReplacements.push({ original: at.content, replacement: at.content });
+        }
+      }
+      // Add user texts that weren't in analysis
+      for (const [type, text] of Object.entries(userTexts)) {
+        if (!textReplacements.some(r => r.replacement === text)) {
+          textReplacements.push({ original: text, replacement: text });
+        }
+      }
+
+      // ── Step 3: Generate with Nano Banana Pro ──────────────────────────────
+      setPopDesignStep("Gerando criativo com IA...");
+
+      const generateBody: Record<string, unknown> = {
+        reference_image: state.referenceBase64 || state.subjectBase64,
+        variation: 10,
+        format: "1:1",
+        model: "nano-banana",
+      };
+
+      if (state.subjectBase64 && state.referenceBase64) {
+        generateBody.subject_image = state.subjectBase64;
+      }
+      if (textReplacements.length > 0) {
+        generateBody.text_replacements = textReplacements;
+      }
+      if (v2Analysis) {
+        generateBody.analysis = v2Analysis;
+      }
+      if (state.freeInstructions) {
+        generateBody.extra_instructions = state.freeInstructions;
+      }
+
+      console.log("[V2] Calling generate-creative:", Object.keys(generateBody));
+
+      const { data: genData, error: genErr } = await supabase.functions.invoke('generate-creative', {
+        body: generateBody,
+      });
+
+      if (genErr) {
+        const errBody = typeof genErr === 'object' && 'context' in genErr
+          ? await (genErr as { context: Response }).context.json().catch(() => null)
+          : null;
+        throw new GenerateError(
+          errBody?.error || "generation_failed",
+          errBody?.details || genData?.details || "Falha na geração do criativo.",
+        );
+      }
+
+      const imageUrl = genData?.image;
+      if (!imageUrl) {
+        throw new GenerateError("no_image", "Nenhuma imagem retornada pelo servidor.");
+      }
+
+      // Convert URL to base64 for display
+      let imageBase64: string;
+      if (imageUrl.startsWith("data:")) {
+        imageBase64 = imageUrl;
+      } else {
+        const imgResp = await fetch(imageUrl);
+        const blob = await imgResp.blob();
+        imageBase64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+
+      setComposedBase64(imageBase64);
+
+      const genId = typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `clone-${Date.now().toString(36)}`;
+      setGeneration({
+        generationId: genId,
+        imageBase64,
+        imageThumbnail: imageBase64,
+        wizardStateSnapshot: { ...state } as never,
+        presetIds: { image: "clone-criativo", text: "" },
+        activePresetConfigSnapshot: {},
+        meta: {
+          provider: genData?.model || "nano-banana-pro",
+          model: genData?.model || "google/nano-banana-pro",
+          dnaUsed: Boolean(v2Analysis),
+          aspectRatio: genData?.format || "1:1",
+          generationMs: genData?.duration_ms || 0,
+        },
+        timestamp: Date.now(),
+      });
+
+      setPopDesignStep("");
+      setGenerating(false);
+      setGenerationDone(true);
+      incrementGenCount();
+      return;
+      // V1 pipeline removed — all generation now handled by V2 above
+
+      // eslint-disable-next-line no-constant-condition
+      if (false) {
+        // Dead code guard — prevents unreachable code errors for V1 imports still in scope
         if (!state.subjectBase64) {
           throw new GenerateError("no_subject", "Envie uma imagem do sujeito antes de gerar.");
         }
@@ -675,7 +789,7 @@ export function WizardPage() {
   const canAdvance =
     uiStep === 1 ? Boolean(subjectBase64) :
     uiStep === 2 ? true :                         // reference is optional
-    uiStep === 3 ? Boolean(selectedImagePresetId) :
+    uiStep === 3 ? true :                         // style step auto-passes for clone-criativo
     uiStep === 4 ? Boolean(headline?.trim()) :
     false;
 

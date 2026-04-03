@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Utensils, Sparkles, BookOpen, Zap, ChevronLeft, ChevronRight,
+  Copy, Sparkles, BookOpen, Zap, ChevronLeft, ChevronRight,
   FolderOpen, Plus, Image,
 } from 'lucide-react';
 import { EmptyState } from '@/components/creatyng';
@@ -14,23 +14,13 @@ import { useEffect } from 'react';
 /* ── Feature cards ────────────────────────────────────── */
 const FEATURES = [
   {
-    id: 'food_pop',
-    labelKey: 'dashboard.feature.food_pop',
-    descKey: 'dashboard.feature.food_pop_desc',
-    gradient: 'linear-gradient(135deg, #f97316, #e11d48)',
-    Icon: Utensils,
+    id: 'clone_criativo',
+    labelKey: 'dashboard.feature.clone_criativo',
+    descKey: 'dashboard.feature.clone_criativo_desc',
+    gradient: 'linear-gradient(135deg, #ff713d, #e11d48)',
+    Icon: Copy,
     badgeLabel: 'Popular',
     badgeBg: '#ff713d',
-    active: true,
-  },
-  {
-    id: 'pop_design',
-    labelKey: 'dashboard.feature.pop_design',
-    descKey: 'dashboard.feature.pop_design_desc',
-    gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-    Icon: Sparkles,
-    badgeLabel: 'Novo',
-    badgeBg: '#7C3AED',
     active: true,
   },
   {

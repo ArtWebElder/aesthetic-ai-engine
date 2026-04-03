@@ -97,6 +97,8 @@
   "dashboard.greeting": "Hello, {name}!",
   "dashboard.greeting_sub": "Your creative studio is ready.",
   "dashboard.fallback_name": "there",
+  "dashboard.feature.clone_criativo": "Creative Clone",
+  "dashboard.feature.clone_criativo_desc": "Clone any ad with AI. Swap texts, colors, and subject.",
   "dashboard.feature.food_pop": "Food & Pop",
   "dashboard.feature.food_pop_desc": "Vibrant food visuals with pop art energy. Perfect for restaurants and delivery brands.",
   "dashboard.feature.pop_design": "Pop Design",

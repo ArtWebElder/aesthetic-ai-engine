@@ -787,6 +787,8 @@
   "dashboard.greeting": "¡Hola, {name}!",
   "dashboard.greeting_sub": "Tu estudio creativo está listo.",
   "dashboard.fallback_name": "allí",
+  "dashboard.feature.clone_criativo": "Clon Creativo",
+  "dashboard.feature.clone_criativo_desc": "Clona cualquier anuncio con IA. Cambia textos, colores y sujeto.",
   "dashboard.feature.food_pop": "Food & Pop",
   "dashboard.feature.food_pop_desc": "Visuales vibrantes de comida con energía pop art. Perfecto para restaurantes y marcas de delivery.",
   "dashboard.feature.pop_design": "Pop Design",
