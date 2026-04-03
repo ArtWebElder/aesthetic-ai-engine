@@ -75,7 +75,7 @@ function buildAnalysisPrompt(body: GenerateBody): string {
 
   // Part 2 — Subject swap
   if (body.subject_image) {
-    parts.push("Use the product/person from image 2 as the main subject, replacing the original subject. Maintain natural integration with the scene, matching lighting and scale.");
+    parts.push("IMPORTANT: The main product in the final image MUST be the exact product shown in the second input image. Do not generate a new product — use the product from the second image exactly as it appears, with the same details, textures, and proportions. Place it in the scene and layout from the first image, with natural lighting and scale.");
   }
 
   // Part 3 — Edited texts (only texts that changed)
@@ -113,9 +113,9 @@ function buildGenericPrompt(body: GenerateBody): string {
   const parts: string[] = [];
 
   if (body.subject_image) {
-    parts.push("Use the style, layout, and design from image 1 to create an advertisement featuring the product/person from image 2.");
+    parts.push("Use the style, layout, and design from the first image to create an advertisement. IMPORTANT: The main product MUST be the exact product from the second image — use it exactly as it appears, same details, textures, and proportions. Do not generate a new product.");
   } else {
-    parts.push("Use the style, layout, and design from image 1 to create an advertisement.");
+    parts.push("Use the style, layout, and design from the provided image to create an advertisement.");
   }
 
   if (variation <= 20) {
@@ -256,9 +256,23 @@ const FLUX_MODEL = "black-forest-labs/flux-kontext-pro";
 async function generateWithNanaBanana(
   prompt: string, refImage: string, subjectImage: string | null, aspectRatio: string, token: string,
 ): Promise<{ image: string; model: string; duration_ms: number }> {
+  // Nano Banana Pro uses "image_input" as an ARRAY (up to 14 images)
+  // image_input[0] = reference creative, image_input[1] = subject photo
+  const imageInput: string[] = [refImage];
+  if (subjectImage) imageInput.push(subjectImage);
+
   // deno-lint-ignore no-explicit-any
-  const input: Record<string, any> = { prompt, image_1: refImage, aspect_ratio: aspectRatio };
-  if (subjectImage) input.image_2 = subjectImage;
+  const input: Record<string, any> = {
+    prompt,
+    image_input: imageInput,
+    aspect_ratio: aspectRatio,
+    output_format: "jpg",
+    safety_filter_level: "block_only_high",
+  };
+
+  console.log(`[nano-banana] image_input: ${imageInput.length} image(s) | Prompt: ${prompt.slice(0, 150)}`);
+  console.log(`[nano-banana] Input fields:`, Object.keys(input));
+
   const { outputUrl, duration_ms } = await callReplicate(NANO_BANANA_MODEL, input, token);
   return { image: outputUrl, model: NANO_BANANA_MODEL, duration_ms };
 }
