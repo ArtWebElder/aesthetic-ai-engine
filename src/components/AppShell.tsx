@@ -284,11 +284,13 @@ const AppShell = () => {
 
         <main className="flex-1 overflow-auto bg-background" style={
           pathname === '/app/create/studio' ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
+            backgroundColor: '#FAFAFA',
             backgroundImage: [
-              'radial-gradient(ellipse 700px 500px at 10% 4%, rgba(255,113,61,0.12) 0%, transparent 65%)',
-              'radial-gradient(ellipse 600px 400px at 80% 8%, rgba(255,155,112,0.09) 0%, transparent 65%)',
-              'radial-gradient(ellipse 500px 350px at 45% 2%, rgba(255,180,136,0.07) 0%, transparent 65%)',
+              'linear-gradient(180deg, rgba(255,113,61,0.04) 0%, transparent 30%)',
+              'linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px)',
+              'linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
             ].join(','),
+            backgroundSize: '100% 100%, 48px 48px, 48px 48px',
           }
         }>
           {pathname === '/app/create/studio' ? (
