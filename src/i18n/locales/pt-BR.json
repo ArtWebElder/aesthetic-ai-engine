@@ -1149,7 +1149,7 @@
   "billing.history.loading": "Carregando histórico...",
   "billing.history.empty": "Nenhuma atividade ainda",
   "chat_creative.placeholder": "Digite uma mensagem...",
-  "chat_creative.regenerate_confirm": "Regenerar custará 10 créditos. Confirmar?",
+  "chat_creative.regenerate_confirm": "Regenerar custará 12 créditos. Confirmar?",
   "chat_creative.texts_updated": "Textos atualizados! Clique em 'Gerar novamente' pra aplicar.",
   "chat_creative.colors_updated": "Cores atualizadas!",
   "chat_creative.thinking": "Pensando..."

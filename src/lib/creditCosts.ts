@@ -2,7 +2,7 @@
 // CREATYNG — Credit cost definitions
 
 export const CREDIT_COSTS: Record<string, number> = {
-  'clone-criativo': 10,
+  'clone-criativo': 12,
   'food-pop-generation': 5,
   'pop-design-generation': 8,
   'chat-ai-edit': 1,

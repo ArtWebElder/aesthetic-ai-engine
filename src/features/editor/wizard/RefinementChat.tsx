@@ -290,7 +290,7 @@ export function RefinementChat({
                       fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                     }}
                   >
-                    Confirmar (10 créditos)
+                    Confirmar (12 créditos)
                   </button>
                   <button
                     onClick={handleCancelRegenerate}

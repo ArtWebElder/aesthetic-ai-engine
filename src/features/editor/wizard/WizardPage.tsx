@@ -111,13 +111,14 @@ function getFoodPalette(
 
 // ── StepIndicator ─────────────────────────────────────────────────────────────
 
-function StepIndicator({ current }: { current: number }) {
+function StepIndicator({ current, maxReached, onStepClick }: { current: number; maxReached: number; onStepClick?: (step: number) => void }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
       {STEP_LABELS.map((label, idx) => {
         const step = idx + 1;
         const isDone = current > step;
         const isActive = current === step;
+        const canClick = step <= maxReached && step !== current;
         return (
           <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
             {idx > 0 && (
@@ -127,7 +128,17 @@ function StepIndicator({ current }: { current: number }) {
                 transition: 'background 500ms',
               }} />
             )}
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={() => canClick && onStepClick?.(step)}
+              disabled={!canClick}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
+                background: 'none', border: 'none', padding: 0, fontFamily: 'inherit',
+                cursor: canClick ? 'pointer' : 'default',
+                opacity: step > maxReached ? 0.4 : 1,
+                transition: 'opacity 150ms',
+              }}
+            >
               <div style={{
                 width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontSize: 10, fontWeight: 700,
@@ -148,7 +159,7 @@ function StepIndicator({ current }: { current: number }) {
               }}>
                 {label}
               </span>
-            </div>
+            </button>
           </div>
         );
       })}
@@ -217,6 +228,10 @@ export function WizardPage() {
   const [error, setError] = useState<string | null>(null);
   const [popDesignStep, setPopDesignStep] = useState<string>("");
   const [refinementOverrides, setRefinementOverrides] = useState<RefinementOverrides>({});
+  const [resetKey, setResetKey] = useState(0);
+  const [maxStepReached, setMaxStepReached] = useState(1);
+  const [sessionGenerations, setSessionGenerations] = useState<Array<{ image: string; timestamp: number }>>([]);
+  const [activeSessionIdx, setActiveSessionIdx] = useState(-1);
 
   const {
     subjectBase64,
@@ -267,7 +282,7 @@ export function WizardPage() {
     if (!generationDone) return;
     setStageIndex(3); // "Finalizando seu criativo!"
     const t1 = setTimeout(() => {
-      setUiStep(4);
+      goToStep(4);
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       if (!confettiTriggered.current && !localStorage.getItem('creatyng:confetti_shown')) {
         confettiTriggered.current = true;
@@ -510,7 +525,9 @@ export function WizardPage() {
       setPopDesignStep("");
       setGenerating(false);
       setGenerationDone(true);
-      setUiStep(4);
+      // Add to session gallery
+      setSessionGenerations(prev => [...prev, { image: imageBase64, timestamp: Date.now() }]);
+      setActiveSessionIdx(-1); // -1 = latest
       incrementGenCount();
       return;
       // V1 pipeline removed — all generation now handled by V2 above
@@ -793,14 +810,19 @@ export function WizardPage() {
     } finally {
       setAnalysisLoading(false);
     }
-    setUiStep(2);
+    goToStep(2);
+  }
+
+  function goToStep(step: 1 | 2 | 3 | 4) {
+    setUiStep(step);
+    setMaxStepReached(prev => Math.max(prev, step));
   }
 
   function handleNext() {
     if (uiStep === 1 && canAdvance) {
       handleAnalyzeAndAdvance();
     } else if (uiStep === 2) {
-      setUiStep(3);
+      goToStep(3);
     }
     // Step 3 → generate is handled by the button in the step itself
   }
@@ -833,6 +855,10 @@ export function WizardPage() {
     htmlCompositionRef.current = null;
     useWizardStore.getState().clearReference();
     useWizardStore.getState().setSubject('', '');
+    setResetKey(k => k + 1);
+    setMaxStepReached(1);
+    setSessionGenerations([]);
+    setActiveSessionIdx(-1);
     setUiStep(1);
   }
 
@@ -851,6 +877,10 @@ export function WizardPage() {
     setError(null);
     htmlCompositionRef.current = null;
     useWizardStore.getState().clearReference();
+    setResetKey(k => k + 1);
+    setMaxStepReached(1);
+    setSessionGenerations([]);
+    setActiveSessionIdx(-1);
     setUiStep(1);
   }
 
@@ -895,7 +925,7 @@ export function WizardPage() {
         </div>
         {/* Step indicator centered */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
-          <StepIndicator current={uiStep} />
+          <StepIndicator current={uiStep} maxReached={maxStepReached} onStepClick={(s) => setUiStep(s as 1 | 2 | 3 | 4)} />
         </div>
         {/* Credits badge with tooltip */}
         <WizCredTooltip credits={storeCredits}>
@@ -914,7 +944,7 @@ export function WizardPage() {
 
           {/* Step 1: Upload (Reference + Subject) */}
           {uiStep === 1 && (
-            <div style={{ animation: 'wizFdUp 350ms ease both' }}>
+            <div key={`step1-${resetKey}`} style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
                 <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Suba suas imagens</h1>
                 <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Arte de referência + foto do produto ou pessoa (opcional).</p>
@@ -1073,7 +1103,7 @@ export function WizardPage() {
                 background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
                 boxShadow: '0 4px 16px rgba(255,113,61,0.35)', transition: 'all 200ms',
               }}>
-                ✦ {currentGeneration ? 'Gerar novamente' : 'Gerar Criativo'} — 10 créditos
+                ✦ {currentGeneration ? 'Gerar novamente' : 'Gerar Criativo'} — 12 créditos
               </button>
               {/* Show "Ver resultado" when user came back from Step 4 */}
               {currentGeneration && (
@@ -1145,16 +1175,7 @@ export function WizardPage() {
                     })}
                   </div>
 
-                  {/* Progress bar */}
-                  <div style={{ width: '100%', maxWidth: 300, height: 4, borderRadius: 2, background: 'hsl(var(--muted))', overflow: 'hidden' }}>
-                    <div style={{
-                      height: '100%', borderRadius: 2,
-                      background: 'linear-gradient(90deg, #ff713d, #FF9B70)',
-                      width: `${Math.min(95, (stageIndex / GENERATION_STAGES.length) * 100 + 12)}%`,
-                      transition: 'width 2s ease-out',
-                    }} />
-                  </div>
-                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>−10 créditos desta geração</p>
+                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>−12 créditos desta geração</p>
                 </>
               )}
             </div>
@@ -1197,6 +1218,31 @@ export function WizardPage() {
                 )}
                 {composing && !popDesignStep && (
                   <p style={{ fontSize: 11.5, color: '#8e8e96', animation: 'wizPulse 1s ease-in-out infinite' }}>Aplicando tipografia...</p>
+                )}
+
+                {/* Session gallery strip */}
+                {!isWorking && sessionGenerations.length > 1 && (
+                  <div style={{ display: 'flex', gap: 6, width: '100%', overflowX: 'auto', padding: '4px 0' }}>
+                    {sessionGenerations.slice(-10).map((gen, idx) => {
+                      const isActive = activeSessionIdx === -1 ? idx === sessionGenerations.slice(-10).length - 1 : idx === activeSessionIdx;
+                      return (
+                        <img
+                          key={gen.timestamp}
+                          src={gen.image}
+                          alt={`Geração ${idx + 1}`}
+                          onClick={() => {
+                            setActiveSessionIdx(idx);
+                            setComposedBase64(gen.image);
+                          }}
+                          style={{
+                            width: 64, height: 64, borderRadius: 8, objectFit: 'cover', cursor: 'pointer', flexShrink: 0,
+                            border: isActive ? '2px solid #ff713d' : '2px solid hsl(var(--border))',
+                            opacity: isActive ? 1 : 0.7, transition: 'all 150ms',
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
                 )}
 
                 {!isWorking && (

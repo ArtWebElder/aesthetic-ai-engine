@@ -278,7 +278,7 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     descriptionEs: 'Clona cualquier anuncio con IA. Cambia textos, colores y sujeto.',
     icon: 'Copy',
     color: '#ff713d',
-    credits: 10,
+    credits: 12,
     nodes: [
       { id: 'ref', type: 'reference_upload', x: 60, y: 60, data: { label: 'Referência (anúncio a clonar)' } },
       { id: 'sub', type: 'image_upload', x: 60, y: 300, data: { label: 'Subject (opcional)' } },

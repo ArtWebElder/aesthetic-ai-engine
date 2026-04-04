@@ -95,7 +95,12 @@ function buildAnalysisPrompt(body: GenerateBody): string {
   const variation = Math.max(0, Math.min(100, body.variation ?? 30));
   const sections: string[] = [];
 
-  // ── HIGH PRIORITY: Format override (must come first) ──
+  // ── HIGH PRIORITY: Watermark removal ──
+  sections.push(
+    `IMPORTANT: Do NOT reproduce any watermarks, brand logos, stock photo marks, or attribution text from the reference image. These must be completely removed from the output. If the reference contains visible watermarks or repeated logo patterns, ignore them entirely.`
+  );
+
+  // ── HIGH PRIORITY: Format override ──
   const userFormat = body.format || "1:1";
   sections.push(
     `OUTPUT FORMAT: Generate this image in ${userFormat} aspect ratio. This is MANDATORY regardless of the reference image format or aspect ratio.`
@@ -140,7 +145,7 @@ function buildAnalysisPrompt(body: GenerateBody): string {
       return `${label}: "${t.text}"`;
     }).join("\n");
     sections.push(
-      `EXACT TEXT CONTENT (render these texts exactly as written, with perfect spelling):\n${textLines}\nOnly include the texts listed above. Do NOT add any other text, label, phone number, or watermark that is not in this list.`
+      `EXACT TEXT CONTENT (render these texts exactly as written, with perfect spelling):\n${textLines}\nThese are the ONLY texts that should appear in the final image. Any text from the reference image that is NOT in this list must be completely removed. This includes small text, watermarks, URLs, phone numbers, addresses, social media handles, and any other text not explicitly listed above. If a text is not in this list, it must NOT appear.`
     );
   } else {
     sections.push("TEXT: Do NOT include any text, labels, phone numbers, or watermarks in the generated image.");
@@ -166,7 +171,10 @@ function buildGenericPrompt(body: GenerateBody): string {
   const variation = Math.max(0, Math.min(100, body.variation ?? 30));
   const parts: string[] = [];
 
-  // Format override first
+  // Watermark removal
+  parts.push(`IMPORTANT: Do NOT reproduce any watermarks, brand logos, stock photo marks, or attribution text from the reference image. Remove them entirely.`);
+
+  // Format override
   const userFormat = body.format || "1:1";
   parts.push(`OUTPUT FORMAT: Generate this image in ${userFormat} aspect ratio. This is MANDATORY.`);
 
