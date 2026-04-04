@@ -210,10 +210,7 @@ function buildGenericPrompt(body: GenerateBody): string {
 
 // ── Google Generative AI ───────────────────────────────────────────────────────
 
-const GEMINI_MODELS = [
-  "gemini-2.0-flash-preview-image-generation",
-  "gemini-3-pro-image-preview",
-];
+const GEMINI_MODEL = "gemini-3-pro-image-preview";
 const GEMINI_TIMEOUT_MS = 180_000;
 
 // deno-lint-ignore no-explicit-any
@@ -238,6 +235,8 @@ async function generateWithGemini(
   apiKey: string,
 ): Promise<{ image: string; model: string; duration_ms: number }> {
   const startedAt = Date.now();
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
   // Build parts: text prompt + reference image + optional subject image
   // deno-lint-ignore no-explicit-any
@@ -268,12 +267,16 @@ async function generateWithGemini(
     },
   });
 
-  // Try each model in order — first success wins
-  let lastError: Error | null = null;
-  for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  console.log(`[generate-creative] Calling API`, {
+    model: GEMINI_MODEL,
+    promptLength: prompt.length,
+    partsCount: parts.length,
+  });
 
-    console.log(`[generate-creative] Trying model: ${model} | Parts: ${parts.length} | Prompt: ${prompt.length} chars`);
+  // Simple retry: same model, 2 attempts max
+  let lastError = "";
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    console.log(`[generate-creative] Attempt ${attempt}/2, model: ${GEMINI_MODEL}`);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
@@ -286,22 +289,30 @@ async function generateWithGemini(
         signal: controller.signal,
       });
 
-      const text = await resp.text();
-
       if (resp.status === 429) {
         throw new Error("rate_limit: Muitas gerações simultâneas. Aguarde alguns segundos.");
       }
 
+      const text = await resp.text();
+
       if (!resp.ok) {
-        console.warn(`[generate-creative] ${model} HTTP ${resp.status}: ${text.slice(0, 200)}`);
+        console.warn(`[generate-creative] Attempt ${attempt} HTTP ${resp.status}: ${text.slice(0, 200)}`);
         if (text.includes("SAFETY") || text.includes("blocked") || text.includes("BLOCK")) {
           throw new Error("content_blocked: Conteúdo bloqueado pelo filtro de segurança. Tente ajustar a referência ou instruções.");
         }
-        lastError = new Error(`gemini_http_${resp.status}: ${text.slice(0, 200)}`);
-        continue; // try next model
+        lastError = `HTTP ${resp.status}: ${text.slice(0, 200)}`;
+        // Don't retry 400 or 403
+        if (resp.status === 400 || resp.status === 403) break;
+        if (attempt === 1) await new Promise(r => setTimeout(r, 2000));
+        continue;
       }
 
       const parsed = JSON.parse(text);
+
+      console.log(`[generate-creative] Response OK`, {
+        partsCount: parsed?.candidates?.[0]?.content?.parts?.length ?? 0,
+        finishReason: parsed?.candidates?.[0]?.finishReason,
+      });
 
       const finishReason = parsed?.candidates?.[0]?.finishReason;
       if (finishReason === "SAFETY") {
@@ -310,34 +321,37 @@ async function generateWithGemini(
 
       const imageB64 = extractImageBase64(parsed);
       if (!imageB64) {
-        console.warn(`[generate-creative] ${model} returned no image: ${JSON.stringify(parsed).slice(0, 300)}`);
-        lastError = new Error("no_image");
-        continue; // try next model
+        console.warn(`[generate-creative] Attempt ${attempt} no image: ${JSON.stringify(parsed).slice(0, 300)}`);
+        lastError = "no_image: Gemini não retornou imagem.";
+        if (attempt === 1) await new Promise(r => setTimeout(r, 2000));
+        continue;
       }
 
       const dataUri = `data:image/png;base64,${imageB64}`;
       const duration_ms = Date.now() - startedAt;
-      console.log(`[generate-creative] ${model} OK — image ${Math.round(imageB64.length / 1024)}KB in ${Math.round(duration_ms / 1000)}s`);
+      console.log(`[generate-creative] OK — image ${Math.round(imageB64.length / 1024)}KB in ${Math.round(duration_ms / 1000)}s`);
 
-      return { image: dataUri, model, duration_ms };
+      return { image: dataUri, model: GEMINI_MODEL, duration_ms };
     } catch (err) {
-      if ((err as Error).name === "AbortError") {
-        lastError = new Error("timeout: Geração excedeu o tempo limite. Tente novamente.");
-        console.warn(`[generate-creative] ${model} timed out`);
-        continue; // try next model
-      }
-      // Don't retry content_blocked or rate_limit — rethrow immediately
       const msg = (err as Error).message ?? "";
+      if ((err as Error).name === "AbortError") {
+        lastError = "timeout: Geração excedeu o tempo limite. Tente novamente.";
+        console.warn(`[generate-creative] Attempt ${attempt} timed out`);
+        if (attempt === 1) await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      // Don't retry content_blocked or rate_limit
       if (msg.startsWith("content_blocked:") || msg.startsWith("rate_limit:")) throw err;
-      lastError = err as Error;
-      console.warn(`[generate-creative] ${model} error: ${msg.slice(0, 200)}`);
-      continue; // try next model
+      lastError = msg;
+      console.warn(`[generate-creative] Attempt ${attempt} error: ${msg.slice(0, 200)}`);
+      if (attempt === 1) await new Promise(r => setTimeout(r, 2000));
+      continue;
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  throw lastError || new Error("no_image: Nenhum modelo conseguiu gerar a imagem. Tente novamente.");
+  throw new Error(lastError || "no_image: Geração falhou. Tente novamente.");
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────────
@@ -362,12 +376,19 @@ Deno.serve(async (req: Request) => {
 
     const hasSubject = Boolean(body.subject_image);
     const hasAnalysis = Boolean(body.analysis?.fullPrompt);
+    // Protect removed_texts against undefined
+    if (!body.removed_texts) body.removed_texts = [];
 
-    console.log(`[generate-creative] Provider: Google Generative AI`);
-    console.log(`[generate-creative] Models: ${GEMINI_MODELS.join(", ")}`);
-    console.log(`[generate-creative] Images: ${hasSubject ? 2 : 1}`);
-    console.log(`[generate-creative] HasAnalysis: ${hasAnalysis} | Variation: ${body.variation ?? 30}`);
-    console.log(`[generate-creative] Text replacements: ${body.text_replacements?.length ?? 0}`);
+    console.log(`[generate-creative] Request received`, {
+      hasReference: true,
+      hasSubject,
+      hasAnalysis,
+      variation: body.variation ?? 30,
+      format: body.format || "1:1",
+      textsCount: body.active_texts?.length ?? body.text_replacements?.length ?? 0,
+      removedTextsCount: body.removed_texts.length,
+      model: GEMINI_MODEL,
+    });
 
     const prompt = hasAnalysis ? buildAnalysisPrompt(body) : buildGenericPrompt(body);
     console.log(`[generate-creative] Prompt length: ${prompt.length}`);
