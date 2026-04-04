@@ -117,7 +117,7 @@ const AppShell = () => {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        {pathname !== '/app/create/studio' && (
+        {!pathname.startsWith('/app/create') && (
           <Topbar onMenuToggle={() => setMobileOpen(true)} />
         )}
 
@@ -283,7 +283,7 @@ const AppShell = () => {
         )}
 
         <main className="flex-1 overflow-auto bg-background" style={
-          pathname === '/app/create/studio' ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
+          pathname.startsWith('/app/create') ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
             backgroundColor: '#FAFAFA',
             backgroundImage: [
               'linear-gradient(180deg, rgba(255,113,61,0.04) 0%, transparent 30%)',

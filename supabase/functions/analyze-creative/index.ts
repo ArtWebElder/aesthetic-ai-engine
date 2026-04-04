@@ -19,7 +19,17 @@ const GEMINI_MODELS = [
 ];
 
 const SYSTEM_PROMPT = `Analise esta imagem de criativo/anúncio e extraia TODOS os elementos em JSON:
-1. texts: array de objetos com { type: 'title'|'subtitle'|'label'|'cta'|'price'|'contact', content: 'texto exato', position: 'top-left'|'top-center'|'top-right'|'center-left'|'center'|'center-right'|'bottom-left'|'bottom-center'|'bottom-right' }
+1. texts: array de objetos com { type: 'title'|'subtitle'|'label'|'cta'|'price'|'contact'|'background_text'|'watermark', content: 'texto exato', position: 'top-left'|'top-center'|'top-right'|'center-left'|'center'|'center-right'|'bottom-left'|'bottom-center'|'bottom-right' }
+
+Extract ALL text visible in the image, including:
+- Main titles and headings (type: title)
+- Prices, discounts, promotional text (type: price)
+- Small text: contact info, addresses, social media, URLs (type: contact)
+- Call-to-action buttons (type: cta)
+- IMPORTANT: Large decorative/background text that appears BEHIND the main subject. These are usually brand names, product names, or stylistic text rendered in large bold font as part of the background design. They are often partially obscured by the subject but are an important editable part of the design. Use type: "background_text".
+- Watermark or stock photo text (type: watermark)
+- Any other readable text (type: label)
+
 2. colors: array de 5 cores dominantes em hex (ex: ['#7C3AED', '#FF713D', ...])
 3. layout: descrição textual do layout e composição
 4. style: descrição detalhada do estilo visual (iluminação, mood, efeitos, tipografia)

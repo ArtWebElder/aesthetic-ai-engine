@@ -230,7 +230,6 @@ export function WizardPage() {
   const [refinementOverrides, setRefinementOverrides] = useState<RefinementOverrides>({});
   const [resetKey, setResetKey] = useState(0);
   const [maxStepReached, setMaxStepReached] = useState(1);
-  const [sessionGenerations, setSessionGenerations] = useState<Array<{ image: string; timestamp: number }>>([]);
   const [activeSessionIdx, setActiveSessionIdx] = useState(-1);
 
   const {
@@ -250,6 +249,9 @@ export function WizardPage() {
     clearGeneration,
     setSubjectIsolated,
     setComposedImage,
+    sessionGenerations,
+    addSessionGeneration,
+    clearSessionGenerations,
   } = useWizardStore();
 
   // refs (idênticos ao original)
@@ -455,6 +457,10 @@ export function WizardPage() {
       }
       // Send active_texts — only texts the user kept (removed texts excluded)
       generateBody.active_texts = editedTexts.filter(t => t.content && t.content.trim());
+      // Send removed_texts — texts from analysis that user deleted, so AI knows to exclude them
+      const activeContents = new Set(editedTexts.map(t => t.content));
+      const removedTexts = analysisTexts.filter(t => !activeContents.has(t.content)).map(t => t.content);
+      if (removedTexts.length > 0) generateBody.removed_texts = removedTexts;
       if (colorPalette.length > 0) {
         generateBody.color_palette = colorPalette;
       }
@@ -525,8 +531,8 @@ export function WizardPage() {
       setPopDesignStep("");
       setGenerating(false);
       setGenerationDone(true);
-      // Add to session gallery
-      setSessionGenerations(prev => [...prev, { image: imageBase64, timestamp: Date.now() }]);
+      // Add to session gallery (persisted in Zustand store)
+      addSessionGeneration(imageBase64);
       setActiveSessionIdx(-1); // -1 = latest
       incrementGenCount();
       return;
@@ -857,7 +863,7 @@ export function WizardPage() {
     useWizardStore.getState().setSubject('', '');
     setResetKey(k => k + 1);
     setMaxStepReached(1);
-    setSessionGenerations([]);
+    clearSessionGenerations();
     setActiveSessionIdx(-1);
     setUiStep(1);
   }
@@ -879,7 +885,7 @@ export function WizardPage() {
     useWizardStore.getState().clearReference();
     setResetKey(k => k + 1);
     setMaxStepReached(1);
-    setSessionGenerations([]);
+    clearSessionGenerations();
     setActiveSessionIdx(-1);
     setUiStep(1);
   }

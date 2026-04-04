@@ -38,6 +38,7 @@ interface GenerateBody {
   format?: string;
   analysis?: AnalysisData;
   active_texts?: Array<{ type: string; content: string }>;
+  removed_texts?: string[];
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -144,15 +145,17 @@ function buildAnalysisPrompt(body: GenerateBody): string {
       const label = t.type.charAt(0).toUpperCase() + t.type.slice(1);
       return `${label}: "${t.text}"`;
     }).join("\n");
-    sections.push(
-      `EXACT TEXT CONTENT (render these texts exactly as written, with perfect spelling):\n${textLines}\nThese are the ONLY texts that should appear in the final image. Any text from the reference image that is NOT in this list must be completely removed. This includes small text, watermarks, URLs, phone numbers, addresses, social media handles, and any other text not explicitly listed above. If a text is not in this list, it must NOT appear.`
-    );
+    let textInstruction = `EXACT TEXT CONTENT (render these texts exactly as written, with perfect spelling):\n${textLines}\nThese are the ONLY texts that should appear in the final image. Any text from the reference image that is NOT in this list must be completely removed. This includes small text, watermarks, URLs, phone numbers, addresses, social media handles, and any other text not explicitly listed above. If a text is not in this list, it must NOT appear.`;
+    if (body.removed_texts && body.removed_texts.length > 0) {
+      textInstruction += `\n\nFORBIDDEN TEXTS (must NOT appear anywhere in the image):\n${body.removed_texts.map(t => `- "${t}"`).join("\n")}\nThese texts were explicitly removed by the user. They must be completely absent from the generated image.`;
+    }
+    sections.push(textInstruction);
   } else {
     sections.push("TEXT: Do NOT include any text, labels, phone numbers, or watermarks in the generated image.");
   }
 
   let vDesc: string;
-  if (variation === 0) vDesc = "This must be an exact recreation. Same layout, same positions, same proportions.";
+  if (variation <= 5) vDesc = "EXACT COPY MODE: You must reproduce the reference image as EXACTLY as possible. Keep the EXACT same layout, composition, positioning, proportions, sizes, background style, gradients, and decorative elements. The ONLY changes allowed are: replacing the subject (if provided) and using the specified texts and colors. Do NOT reinterpret, reimagine, or creatively alter ANY aspect of the layout. Think of this as a template swap: same template, different content.";
   else if (variation <= 30) vDesc = "Minor creative adjustments allowed but maintain the core layout and structure.";
   else if (variation <= 60) vDesc = "Moderate creative freedom. Keep the general concept but reimagine details.";
   else vDesc = "Full creative reinterpretation. Use the reference as loose inspiration only.";
@@ -208,7 +211,7 @@ function buildGenericPrompt(body: GenerateBody): string {
 // ── Google Generative AI ───────────────────────────────────────────────────────
 
 const GEMINI_MODEL = "gemini-3-pro-image-preview";
-const GEMINI_TIMEOUT_MS = 120_000;
+const GEMINI_TIMEOUT_MS = 180_000;
 
 // deno-lint-ignore no-explicit-any
 function extractImageBase64(response: any): string | null {
@@ -313,7 +316,7 @@ async function generateWithGemini(
     return { image: dataUri, model: GEMINI_MODEL, duration_ms };
   } catch (err) {
     if ((err as Error).name === "AbortError") {
-      throw new Error("timeout: Geração excedeu 120s. Tente novamente.");
+      throw new Error("timeout: Geração excedeu o tempo limite. Tente novamente.");
     }
     throw err;
   } finally {
@@ -353,12 +356,17 @@ Deno.serve(async (req: Request) => {
     const prompt = hasAnalysis ? buildAnalysisPrompt(body) : buildGenericPrompt(body);
     console.log(`[generate-creative] Prompt length: ${prompt.length}`);
 
-    const result = await generateWithGemini(
-      prompt,
-      body.reference_image,
-      body.subject_image || null,
-      apiKey,
-    );
+    // ── Generate with 1 automatic retry ──
+    let result: { image: string; model: string; duration_ms: number };
+    try {
+      result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
+    } catch (firstErr) {
+      const msg = String((firstErr as Error)?.message ?? "");
+      // Don't retry content blocks or rate limits
+      if (msg.startsWith("content_blocked:") || msg.startsWith("rate_limit:")) throw firstErr;
+      console.warn(`[generate-creative] First attempt failed: ${msg.slice(0, 200)}. Retrying...`);
+      result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
+    }
 
     return json({
       image: result.image,

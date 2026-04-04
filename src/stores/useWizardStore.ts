@@ -60,6 +60,11 @@ interface WizardStore extends WizardState {
   composedImageBase64?: string | null;
   setComposedImage: (val: string | null) => void;
 
+  // ── Session gallery (persists across navigation) ─────────────────────────
+  sessionGenerations: Array<{ image: string; timestamp: number }>;
+  addSessionGeneration: (image: string) => void;
+  clearSessionGenerations: () => void;
+
   // ── Reset ────────────────────────────────────────────────────────────────────
   reset: () => void;
 }
@@ -194,6 +199,14 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
 
   setComposedImage: (val) => set({ composedImageBase64: val }),
 
+  // ── Session gallery ─────────────────────────────────────────────────────────
+  sessionGenerations: [],
+  addSessionGeneration: (image) =>
+    set((s) => ({
+      sessionGenerations: [...s.sessionGenerations, { image, timestamp: Date.now() }].slice(-10),
+    })),
+  clearSessionGenerations: () => set({ sessionGenerations: [] }),
+
   // ── Reset ────────────────────────────────────────────────────────────────────
 
   reset: () =>
@@ -202,5 +215,6 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
       mode: get().mode, // preserva modo quick/advanced
       currentStep: 1,
       currentGeneration: undefined,
+      sessionGenerations: [], // clear gallery on full reset
     }),
 }));
