@@ -56,11 +56,9 @@ const STEP_LABELS = ["Upload", "Conteúdo", "Configurar", "Resultado"];
 // ── Generation stages ─────────────────────────────────────────────────────────
 
 const GENERATION_STAGES = [
-  "Analisando referência com Gemini...",
-  "Montando prompt otimizado...",
+  "Preparando composição...",
+  "Aplicando seus textos e cores...",
   "Gerando criativo com IA...",
-  "Aguardando resultado...",
-  "Processando imagem...",
   "Finalizando seu criativo!",
 ];
 
@@ -250,36 +248,35 @@ export function WizardPage() {
   const isFoodPopRef        = useRef<boolean>(false);
   const htmlCompositionRef  = useRef<CreatygnComposition | null>(null);
 
-  // Stage animation when entering step 5 (generating)
+  // Progressive stage animation — advances gradually, jumps to "Finalizando" when result arrives
+  const genStartRef = useRef<number>(0);
   useEffect(() => {
-    if (uiStep !== 5) return;
-    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+    if (!generating) return;
+    genStartRef.current = Date.now();
     setStageIndex(0);
     setGenerationDone(false);
     setGenerationError(null);
-    const t1 = setTimeout(() => setStageIndex(1), 1500);
-    const t2 = setTimeout(() => setStageIndex(2), 3500);
+    // Progressive: 0→1 at 3s, 1→2 at 7s (stays on "Gerando" until done)
+    const t1 = setTimeout(() => setStageIndex(1), 3000);
+    const t2 = setTimeout(() => setStageIndex(2), 7000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [uiStep]);
+  }, [generating]);
 
-  // Auto-advance to step 6 when generation completes
+  // When generation completes → jump to "Finalizando" then show result
   useEffect(() => {
-    if (!generationDone || uiStep !== 5) return;
-    setStageIndex(3);
-    const t1 = setTimeout(() => setStageIndex(4), 600);
-    const t2 = setTimeout(() => setStageIndex(5), 1200);
-    const t3 = setTimeout(() => {
-      setUiStep(6);
+    if (!generationDone) return;
+    setStageIndex(3); // "Finalizando seu criativo!"
+    const t1 = setTimeout(() => {
+      setUiStep(4);
       window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-      // Confetti on first-ever generation
       if (!confettiTriggered.current && !localStorage.getItem('creatyng:confetti_shown')) {
         confettiTriggered.current = true;
         localStorage.setItem('creatyng:confetti_shown', '1');
         setShowConfetti(true);
       }
-    }, 1800);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [generationDone, uiStep]);
+    }, 1500);
+    return () => { clearTimeout(t1); };
+  }, [generationDone]);
 
   async function loadGoogleFont(fontName: string): Promise<void> {
     if (!document.querySelector(`link[data-font="${fontName}"]`)) {
@@ -812,11 +809,49 @@ export function WizardPage() {
     if (uiStep === 2) setUiStep(1);
     else if (uiStep === 3 && !generating) setUiStep(2);
     else if (uiStep === 4) {
-      clearGeneration();
-      setComposedBase64(null);
+      // Preserve generated image — user can return to Step 4 via "Próximo"
       setGenerationDone(false);
-      setUiStep(2);
+      setUiStep(3);
     }
+  }
+
+  // Full reset — "Novo Criativo": clears everything
+  function resetAll() {
+    clearGeneration();
+    setComposedBase64(null);
+    setGenerationDone(false);
+    setRefinementOverrides({});
+    setV2Analysis(null);
+    setAnalysisTexts([]);
+    setEditedTexts([]);
+    setColorPalette(['#ff713d', '#1a1a2e', '#ffffff', '#333333', '#666666']);
+    setVariationSlider(10);
+    setFormatSelect('1:1');
+    setExtraInstructions('');
+    setGenerationError(null);
+    setError(null);
+    htmlCompositionRef.current = null;
+    useWizardStore.getState().clearReference();
+    useWizardStore.getState().setSubject('', '');
+    setUiStep(1);
+  }
+
+  // Partial reset — "Nova referência": keeps subject + format
+  function resetForNewReference() {
+    clearGeneration();
+    setComposedBase64(null);
+    setGenerationDone(false);
+    setRefinementOverrides({});
+    setV2Analysis(null);
+    setAnalysisTexts([]);
+    setEditedTexts([]);
+    setColorPalette(['#ff713d', '#1a1a2e', '#ffffff', '#333333', '#666666']);
+    setExtraInstructions('');
+    setGenerationError(null);
+    setError(null);
+    htmlCompositionRef.current = null;
+    useWizardStore.getState().clearReference();
+    setUiStep(1);
   }
 
   function handleRegenerateFromResult() {
@@ -834,7 +869,7 @@ export function WizardPage() {
   const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, hsl(var(--background))`, color: 'hsl(var(--foreground))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, hsl(var(--background))`, color: 'hsl(var(--foreground))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
       <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} count={80} duration={3500} />
       {showPaywall && <PaywallModal plan={useCreditStore.getState().plan} onClose={() => setShowPaywall(false)} />}
       <style>{`
@@ -847,8 +882,7 @@ export function WizardPage() {
       <header style={{
         flexShrink: 0, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 24px', borderBottom: '1px solid hsl(var(--border))',
-        background: 'hsl(var(--background) / 0.9)', backdropFilter: 'blur(8px)',
-        position: 'sticky', top: 0, zIndex: 10,
+        background: 'hsl(var(--background))', zIndex: 10,
       }}>
         {/* Logo + breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -857,7 +891,7 @@ export function WizardPage() {
           </div>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Creatyng</span>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>/</span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Nova Criação</span>
+          <button onClick={resetAll} style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Nova Criação</button>
         </div>
         {/* Step indicator centered */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
@@ -1039,8 +1073,18 @@ export function WizardPage() {
                 background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
                 boxShadow: '0 4px 16px rgba(255,113,61,0.35)', transition: 'all 200ms',
               }}>
-                ✦ Gerar Criativo — 10 créditos
+                ✦ {currentGeneration ? 'Gerar novamente' : 'Gerar Criativo'} — 10 créditos
               </button>
+              {/* Show "Ver resultado" when user came back from Step 4 */}
+              {currentGeneration && (
+                <button onClick={() => setUiStep(4)} style={{
+                  width: '100%', padding: '12px 0', borderRadius: 10, border: '1px solid hsl(var(--border))',
+                  background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13,
+                  cursor: 'pointer', fontFamily: 'inherit', marginTop: 8,
+                }}>
+                  ← Ver resultado anterior
+                </button>
+              )}
             </div>
           )}
 
@@ -1101,6 +1145,15 @@ export function WizardPage() {
                     })}
                   </div>
 
+                  {/* Progress bar */}
+                  <div style={{ width: '100%', maxWidth: 300, height: 4, borderRadius: 2, background: 'hsl(var(--muted))', overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', borderRadius: 2,
+                      background: 'linear-gradient(90deg, #ff713d, #FF9B70)',
+                      width: `${Math.min(95, (stageIndex / GENERATION_STAGES.length) * 100 + 12)}%`,
+                      transition: 'width 2s ease-out',
+                    }} />
+                  </div>
                   <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>−10 créditos desta geração</p>
                 </>
               )}
@@ -1177,7 +1230,7 @@ export function WizardPage() {
                       ✎ Editar textos
                     </button>
                     <button
-                      onClick={() => { clearGeneration(); setComposedBase64(null); setGenerationDone(false); setUiStep(1); }}
+                      onClick={resetForNewReference}
                       style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       + Nova referência
@@ -1248,11 +1301,10 @@ export function WizardPage() {
       </main>
 
       {/* Footer navigation (steps 1-2 only; step 3 has its own button, step 4 is result) */}
-      {uiStep <= 2 && (
+      {(uiStep <= 2) && (
         <footer style={{
           flexShrink: 0, borderTop: '1px solid hsl(var(--border))',
-          background: 'hsl(var(--background) / 0.9)', backdropFilter: 'blur(8px)',
-          position: 'sticky', bottom: 0,
+          background: 'hsl(var(--background))', zIndex: 10,
         }}>
           <div style={{ maxWidth: 680, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <button
