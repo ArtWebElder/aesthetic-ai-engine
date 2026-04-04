@@ -203,8 +203,19 @@ export function WizardPage() {
   const { emailVerified } = useAuth();
   const { t } = useI18n();
   const storeCredits = useCreditStore((s) => s.credits);
+  const fetchCredits = useCreditStore((s) => s.fetchCredits);
 
-  const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4>(1);
+  // Fetch credits on mount (Topbar is hidden for /app/create, so we load here)
+  useEffect(() => { fetchCredits(); }, [fetchCredits]);
+
+  // Smart initial step: resume where user left off based on store state
+  const initialStep = (() => {
+    const s = useWizardStore.getState();
+    if (s.currentGeneration) return 4 as const;
+    if (s.referenceBase64) return 2 as const;
+    return 1 as const;
+  })();
+  const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4>(initialStep);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [v2Analysis, setV2Analysis] = useState<Record<string, unknown> | null>(null);
   const [analysisTexts, setAnalysisTexts] = useState<Array<{ type: string; content: string }>>([]);
@@ -933,15 +944,32 @@ export function WizardPage() {
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
           <StepIndicator current={uiStep} maxReached={maxStepReached} onStepClick={(s) => setUiStep(s as 1 | 2 | 3 | 4)} />
         </div>
-        {/* Credits badge with tooltip */}
-        <WizCredTooltip credits={storeCredits}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', fontSize: 12, fontWeight: 600, color: '#ff713d', cursor: 'default' }}>
-            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
-              <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
-            </svg>
-            <span>{storeCredits}</span> <span style={{ fontWeight: 400, color: 'hsl(var(--muted-foreground))' }}>créditos</span>
-          </div>
-        </WizCredTooltip>
+        {/* Credits badge + upgrade */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <WizCredTooltip credits={storeCredits}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8,
+              background: 'hsl(var(--card))', fontSize: 12, fontWeight: 600, cursor: 'default',
+              border: `1px solid ${storeCredits < 12 ? '#EF4444' : 'hsl(var(--border))'}`,
+              color: storeCredits < 12 ? '#EF4444' : '#ff713d',
+            }}>
+              <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
+              </svg>
+              <span>{storeCredits}</span>
+            </div>
+          </WizCredTooltip>
+          <button
+            onClick={() => navigate('/app/billing')}
+            style={{
+              padding: '4px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))',
+              background: 'transparent', color: 'hsl(var(--muted-foreground))',
+              fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            Upgrade
+          </button>
+        </div>
       </header>
 
       {/* Content */}

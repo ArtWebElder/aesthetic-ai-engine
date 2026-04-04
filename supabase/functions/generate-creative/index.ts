@@ -210,7 +210,10 @@ function buildGenericPrompt(body: GenerateBody): string {
 
 // ── Google Generative AI ───────────────────────────────────────────────────────
 
-const GEMINI_MODEL = "gemini-3-pro-image-preview";
+const GEMINI_MODELS = [
+  "gemini-2.0-flash-preview-image-generation",
+  "gemini-3-pro-image-preview",
+];
 const GEMINI_TIMEOUT_MS = 180_000;
 
 // deno-lint-ignore no-explicit-any
@@ -236,8 +239,6 @@ async function generateWithGemini(
 ): Promise<{ image: string; model: string; duration_ms: number }> {
   const startedAt = Date.now();
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
-
   // Build parts: text prompt + reference image + optional subject image
   // deno-lint-ignore no-explicit-any
   const parts: any[] = [
@@ -259,69 +260,84 @@ async function generateWithGemini(
     });
   }
 
-  console.log(`[generate-creative] Calling Gemini: ${GEMINI_MODEL} | Parts: ${parts.length} | Prompt: ${prompt.length} chars`);
+  const requestBody = JSON.stringify({
+    contents: [{ parts }],
+    generationConfig: {
+      responseModalities: ["IMAGE", "TEXT"],
+      temperature: 1.0,
+    },
+  });
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+  // Try each model in order — first success wins
+  let lastError: Error | null = null;
+  for (const model of GEMINI_MODELS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
-  try {
-    const resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        generationConfig: {
-          responseModalities: ["IMAGE", "TEXT"],
-          temperature: 1.0,
-        },
-      }),
-      signal: controller.signal,
-    });
+    console.log(`[generate-creative] Trying model: ${model} | Parts: ${parts.length} | Prompt: ${prompt.length} chars`);
 
-    const text = await resp.text();
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
 
-    if (resp.status === 429) {
-      throw new Error("rate_limit: Muitas gerações simultâneas. Aguarde alguns segundos.");
-    }
+    try {
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: requestBody,
+        signal: controller.signal,
+      });
 
-    if (!resp.ok) {
-      console.error(`[generate-creative] Gemini HTTP ${resp.status}:`, text.slice(0, 400));
+      const text = await resp.text();
 
-      // Check for safety filter block
-      if (text.includes("SAFETY") || text.includes("blocked") || text.includes("BLOCK")) {
+      if (resp.status === 429) {
+        throw new Error("rate_limit: Muitas gerações simultâneas. Aguarde alguns segundos.");
+      }
+
+      if (!resp.ok) {
+        console.warn(`[generate-creative] ${model} HTTP ${resp.status}: ${text.slice(0, 200)}`);
+        if (text.includes("SAFETY") || text.includes("blocked") || text.includes("BLOCK")) {
+          throw new Error("content_blocked: Conteúdo bloqueado pelo filtro de segurança. Tente ajustar a referência ou instruções.");
+        }
+        lastError = new Error(`gemini_http_${resp.status}: ${text.slice(0, 200)}`);
+        continue; // try next model
+      }
+
+      const parsed = JSON.parse(text);
+
+      const finishReason = parsed?.candidates?.[0]?.finishReason;
+      if (finishReason === "SAFETY") {
         throw new Error("content_blocked: Conteúdo bloqueado pelo filtro de segurança. Tente ajustar a referência ou instruções.");
       }
 
-      throw new Error(`gemini_http_${resp.status}: ${text.slice(0, 300)}`);
+      const imageB64 = extractImageBase64(parsed);
+      if (!imageB64) {
+        console.warn(`[generate-creative] ${model} returned no image: ${JSON.stringify(parsed).slice(0, 300)}`);
+        lastError = new Error("no_image");
+        continue; // try next model
+      }
+
+      const dataUri = `data:image/png;base64,${imageB64}`;
+      const duration_ms = Date.now() - startedAt;
+      console.log(`[generate-creative] ${model} OK — image ${Math.round(imageB64.length / 1024)}KB in ${Math.round(duration_ms / 1000)}s`);
+
+      return { image: dataUri, model, duration_ms };
+    } catch (err) {
+      if ((err as Error).name === "AbortError") {
+        lastError = new Error("timeout: Geração excedeu o tempo limite. Tente novamente.");
+        console.warn(`[generate-creative] ${model} timed out`);
+        continue; // try next model
+      }
+      // Don't retry content_blocked or rate_limit — rethrow immediately
+      const msg = (err as Error).message ?? "";
+      if (msg.startsWith("content_blocked:") || msg.startsWith("rate_limit:")) throw err;
+      lastError = err as Error;
+      console.warn(`[generate-creative] ${model} error: ${msg.slice(0, 200)}`);
+      continue; // try next model
+    } finally {
+      clearTimeout(timeout);
     }
-
-    const parsed = JSON.parse(text);
-
-    // Check for safety block in response
-    const finishReason = parsed?.candidates?.[0]?.finishReason;
-    if (finishReason === "SAFETY") {
-      throw new Error("content_blocked: Conteúdo bloqueado pelo filtro de segurança. Tente ajustar a referência ou instruções.");
-    }
-
-    const imageB64 = extractImageBase64(parsed);
-    if (!imageB64) {
-      console.error("[generate-creative] No image in Gemini response:", JSON.stringify(parsed).slice(0, 400));
-      throw new Error("no_image: Gemini não retornou imagem. Tente novamente.");
-    }
-
-    const dataUri = `data:image/png;base64,${imageB64}`;
-    const duration_ms = Date.now() - startedAt;
-    console.log(`[generate-creative] Gemini OK — image ${Math.round(imageB64.length / 1024)}KB in ${Math.round(duration_ms / 1000)}s`);
-
-    return { image: dataUri, model: GEMINI_MODEL, duration_ms };
-  } catch (err) {
-    if ((err as Error).name === "AbortError") {
-      throw new Error("timeout: Geração excedeu o tempo limite. Tente novamente.");
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeout);
   }
+
+  throw lastError || new Error("no_image: Nenhum modelo conseguiu gerar a imagem. Tente novamente.");
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────────
@@ -348,7 +364,7 @@ Deno.serve(async (req: Request) => {
     const hasAnalysis = Boolean(body.analysis?.fullPrompt);
 
     console.log(`[generate-creative] Provider: Google Generative AI`);
-    console.log(`[generate-creative] Model: ${GEMINI_MODEL}`);
+    console.log(`[generate-creative] Models: ${GEMINI_MODELS.join(", ")}`);
     console.log(`[generate-creative] Images: ${hasSubject ? 2 : 1}`);
     console.log(`[generate-creative] HasAnalysis: ${hasAnalysis} | Variation: ${body.variation ?? 30}`);
     console.log(`[generate-creative] Text replacements: ${body.text_replacements?.length ?? 0}`);
@@ -356,17 +372,7 @@ Deno.serve(async (req: Request) => {
     const prompt = hasAnalysis ? buildAnalysisPrompt(body) : buildGenericPrompt(body);
     console.log(`[generate-creative] Prompt length: ${prompt.length}`);
 
-    // ── Generate with 1 automatic retry ──
-    let result: { image: string; model: string; duration_ms: number };
-    try {
-      result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
-    } catch (firstErr) {
-      const msg = String((firstErr as Error)?.message ?? "");
-      // Don't retry content blocks or rate limits
-      if (msg.startsWith("content_blocked:") || msg.startsWith("rate_limit:")) throw firstErr;
-      console.warn(`[generate-creative] First attempt failed: ${msg.slice(0, 200)}. Retrying...`);
-      result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
-    }
+    const result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
 
     return json({
       image: result.image,
