@@ -293,7 +293,7 @@ const AppShell = () => {
             backgroundSize: '100% 100%, 48px 48px, 48px 48px',
           }
         }>
-          {pathname === '/app/create/studio' ? (
+          {['/app/create/studio', '/app/create', '/app/settings', '/app/help'].some(p => pathname === p || pathname.startsWith(p + '/')) ? (
             <Outlet />
           ) : ['/app/projects', '/app/billing'].some(p => pathname.startsWith(p)) ? (
             <div key={pathname} className="animate-fade-up max-w-6xl mx-auto w-full px-4 py-2 md:px-6 lg:px-8">
