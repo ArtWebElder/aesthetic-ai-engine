@@ -441,6 +441,8 @@ export function WizardPage() {
       if (textReplacements.length > 0) {
         generateBody.text_replacements = textReplacements;
       }
+      // Send active_texts — only texts the user kept (removed texts excluded)
+      generateBody.active_texts = editedTexts.filter(t => t.content && t.content.trim());
       if (colorPalette.length > 0) {
         generateBody.color_palette = colorPalette;
       }
@@ -1099,7 +1101,7 @@ export function WizardPage() {
                     })}
                   </div>
 
-                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>−5 créditos desta geração</p>
+                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>−10 créditos desta geração</p>
                 </>
               )}
             </div>

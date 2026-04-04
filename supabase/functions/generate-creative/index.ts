@@ -37,6 +37,7 @@ interface GenerateBody {
   extra_instructions?: string;
   format?: string;
   analysis?: AnalysisData;
+  active_texts?: Array<{ type: string; content: string }>;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -54,6 +55,13 @@ function detectMime(b64: string): string {
 // ── Prompt builders ────────────────────────────────────────────────────────────
 
 function resolveAllTexts(body: GenerateBody): Array<{ type: string; text: string }> {
+  // If active_texts is provided (user's current text list, excluding removed), use it directly
+  if (body.active_texts && body.active_texts.length > 0) {
+    return body.active_texts
+      .filter(t => t.content && t.content.trim())
+      .map(t => ({ type: t.type, text: t.content }));
+  }
+  // Fallback to legacy text_replacements logic
   const replacements = body.text_replacements || [];
   const repMap = new Map<string, string>();
   for (const r of replacements) {
@@ -72,11 +80,42 @@ function resolveAllTexts(body: GenerateBody): Array<{ type: string; text: string
   }));
 }
 
+function colorsChanged(analysisColors: unknown, userColors: string[]): boolean {
+  if (!Array.isArray(analysisColors)) return true;
+  const orig = (analysisColors as string[]).map(c => c.toLowerCase());
+  const user = userColors.map(c => c.toLowerCase());
+  for (let i = 0; i < user.length; i++) {
+    if (i >= orig.length || orig[i] !== user[i]) return true;
+  }
+  return false;
+}
+
 function buildAnalysisPrompt(body: GenerateBody): string {
   const analysis = body.analysis!;
   const variation = Math.max(0, Math.min(100, body.variation ?? 30));
   const sections: string[] = [];
 
+  // ── HIGH PRIORITY: Format override (must come first) ──
+  const userFormat = body.format || "1:1";
+  sections.push(
+    `OUTPUT FORMAT: Generate this image in ${userFormat} aspect ratio. This is MANDATORY regardless of the reference image format or aspect ratio.`
+  );
+
+  // ── HIGH PRIORITY: Color override when user changed colors ──
+  if (body.color_palette && body.color_palette.length > 0 && colorsChanged(analysis.colors, body.color_palette)) {
+    const c = body.color_palette;
+    const a: string[] = [];
+    if (c[0]) a.push(`Background/Primary: ${c[0]}`);
+    if (c[1]) a.push(`Accents/Secondary: ${c[1]}`);
+    if (c[2]) a.push(`Highlights: ${c[2]}`);
+    if (c[3]) a.push(`Primary text color: ${c[3]}`);
+    if (c[4]) a.push(`Secondary text color: ${c[4]}`);
+    sections.push(
+      `IMPORTANT COLOR OVERRIDE: The following colors MUST be used regardless of the reference image colors:\n${a.join("\n")}\nReplace ALL original colors with these new colors. This is mandatory even at 0% variation.`
+    );
+  }
+
+  // ── Main instruction ──
   if (body.subject_image) {
     sections.push("Recreate this advertisement exactly as described below, using the product/person from the second input image as the main subject.");
   } else {
@@ -93,24 +132,18 @@ function buildAnalysisPrompt(body: GenerateBody): string {
     );
   }
 
+  // ── Texts: only user's active texts (removed texts are excluded) ──
   const allTexts = resolveAllTexts(body);
   if (allTexts.length > 0) {
     const textLines = allTexts.map(t => {
       const label = t.type.charAt(0).toUpperCase() + t.type.slice(1);
       return `${label}: "${t.text}"`;
     }).join("\n");
-    sections.push(`EXACT TEXT CONTENT (render these texts exactly as written, with perfect spelling):\n${textLines}`);
-  }
-
-  if (body.color_palette && body.color_palette.length > 0) {
-    const c = body.color_palette;
-    const a: string[] = [];
-    if (c[0]) a.push(`Primary/Background: ${c[0]}`);
-    if (c[1]) a.push(`Secondary/Accents: ${c[1]}`);
-    if (c[2]) a.push(`Highlights: ${c[2]}`);
-    if (c[3]) a.push(`Text primary: ${c[3]}`);
-    if (c[4]) a.push(`Text secondary: ${c[4]}`);
-    sections.push(`COLOR PALETTE (MANDATORY):\n${a.join("\n")}\nThese colors MUST replace the original color scheme.`);
+    sections.push(
+      `EXACT TEXT CONTENT (render these texts exactly as written, with perfect spelling):\n${textLines}\nOnly include the texts listed above. Do NOT add any other text, label, phone number, or watermark that is not in this list.`
+    );
+  } else {
+    sections.push("TEXT: Do NOT include any text, labels, phone numbers, or watermarks in the generated image.");
   }
 
   let vDesc: string;
@@ -133,6 +166,10 @@ function buildGenericPrompt(body: GenerateBody): string {
   const variation = Math.max(0, Math.min(100, body.variation ?? 30));
   const parts: string[] = [];
 
+  // Format override first
+  const userFormat = body.format || "1:1";
+  parts.push(`OUTPUT FORMAT: Generate this image in ${userFormat} aspect ratio. This is MANDATORY.`);
+
   if (body.subject_image) {
     parts.push("Use the style, layout, and design from the first image to create an advertisement. The main subject MUST be the exact product/person from the second image — copy every detail exactly. Do not generate a new subject.");
   } else {
@@ -145,7 +182,9 @@ function buildGenericPrompt(body: GenerateBody): string {
   const allTexts = resolveAllTexts(body);
   if (allTexts.length > 0) {
     const textLines = allTexts.map(t => `- ${t.type}: "${t.text}"`).join("\n");
-    parts.push(`These exact texts must appear in the image:\n${textLines}`);
+    parts.push(`These exact texts must appear in the image:\n${textLines}\nOnly include the texts listed above. Do NOT add any other text.`);
+  } else {
+    parts.push("Do NOT include any text, labels, or watermarks in the generated image.");
   }
 
   if (body.color_palette && body.color_palette.length > 0) {
