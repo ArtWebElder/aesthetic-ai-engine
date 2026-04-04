@@ -805,7 +805,6 @@
   "editor.mobile.edit": "Edit",
   "editor.mobile.generate": "Generate",
   "editor.canvas.placeholder": "Generates your result image",
-
   "templates.hero.title": "Templates",
   "templates.hero.subtitle": "Choose a starting point and bring your creative vision to life with AI.",
   "templates.filter.all": "All",
@@ -836,7 +835,6 @@
   "templates.reels_static.desc": "Eye-catching static frames optimized for Reels and TikTok thumbnails.",
   "templates.screen_mockup.name": "Screen Mockup",
   "templates.screen_mockup.desc": "Place your UI or app screenshots inside realistic device mockups.",
-
   "projects.action.open": "Open",
   "projects.action.duplicate": "Duplicate",
   "projects.action.delete": "Delete",
@@ -846,7 +844,6 @@
   "projects.col.template": "Template",
   "projects.col.date": "Date",
   "projects.col.actions": "Actions",
-
   "billing.tab.plans": "Plans",
   "billing.tab.usage": "Usage & History",
   "billing.plan_name.free": "Free",
@@ -898,7 +895,6 @@
   "billing.pay_card": "Card",
   "billing.cpf_placeholder": "CPF or CNPJ",
   "billing.cpf_required": "CPF or CNPJ is required for Pix payment.",
-
   "settings.tab.profile": "Profile",
   "settings.tab.preferences": "Preferences",
   "settings.tab.brandkit": "Brand Kit",
@@ -925,7 +921,6 @@
   "settings.apikeys.subtitle": "Use these keys to access the Creatyng API.",
   "settings.apikeys.new": "New key",
   "settings.apikeys.empty": "No API keys yet.",
-
   "admin.overview": "Overview",
   "admin.users": "Users",
   "admin.finance": "Finance",
@@ -982,7 +977,6 @@
   "admin.tokens.col.tokens": "Tokens",
   "admin.tokens.col.generations": "Generations",
   "admin.tokens.col.cost": "Cost",
-
   "wizard.step.upload": "Upload",
   "wizard.step.reference": "Reference",
   "wizard.step.style": "Style",
@@ -1018,21 +1012,18 @@
   "wizard.texts.cta": "CTA (call to action)",
   "wizard.texts.whatsapp": "WhatsApp",
   "wizard.texts.instagram": "Instagram",
-
   "notification.creative_success": "Creative generated successfully!",
   "notification.creative_error": "Generation failed. Try again.",
   "notification.credits_low": "Your credits are running low!",
   "notification.mark_all_read": "Mark all as read",
   "notification.empty": "All caught up!",
   "notification.title": "Notifications",
-
   "credits.balance": "credits",
   "credits.remaining": "remaining",
   "credits.insufficient": "Insufficient credits",
   "credits.insufficient_desc": "You don't have enough credits for this action.",
   "credits.upgrade_cta": "Recharge credits",
   "credits.cost": "Cost",
-
   "settings.tab.display_font": "Display font",
   "settings.tab.body_font": "Body font",
   "settings.brand.primary": "Primary",
@@ -1046,7 +1037,6 @@
   "settings.apikeys.byok_unavailable": "BYOK not available yet — coming soon",
   "settings.pref.format_default": "Default format",
   "settings.pref.export_quality": "Export quality",
-
   "help.category.getting_started": "Getting started",
   "help.category.creating": "How to create a creative",
   "help.category.presets": "Presets and styles",
@@ -1055,7 +1045,6 @@
   "help.category.account": "Account and profile",
   "help.category.faq": "FAQ",
   "help.search_placeholder": "Search articles...",
-
   "support.title": "Support",
   "support.placeholder": "Type your question...",
   "support.unavailable": "Chat unavailable at the moment",
@@ -1063,11 +1052,9 @@
   "support.quick.first_creative": "How to create my first creative?",
   "support.quick.credits": "How does the credit system work?",
   "support.quick.edit_after": "How to edit texts after generating?",
-
   "recent.title": "Recent",
   "recent.empty": "No recent projects",
   "recent.empty_hint": "Create your first creative to see it here.",
-
   "recharge.title": "Recharge credits",
   "recharge.balance": "Current balance",
   "recharge.credits": "credits",
@@ -1116,7 +1103,6 @@
   "verify_email.success_title": "Email verified!",
   "verify_email.success_desc": "Your account now has full access.",
   "verify_email.later": "Later",
-
   "auth.verify_title": "Verify your email",
   "auth.verify_subtitle": "We sent an 8-digit code to",
   "auth.verify_btn": "Verify",
@@ -1125,7 +1111,6 @@
   "auth.verify_later": "Verify later",
   "auth.resend_code": "Resend code",
   "auth.otp_invalid": "Invalid code. Please try again.",
-
   "onboarding.done.title": "All set!",
   "onboarding.done.subtitle": "Your account is ready with 50 free credits. How do you want to start?",
   "onboarding.done.wizard_title": "Create with Wizard",
@@ -1135,7 +1120,6 @@
   "onboarding.done.try_wizard": "Start with Wizard",
   "onboarding.done.try_studio": "Open Studio",
   "onboarding.done.explore_dashboard": "Explore the dashboard first",
-
   "upsell.first_gen.title": "Your first creation!",
   "upsell.first_gen.desc": "Upgrade to Pro for unlimited possibilities and premium features.",
   "upsell.credits_low.banner": "You have {credits} credits remaining. Upgrade for more.",
@@ -1154,14 +1138,17 @@
   "upsell.satisfaction.title": "Enjoying Creatyng?",
   "upsell.satisfaction.desc": "You've created 3 designs already! Unlock unlimited potential with Pro.",
   "upsell.satisfaction.upgrade": "See Pro plan",
-
   "auth.change_email": "Use a different email",
   "auth.resend_success": "Code resent! Check your inbox.",
   "auth.resend_rate_limit": "Please wait before resending.",
   "auth.rate_limit": "Too many attempts. Please wait a few minutes before trying again.",
-
   "billing.history.today": "Today",
   "billing.history.yesterday": "Yesterday",
   "billing.history.loading": "Loading history...",
-  "billing.history.empty": "No activity yet"
+  "billing.history.empty": "No activity yet",
+  "chat_creative.placeholder": "Type a message...",
+  "chat_creative.regenerate_confirm": "Regenerating will cost 10 credits. Confirm?",
+  "chat_creative.texts_updated": "Texts updated! Click 'Regenerate' to apply.",
+  "chat_creative.colors_updated": "Colors updated!",
+  "chat_creative.thinking": "Thinking..."
 }

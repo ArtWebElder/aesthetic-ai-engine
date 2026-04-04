@@ -1149,9 +1149,11 @@ export function WizardPage() {
                     <button
                       onClick={() => {
                         if (!displayBase64) return;
+                        const ext = displayBase64.startsWith('data:image/png') ? 'png'
+                          : displayBase64.startsWith('data:image/webp') ? 'webp' : 'jpg';
                         const a = document.createElement('a');
                         a.href = displayBase64;
-                        a.download = `creatyng-clone-${Date.now()}.jpg`;
+                        a.download = `creatyng-${Date.now()}.${ext}`;
                         document.body.appendChild(a);
                         a.click();
                         document.body.removeChild(a);
@@ -1167,7 +1169,7 @@ export function WizardPage() {
                       ↺ Gerar novamente
                     </button>
                     <button
-                      onClick={() => setUiStep(2)}
+                      onClick={() => { setGenerationDone(false); setUiStep(2); }}
                       style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       ✎ Editar textos
@@ -1212,6 +1214,19 @@ export function WizardPage() {
                       } finally {
                         setComposing(false);
                       }
+                    }}
+                    context={{
+                      analysis: v2Analysis,
+                      currentTexts: editedTexts,
+                      currentColors: colorPalette,
+                    }}
+                    onTextsUpdate={(texts) => {
+                      setEditedTexts(texts);
+                      toast.success('Textos atualizados! Clique em "Gerar novamente" pra aplicar.');
+                    }}
+                    onColorsUpdate={(colors) => {
+                      setColorPalette(colors);
+                      toast.success('Cores atualizadas!');
                     }}
                   />
                   <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 4 }}>

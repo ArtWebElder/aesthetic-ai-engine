@@ -117,7 +117,7 @@
   "dashboard.popular": "Popular",
   "dashboard.production": "Producción",
   "dashboard.weekly_goal": "Meta semanal",
-  "dashboard.empty_description": "Empieza creando tu primer proyecto - toma solo unos segundos.",
+  "dashboard.empty_description": "Comienza creando tu primer proyecto — solo toma unos segundos.",
   "projects.title": "Proyectos",
   "projects.count": "{count} proyectos",
   "projects.new_project": "Nuevo proyecto",
@@ -782,7 +782,6 @@
   "editor.mobile.edit": "Editar",
   "editor.mobile.generate": "Generar",
   "editor.canvas.placeholder": "Aquí aparecerá la imagen del resultado",
-
   "nav.templates": "Plantillas",
   "dashboard.greeting": "¡Hola, {name}!",
   "dashboard.greeting_sub": "Tu estudio creativo está listo.",
@@ -806,8 +805,6 @@
   "dashboard.discover_tab_templates": "Plantillas",
   "dashboard.create_similar": "Crear similar",
   "dashboard.view_more": "Ver más",
-  "dashboard.empty_description": "Comienza creando tu primer proyecto — solo toma unos segundos.",
-
   "templates.hero.title": "Plantillas",
   "templates.hero.subtitle": "Elige un punto de partida y da vida a tu visión creativa con IA.",
   "templates.filter.all": "Todas",
@@ -838,7 +835,6 @@
   "templates.reels_static.desc": "Frames estáticos llamativos optimizados para miniaturas de Reels y TikTok.",
   "templates.screen_mockup.name": "Mockup de Pantalla",
   "templates.screen_mockup.desc": "Inserta capturas de UI o app en mockups realistas de dispositivos.",
-
   "projects.action.open": "Abrir",
   "projects.action.duplicate": "Duplicar",
   "projects.action.delete": "Eliminar",
@@ -848,7 +844,6 @@
   "projects.col.template": "Plantilla",
   "projects.col.date": "Fecha",
   "projects.col.actions": "Acciones",
-
   "billing.tab.plans": "Planes",
   "billing.tab.usage": "Uso e Historial",
   "billing.plan_name.free": "Gratuito",
@@ -902,7 +897,6 @@
   "billing.cpf_required": "CPF o CNPJ es obligatorio para pago con Pix.",
   "billing.coming_soon.recharge": "Recargar créditos",
   "billing.coming_soon.close": "Cerrar",
-
   "settings.tab.profile": "Perfil",
   "settings.tab.preferences": "Preferencias",
   "settings.tab.brandkit": "Brand Kit",
@@ -929,7 +923,6 @@
   "settings.apikeys.subtitle": "Usa estas claves para acceder a la API de Creatyng.",
   "settings.apikeys.new": "Nueva clave",
   "settings.apikeys.empty": "Aún no hay claves de API.",
-
   "admin.overview": "Resumen",
   "admin.users": "Usuarios",
   "admin.finance": "Finanzas",
@@ -986,7 +979,6 @@
   "admin.tokens.col.tokens": "Tokens",
   "admin.tokens.col.generations": "Generaciones",
   "admin.tokens.col.cost": "Costo",
-
   "wizard.step.upload": "Subir",
   "wizard.step.reference": "Referencia",
   "wizard.step.style": "Estilo",
@@ -1022,21 +1014,18 @@
   "wizard.texts.cta": "CTA (llamada a la acción)",
   "wizard.texts.whatsapp": "WhatsApp",
   "wizard.texts.instagram": "Instagram",
-
   "notification.creative_success": "¡Creativo generado con éxito!",
   "notification.creative_error": "Fallo en la generación. Intenta de nuevo.",
   "notification.credits_low": "¡Tus créditos se están acabando!",
   "notification.mark_all_read": "Marcar todas como leídas",
   "notification.empty": "¡Todo al día!",
   "notification.title": "Notificaciones",
-
   "credits.balance": "créditos",
   "credits.remaining": "restantes",
   "credits.insufficient": "Créditos insuficientes",
   "credits.insufficient_desc": "No tienes suficientes créditos para esta acción.",
   "credits.upgrade_cta": "Recargar créditos",
   "credits.cost": "Costo",
-
   "settings.tab.display_font": "Fuente de display",
   "settings.tab.body_font": "Fuente del cuerpo",
   "settings.brand.primary": "Primaria",
@@ -1050,7 +1039,6 @@
   "settings.apikeys.byok_unavailable": "BYOK no disponible aún — próximamente",
   "settings.pref.format_default": "Formato predeterminado",
   "settings.pref.export_quality": "Calidad de exportación",
-
   "help.category.getting_started": "Primeros pasos",
   "help.category.creating": "Cómo crear un creativo",
   "help.category.presets": "Presets y estilos",
@@ -1059,7 +1047,6 @@
   "help.category.account": "Cuenta y perfil",
   "help.category.faq": "Preguntas frecuentes",
   "help.search_placeholder": "Buscar artículos...",
-
   "support.title": "Soporte",
   "support.placeholder": "Escribe tu duda...",
   "support.unavailable": "Chat no disponible en este momento",
@@ -1067,11 +1054,9 @@
   "support.quick.first_creative": "¿Cómo crear mi primer creativo?",
   "support.quick.credits": "¿Cómo funciona el sistema de créditos?",
   "support.quick.edit_after": "¿Cómo cambiar textos después de generar?",
-
   "recent.title": "Recientes",
   "recent.empty": "Sin proyectos recientes",
   "recent.empty_hint": "Crea tu primer creativo para verlo aquí.",
-
   "recharge.title": "Recargar créditos",
   "recharge.balance": "Saldo actual",
   "recharge.credits": "créditos",
@@ -1120,7 +1105,6 @@
   "verify_email.success_title": "Email verificado!",
   "verify_email.success_desc": "Tu cuenta ahora tiene acceso completo.",
   "verify_email.later": "Después",
-
   "auth.verify_title": "Verifica tu email",
   "auth.verify_subtitle": "Enviamos un código de 8 dígitos a",
   "auth.verify_btn": "Verificar",
@@ -1129,7 +1113,6 @@
   "auth.verify_later": "Verificar después",
   "auth.resend_code": "Reenviar código",
   "auth.otp_invalid": "Código inválido. Intenta de nuevo.",
-
   "onboarding.done.title": "¡Todo listo!",
   "onboarding.done.subtitle": "Tu cuenta está lista con 50 créditos gratis. ¿Cómo quieres empezar?",
   "onboarding.done.wizard_title": "Crear con Wizard",
@@ -1139,7 +1122,6 @@
   "onboarding.done.try_wizard": "Empezar con Wizard",
   "onboarding.done.try_studio": "Abrir Studio",
   "onboarding.done.explore_dashboard": "Explorar el dashboard primero",
-
   "upsell.first_gen.title": "¡Tu primera creación!",
   "upsell.first_gen.desc": "Actualiza a Pro y desbloquea posibilidades ilimitadas.",
   "upsell.credits_low.banner": "Te quedan {credits} créditos. Actualiza para más.",
@@ -1158,14 +1140,17 @@
   "upsell.satisfaction.title": "¿Te gusta Creatyng?",
   "upsell.satisfaction.desc": "¡Ya creaste 3 diseños! Desbloquea potencial ilimitado con Pro.",
   "upsell.satisfaction.upgrade": "Ver plan Pro",
-
   "auth.change_email": "Usar otro email",
   "auth.resend_success": "¡Código reenviado! Revisa tu bandeja de entrada.",
   "auth.resend_rate_limit": "Espera antes de reenviar.",
   "auth.rate_limit": "Demasiados intentos. Espera unos minutos antes de intentar nuevamente.",
-
   "billing.history.today": "Hoy",
   "billing.history.yesterday": "Ayer",
   "billing.history.loading": "Cargando historial...",
-  "billing.history.empty": "Ninguna actividad aún"
+  "billing.history.empty": "Ninguna actividad aún",
+  "chat_creative.placeholder": "Escribe un mensaje...",
+  "chat_creative.regenerate_confirm": "Regenerar costará 10 créditos. ¿Confirmar?",
+  "chat_creative.texts_updated": "¡Textos actualizados! Haz clic en 'Generar de nuevo' para aplicar.",
+  "chat_creative.colors_updated": "¡Colores actualizados!",
+  "chat_creative.thinking": "Pensando..."
 }
