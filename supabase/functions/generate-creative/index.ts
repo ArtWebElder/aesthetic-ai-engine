@@ -145,9 +145,9 @@ function buildAnalysisPrompt(body: GenerateBody): string {
       const label = t.type.charAt(0).toUpperCase() + t.type.slice(1);
       return `${label}: "${t.text}"`;
     }).join("\n");
-    let textInstruction = `EXACT TEXT CONTENT (render these texts exactly as written, with perfect spelling):\n${textLines}\nThese are the ONLY texts that should appear in the final image. Any text from the reference image that is NOT in this list must be completely removed. This includes small text, watermarks, URLs, phone numbers, addresses, social media handles, and any other text not explicitly listed above. If a text is not in this list, it must NOT appear.`;
+    let textInstruction = `TEXTS TO INCLUDE (only these, nothing else):\n${textLines}\nDo NOT include any other text from the reference image.`;
     if (body.removed_texts && body.removed_texts.length > 0) {
-      textInstruction += `\n\nFORBIDDEN TEXTS (must NOT appear anywhere in the image):\n${body.removed_texts.map(t => `- "${t}"`).join("\n")}\nThese texts were explicitly removed by the user. They must be completely absent from the generated image.`;
+      textInstruction += `\nDo NOT include: ${body.removed_texts.map(t => `"${t}"`).join(", ")}`;
     }
     sections.push(textInstruction);
   } else {
@@ -262,8 +262,13 @@ async function generateWithGemini(
   const requestBody = JSON.stringify({
     contents: [{ parts }],
     generationConfig: {
-      responseModalities: ["IMAGE", "TEXT"],
+      responseModalities: ["TEXT", "IMAGE"],
       temperature: 1.0,
+    },
+    toolConfig: {
+      functionCallingConfig: {
+        mode: "NONE",
+      },
     },
   });
 
@@ -273,10 +278,11 @@ async function generateWithGemini(
     partsCount: parts.length,
   });
 
-  // Simple retry: same model, 2 attempts max
+  // Simple retry: same model, 3 attempts max (MALFORMED_FUNCTION_CALL is intermittent)
+  const MAX_ATTEMPTS = 3;
   let lastError = "";
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    console.log(`[generate-creative] Attempt ${attempt}/2, model: ${GEMINI_MODEL}`);
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    console.log(`[generate-creative] Attempt ${attempt}/${MAX_ATTEMPTS}, model: ${GEMINI_MODEL}`);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
@@ -303,7 +309,7 @@ async function generateWithGemini(
         lastError = `HTTP ${resp.status}: ${text.slice(0, 200)}`;
         // Don't retry 400 or 403
         if (resp.status === 400 || resp.status === 403) break;
-        if (attempt === 1) await new Promise(r => setTimeout(r, 2000));
+        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 3000));
         continue;
       }
 
@@ -319,11 +325,27 @@ async function generateWithGemini(
         throw new Error("content_blocked: Conteúdo bloqueado pelo filtro de segurança. Tente ajustar a referência ou instruções.");
       }
 
+      // MALFORMED_FUNCTION_CALL: model tried to use internal tool instead of generating inline
+      if (finishReason === "MALFORMED_FUNCTION_CALL") {
+        const finishMsg = parsed?.candidates?.[0]?.finishMessage ?? "";
+        console.warn(`[generate-creative] Attempt ${attempt} MALFORMED_FUNCTION_CALL: ${String(finishMsg).slice(0, 200)}`);
+        lastError = "no_image: Modelo tentou function call ao invés de gerar imagem.";
+        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 3000));
+        continue;
+      }
+
+      // Log unexpected finishReason
+      if (finishReason && finishReason !== "STOP") {
+        console.warn(`[generate-creative] Attempt ${attempt} unexpected finishReason: ${finishReason}`, {
+          finishMessage: String(parsed?.candidates?.[0]?.finishMessage ?? "").slice(0, 300),
+        });
+      }
+
       const imageB64 = extractImageBase64(parsed);
       if (!imageB64) {
         console.warn(`[generate-creative] Attempt ${attempt} no image: ${JSON.stringify(parsed).slice(0, 300)}`);
         lastError = "no_image: Gemini não retornou imagem.";
-        if (attempt === 1) await new Promise(r => setTimeout(r, 2000));
+        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 3000));
         continue;
       }
 
@@ -337,7 +359,7 @@ async function generateWithGemini(
       if ((err as Error).name === "AbortError") {
         lastError = "timeout: Geração excedeu o tempo limite. Tente novamente.";
         console.warn(`[generate-creative] Attempt ${attempt} timed out`);
-        if (attempt === 1) await new Promise(r => setTimeout(r, 2000));
+        if (attempt < MAX_ATTEMPTS) await new Promise(r => setTimeout(r, 3000));
         continue;
       }
       // Don't retry content_blocked or rate_limit
