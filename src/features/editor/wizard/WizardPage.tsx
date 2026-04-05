@@ -7,6 +7,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getFeatureFlags } from "@/config/featureFlags";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { FileText, Palette, RectangleHorizontal, SlidersHorizontal, Trash2, Pencil, Plus } from "lucide-react";
 import { useToast } from "@/features/toast/useToast";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { GenerateError } from "@/services/generateService";
@@ -1197,17 +1198,23 @@ export function WizardPage() {
                 <textarea value={extraInstructions} onChange={(e) => setExtraInstructions(e.target.value)} placeholder="Ex: manter fundo escuro, trocar a roupa por camisa branca..." style={{ width: '100%', minHeight: 70, padding: '8px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }} />
               </div>
               {/* Generation summary */}
-              <div style={{ background: 'hsl(var(--muted) / 0.3)', borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>
-                <span>{editedTexts.filter(t => t.content?.trim()).length} textos</span>
-                <span style={{ color: 'hsl(var(--border))' }}>|</span>
-                <span>{colorPalette.length} cores</span>
-                <span style={{ color: 'hsl(var(--border))' }}>|</span>
-                <span>{formatSelect}</span>
-                <span style={{ color: 'hsl(var(--border))' }}>|</span>
-                <span>Variacao {variationSlider}%</span>
-                {analysisTexts.length > editedTexts.length && <><span style={{ color: 'hsl(var(--border))' }}>|</span><span style={{ color: '#EF4444' }}>{analysisTexts.length - editedTexts.length} removido(s)</span></>}
-                {analysisTexts.length > 0 && editedTexts.length > 0 && editedTexts.some((t, i) => analysisTexts[i] && t.content !== analysisTexts[i].content) && <><span style={{ color: 'hsl(var(--border))' }}>|</span><span style={{ color: '#3B82F6' }}>editado(s)</span></>}
-              </div>
+              {(() => {
+                const activeCount = editedTexts.filter(t => t.content?.trim()).length;
+                const removedCount = Math.max(0, analysisTexts.length - editedTexts.length);
+                const editedCount = editedTexts.filter((t, i) => analysisTexts[i] && t.content?.trim().toLowerCase() !== analysisTexts[i].content?.trim().toLowerCase()).length;
+                const addedCount = Math.max(0, editedTexts.length - analysisTexts.length);
+                return (
+                  <div style={{ background: 'hsl(var(--muted) / 0.3)', borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><FileText size={13} /> {activeCount} textos</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Palette size={13} /> {colorPalette.length} cores</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><RectangleHorizontal size={13} /> {formatSelect}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><SlidersHorizontal size={13} /> {variationSlider}%</span>
+                    {removedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#EF4444' }}><Trash2 size={13} /> {removedCount} removido(s)</span>}
+                    {editedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#3B82F6' }}><Pencil size={13} /> {editedCount} editado(s)</span>}
+                    {addedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#22C55E' }}><Plus size={13} /> {addedCount} adicionado(s)</span>}
+                  </div>
+                );
+              })()}
               {/* Generate button */}
               <button onClick={() => handleGenerate()} disabled={generating} style={{
                 width: '100%', padding: '16px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
