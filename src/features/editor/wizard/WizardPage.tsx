@@ -216,6 +216,7 @@ export function WizardPage() {
     return 1 as const;
   })();
   const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4>(initialStep);
+  const [maxStepReachedInit] = useState(() => initialStep >= 4 ? 4 : initialStep >= 2 ? 2 : 1);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [v2Analysis, setV2Analysis] = useState<Record<string, unknown> | null>(null);
   const [analysisTexts, setAnalysisTexts] = useState<Array<{ type: string; content: string }>>([]);
@@ -241,7 +242,7 @@ export function WizardPage() {
   const [popDesignStep, setPopDesignStep] = useState<string>("");
   const [refinementOverrides, setRefinementOverrides] = useState<RefinementOverrides>({});
   const [resetKey, setResetKey] = useState(0);
-  const [maxStepReached, setMaxStepReached] = useState(1);
+  const [maxStepReached, setMaxStepReached] = useState(maxStepReachedInit);
   const [activeSessionIdx, setActiveSessionIdx] = useState(-1);
   const [zoomScale, setZoomScale] = useState(1);
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
@@ -923,12 +924,14 @@ export function WizardPage() {
   }
 
   async function handleRegenerateFromResult() {
-    clearGeneration();
     setComposedBase64(null);
     setGenerationDone(false);
     setRefinementOverrides({});
     htmlCompositionRef.current = null;
-    // Regenerate directly with same params — no need to go back to step 3
+    // Go to step 3 first so the generating animation shows
+    setUiStep(3);
+    // handleGenerate calls clearGeneration() internally, sets generating=true,
+    // and when done sets generationDone=true which triggers goToStep(4)
     await handleGenerate();
   }
 
@@ -960,7 +963,7 @@ export function WizardPage() {
           </div>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Creatyng</span>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>/</span>
-          <button onClick={() => { if (uiStep >= 2) setShowResetConfirm(true); else resetAll(); }} style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Nova Criação</button>
+          <button onClick={() => { if (uiStep >= 2 || referenceBase64 || currentGeneration) setShowResetConfirm(true); else resetAll(); }} style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Nova Criação</button>
         </div>
         {/* Step indicator centered */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
@@ -1065,6 +1068,11 @@ export function WizardPage() {
                   Analisando referência com Gemini...
                 </div>
               )}
+              {currentGeneration && !analysisLoading && (
+                <button onClick={() => goToStep(4)} style={{ marginTop: 16, width: '100%', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  ← Ver resultado anterior
+                </button>
+              )}
             </div>
           )}
 
@@ -1152,6 +1160,14 @@ export function WizardPage() {
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 24 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Instruções extras</h3>
                 <textarea value={extraInstructions} onChange={(e) => setExtraInstructions(e.target.value)} placeholder="Ex: manter fundo escuro, trocar a roupa por camisa branca..." style={{ width: '100%', minHeight: 70, padding: '8px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }} />
+              </div>
+              {/* Generation summary */}
+              <div style={{ background: 'hsl(var(--muted) / 0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>
+                <span>📝 {editedTexts.filter(t => t.content?.trim()).length} textos</span>
+                <span>🎨 {colorPalette.length} cores</span>
+                <span>📐 {formatSelect}</span>
+                <span>🎛️ Variação {variationSlider}%</span>
+                {(() => { const activeContents = new Set(editedTexts.map(t => t.content)); const removed = analysisTexts.filter(t => !activeContents.has(t.content)); return removed.length > 0 ? <span style={{ color: '#EF4444' }}>🗑 {removed.length} removido(s)</span> : null; })()}
               </div>
               {/* Generate button */}
               <button onClick={() => handleGenerate()} disabled={generating} style={{

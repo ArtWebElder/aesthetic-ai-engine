@@ -120,6 +120,7 @@ CRITICAL RULES:
 7. Do NOT reproduce any watermarks, brand logos, or stock photo marks from the reference.
 8. WATERMARKS: The reference image may contain watermarks (semi-transparent text/logos repeated across the image, typically from stock image sites like Designi, Freepik, Shutterstock, Adobe Stock, etc). You MUST completely IGNORE and REMOVE all watermarks. The generated image must be CLEAN with NO watermarks whatsoever. Do not reproduce any semi-transparent diagonal text overlays.
 9. TEXT QUALITY: ALL text MUST be SHARP, CRISP and PERFECTLY READABLE. Small text (phone, address, URL) must be rendered at sufficient size to remain legible — make it larger if needed, NEVER blurry or smeared.
+10. PORTUGUESE ACCENTS: Texts may contain Brazilian Portuguese. Reproduce special characters EXACTLY: ç (cedilha curves right), ã/õ (tilde ~), é/ê/á/â/ó/ô/ú (accented vowels). Copy characters exactly from the text list — do NOT approximate or replace accents.
 
 Generate the image directly. Do not use function calls or tools.`
   );
@@ -216,7 +217,7 @@ ALL texts listed below MUST still appear in the image.`
       textSection += `\n\nTEXTS EXPLICITLY REMOVED BY THE USER — DO NOT INCLUDE THESE:\n${removedLines}\nThese texts were intentionally deleted by the user. Even if they appear in the reference image, you MUST NOT reproduce them.`;
     }
 
-    textSection += `\n\nTEXT RENDERING QUALITY:\n- Large texts (titles, headings): Bold, prominent, perfectly legible.\n- Medium texts (prices, labels): Clear and readable.\n- Small texts (phone, address, URL, contact info): MUST be particularly sharp and crisp. Render with enough size to be clearly readable. Make slightly larger if needed rather than blurry. NEVER render blurred or smeared small text.`;
+    textSection += `\n\nTEXT RENDERING QUALITY:\n- Large texts (titles, headings): Bold, prominent, perfectly legible.\n- Medium texts (prices, labels): Clear and readable.\n- Small texts (phone, address, URL, contact info): MUST be particularly sharp and crisp. Render with enough size to be clearly readable. Make slightly larger if needed rather than blurry. NEVER render blurred or smeared small text.\n\nACCENT WARNING: If texts contain Portuguese characters (ç, ã, õ, é, á, ê, â, ó, ô, ú), reproduce them EXACTLY. Wrong accents = wrong spelling in Portuguese.`;
 
     sections.push(textSection);
   } else {
@@ -235,7 +236,7 @@ ALL texts listed below MUST still appear in the image.`
       }
     }
     sections.push(
-      `COLOR MAPPING — Replace original colors with these new colors:\n${mappingLines.join("\n")}\n\nApply these replacements to ALL elements: backgrounds, shapes, cards, text, icons, borders, buttons, gradients, decorative elements. No element should keep the original color if a replacement is specified above.`
+      `COLOR MAPPING — Replace original colors with these new colors:\n${mappingLines.join("\n")}\n\nApply these replacements to ALL elements: backgrounds, shapes, cards, text, icons, borders, buttons, gradients, decorative elements. No element should keep the original color if a replacement is specified above.\nIMPORTANT: ALL colors listed above MUST appear somewhere in the generated image. If there are more colors than natural elements, apply remaining colors to decorative shapes, gradients, shadows, borders, or background accents.`
     );
   }
 
