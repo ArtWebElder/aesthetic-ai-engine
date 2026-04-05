@@ -91,121 +91,113 @@ function colorsChanged(analysisColors: unknown, userColors: string[]): boolean {
   return false;
 }
 
-function buildAnalysisPrompt(body: GenerateBody): string {
-  const analysis = body.analysis!;
+function buildPrompt(body: GenerateBody): string {
+  const analysis = body.analysis;
   const variation = Math.max(0, Math.min(100, body.variation ?? 30));
   const sections: string[] = [];
 
-  // ── HIGH PRIORITY: Watermark removal ──
+  // ── LAYER 1: Base instruction (always present) ──
   sections.push(
-    `IMPORTANT: Do NOT reproduce any watermarks, brand logos, stock photo marks, or attribution text from the reference image. These must be completely removed from the output. If the reference contains visible watermarks or repeated logo patterns, ignore them entirely.`
+    `You are a professional advertising creative cloner. Your task is to CLONE the visual template of the reference image, replacing specific content while keeping the overall design structure.
+
+CRITICAL RULES:
+1. CLONE the template structure: Keep the EXACT same layout grid, element positioning, background shapes, decorative elements, and visual hierarchy from the reference image.
+2. REPLACE the main subject: Swap the main product/person in the reference with the provided subject photo (if given). Place it in the SAME position and approximate size as the original.
+3. USE ONLY the texts provided below. Do NOT copy any text from the reference image.
+4. The output must look like a PROFESSIONAL advertisement ready for social media.
+5. Do NOT add elements that don't exist in the reference (no extra decorations, shapes, or visual elements).
+6. MAINTAIN the same visual style: if the reference has geometric shapes, keep geometric shapes. If organic blobs, keep organic blobs. If gradients, keep gradients.
+7. Do NOT reproduce any watermarks, brand logos, or stock photo marks from the reference.
+
+Generate the image directly. Do not use function calls or tools.`
   );
 
-  // ── HIGH PRIORITY: Format override ──
-  const userFormat = body.format || "1:1";
-  sections.push(
-    `OUTPUT FORMAT: Generate this image in ${userFormat} aspect ratio. This is MANDATORY regardless of the reference image format or aspect ratio.`
-  );
-
-  // ── HIGH PRIORITY: Color override when user changed colors ──
-  if (body.color_palette && body.color_palette.length > 0 && colorsChanged(analysis.colors, body.color_palette)) {
-    const c = body.color_palette;
-    const a: string[] = [];
-    if (c[0]) a.push(`Background/Primary: ${c[0]}`);
-    if (c[1]) a.push(`Accents/Secondary: ${c[1]}`);
-    if (c[2]) a.push(`Highlights: ${c[2]}`);
-    if (c[3]) a.push(`Primary text color: ${c[3]}`);
-    if (c[4]) a.push(`Secondary text color: ${c[4]}`);
+  // ── LAYER 2: Variation level (conditional) ──
+  if (variation <= 5) {
     sections.push(
-      `IMPORTANT COLOR OVERRIDE: The following colors MUST be used regardless of the reference image colors:\n${a.join("\n")}\nReplace ALL original colors with these new colors. This is mandatory even at 0% variation.`
+      `VARIATION: 0% — EXACT CLONE MODE
+Reproduce the reference layout PIXEL-PERFECT. Same positions, sizes, proportions.
+Keep the EXACT same background style, shapes, gradients, and decorative elements.
+Keep the EXACT same color scheme unless specific colors are overridden below.
+The ONLY differences: the subject (if provided), the texts, and any overridden colors.
+This must look like the SAME template with different content plugged in.`
     );
-  }
-
-  // ── Main instruction ──
-  if (body.subject_image) {
-    sections.push("Recreate this advertisement exactly as described below, using the product/person from the second input image as the main subject.");
+  } else if (variation <= 30) {
+    sections.push(
+      `VARIATION: ${variation}% — SLIGHT VARIATION
+Start from the exact reference layout and make SMALL creative adjustments.
+Keep the same overall structure, grid, and element positions.
+You may slightly adjust: element sizes (±10%), spacing, decorative element styles.
+Do NOT change the fundamental layout or add/remove major elements.`
+    );
+  } else if (variation <= 70) {
+    sections.push(
+      `VARIATION: ${variation}% — MODERATE VARIATION
+Use the reference as strong INSPIRATION but allow creative freedom.
+Keep the same type of layout (centered stays centered, split stays split).
+You may rearrange elements, change sizes, adjust the visual style.
+Keep the same mood and professional quality.`
+    );
   } else {
-    sections.push("Recreate this advertisement exactly as described below.");
-  }
-
-  sections.push(
-    `LAYOUT AND COMPOSITION:\n${analysis.fullPrompt || "Professional advertisement with clean layout, balanced typography, and commercial-grade visual quality."}`
-  );
-
-  if (body.subject_image) {
     sections.push(
-      `SUBJECT REPLACEMENT:\nThe main subject in the final image MUST be the exact product/person shown in the second input image. Copy every detail: exact shape, colors, textures, proportions. Do NOT generate a new subject — use the second image as-is and integrate it into the scene from the first image.`
+      `VARIATION: ${variation}% — HIGH VARIATION
+Use the reference only as loose inspiration for the overall mood.
+Create a fresh layout while maintaining the same advertising goal.
+Full creative freedom on layout, composition, and style.`
     );
   }
 
-  // ── Texts: only user's active texts (removed texts are excluded) ──
+  // ── LAYER 2b: Layout & style info from analysis (only structure, NOT content) ──
+  if (analysis) {
+    const layoutDesc = analysis.layout || "";
+    const styleDesc = analysis.style || "";
+    if (layoutDesc || styleDesc) {
+      sections.push(
+        `REFERENCE LAYOUT & STYLE (clone this structure, NOT the content):\n${layoutDesc ? `Layout: ${layoutDesc}` : ""}${layoutDesc && styleDesc ? "\n" : ""}${styleDesc ? `Style: ${styleDesc}` : ""}`
+      );
+    }
+  }
+
+  // ── LAYER 3: Texts (always present if there are texts) ──
   const allTexts = resolveAllTexts(body);
   if (allTexts.length > 0) {
-    const textLines = allTexts.map(t => {
-      const label = t.type.charAt(0).toUpperCase() + t.type.slice(1);
-      return `${label}: "${t.text}"`;
-    }).join("\n");
-    let textInstruction = `TEXTS TO INCLUDE (only these, nothing else):\n${textLines}\nDo NOT include any other text from the reference image.`;
-    if (body.removed_texts && body.removed_texts.length > 0) {
-      textInstruction += `\nDo NOT include: ${body.removed_texts.map(t => `"${t}"`).join(", ")}`;
-    }
-    sections.push(textInstruction);
+    const textLines = allTexts.map(t => `- ${t.type.charAt(0).toUpperCase() + t.type.slice(1)}: "${t.text}"`).join("\n");
+    sections.push(
+      `TEXTS TO INCLUDE IN THE IMAGE (use ONLY these, NO other text):\n${textLines}\nAny text visible in the reference that is NOT listed above must be COMPLETELY ABSENT.`
+    );
   } else {
-    sections.push("TEXT: Do NOT include any text, labels, phone numbers, or watermarks in the generated image.");
+    sections.push("Do NOT include any text in the generated image.");
   }
 
-  let vDesc: string;
-  if (variation <= 5) vDesc = "EXACT COPY MODE: You must reproduce the reference image as EXACTLY as possible. Keep the EXACT same layout, composition, positioning, proportions, sizes, background style, gradients, and decorative elements. The ONLY changes allowed are: replacing the subject (if provided) and using the specified texts and colors. Do NOT reinterpret, reimagine, or creatively alter ANY aspect of the layout. Think of this as a template swap: same template, different content.";
-  else if (variation <= 30) vDesc = "Minor creative adjustments allowed but maintain the core layout and structure.";
-  else if (variation <= 60) vDesc = "Moderate creative freedom. Keep the general concept but reimagine details.";
-  else vDesc = "Full creative reinterpretation. Use the reference as loose inspiration only.";
-  sections.push(`VARIATION LEVEL: ${variation}%\n${vDesc}`);
+  // ── LAYER 4: Colors (conditional — only if user changed colors) ──
+  const userColors = body.color_palette || [];
+  if (userColors.length > 0 && (!analysis || colorsChanged(analysis.colors, userColors))) {
+    const labels = ["Primary", "Secondary", "Accent", "Text primary", "Text secondary"];
+    const colorLines = userColors.slice(0, 5).map((c, i) => `- ${labels[i] || `Color ${i + 1}`}: ${c}`).join("\n");
+    sections.push(
+      `COLOR OVERRIDE: Use these specific colors instead of the reference colors:\n${colorLines}\nThese colors are MANDATORY. Replace ALL original colors with these.`
+    );
+  }
 
+  // ── LAYER 5: Subject (conditional) ──
+  if (body.subject_image) {
+    sections.push(
+      `SUBJECT REPLACEMENT: Replace the main product/person in the reference with the provided subject photo.
+Place it in the SAME position as the original main element. Maintain approximately the SAME size.
+The subject must be the focal point, just like in the reference. Keep it realistic.`
+    );
+  }
+
+  // ── LAYER 6: Format ──
+  const userFormat = body.format || "1:1";
+  sections.push(`OUTPUT: Generate this image in ${userFormat} aspect ratio at high resolution.`);
+
+  // ── LAYER 7: Extra instructions (if any) ──
   if (body.extra_instructions?.trim()) {
-    sections.push(`ADDITIONAL INSTRUCTIONS:\n${body.extra_instructions.trim()}`);
+    sections.push(`ADDITIONAL USER INSTRUCTIONS: ${body.extra_instructions.trim()}`);
   }
-
-  sections.push("OUTPUT REQUIREMENTS:\n- Professional advertisement quality\n- All text must be perfectly legible, sharp, and correctly spelled\n- No watermarks, no signatures, no AI artifacts\n- Clean, commercial-ready output");
 
   return sections.join("\n\n");
-}
-
-function buildGenericPrompt(body: GenerateBody): string {
-  const variation = Math.max(0, Math.min(100, body.variation ?? 30));
-  const parts: string[] = [];
-
-  // Watermark removal
-  parts.push(`IMPORTANT: Do NOT reproduce any watermarks, brand logos, stock photo marks, or attribution text from the reference image. Remove them entirely.`);
-
-  // Format override
-  const userFormat = body.format || "1:1";
-  parts.push(`OUTPUT FORMAT: Generate this image in ${userFormat} aspect ratio. This is MANDATORY.`);
-
-  if (body.subject_image) {
-    parts.push("Use the style, layout, and design from the first image to create an advertisement. The main subject MUST be the exact product/person from the second image — copy every detail exactly. Do not generate a new subject.");
-  } else {
-    parts.push("Recreate this advertisement with the same style, layout, and design.");
-  }
-
-  if (variation <= 20) parts.push("Keep the layout and design as close as possible to the original.");
-  else if (variation > 50) parts.push("Take creative liberties while keeping the general style.");
-
-  const allTexts = resolveAllTexts(body);
-  if (allTexts.length > 0) {
-    const textLines = allTexts.map(t => `- ${t.type}: "${t.text}"`).join("\n");
-    parts.push(`These exact texts must appear in the image:\n${textLines}\nOnly include the texts listed above. Do NOT add any other text.`);
-  } else {
-    parts.push("Do NOT include any text, labels, or watermarks in the generated image.");
-  }
-
-  if (body.color_palette && body.color_palette.length > 0) {
-    parts.push(`MANDATORY colors: ${body.color_palette.join(", ")}. Replace the original color scheme entirely.`);
-  }
-
-  if (body.extra_instructions?.trim()) parts.push(body.extra_instructions.trim());
-
-  parts.push("All text must be sharp and legible. No watermarks or AI artifacts. Professional quality.");
-  return parts.join("\n\n");
 }
 
 // ── Google Generative AI ───────────────────────────────────────────────────────
@@ -272,10 +264,15 @@ async function generateWithGemini(
     },
   });
 
+  const parsedBody = JSON.parse(requestBody);
   console.log(`[generate-creative] Calling API`, {
     model: GEMINI_MODEL,
     promptLength: prompt.length,
     partsCount: parts.length,
+    bodyKeys: Object.keys(parsedBody),
+    hasToolConfig: !!parsedBody.toolConfig,
+    functionCallingMode: parsedBody.toolConfig?.functionCallingConfig?.mode,
+    responseModalities: parsedBody.generationConfig?.responseModalities,
   });
 
   // Simple retry: same model, 3 attempts max (MALFORMED_FUNCTION_CALL is intermittent)
@@ -397,22 +394,19 @@ Deno.serve(async (req: Request) => {
     if (!apiKey) return json({ error: "missing_api_key", details: "GEMINI_API_KEY not configured." }, 500, cors);
 
     const hasSubject = Boolean(body.subject_image);
-    const hasAnalysis = Boolean(body.analysis?.fullPrompt);
-    // Protect removed_texts against undefined
+    const hasAnalysis = Boolean(body.analysis);
     if (!body.removed_texts) body.removed_texts = [];
 
     console.log(`[generate-creative] Request received`, {
-      hasReference: true,
       hasSubject,
       hasAnalysis,
       variation: body.variation ?? 30,
       format: body.format || "1:1",
       textsCount: body.active_texts?.length ?? body.text_replacements?.length ?? 0,
-      removedTextsCount: body.removed_texts.length,
       model: GEMINI_MODEL,
     });
 
-    const prompt = hasAnalysis ? buildAnalysisPrompt(body) : buildGenericPrompt(body);
+    const prompt = buildPrompt(body);
     console.log(`[generate-creative] Prompt length: ${prompt.length}`);
 
     const result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
