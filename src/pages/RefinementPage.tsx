@@ -2,7 +2,7 @@
 // CREATYNG — Fase 4 — Chat AI expandido com split-screen e histórico de versões.
 // Rota: /app/refine/:id
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { useWizardStore } from "@/stores/useWizardStore";
@@ -82,7 +82,11 @@ export default function RefinementPage() {
       : []
   );
   const [selectedVersionIdx, setSelectedVersionIdx] = useState(0);
-  const [zoom, setZoom] = useState(100);
+  const [scale, setScale] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const isDragging = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const panStart = useRef({ x: 0, y: 0 });
   const [refinementOverrides, setRefinementOverrides] = useState<RefinementOverrides>({});
   const [isRecomposing, setIsRecomposing] = useState(false);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -139,6 +143,35 @@ export default function RefinementPage() {
     await handleCompositionChange(updated, "Ajuste via chat");
   }
 
+  const zoomIn = useCallback(() => setScale(s => Math.min(s * 1.25, 3)), []);
+  const zoomOut = useCallback(() => setScale(s => Math.max(s * 0.8, 0.3)), []);
+  const resetZoom = useCallback(() => { setScale(1); setPan({ x: 0, y: 0 }); }, []);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    setScale(s => {
+      const next = e.deltaY < 0 ? s * 1.1 : s * 0.9;
+      return Math.min(Math.max(next, 0.3), 3);
+    });
+  }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (scale <= 1) return;
+    isDragging.current = true;
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    panStart.current = { ...pan };
+  }, [scale, pan]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isDragging.current) return;
+    setPan({
+      x: panStart.current.x + (e.clientX - dragStart.current.x) / scale,
+      y: panStart.current.y + (e.clientY - dragStart.current.y) / scale,
+    });
+  }, [scale]);
+
+  const handleMouseUp = useCallback(() => { isDragging.current = false; }, []);
+
   const hasContent = Boolean(displayImage);
   const checkerBg = 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--background)) 0% 50%) 0 0 / 16px 16px';
 
@@ -181,27 +214,39 @@ export default function RefinementPage() {
       <div style={{ flex: 1, display: 'flex', minHeight: 0, overflow: 'hidden' }}>
 
         {/* ── LEFT: Preview 55% ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', width: '55%', borderRight: '1px solid hsl(var(--border))', background: checkerBg }}>
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, borderRight: '1px solid hsl(var(--border))', background: checkerBg }}>
           {/* Zoom controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--card) / 0.6)', backdropFilter: 'blur(4px)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--card) / 0.6)', backdropFilter: 'blur(4px)', flexShrink: 0 }}>
             <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', fontWeight: 500 }}>Zoom</span>
-            <button onClick={() => setZoom((z) => Math.max(25, z - 25))} style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-            <span style={{ fontSize: 11.5, color: 'hsl(var(--foreground))', width: 48, textAlign: 'center', fontWeight: 500 }}>{zoom}%</span>
-            <button onClick={() => setZoom((z) => Math.min(200, z + 25))} style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-            <button onClick={() => setZoom(100)} style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Reset</button>
+            <button onClick={zoomOut} style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+            <span style={{ fontSize: 11.5, color: 'hsl(var(--foreground))', width: 48, textAlign: 'center', fontWeight: 500 }}>{Math.round(scale * 100)}%</span>
+            <button onClick={zoomIn} style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+            <button onClick={resetZoom} style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Reset</button>
             {isRecomposing && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#ff713d', animation: 'rfPulse 1s ease-in-out infinite' }}>Atualizando...</span>}
           </div>
 
           {/* Preview area */}
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div
+            style={{ flex: 1, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8, cursor: scale > 1 ? (isDragging.current ? 'grabbing' : 'grab') : 'default' }}
+            onWheel={handleWheel}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
             {hasContent && displayImage ? (
               <img
                 src={displayImage}
                 alt="Criativo"
+                draggable={false}
                 style={{
                   borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
                   border: '1px solid hsl(var(--border))', objectFit: 'contain',
-                  transition: 'all 300ms', maxWidth: `${zoom}%`, maxHeight: '70vh',
+                  maxWidth: '100%', maxHeight: '100%',
+                  transform: `scale(${scale}) translate(${pan.x}px, ${pan.y}px)`,
+                  transformOrigin: 'center center',
+                  transition: isDragging.current ? 'none' : 'transform 0.2s ease',
+                  userSelect: 'none',
                 }}
               />
             ) : (
@@ -234,7 +279,7 @@ export default function RefinementPage() {
         </div>
 
         {/* ── RIGHT: Chat 45% ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', width: '45%', background: '#ffffff' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', width: 380, flexShrink: 0, background: '#ffffff' }}>
           {/* Chat header */}
           <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
             <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0, position: 'relative' }}>
