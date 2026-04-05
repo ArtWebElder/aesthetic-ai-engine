@@ -39,6 +39,7 @@ interface GenerateBody {
   analysis?: AnalysisData;
   active_texts?: Array<{ type: string; content: string }>;
   removed_texts?: string[];
+  logo_base64?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -249,6 +250,14 @@ The subject must be the focal point, just like in the reference. Keep it realist
     );
   }
 
+  // ── LAYER 5b: Logo (conditional) ──
+  if (body.logo_base64) {
+    const logoImageIdx = body.subject_image ? 4 : 3;
+    sections.push(
+      `LOGO INSERTION: Image ${logoImageIdx} is the brand logo. Find any logo placeholder in the reference (text like "logoaqui", "logo", generic logo icon, or any branding element) and replace it with this logo. Place the logo in the same position and approximate size as the original placeholder. The logo has transparent background — render it clearly. If there is no logo placeholder, place the logo in an appropriate corner or header area.`
+    );
+  }
+
   // ── LAYER 6: Format with layout hints ──
   const userFormat = body.format || "1:1";
   if (userFormat === "9:16") {
@@ -293,6 +302,7 @@ async function generateWithGemini(
   prompt: string,
   refImageB64: string,
   subjectImageB64: string | null,
+  logoImageB64: string | null,
   apiKey: string,
 ): Promise<{ image: string; model: string; duration_ms: number }> {
   const startedAt = Date.now();
@@ -316,6 +326,15 @@ async function generateWithGemini(
       inlineData: {
         mimeType: detectMime(subjectImageB64),
         data: stripBase64Prefix(subjectImageB64),
+      },
+    });
+  }
+
+  if (logoImageB64) {
+    parts.push({
+      inlineData: {
+        mimeType: detectMime(logoImageB64),
+        data: stripBase64Prefix(logoImageB64),
       },
     });
   }
@@ -487,7 +506,7 @@ Deno.serve(async (req: Request) => {
     console.log(prompt);
     console.log(`[generate-creative] ===== END PROMPT =====`);
 
-    const result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
+    const result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, body.logo_base64 || null, apiKey);
 
     return json({
       image: result.image,

@@ -7,7 +7,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getFeatureFlags } from "@/config/featureFlags";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import { FileText, Palette, RectangleHorizontal, SlidersHorizontal, Trash2, Pencil, Plus } from "lucide-react";
+import { FileText, Palette, RectangleHorizontal, SlidersHorizontal, Trash2, Pencil, Plus, ImageIcon } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/features/toast/useToast";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { GenerateError } from "@/services/generateService";
@@ -273,6 +274,8 @@ export function WizardPage() {
   const [activeSessionIdx, setActiveSessionIdx] = useState(-1);
   const [zoomScale, setZoomScale] = useState(1);
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
+  const zoomDragging = useRef(false);
+  const zoomDragStart = useRef({ x: 0, y: 0, px: 0, py: 0 });
 
   const {
     subjectBase64,
@@ -294,6 +297,8 @@ export function WizardPage() {
     sessionGenerations,
     addSessionGeneration,
     clearSessionGenerations,
+    logoBase64,
+    setLogoBase64,
   } = useWizardStore();
 
   // refs (idênticos ao original)
@@ -511,6 +516,9 @@ export function WizardPage() {
       }
       if (extraInstructions) {
         generateBody.extra_instructions = extraInstructions;
+      }
+      if (state.logoBase64) {
+        generateBody.logo_base64 = state.logoBase64;
       }
 
       console.log("[WizardPage] ===== GENERATING =====");
@@ -864,8 +872,9 @@ export function WizardPage() {
         const analysis = data.analysis as Record<string, unknown>;
         setV2Analysis(analysis);
         const texts = (analysis.texts as Array<{ type: string; content: string }>) || [];
-        setAnalysisTexts(texts);
-        setEditedTexts(texts.map(t => ({ ...t })));
+        // Deep copy: analysisTexts is the ORIGINAL snapshot, editedTexts is the user's working copy
+        setAnalysisTexts(texts.map(t => ({ type: t.type, content: t.content })));
+        setEditedTexts(texts.map(t => ({ type: t.type, content: t.content })));
         const colors = (analysis.colors as string[]) || [];
         if (colors.length >= 5) setColorPalette(colors.slice(0, 5));
         else if (colors.length > 0) setColorPalette([...colors, ...colorPalette.slice(colors.length)]);
@@ -921,6 +930,7 @@ export function WizardPage() {
     htmlCompositionRef.current = null;
     useWizardStore.getState().clearReference();
     useWizardStore.getState().setSubject('', '');
+    setLogoBase64(null);
     setResetKey(k => k + 1);
     setMaxStepReached(1);
     clearSessionGenerations();
@@ -1035,11 +1045,11 @@ export function WizardPage() {
                 <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Suba suas imagens</h1>
                 <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Arte de referência + foto do produto ou pessoa (opcional).</p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
                 {/* Reference Upload */}
                 <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Arte de Referência</span><InfoTooltip text="O post, anuncio ou arte que voce quer clonar. Pode ser um print de qualquer rede social." />
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Arte de Referência</span><InfoTooltip text="O post, anúncio ou arte que você quer clonar. Pode ser um print de qualquer rede social." />
                     <span style={{ fontSize: 10, background: '#ff713d', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>Obrigatório</span>
                   </div>
                   <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Print do post, anúncio ou arte que quer clonar</p>
@@ -1065,7 +1075,7 @@ export function WizardPage() {
                 {/* Subject Upload */}
                 <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Subject</span><InfoTooltip text="Foto do seu produto ou pessoa pra substituir o que aparece na referencia. Se nao enviar, a IA mantem o original." />
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Subject</span><InfoTooltip text="Foto do seu produto ou pessoa pra substituir o que aparece na referência. Se não enviar, a IA mantém o original." />
                     <span style={{ fontSize: 10, background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>
                   </div>
                   <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Foto do produto ou pessoa pra substituir</p>
@@ -1088,6 +1098,32 @@ export function WizardPage() {
                     </label>
                   )}
                 </div>
+                {/* Logo Upload */}
+                <div style={{ background: 'hsl(var(--card))', border: '1px dashed hsl(var(--border))', borderRadius: 12, padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Logo</span><InfoTooltip text="Sua logo será inserida no criativo, substituindo qualquer placeholder de logo na referência." />
+                    <span style={{ fontSize: 10, background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>PNG com fundo transparente</p>
+                  {logoBase64 ? (
+                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+                      <img src={logoBase64} alt="Logo" style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }} />
+                      <button onClick={() => setLogoBase64(null)} style={{ position: 'absolute', top: -4, right: -4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                    </div>
+                  ) : (
+                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 80, border: '2px dashed hsl(var(--border))', borderRadius: 10, cursor: 'pointer' }}>
+                      <input type="file" accept="image/png,image/svg+xml,image/webp" style={{ display: 'none' }} onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || file.size > 2 * 1024 * 1024) return;
+                        const reader = new FileReader();
+                        reader.onload = () => setLogoBase64(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }} />
+                      <ImageIcon size={20} style={{ color: 'hsl(var(--muted-foreground))', marginBottom: 4 }} />
+                      <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>Upload logo</span>
+                    </label>
+                  )}
+                </div>
               </div>
               {analysisLoading && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, color: '#ff713d', fontSize: 13 }}>
@@ -1102,7 +1138,7 @@ export function WizardPage() {
               )}
               {!subjectBase64 && referenceBase64 && !analysisLoading && (
                 <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 8 }}>
-                  Sem subject = a IA mantem o produto/pessoa da referencia original
+                  Sem subject = a IA mantém o produto/pessoa da referência original
                 </p>
               )}
             </div>
@@ -1117,18 +1153,19 @@ export function WizardPage() {
               </div>
               {/* Texts */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Textos detectados<InfoTooltip text="Textos encontrados automaticamente na referencia. Edite, remova ou adicione novos." /></h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Textos detectados<InfoTooltip text="Textos encontrados automaticamente na referência. Edite, remova ou adicione novos." /></h3>
                 {editedTexts.map((txt, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                    <select value={txt.type} onChange={(e) => {
-                      const next = [...editedTexts];
-                      next[idx] = { ...next[idx], type: e.target.value };
-                      setEditedTexts(next);
-                    }} style={{ width: 100, padding: '6px 8px', borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 12, fontFamily: 'inherit' }}>
-                      {['title', 'subtitle', 'price', 'label', 'cta', 'contact'].map(t => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
+                    <Select value={txt.type} onValueChange={(val) => { const next = [...editedTexts]; next[idx] = { ...next[idx], type: val }; setEditedTexts(next); }}>
+                      <SelectTrigger style={{ width: 110, height: 34, fontSize: 12 }}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {['title', 'subtitle', 'price', 'label', 'cta', 'contact'].map(t => (
+                          <SelectItem key={t} value={t} style={{ fontSize: 12 }}>{t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <input type="text" value={txt.content} onChange={(e) => {
                       const next = [...editedTexts];
                       next[idx] = { ...next[idx], content: e.target.value };
@@ -1141,20 +1178,21 @@ export function WizardPage() {
                 <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 8 }}>Textos curtos funcionam melhor. Evite frases longas.</p>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 12px', background: '#FFF7ED', borderRadius: 8, marginTop: 8, fontSize: 12, color: '#92400E' }}>
                   <span style={{ flexShrink: 0 }}>!</span>
-                  <span>Textos muito pequenos podem apresentar variacao na acentuacao. Textos curtos e grandes funcionam melhor.</span>
+                  <span>Textos muito pequenos podem apresentar variação na acentuação. Textos curtos e grandes funcionam melhor.</span>
                 </div>
               </div>
               {/* Colors */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center' }}>Paleta de cores<InfoTooltip text="Cores detectadas na referencia. Clique numa cor pra trocar. A IA vai aplicar as novas cores no criativo." /></h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center' }}>Paleta de cores<InfoTooltip text="Cores detectadas na referência. Clique numa cor pra trocar. A IA vai aplicar as novas cores no criativo." /></h3>
                 <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Clique pra alterar as cores do criativo</p>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 12 }}>
                   {colorPalette.map((color, idx) => (
-                    <input key={idx} type="color" value={color} onChange={(e) => {
-                      const next = [...colorPalette];
-                      next[idx] = e.target.value;
-                      setColorPalette(next);
-                    }} style={{ width: 40, height: 36, borderRadius: 8, border: '1px solid hsl(var(--border))', cursor: 'pointer', background: 'none' }} />
+                    <label key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+                      <div style={{ position: 'relative', width: 36, height: 36, borderRadius: '50%', background: color, border: '2px solid hsl(var(--border))', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+                        <input type="color" value={color} onChange={(e) => { const next = [...colorPalette]; next[idx] = e.target.value; setColorPalette(next); }} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
+                      </div>
+                      <span style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', fontFamily: 'monospace' }}>{color}</span>
+                    </label>
                   ))}
                 </div>
               </div>
@@ -1170,7 +1208,7 @@ export function WizardPage() {
               </div>
               {/* Variation slider */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Variação Criativa<InfoTooltip text="0% = copia fiel da referencia. 100% = reinterpretacao livre. Recomendado: 0-10% pra manter o layout original." /></h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Variação Criativa<InfoTooltip text="0% = cópia fiel da referência. 100% = reinterpretação livre. Recomendado: 0-10% pra manter o layout original." /></h3>
                 <input type="range" min={0} max={100} value={variationSlider} onChange={(e) => setVariationSlider(Number(e.target.value))} style={{ width: '100%' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 4 }}>
                   <span>Cópia exata</span>
@@ -1180,7 +1218,7 @@ export function WizardPage() {
               </div>
               {/* Format */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Formato<InfoTooltip text="Tamanho do criativo. 1:1 Feed (quadrado), 4:5 Feed (vertical), 9:16 Story, 16:9 Banner." /></h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Formato<InfoTooltip text="Formato do criativo. 1:1 Feed (quadrado), 4:5 Feed (vertical), 9:16 Story, 16:9 Banner." /></h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[{ v: '1:1', l: '1:1 Feed' }, { v: '4:5', l: '4:5 Feed' }, { v: '9:16', l: '9:16 Story' }, { v: '16:9', l: '16:9 Banner' }].map(f => (
                     <button key={f.v} onClick={() => setFormatSelect(f.v)} style={{
@@ -1194,7 +1232,7 @@ export function WizardPage() {
               </div>
               {/* Extra instructions */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 24 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Instruções extras<InfoTooltip text="Diga com suas palavras o que quer mudar. Ex: 'fundo mais escuro', 'adicione batatas fritas flutuando'." /></h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Instruções extras<InfoTooltip text="Diga com suas palavras o que quer mudar. Ex: 'adicione batatas flutuando', 'fundo mais escuro'." /></h3>
                 <textarea value={extraInstructions} onChange={(e) => setExtraInstructions(e.target.value)} placeholder="Ex: manter fundo escuro, trocar a roupa por camisa branca..." style={{ width: '100%', minHeight: 70, padding: '8px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }} />
               </div>
               {/* Generation summary */}
@@ -1314,17 +1352,27 @@ export function WizardPage() {
 
               {/* Image */}
               {displayBase64 && (
-                <div style={{
-                  borderRadius: 12, overflow: 'hidden', marginBottom: 12,
-                  border: '1px solid hsl(var(--border))',
-                  boxShadow: '0 8px 32px rgba(20,20,23,0.08)',
-                  background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <img src={displayBase64} alt="Criativo gerado" style={{
+                <div
+                  onWheel={(e) => { e.preventDefault(); setZoomScale(s => Math.min(Math.max(s * (e.deltaY > 0 ? 0.9 : 1.1), 0.3), 3)); }}
+                  onMouseDown={(e) => { if (zoomScale <= 1) return; zoomDragging.current = true; zoomDragStart.current = { x: e.clientX, y: e.clientY, px: zoomPos.x, py: zoomPos.y }; }}
+                  onMouseMove={(e) => { if (!zoomDragging.current) return; setZoomPos({ x: zoomDragStart.current.px + (e.clientX - zoomDragStart.current.x), y: zoomDragStart.current.py + (e.clientY - zoomDragStart.current.y) }); }}
+                  onMouseUp={() => { zoomDragging.current = false; }}
+                  onMouseLeave={() => { zoomDragging.current = false; }}
+                  style={{
+                    borderRadius: 12, overflow: 'hidden', marginBottom: 12,
+                    border: '1px solid hsl(var(--border))',
+                    boxShadow: '0 8px 32px rgba(20,20,23,0.08)',
+                    background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: zoomScale > 1 ? 'grab' : 'default',
+                  }}
+                >
+                  <img src={displayBase64} alt="Criativo gerado" draggable={false} style={{
                     width: '100%', maxHeight: '520px', objectFit: 'contain', display: 'block',
-                    transform: `scale(${zoomScale})`, transformOrigin: 'center center',
-                    transition: 'transform 0.2s ease',
+                    transform: `scale(${zoomScale}) translate(${zoomPos.x / zoomScale}px, ${zoomPos.y / zoomScale}px)`,
+                    transformOrigin: 'center center',
+                    transition: zoomDragging.current ? 'none' : 'transform 0.2s ease',
+                    userSelect: 'none', pointerEvents: 'none',
                   }} />
                 </div>
               )}
@@ -1337,7 +1385,7 @@ export function WizardPage() {
                   <button onClick={() => setZoomScale(s => Math.max(s * 0.8, 0.3))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
                   <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', minWidth: 36, textAlign: 'center' }}>{Math.round(zoomScale * 100)}%</span>
                   <button onClick={() => setZoomScale(s => Math.min(s * 1.25, 3))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-                  <button onClick={() => setZoomScale(1)} style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Reset</button>
+                  <button onClick={() => { setZoomScale(1); setZoomPos({ x: 0, y: 0 }); }} style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Reset</button>
                 </div>
               )}
 
