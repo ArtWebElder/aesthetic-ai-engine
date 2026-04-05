@@ -154,16 +154,23 @@ ALL texts listed below MUST still appear in the image.`
     );
   } else if (variation <= 80) {
     sections.push(
-      `VARIATION: ${variation}% — HIGH VARIATION
-Use the reference as INSPIRATION for mood and purpose, with significant creative freedom.
-Keep the same advertising purpose and professional quality.
+      `VARIATION: ${variation}% — HIGH VARIATION — CREATIVE REDESIGN
+You have SIGNIFICANT creative freedom. The reference is LOOSE INSPIRATION only.
+- Create a NEW, DIFFERENT layout arrangement. DO NOT copy the reference layout.
+- Use a DIFFERENT composition style (if reference is centered, try asymmetric; if cards, try full-bleed).
+- Change decorative elements, background style, and visual effects.
+- Keep the same advertising purpose and professional quality.
+- The result should look like a DIFFERENT designer's take on the same brief.
 ALL texts listed below MUST still appear in the image.`
     );
   } else {
     sections.push(
-      `VARIATION: ${variation}% — FULL CREATIVE FREEDOM
-Create a fresh design using the reference only for context.
-Full creative freedom on layout, composition, style.
+      `VARIATION: ${variation}% — FULL CREATIVE FREEDOM — COMPLETELY NEW DESIGN
+IGNORE the reference layout entirely. Create something COMPLETELY NEW and ORIGINAL.
+- Design from scratch as if you never saw the reference.
+- Use a completely different layout, composition, typography style, and color distribution.
+- Only carry the advertising PURPOSE (what it's selling) from the reference.
+- Create an original, professional, eye-catching advertising design.
 ALL texts listed below MUST still appear in the image.`
     );
   }
@@ -186,7 +193,7 @@ ALL texts listed below MUST still appear in the image.`
 
   if (allTexts.length > 0) {
     const textLines = allTexts.map(t => `- ${t.type.charAt(0).toUpperCase() + t.type.slice(1)}: "${t.text}"`).join("\n");
-    let textSection = `TEXTS TO INCLUDE IN THE IMAGE — THIS IS MANDATORY:\nYou MUST include ALL of the following texts, exactly as written:\n${textLines}\n\nCRITICAL: Do NOT include ANY text that is not listed above. If you see text in the reference image that is not in this list, do NOT reproduce it.`;
+    let textSection = `TEXTS TO INCLUDE IN THE IMAGE — THIS IS THE COMPLETE AND FINAL LIST:\nYou MUST include ALL of the following texts, exactly as written:\n${textLines}\n\nABSOLUTE RULE: The image must contain ONLY the texts listed above and NOTHING ELSE. Any text visible in the reference image that is NOT in this list must be COMPLETELY ABSENT from your output. Do NOT read, copy, or reproduce any text from the reference image — use ONLY the list above.`;
 
     // Explicitly list removed texts so the AI knows to exclude them
     if (removedTexts.length > 0) {
@@ -449,6 +456,8 @@ Deno.serve(async (req: Request) => {
     });
     if (body.active_texts) console.log(`[generate-creative] Active texts:`, JSON.stringify(body.active_texts));
     if (body.removed_texts?.length) console.log(`[generate-creative] Removed texts:`, JSON.stringify(body.removed_texts));
+    const v = body.variation ?? 30;
+    console.log(`[generate-creative] Variation block: ${v <= 5 ? 'EXACT' : v <= 20 ? 'MINIMAL' : v <= 50 ? 'MODERATE' : v <= 80 ? 'HIGH' : 'FULL'} (${v}%)`);
 
     const prompt = buildPrompt(body);
     console.log(`[generate-creative] Prompt length: ${prompt.length}`);

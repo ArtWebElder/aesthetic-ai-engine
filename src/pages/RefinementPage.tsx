@@ -315,7 +315,7 @@ export default function RefinementPage() {
               <RefinementChat
                 overrides={refinementOverrides}
                 onOverridesChange={handleOverridesChange}
-                onRegenerate={() => navigate("/app/create")}
+                onRegenerate={() => navigate("/app/create", { state: { returnToStep: 3 } })}
                 composition={htmlCompositionRef.current}
                 onCompositionChange={(updated) => handleCompositionChange(updated, "Chat AI")}
                 externalMessage={pillMessage}

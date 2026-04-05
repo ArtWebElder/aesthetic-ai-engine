@@ -484,7 +484,12 @@ export function WizardPage() {
         generateBody.extra_instructions = extraInstructions;
       }
 
-      console.log("[V2] Calling generate-creative:", Object.keys(generateBody));
+      console.log("[WizardPage] ===== GENERATING =====");
+      console.log("[WizardPage] editedTexts:", JSON.stringify(editedTexts));
+      console.log("[WizardPage] analysisTexts:", JSON.stringify(analysisTexts));
+      console.log("[WizardPage] active_texts sent:", JSON.stringify(generateBody.active_texts));
+      console.log("[WizardPage] removed_texts sent:", JSON.stringify(generateBody.removed_texts));
+      console.log("[WizardPage] body keys:", Object.keys(generateBody));
 
       const { data: genData, error: genErr } = await supabase.functions.invoke('generate-creative', {
         body: generateBody,
@@ -807,8 +812,20 @@ export function WizardPage() {
     uiStep === 2 ? true :
     false;
 
+  // Track which reference was last analyzed to skip re-analysis
+  const lastAnalyzedRef = useRef<string | null>(null);
+
   async function handleAnalyzeAndAdvance() {
     if (!referenceBase64 || referenceBase64.startsWith('gallery:')) return;
+
+    // Skip re-analysis if same reference and we already have analysis
+    const refHash = referenceBase64.substring(0, 200);
+    if (v2Analysis && lastAnalyzedRef.current === refHash && editedTexts.length > 0) {
+      console.log('[Wizard] Skipping re-analysis — same reference, analysis cached');
+      goToStep(2);
+      return;
+    }
+
     setAnalysisLoading(true);
     try {
       const { data, error: err } = await supabase.functions.invoke('analyze-creative', {
@@ -823,6 +840,7 @@ export function WizardPage() {
         const colors = (analysis.colors as string[]) || [];
         if (colors.length >= 5) setColorPalette(colors.slice(0, 5));
         else if (colors.length > 0) setColorPalette([...colors, ...colorPalette.slice(colors.length)]);
+        lastAnalyzedRef.current = refHash;
       }
     } catch (e) {
       console.warn('[Wizard] Analysis failed:', e);
@@ -1292,7 +1310,18 @@ export function WizardPage() {
                       ↺ Gerar novamente
                     </button>
                     <button
-                      onClick={() => { setGenerationDone(false); setUiStep(2); }}
+                      onClick={() => {
+                        setGenerationDone(false);
+                        // If editedTexts is empty (e.g., component remounted), repopulate from analysis
+                        if (editedTexts.length === 0 && v2Analysis) {
+                          const texts = (v2Analysis.texts as Array<{ type: string; content: string }>) || [];
+                          if (texts.length > 0) {
+                            setAnalysisTexts(texts);
+                            setEditedTexts(texts.map(t => ({ ...t })));
+                          }
+                        }
+                        setUiStep(2);
+                      }}
                       style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       ✎ Editar textos
