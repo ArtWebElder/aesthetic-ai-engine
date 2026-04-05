@@ -9,6 +9,7 @@ import { getFeatureFlags } from "@/config/featureFlags";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { FileText, Palette, RectangleHorizontal, SlidersHorizontal, Trash2, Pencil, Plus, ImageIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ColorPicker } from "@/components/ui/color-picker";
 import { useToast } from "@/features/toast/useToast";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { GenerateError } from "@/services/generateService";
@@ -1036,18 +1037,18 @@ export function WizardPage() {
 
       {/* Content */}
       <main style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ maxWidth: uiStep === 4 ? 1100 : 720, margin: '0 auto', padding: '32px 24px', transition: 'max-width 300ms' }}>
+        <div style={{ maxWidth: uiStep === 4 ? 1100 : (uiStep === 1 ? 960 : 720), margin: '0 auto', padding: '32px 24px', transition: 'max-width 300ms' }}>
 
           {/* Step 1: Upload (Reference + Subject) */}
           {uiStep === 1 && (
             <div key={`step1-${resetKey}`} style={{ animation: 'wizFdUp 350ms ease both' }}>
-              <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Suba suas imagens</h1>
-                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Arte de referência + foto do produto ou pessoa (opcional).</p>
+              <div style={{ marginBottom: 28 }}>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 6 }}>Suba suas imagens</h1>
+                <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))' }}>Arte de referência + foto do produto ou pessoa (opcional).</p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
                 {/* Reference Upload */}
-                <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
+                <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 20, minHeight: 260 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                     <span style={{ fontSize: 14, fontWeight: 600 }}>Arte de Referência</span><InfoTooltip text="O post, anúncio ou arte que você quer clonar. Pode ser um print de qualquer rede social." />
                     <span style={{ fontSize: 10, background: '#ff713d', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>Obrigatório</span>
@@ -1073,7 +1074,7 @@ export function WizardPage() {
                   )}
                 </div>
                 {/* Subject Upload */}
-                <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
+                <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 20, minHeight: 260 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                     <span style={{ fontSize: 14, fontWeight: 600 }}>Subject</span><InfoTooltip text="Foto do seu produto ou pessoa pra substituir o que aparece na referência. Se não enviar, a IA mantém o original." />
                     <span style={{ fontSize: 10, background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>
@@ -1099,7 +1100,7 @@ export function WizardPage() {
                   )}
                 </div>
                 {/* Logo Upload */}
-                <div style={{ background: 'hsl(var(--card))', border: '1px dashed hsl(var(--border))', borderRadius: 12, padding: 16 }}>
+                <div style={{ background: 'hsl(var(--card))', border: '1px dashed hsl(var(--border))', borderRadius: 12, padding: 20, minHeight: 260 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                     <span style={{ fontSize: 14, fontWeight: 600 }}>Logo</span><InfoTooltip text="Sua logo será inserida no criativo, substituindo qualquer placeholder de logo na referência." />
                     <span style={{ fontSize: 10, background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>
@@ -1185,14 +1186,12 @@ export function WizardPage() {
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center' }}>Paleta de cores<InfoTooltip text="Cores detectadas na referência. Clique numa cor pra trocar. A IA vai aplicar as novas cores no criativo." /></h3>
                 <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Clique pra alterar as cores do criativo</p>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   {colorPalette.map((color, idx) => (
-                    <label key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-                      <div style={{ position: 'relative', width: 36, height: 36, borderRadius: '50%', background: color, border: '2px solid hsl(var(--border))', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
-                        <input type="color" value={color} onChange={(e) => { const next = [...colorPalette]; next[idx] = e.target.value; setColorPalette(next); }} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }} />
-                      </div>
+                    <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                      <ColorPicker value={color} onChange={(c) => { const next = [...colorPalette]; next[idx] = c; setColorPalette(next); }} className="!w-9 !h-9" />
                       <span style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', fontFamily: 'monospace' }}>{color}</span>
-                    </label>
+                    </div>
                   ))}
                 </div>
               </div>

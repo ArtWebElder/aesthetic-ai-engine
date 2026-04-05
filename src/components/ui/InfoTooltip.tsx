@@ -12,7 +12,7 @@ export function InfoTooltip({ text }: { text: string }) {
             fontSize: 10, cursor: 'help', marginLeft: 6, flexShrink: 0,
           }}>?</span>
         </TooltipTrigger>
-        <TooltipContent side="top" style={{ maxWidth: 260, fontSize: 12.5, lineHeight: 1.5 }}>
+        <TooltipContent side="top" className="font-normal" style={{ maxWidth: 260, fontSize: 12.5, lineHeight: 1.5, fontWeight: 400 }}>
           {text}
         </TooltipContent>
       </Tooltip>
