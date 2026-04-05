@@ -56,10 +56,19 @@ function detectMime(b64: string): string {
 // ── Prompt builders ────────────────────────────────────────────────────────────
 
 function resolveAllTexts(body: GenerateBody): Array<{ type: string; text: string }> {
+  // Build set of removed texts for server-side double-protection
+  const removedSet = new Set(
+    (body.removed_texts || []).map(t => t.toLowerCase().trim())
+  );
+
+  function isRemoved(content: string): boolean {
+    return removedSet.size > 0 && removedSet.has(content.toLowerCase().trim());
+  }
+
   // If active_texts is provided (user's current text list, excluding removed), use it directly
   if (body.active_texts && body.active_texts.length > 0) {
     return body.active_texts
-      .filter(t => t.content && t.content.trim())
+      .filter(t => t.content && t.content.trim() && !isRemoved(t.content))
       .map(t => ({ type: t.type, text: t.content }));
   }
   // Fallback to legacy text_replacements logic
@@ -70,15 +79,16 @@ function resolveAllTexts(body: GenerateBody): Array<{ type: string; text: string
   }
   const analysisTexts = body.analysis?.texts || [];
   if (analysisTexts.length > 0) {
-    return analysisTexts.map(t => ({
-      type: t.type,
-      text: repMap.get(t.content) || t.content,
-    }));
+    return analysisTexts
+      .filter(t => !isRemoved(t.content))
+      .map(t => ({
+        type: t.type,
+        text: repMap.get(t.content) || t.content,
+      }));
   }
-  return replacements.filter(r => r.replacement).map(r => ({
-    type: "text",
-    text: r.replacement,
-  }));
+  return replacements
+    .filter(r => r.replacement && !isRemoved(r.replacement))
+    .map(r => ({ type: "text", text: r.replacement }));
 }
 
 function colorsChanged(analysisColors: unknown, userColors: string[]): boolean {
@@ -118,48 +128,46 @@ Generate the image directly. Do not use function calls or tools.`
   if (variation <= 5) {
     sections.push(
       `VARIATION: ${variation}% — EXACT CLONE MODE
-Reproduce the reference layout as EXACTLY as possible. This must be a near-identical clone.
-Keep the EXACT same layout, composition, positioning, proportions, and sizes of ALL elements.
-Keep the EXACT same background style, shapes, gradients, and decorative elements.
-The ONLY changes allowed: the subject (if provided), the specified texts, and any overridden colors.
+Reproduce the reference layout as EXACTLY as possible. Near-identical clone.
+Keep the EXACT same layout, positioning, proportions, sizes, background style, shapes, gradients.
+The ONLY changes: the subject (if provided), the specified texts, and any overridden colors.
 Clone everything EXCEPT watermarks (remove those).
-This must look like the SAME template with different content plugged in.`
+DO NOT remove any text zone. ALL texts listed below MUST appear.`
     );
   } else if (variation <= 20) {
     sections.push(
       `VARIATION: ${variation}% — MINIMAL VARIATION
-Start from the EXACT reference layout. Make only TINY, SUBTLE adjustments.
-Keep the SAME overall layout structure, grid, and element hierarchy.
-Keep the SAME background shapes and decorative style.
+Start from the EXACT reference layout. Only TINY, SUBTLE adjustments allowed.
+Keep the SAME layout structure, grid, element hierarchy, background shapes.
 Keep ALL elements in approximately the SAME positions.
-Allowed changes: very slight size adjustments (±5%), minor spacing tweaks.
-The result must still look like the SAME template. Do NOT remove, add, or significantly reposition any elements.`
+Allowed: very slight size (±5%), minor spacing tweaks.
+DO NOT remove, add, or significantly reposition any elements.
+DO NOT remove any text. ALL texts listed below MUST appear in the image.`
     );
   } else if (variation <= 50) {
     sections.push(
       `VARIATION: ${variation}% — MODERATE VARIATION
-Use the reference as a STRONG guide but allow moderate creative adjustments.
-Keep the same TYPE of layout and general element hierarchy.
-Keep the same mood, visual style, and professional quality.
-You may adjust element sizes (±15%), spacing, decorative element styles.
-The result should feel like a "variation" of the same design, not a completely different design.`
+Use the reference as a STRONG guide with moderate creative adjustments.
+Keep the same layout type, element hierarchy, mood, visual style, and quality.
+You may adjust sizes (±15%), spacing, decorative styles.
+ALL texts listed below MUST still appear in the image.`
     );
   } else if (variation <= 80) {
     sections.push(
       `VARIATION: ${variation}% — HIGH VARIATION
 Use the reference as INSPIRATION for mood and purpose, with significant creative freedom.
 Keep the same advertising purpose and professional quality.
-You may create a new layout arrangement while maintaining the same content zones.`
+ALL texts listed below MUST still appear in the image.`
     );
   } else {
     sections.push(
       `VARIATION: ${variation}% — FULL CREATIVE FREEDOM
-Create a fresh design using the reference only for understanding the advertising context.
-Full creative freedom on layout, composition, style, and arrangement.
-Maintain professional advertising quality.`
+Create a fresh design using the reference only for context.
+Full creative freedom on layout, composition, style.
+ALL texts listed below MUST still appear in the image.`
     );
   }
-  sections.push(`REGARDLESS OF VARIATION LEVEL: All specified texts must appear in the image, sharp, readable, and correctly spelled. Never sacrifice text quality for creative variation.`);
+  sections.push(`MANDATORY TEXT RULE: Every text listed in the TEXTS section below MUST appear in the generated image, at ANY variation level. Never omit, skip, or remove any listed text. Text quality must be sharp and readable.`);
 
   // ── LAYER 2b: Layout & style info from analysis (only structure, NOT content) ──
   if (analysis) {
@@ -444,7 +452,9 @@ Deno.serve(async (req: Request) => {
 
     const prompt = buildPrompt(body);
     console.log(`[generate-creative] Prompt length: ${prompt.length}`);
-    console.log(`[generate-creative] Prompt Layer 3 preview:`, prompt.substring(prompt.indexOf('TEXTS TO'), prompt.indexOf('TEXTS TO') + 500));
+    console.log(`[generate-creative] ===== FULL PROMPT =====`);
+    console.log(prompt);
+    console.log(`[generate-creative] ===== END PROMPT =====`);
 
     const result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
 

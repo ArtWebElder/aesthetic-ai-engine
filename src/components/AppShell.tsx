@@ -117,7 +117,7 @@ const AppShell = () => {
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 relative z-10">
-        {!pathname.startsWith('/app/create') && (
+        {!pathname.startsWith('/app/create') && !pathname.startsWith('/app/refine') && (
           <Topbar onMenuToggle={() => setMobileOpen(true)} />
         )}
 
@@ -283,7 +283,7 @@ const AppShell = () => {
         )}
 
         <main className="flex-1 overflow-auto bg-background" style={
-          pathname.startsWith('/app/create') ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
+          (pathname.startsWith('/app/create') || pathname.startsWith('/app/refine')) ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
             backgroundColor: '#FAFAFA',
             backgroundImage: [
               'linear-gradient(180deg, rgba(255,113,61,0.04) 0%, transparent 30%)',
@@ -293,7 +293,7 @@ const AppShell = () => {
             backgroundSize: '100% 100%, 48px 48px, 48px 48px',
           }
         }>
-          {['/app/create/studio', '/app/create', '/app/settings', '/app/help'].some(p => pathname === p || pathname.startsWith(p + '/')) ? (
+          {['/app/create/studio', '/app/create', '/app/settings', '/app/help', '/app/refine'].some(p => pathname === p || pathname.startsWith(p + '/')) ? (
             <Outlet />
           ) : ['/app/projects', '/app/billing'].some(p => pathname.startsWith(p)) ? (
             <div key={pathname} className="animate-fade-up max-w-6xl mx-auto w-full px-4 py-2 md:px-6 lg:px-8">

@@ -9,6 +9,7 @@ import { applyCommand, type RefinementOverrides } from "../engine/chatApply";
 import { applyCommandWithAI } from "../engine/chatCompositionAI";
 import type { CreatygnComposition } from "@/types/composition";
 import { supabase } from "@/services/supabaseClient";
+import { useWizardStore } from "@/stores/useWizardStore";
 
 // Map emoji prefix to lucide icon + strip emoji from displayed text
 const EMOJI_PREFIX_MAP: Array<{ prefix: string; icon: ReactNode; color: string }> = [
@@ -108,7 +109,8 @@ export function RefinementChat({
   ]);
   const [input, setInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [chatCount, setChatCount] = useState(0);
+  const chatCount = useWizardStore((s) => s.chatCount);
+  const incrementChatCount = useWizardStore((s) => s.incrementChatCount);
   const MAX_CHATS = 9;
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -127,7 +129,7 @@ export function RefinementChat({
       ]);
       return;
     }
-    setChatCount(c => c + 1);
+    incrementChatCount();
 
     const userMsg: ChatMessage = { role: "user", text: commandText };
 

@@ -176,7 +176,7 @@ export default function RefinementPage() {
   const checkerBg = 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--background)) 0% 50%) 0 0 / 16px 16px';
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f5f5f3', color: '#141417', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f5f5f3', color: '#141417', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
       <style>{`
         @keyframes rfPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
         @keyframes rfDot1 { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-5px); } }

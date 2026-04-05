@@ -65,6 +65,11 @@ interface WizardStore extends WizardState {
   addSessionGeneration: (image: string) => void;
   clearSessionGenerations: () => void;
 
+  // ── Chat refinement counter (shared between wizard step 4 and /app/refine) ──
+  chatCount: number;
+  incrementChatCount: () => void;
+  resetChatCount: () => void;
+
   // ── Reset ────────────────────────────────────────────────────────────────────
   reset: () => void;
 }
@@ -198,6 +203,11 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
   setSubjectIsolated: (val) => set({ subjectIsolatedBase64: val }),
 
   setComposedImage: (val) => set({ composedImageBase64: val }),
+
+  // ── Chat refinement counter ──────────────────────────────────────────────────
+  chatCount: 0,
+  incrementChatCount: () => set((s) => ({ chatCount: s.chatCount + 1 })),
+  resetChatCount: () => set({ chatCount: 0 }),
 
   // ── Session gallery ─────────────────────────────────────────────────────────
   sessionGenerations: [],
