@@ -168,7 +168,7 @@ export default function RefinementPage() {
           <p style={{ fontSize: 14, fontWeight: 600, color: '#141417', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headline || "Criativo sem título"}</p>
         </div>
 
-        <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: '#ff713d', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>Food/Pop</span>
+        <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: '#ff713d', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>Clone Criativo</span>
 
         <button
           onClick={() => setShowExportModal(true)}

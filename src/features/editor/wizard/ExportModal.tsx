@@ -178,10 +178,16 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
             })}
           </div>
 
-          {/* Free note */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", color: "#10B981", fontSize: 11, marginBottom: 18, fontWeight: 500 }}>
-            ✓ Redimensionamento gratuito — sem uso de créditos
-          </div>
+          {/* Warning when changing size */}
+          {selectedSize !== "original" ? (
+            <div style={{ padding: "10px 14px", borderRadius: 10, background: "#FFFBEB", border: "1px solid #FDE68A", marginBottom: 18, fontSize: 11.5, color: "#92400E", lineHeight: 1.5 }}>
+              ⚠️ Redimensionar para um formato diferente pode cortar partes do criativo. Para melhor resultado, gere um novo criativo diretamente no formato desejado (12 créditos).
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", color: "#10B981", fontSize: 11, marginBottom: 18, fontWeight: 500 }}>
+              ✓ Export gratuito — sem uso de créditos
+            </div>
+          )}
 
           {/* Export button */}
           <button onClick={handleExport} disabled={exporting} style={{

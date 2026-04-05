@@ -976,7 +976,7 @@ export function WizardPage() {
 
       {/* Content */}
       <main style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 24px' }}>
+        <div style={{ maxWidth: uiStep === 4 ? 1100 : 720, margin: '0 auto', padding: '32px 24px', transition: 'max-width 300ms' }}>
 
           {/* Step 1: Upload (Reference + Subject) */}
           {uiStep === 1 && (
@@ -1098,7 +1098,7 @@ export function WizardPage() {
           )}
 
           {/* Step 3: Configure + Generate */}
-          {uiStep === 3 && !generating && !generationDone && (
+          {uiStep === 3 && !generating && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
                 <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Configure a geração</h1>
@@ -1220,8 +1220,8 @@ export function WizardPage() {
           {/* Step 4: Result */}
           {uiStep === 4 && currentGeneration && (
             <div style={{ display: 'flex', gap: 24, animation: 'wizFdUp 350ms ease both', flexWrap: 'wrap' }}>
-              {/* Preview */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: '1 1 300px' }}>
+              {/* Preview — takes ~60-65% */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: '3 1 360px', maxWidth: '100%' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                   <p style={{ fontSize: 10.5, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
                     {composing ? "Compondo criativo..." : "Criativo gerado!"}
@@ -1234,45 +1234,14 @@ export function WizardPage() {
                 </div>
 
                 {displayBase64 && (
-                  <div
-                    style={{
-                      width: '100%', borderRadius: 12, overflow: 'hidden', position: 'relative',
-                      border: '1px solid hsl(var(--border))',
-                      boxShadow: '0 8px 32px rgba(20,20,23,0.1)',
-                      background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: zoomScale > 1 ? 'grab' : 'default',
-                    }}
-                    onWheel={(e) => {
-                      e.preventDefault();
-                      setZoomScale(prev => Math.max(0.3, Math.min(3, prev + (e.deltaY < 0 ? 0.15 : -0.15))));
-                    }}
-                    onMouseDown={(e) => {
-                      if (zoomScale <= 1) return;
-                      const startX = e.clientX - zoomPos.x;
-                      const startY = e.clientY - zoomPos.y;
-                      const onMove = (ev: MouseEvent) => setZoomPos({ x: ev.clientX - startX, y: ev.clientY - startY });
-                      const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-                      window.addEventListener('mousemove', onMove);
-                      window.addEventListener('mouseup', onUp);
-                    }}
-                  >
-                    <img
-                      src={displayBase64}
-                      alt="Criativo gerado"
-                      draggable={false}
-                      style={{
-                        width: '100%', maxHeight: '55vh', objectFit: 'contain', display: 'block',
-                        transform: `scale(${zoomScale}) translate(${zoomPos.x / zoomScale}px, ${zoomPos.y / zoomScale}px)`,
-                        transition: zoomScale === 1 ? 'transform 0.2s ease' : 'none',
-                      }}
-                    />
-                    {/* Zoom controls */}
-                    <div style={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', gap: 4, background: 'rgba(20,20,23,0.7)', borderRadius: 8, padding: 3 }}>
-                      <button onClick={() => setZoomScale(prev => Math.min(3, prev * 1.25))} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
-                      <button onClick={() => setZoomScale(prev => Math.max(0.3, prev * 0.8))} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
-                      <button onClick={() => { setZoomScale(1); setZoomPos({ x: 0, y: 0 }); }} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⊡</button>
-                    </div>
+                  <div style={{
+                    width: '100%', borderRadius: 12, overflow: 'hidden',
+                    border: '1px solid hsl(var(--border))',
+                    boxShadow: '0 8px 32px rgba(20,20,23,0.1)',
+                    background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <img src={displayBase64} alt="Criativo gerado" style={{ width: '100%', maxHeight: '55vh', objectFit: 'contain', display: 'block' }} />
                   </div>
                 )}
 
@@ -1341,9 +1310,9 @@ export function WizardPage() {
                 </p>
               </div>
 
-              {/* Mini chat */}
+              {/* Mini chat — takes ~35-40% */}
               {!isWorking && (
-                <div style={{ display: 'flex', flexDirection: 'column', flex: '1 1 260px', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: '2 1 280px', gap: 12, minHeight: 300 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12, borderBottom: '1px solid hsl(var(--border))' }}>
                     <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0 }}>✦</div>
                     <p style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Creatyng AI</p>

@@ -109,45 +109,57 @@ CRITICAL RULES:
 6. MAINTAIN the same visual style: if the reference has geometric shapes, keep geometric shapes. If organic blobs, keep organic blobs. If gradients, keep gradients.
 7. Do NOT reproduce any watermarks, brand logos, or stock photo marks from the reference.
 8. WATERMARKS: The reference image may contain watermarks (semi-transparent text/logos repeated across the image, typically from stock image sites like Designi, Freepik, Shutterstock, Adobe Stock, etc). You MUST completely IGNORE and REMOVE all watermarks. The generated image must be CLEAN with NO watermarks whatsoever. Do not reproduce any semi-transparent diagonal text overlays.
+9. TEXT QUALITY: ALL text in the image must be SHARP, CRISP and PERFECTLY READABLE at any size. Small text (phone numbers, addresses, URLs, contact info) must be especially clear and legible. Never generate blurry, smeared, or illegible text. If a text is too small to render clearly, make it slightly larger rather than rendering it blurry.
 
 Generate the image directly. Do not use function calls or tools.`
   );
 
-  // ── LAYER 2: Variation level (conditional) ──
+  // ── LAYER 2: Variation level ──
   if (variation <= 5) {
     sections.push(
-      `VARIATION: 0% — EXACT CLONE MODE
-Reproduce the reference layout PIXEL-PERFECT. Same positions, sizes, proportions.
+      `VARIATION: ${variation}% — EXACT CLONE MODE
+Reproduce the reference layout as EXACTLY as possible. This must be a near-identical clone.
+Keep the EXACT same layout, composition, positioning, proportions, and sizes of ALL elements.
 Keep the EXACT same background style, shapes, gradients, and decorative elements.
-Keep the EXACT same color scheme unless specific colors are overridden below.
-The ONLY differences: the subject (if provided), the texts, and any overridden colors.
-This must look like the SAME template with different content plugged in.
-IGNORE any watermarks in the reference. Clone everything EXCEPT watermarks.`
+The ONLY changes allowed: the subject (if provided), the specified texts, and any overridden colors.
+Clone everything EXCEPT watermarks (remove those).
+This must look like the SAME template with different content plugged in.`
     );
-  } else if (variation <= 30) {
+  } else if (variation <= 20) {
     sections.push(
-      `VARIATION: ${variation}% — SLIGHT VARIATION
-Start from the exact reference layout and make SMALL creative adjustments.
-Keep the same overall structure, grid, and element positions.
-You may slightly adjust: element sizes (±10%), spacing, decorative element styles.
-Do NOT change the fundamental layout or add/remove major elements.`
+      `VARIATION: ${variation}% — MINIMAL VARIATION
+Start from the EXACT reference layout. Make only TINY, SUBTLE adjustments.
+Keep the SAME overall layout structure, grid, and element hierarchy.
+Keep the SAME background shapes and decorative style.
+Keep ALL elements in approximately the SAME positions.
+Allowed changes: very slight size adjustments (±5%), minor spacing tweaks.
+The result must still look like the SAME template. Do NOT remove, add, or significantly reposition any elements.`
     );
-  } else if (variation <= 70) {
+  } else if (variation <= 50) {
     sections.push(
       `VARIATION: ${variation}% — MODERATE VARIATION
-Use the reference as strong INSPIRATION but allow creative freedom.
-Keep the same type of layout (centered stays centered, split stays split).
-You may rearrange elements, change sizes, adjust the visual style.
-Keep the same mood and professional quality.`
+Use the reference as a STRONG guide but allow moderate creative adjustments.
+Keep the same TYPE of layout and general element hierarchy.
+Keep the same mood, visual style, and professional quality.
+You may adjust element sizes (±15%), spacing, decorative element styles.
+The result should feel like a "variation" of the same design, not a completely different design.`
+    );
+  } else if (variation <= 80) {
+    sections.push(
+      `VARIATION: ${variation}% — HIGH VARIATION
+Use the reference as INSPIRATION for mood and purpose, with significant creative freedom.
+Keep the same advertising purpose and professional quality.
+You may create a new layout arrangement while maintaining the same content zones.`
     );
   } else {
     sections.push(
-      `VARIATION: ${variation}% — HIGH VARIATION
-Use the reference only as loose inspiration for the overall mood.
-Create a fresh layout while maintaining the same advertising goal.
-Full creative freedom on layout, composition, and style.`
+      `VARIATION: ${variation}% — FULL CREATIVE FREEDOM
+Create a fresh design using the reference only for understanding the advertising context.
+Full creative freedom on layout, composition, style, and arrangement.
+Maintain professional advertising quality.`
     );
   }
+  sections.push(`REGARDLESS OF VARIATION LEVEL: All specified texts must appear in the image, sharp, readable, and correctly spelled. Never sacrifice text quality for creative variation.`);
 
   // ── LAYER 2b: Layout & style info from analysis (only structure, NOT content) ──
   if (analysis) {
@@ -165,7 +177,7 @@ Full creative freedom on layout, composition, and style.`
   if (allTexts.length > 0) {
     const textLines = allTexts.map(t => `- ${t.type.charAt(0).toUpperCase() + t.type.slice(1)}: "${t.text}"`).join("\n");
     sections.push(
-      `TEXTS TO INCLUDE IN THE IMAGE (use ONLY these, NO other text):\n${textLines}\nAny text visible in the reference that is NOT listed above must be COMPLETELY ABSENT.`
+      `TEXTS TO INCLUDE IN THE IMAGE — THIS IS MANDATORY:\nYou MUST include ALL of the following texts, exactly as written:\n${textLines}\nCRITICAL: Do NOT include ANY text that is not listed above. If you see text in the reference image that is not in this list, do NOT reproduce it.\nEvery text above must be rendered with perfect clarity and readability. Pay special attention to small texts like phone numbers — they must be sharp and legible, not blurry.`
     );
   } else {
     sections.push("Do NOT include any text in the generated image.");
@@ -190,9 +202,17 @@ The subject must be the focal point, just like in the reference. Keep it realist
     );
   }
 
-  // ── LAYER 6: Format ──
+  // ── LAYER 6: Format with layout hints ──
   const userFormat = body.format || "1:1";
-  sections.push(`OUTPUT: Generate this image in ${userFormat} aspect ratio at high resolution.`);
+  if (userFormat === "9:16") {
+    sections.push(`OUTPUT: Generate this image in 9:16 vertical (portrait) aspect ratio.\nIMPORTANT FOR VERTICAL FORMAT: Stack elements vertically. Title at top, main subject in center taking most space, info/price and contact at bottom. Use the full vertical space.`);
+  } else if (userFormat === "16:9") {
+    sections.push(`OUTPUT: Generate this image in 16:9 horizontal (landscape) aspect ratio.\nIMPORTANT FOR HORIZONTAL FORMAT: Place subject on one side, text/info on the other. Use the full width.`);
+  } else if (userFormat === "4:5") {
+    sections.push(`OUTPUT: Generate this image in 4:5 vertical aspect ratio. Similar to 1:1 but taller. Maintain the reference layout with slight vertical adjustment.`);
+  } else {
+    sections.push(`OUTPUT: Generate this image in ${userFormat} aspect ratio at high resolution.`);
+  }
 
   // ── LAYER 7: Extra instructions (if any) ──
   if (body.extra_instructions?.trim()) {
