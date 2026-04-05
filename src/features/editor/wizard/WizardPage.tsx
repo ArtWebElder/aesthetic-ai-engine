@@ -267,7 +267,10 @@ export function WizardPage() {
   // existing generation state (idênticos ao original)
   const [generating, setGenerating] = useState(false);
   const [composing, setComposing] = useState(false);
-  const [composedBase64, setComposedBase64] = useState<string | null>(null);
+  const [composedBase64, setComposedBase64] = useState<string | null>(
+    // Recover from store on remount so Step 4 image doesn't go blank
+    useWizardStore.getState().composedImageBase64 ?? useWizardStore.getState().currentGeneration?.imageBase64 ?? null
+  );
   const [error, setError] = useState<string | null>(null);
   const [popDesignStep, setPopDesignStep] = useState<string>("");
   const [refinementOverrides, setRefinementOverrides] = useState<RefinementOverrides>({});
@@ -1035,6 +1038,26 @@ export function WizardPage() {
           </button>
         </div>
       </header>
+
+      {/* Credit banner — persistent, non-disruptive */}
+      {storeCredits < 12 && storeCredits > 0 && (
+        <div style={{ flexShrink: 0, background: '#FFF7ED', borderBottom: '1px solid #FED7AA', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertTriangle size={14} style={{ color: '#D97706' }} />
+            <span style={{ color: '#92400E' }}>Apenas <strong>{storeCredits}</strong> crédito(s) restante(s).</span>
+          </div>
+          <button onClick={() => navigate('/app/billing')} style={{ background: '#ff713d', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Recarregar</button>
+        </div>
+      )}
+      {storeCredits <= 0 && (
+        <div style={{ flexShrink: 0, background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <AlertTriangle size={14} style={{ color: '#DC2626' }} />
+            <span style={{ color: '#991B1B' }}>Créditos esgotados. Recarregue para gerar.</span>
+          </div>
+          <button onClick={() => navigate('/app/billing')} style={{ background: '#DC2626', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Recarregar agora</button>
+        </div>
+      )}
 
       {/* Content */}
       <main style={{ flex: 1, overflowY: 'auto' }}>
