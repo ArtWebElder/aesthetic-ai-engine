@@ -109,7 +109,7 @@ CRITICAL RULES:
 6. MAINTAIN the same visual style: if the reference has geometric shapes, keep geometric shapes. If organic blobs, keep organic blobs. If gradients, keep gradients.
 7. Do NOT reproduce any watermarks, brand logos, or stock photo marks from the reference.
 8. WATERMARKS: The reference image may contain watermarks (semi-transparent text/logos repeated across the image, typically from stock image sites like Designi, Freepik, Shutterstock, Adobe Stock, etc). You MUST completely IGNORE and REMOVE all watermarks. The generated image must be CLEAN with NO watermarks whatsoever. Do not reproduce any semi-transparent diagonal text overlays.
-9. TEXT QUALITY: ALL text in the image must be SHARP, CRISP and PERFECTLY READABLE at any size. Small text (phone numbers, addresses, URLs, contact info) must be especially clear and legible. Never generate blurry, smeared, or illegible text. If a text is too small to render clearly, make it slightly larger rather than rendering it blurry.
+9. TEXT QUALITY: ALL text MUST be SHARP, CRISP and PERFECTLY READABLE. Small text (phone, address, URL) must be rendered at sufficient size to remain legible — make it larger if needed, NEVER blurry or smeared.
 
 Generate the image directly. Do not use function calls or tools.`
   );
@@ -174,13 +174,23 @@ Maintain professional advertising quality.`
 
   // ── LAYER 3: Texts (always present if there are texts) ──
   const allTexts = resolveAllTexts(body);
+  const removedTexts = body.removed_texts || [];
+
   if (allTexts.length > 0) {
     const textLines = allTexts.map(t => `- ${t.type.charAt(0).toUpperCase() + t.type.slice(1)}: "${t.text}"`).join("\n");
-    sections.push(
-      `TEXTS TO INCLUDE IN THE IMAGE — THIS IS MANDATORY:\nYou MUST include ALL of the following texts, exactly as written:\n${textLines}\nCRITICAL: Do NOT include ANY text that is not listed above. If you see text in the reference image that is not in this list, do NOT reproduce it.\nEvery text above must be rendered with perfect clarity and readability. Pay special attention to small texts like phone numbers — they must be sharp and legible, not blurry.`
-    );
+    let textSection = `TEXTS TO INCLUDE IN THE IMAGE — THIS IS MANDATORY:\nYou MUST include ALL of the following texts, exactly as written:\n${textLines}\n\nCRITICAL: Do NOT include ANY text that is not listed above. If you see text in the reference image that is not in this list, do NOT reproduce it.`;
+
+    // Explicitly list removed texts so the AI knows to exclude them
+    if (removedTexts.length > 0) {
+      const removedLines = removedTexts.map(t => `- "${t}"`).join("\n");
+      textSection += `\n\nTEXTS EXPLICITLY REMOVED BY THE USER — DO NOT INCLUDE THESE:\n${removedLines}\nThese texts were intentionally deleted by the user. Even if they appear in the reference image, you MUST NOT reproduce them.`;
+    }
+
+    textSection += `\n\nTEXT RENDERING QUALITY:\n- Large texts (titles, headings): Bold, prominent, perfectly legible.\n- Medium texts (prices, labels): Clear and readable.\n- Small texts (phone, address, URL, contact info): MUST be particularly sharp and crisp. Render with enough size to be clearly readable. Make slightly larger if needed rather than blurry. NEVER render blurred or smeared small text.`;
+
+    sections.push(textSection);
   } else {
-    sections.push("Do NOT include any text in the generated image.");
+    sections.push("Do NOT include any text in the generated image. Even if the reference image contains text, generate the image with NO text at all.");
   }
 
   // ── LAYER 4: Colors (conditional — only if user changed colors) ──
@@ -424,12 +434,17 @@ Deno.serve(async (req: Request) => {
       hasAnalysis,
       variation: body.variation ?? 30,
       format: body.format || "1:1",
-      textsCount: body.active_texts?.length ?? body.text_replacements?.length ?? 0,
+      activeTextsCount: body.active_texts?.length ?? 0,
+      removedTextsCount: body.removed_texts?.length ?? 0,
+      textReplacementsCount: body.text_replacements?.length ?? 0,
       model: GEMINI_MODEL,
     });
+    if (body.active_texts) console.log(`[generate-creative] Active texts:`, JSON.stringify(body.active_texts));
+    if (body.removed_texts?.length) console.log(`[generate-creative] Removed texts:`, JSON.stringify(body.removed_texts));
 
     const prompt = buildPrompt(body);
     console.log(`[generate-creative] Prompt length: ${prompt.length}`);
+    console.log(`[generate-creative] Prompt Layer 3 preview:`, prompt.substring(prompt.indexOf('TEXTS TO'), prompt.indexOf('TEXTS TO') + 500));
 
     const result = await generateWithGemini(prompt, body.reference_image, body.subject_image || null, apiKey);
 

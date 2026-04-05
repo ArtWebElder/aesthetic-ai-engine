@@ -9,9 +9,9 @@ import { applyChatToComposition } from './chatApplyComposition';
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string) ?? "";
 const GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY as string) ?? "";
 const GEMINI_MODELS = [
-  "gemini-2.5-flash",
-  "gemini-2.5-pro",
-  "gemini-2.0-flash",
+  "gemini-1.5-flash-latest",
+  "gemini-1.5-pro-latest",
+  "gemini-2.0-flash-exp",
 ];
 
 console.log('[ChatAI] attempting AI path...');

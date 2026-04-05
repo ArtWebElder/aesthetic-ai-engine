@@ -49,17 +49,18 @@ async function callChatCreative(
   message: string,
   ctx: ChatContext,
 ): Promise<{ reply: string; action: ChatAction | null }> {
+  const body = {
+    message,
+    context: {
+      analysis: ctx.analysis,
+      current_texts: ctx.currentTexts,
+      current_colors: ctx.currentColors,
+    },
+  };
+  console.log("[RefinementChat] Calling chat-creative:", { messageLength: message.length, bodyKeys: Object.keys(body), hasContext: !!ctx.analysis });
   try {
-    const { data, error } = await supabase.functions.invoke("chat-creative", {
-      body: {
-        message,
-        context: {
-          analysis: ctx.analysis,
-          current_texts: ctx.currentTexts,
-          current_colors: ctx.currentColors,
-        },
-      },
-    });
+    const { data, error } = await supabase.functions.invoke("chat-creative", { body });
+    console.log("[RefinementChat] chat-creative response:", { data: JSON.stringify(data)?.substring(0, 500), error });
     if (error || !data) {
       console.warn("[RefinementChat] chat-creative error:", error);
       return { reply: "IA indisponível. Tente novamente.", action: null };
@@ -140,24 +141,54 @@ export function RefinementChat({
     }
 
     if (composition && onCompositionChange && parsedCheck.type === "unknown") {
-      // 2. Try AI composition edit (chat-edit edge function)
+      // 2. Try AI composition edit (frontend Gemini)
       setMessages((prev) => [...prev, userMsg, { role: "system", text: "✨ Processando..." }]);
       setAiLoading(true);
       try {
         const result = await applyCommandWithAI(composition, commandText);
-        if (result.description.startsWith("✅")) onCompositionChange(result.composition);
-        setMessages((prev) => {
-          const msgs = [...prev];
-          msgs[msgs.length - 1] = { role: "system", text: result.description };
-          return msgs;
-        });
-        setAiLoading(false);
-        return;
+        if (result.description.startsWith("✅")) {
+          onCompositionChange(result.composition);
+          setMessages((prev) => {
+            const msgs = [...prev];
+            msgs[msgs.length - 1] = { role: "system", text: result.description };
+            return msgs;
+          });
+          setAiLoading(false);
+          return;
+        }
+        // applyCommandWithAI didn't understand → fall through to chat-creative
+        console.log("[RefinementChat] applyCommandWithAI failed, falling through to chat-creative");
       } catch {
-        // Fall through to chat-creative below
-        setMessages((prev) => prev.slice(0, -1));
-        setAiLoading(false);
+        console.log("[RefinementChat] applyCommandWithAI threw, falling through to chat-creative");
       }
+      // userMsg already added — update placeholder and continue to chat-creative
+      setMessages((prev) => {
+        const msgs = [...prev];
+        msgs[msgs.length - 1] = { role: "system", text: "✨ Consultando IA..." };
+        return msgs;
+      });
+      try {
+        const { reply, action } = await callChatCreative(commandText, context);
+        if (action) {
+          if (action.type === "update_texts" && onTextsUpdate) {
+            const texts = (action.data?.texts as Array<{ type: string; content: string }>) ?? [];
+            if (texts.length > 0) { onTextsUpdate(texts); setMessages((prev) => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: "system", text: `✅ ${reply}` }; return msgs; }); setAiLoading(false); return; }
+          }
+          if (action.type === "update_colors" && onColorsUpdate) {
+            const colors = (action.data?.colors as string[]) ?? [];
+            if (colors.length > 0) { onColorsUpdate(colors); setMessages((prev) => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: "system", text: `✅ ${reply}` }; return msgs; }); setAiLoading(false); return; }
+          }
+          if (action.type === "regenerate") {
+            setMessages((prev) => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: "system", text: `🤖 ${reply}`, confirmRegenerate: true }; return msgs; });
+            setAiLoading(false); return;
+          }
+        }
+        setMessages((prev) => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: "system", text: `🤖 ${reply}` }; return msgs; });
+      } catch {
+        setMessages((prev) => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: "system", text: "❌ Erro ao contatar IA." }; return msgs; });
+      }
+      setAiLoading(false);
+      return;
     }
 
     // 3. Known local command

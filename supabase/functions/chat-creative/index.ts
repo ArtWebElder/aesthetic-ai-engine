@@ -78,6 +78,10 @@ Deno.serve(async (req: Request) => {
   }
 
   const { message, context = {} } = body;
+  console.log('[chat-creative] ========== REQUEST ==========');
+  console.log('[chat-creative] Body keys:', Object.keys(body));
+  console.log('[chat-creative] Message:', message?.substring(0, 100));
+  console.log('[chat-creative] Has context:', !!context, 'Context keys:', Object.keys(context));
   if (!message?.trim()) return json({ error: "message required" }, 400, cors);
 
   const systemPrompt = buildSystemPrompt(context);
@@ -119,10 +123,13 @@ Deno.serve(async (req: Request) => {
   }
 
   if (!rawText) {
+    console.error('[chat-creative] ========== ALL MODELS FAILED ==========');
     return json({ reply: "IA indisponível no momento. Tente novamente.", action: null }, 200, cors);
   }
 
+  console.log(`[chat-creative] ========== RESPONSE ==========`);
   console.log(`[chat-creative] Model used: ${modelUsed}`);
+  console.log(`[chat-creative] Raw text preview: ${rawText.substring(0, 300)}`);
 
   let parsed: { action?: string | null; data?: unknown; reply?: string } = {};
   try {
