@@ -5,6 +5,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { getFeatureFlags } from "@/config/featureFlags";
+import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { useToast } from "@/features/toast/useToast";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { GenerateError } from "@/services/generateService";
@@ -201,6 +203,7 @@ export function WizardPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const toast = useToast();
+  const flags = getFeatureFlags('clone-criativo');
   const { emailVerified } = useAuth();
   const { t } = useI18n();
   const storeCredits = useCreditStore((s) => s.credits);
@@ -1035,7 +1038,7 @@ export function WizardPage() {
                 {/* Reference Upload */}
                 <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Arte de Referência</span>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Arte de Referência</span><InfoTooltip text="O post, anuncio ou arte que voce quer clonar. Pode ser um print de qualquer rede social." />
                     <span style={{ fontSize: 10, background: '#ff713d', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>Obrigatório</span>
                   </div>
                   <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Print do post, anúncio ou arte que quer clonar</p>
@@ -1061,7 +1064,7 @@ export function WizardPage() {
                 {/* Subject Upload */}
                 <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Subject</span>
+                    <span style={{ fontSize: 14, fontWeight: 600 }}>Subject</span><InfoTooltip text="Foto do seu produto ou pessoa pra substituir o que aparece na referencia. Se nao enviar, a IA mantem o original." />
                     <span style={{ fontSize: 10, background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>
                   </div>
                   <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Foto do produto ou pessoa pra substituir</p>
@@ -1096,6 +1099,11 @@ export function WizardPage() {
                   ← Ver resultado anterior
                 </button>
               )}
+              {!subjectBase64 && referenceBase64 && !analysisLoading && (
+                <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 8 }}>
+                  Sem subject = a IA mantem o produto/pessoa da referencia original
+                </p>
+              )}
             </div>
           )}
 
@@ -1108,7 +1116,7 @@ export function WizardPage() {
               </div>
               {/* Texts */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Textos detectados</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Textos detectados<InfoTooltip text="Textos encontrados automaticamente na referencia. Edite, remova ou adicione novos." /></h3>
                 {editedTexts.map((txt, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <select value={txt.type} onChange={(e) => {
@@ -1130,10 +1138,14 @@ export function WizardPage() {
                 ))}
                 <button onClick={() => setEditedTexts([...editedTexts, { type: 'label', content: '' }])} style={{ fontSize: 12, color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, marginTop: 4 }}>+ Adicionar texto</button>
                 <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 8 }}>Textos curtos funcionam melhor. Evite frases longas.</p>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 12px', background: '#FFF7ED', borderRadius: 8, marginTop: 8, fontSize: 12, color: '#92400E' }}>
+                  <span style={{ flexShrink: 0 }}>!</span>
+                  <span>Textos muito pequenos podem apresentar variacao na acentuacao. Textos curtos e grandes funcionam melhor.</span>
+                </div>
               </div>
               {/* Colors */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Paleta de cores</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center' }}>Paleta de cores<InfoTooltip text="Cores detectadas na referencia. Clique numa cor pra trocar. A IA vai aplicar as novas cores no criativo." /></h3>
                 <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Clique pra alterar as cores do criativo</p>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {colorPalette.map((color, idx) => (
@@ -1157,7 +1169,7 @@ export function WizardPage() {
               </div>
               {/* Variation slider */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Variação Criativa</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Variação Criativa<InfoTooltip text="0% = copia fiel da referencia. 100% = reinterpretacao livre. Recomendado: 0-10% pra manter o layout original." /></h3>
                 <input type="range" min={0} max={100} value={variationSlider} onChange={(e) => setVariationSlider(Number(e.target.value))} style={{ width: '100%' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 4 }}>
                   <span>Cópia exata</span>
@@ -1167,7 +1179,7 @@ export function WizardPage() {
               </div>
               {/* Format */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Formato</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Formato<InfoTooltip text="Tamanho do criativo. 1:1 Feed (quadrado), 4:5 Feed (vertical), 9:16 Story, 16:9 Banner." /></h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[{ v: '1:1', l: '1:1 Feed' }, { v: '4:5', l: '4:5 Feed' }, { v: '9:16', l: '9:16 Story' }, { v: '16:9', l: '16:9 Banner' }].map(f => (
                     <button key={f.v} onClick={() => setFormatSelect(f.v)} style={{
@@ -1181,17 +1193,20 @@ export function WizardPage() {
               </div>
               {/* Extra instructions */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 24 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Instruções extras</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Instruções extras<InfoTooltip text="Diga com suas palavras o que quer mudar. Ex: 'fundo mais escuro', 'adicione batatas fritas flutuando'." /></h3>
                 <textarea value={extraInstructions} onChange={(e) => setExtraInstructions(e.target.value)} placeholder="Ex: manter fundo escuro, trocar a roupa por camisa branca..." style={{ width: '100%', minHeight: 70, padding: '8px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }} />
               </div>
               {/* Generation summary */}
-              <div style={{ background: 'hsl(var(--muted) / 0.3)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>
-                <span>📝 {editedTexts.filter(t => t.content?.trim()).length} textos</span>
-                <span>🎨 {colorPalette.length} cores</span>
-                <span>📐 {formatSelect}</span>
-                <span>🎛️ Variação {variationSlider}%</span>
-                {analysisTexts.length > editedTexts.length && <span style={{ color: '#EF4444' }}>🗑 {analysisTexts.length - editedTexts.length} removido(s)</span>}
-                {analysisTexts.length > 0 && editedTexts.length > 0 && editedTexts.some((t, i) => analysisTexts[i] && t.content !== analysisTexts[i].content) && <span style={{ color: '#3B82F6' }}>✏️ editado(s)</span>}
+              <div style={{ background: 'hsl(var(--muted) / 0.3)', borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>
+                <span>{editedTexts.filter(t => t.content?.trim()).length} textos</span>
+                <span style={{ color: 'hsl(var(--border))' }}>|</span>
+                <span>{colorPalette.length} cores</span>
+                <span style={{ color: 'hsl(var(--border))' }}>|</span>
+                <span>{formatSelect}</span>
+                <span style={{ color: 'hsl(var(--border))' }}>|</span>
+                <span>Variacao {variationSlider}%</span>
+                {analysisTexts.length > editedTexts.length && <><span style={{ color: 'hsl(var(--border))' }}>|</span><span style={{ color: '#EF4444' }}>{analysisTexts.length - editedTexts.length} removido(s)</span></>}
+                {analysisTexts.length > 0 && editedTexts.length > 0 && editedTexts.some((t, i) => analysisTexts[i] && t.content !== analysisTexts[i].content) && <><span style={{ color: 'hsl(var(--border))' }}>|</span><span style={{ color: '#3B82F6' }}>editado(s)</span></>}
               </div>
               {/* Generate button */}
               <button onClick={() => handleGenerate()} disabled={generating} style={{
@@ -1279,159 +1294,109 @@ export function WizardPage() {
 
           {/* Step 4: Result */}
           {uiStep === 4 && currentGeneration && (
-            <div style={{ display: 'flex', gap: 24, animation: 'wizFdUp 350ms ease both', flexWrap: 'wrap' }}>
-              {/* Preview — takes ~60-65% */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, flex: '3 1 360px', maxWidth: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <p style={{ fontSize: 10.5, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
-                    {composing ? "Compondo criativo..." : "Criativo gerado!"}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>
-                    <span>via {currentGeneration.meta.provider}</span>
-                    <span>·</span>
-                    <span>{Math.round(currentGeneration.meta.generationMs / 1000)}s</span>
-                  </div>
-                </div>
-
-                {displayBase64 && (
-                  <div style={{
-                    width: '100%', borderRadius: 12, overflow: 'hidden',
-                    border: '1px solid hsl(var(--border))',
-                    boxShadow: '0 8px 32px rgba(20,20,23,0.1)',
-                    background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    <img src={displayBase64} alt="Criativo gerado" style={{ width: '100%', maxHeight: '55vh', objectFit: 'contain', display: 'block' }} />
-                  </div>
-                )}
-
-                {composing && popDesignStep && (
-                  <p style={{ fontSize: 11.5, color: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite', fontWeight: 500 }}>{popDesignStep}</p>
-                )}
-                {composing && !popDesignStep && (
-                  <p style={{ fontSize: 11.5, color: '#8e8e96', animation: 'wizPulse 1s ease-in-out infinite' }}>Aplicando tipografia...</p>
-                )}
-
-                {/* Session gallery strip */}
-                {!isWorking && sessionGenerations.length > 1 && (
-                  <div style={{ display: 'flex', gap: 6, width: '100%', overflowX: 'auto', padding: '4px 0' }}>
-                    {sessionGenerations.slice(-10).map((gen, idx) => {
-                      const isActive = activeSessionIdx === -1 ? idx === sessionGenerations.slice(-10).length - 1 : idx === activeSessionIdx;
-                      return (
-                        <img
-                          key={gen.timestamp}
-                          src={gen.image}
-                          alt={`Geração ${idx + 1}`}
-                          onClick={() => {
-                            setActiveSessionIdx(idx);
-                            setComposedBase64(gen.image);
-                          }}
-                          style={{
-                            width: 64, height: 64, borderRadius: 8, objectFit: 'cover', cursor: 'pointer', flexShrink: 0,
-                            border: isActive ? '2px solid #ff713d' : '2px solid hsl(var(--border))',
-                            opacity: isActive ? 1 : 0.7, transition: 'all 150ms',
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-
-                {!isWorking && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%' }}>
-                    <button
-                      onClick={() => setShowExportModal(true)}
-                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                      ↓ Download
-                    </button>
-                    <button
-                      onClick={handleRegenerateFromResult}
-                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                      ↺ Gerar novamente
-                    </button>
-                    <button
-                      onClick={() => {
-                        setGenerationDone(false);
-                        // If editedTexts is empty (e.g., component remounted), repopulate from analysis
-                        if (editedTexts.length === 0 && v2Analysis) {
-                          const texts = (v2Analysis.texts as Array<{ type: string; content: string }>) || [];
-                          if (texts.length > 0) {
-                            setAnalysisTexts(texts);
-                            setEditedTexts(texts.map(t => ({ ...t })));
-                          }
-                        }
-                        setUiStep(2);
-                      }}
-                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                      ✎ Editar textos
-                    </button>
-                    <button
-                      onClick={resetForNewReference}
-                      style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                      + Nova referência
-                    </button>
-                  </div>
-                )}
-                <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 8 }}>
-                  Créditos restantes: <span style={{ color: '#ff713d', fontWeight: 600 }}>{storeCredits}</span>
-                </p>
+            <div style={{ animation: 'wizFdUp 350ms ease both', maxWidth: flags.chatEnabled ? undefined : 900, margin: flags.chatEnabled ? undefined : '0 auto' }}>
+              {/* Info bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <span style={{ color: '#22C55E', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  {composing ? "Compondo criativo..." : "Criativo gerado!"}
+                </span>
+                <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>
+                  via {currentGeneration.meta.provider} · {Math.round(currentGeneration.meta.generationMs / 1000)}s
+                </span>
               </div>
 
-              {/* Mini chat — takes ~35-40% */}
+              {/* Image */}
+              {displayBase64 && (
+                <div style={{
+                  borderRadius: 12, overflow: 'hidden', marginBottom: 12,
+                  border: '1px solid hsl(var(--border))',
+                  boxShadow: '0 8px 32px rgba(20,20,23,0.08)',
+                  background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <img src={displayBase64} alt="Criativo gerado" style={{
+                    width: '100%', maxHeight: '520px', objectFit: 'contain', display: 'block',
+                    transform: `scale(${zoomScale})`, transformOrigin: 'center center',
+                    transition: 'transform 0.2s ease',
+                  }} />
+                </div>
+              )}
+
+              {composing && <p style={{ fontSize: 11.5, color: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite', fontWeight: 500, textAlign: 'center' }}>{popDesignStep || 'Aplicando tipografia...'}</p>}
+
+              {/* Zoom controls */}
+              {flags.zoomInResult && !isWorking && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
+                  <button onClick={() => setZoomScale(s => Math.max(s * 0.8, 0.3))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>-</button>
+                  <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', minWidth: 36, textAlign: 'center' }}>{Math.round(zoomScale * 100)}%</span>
+                  <button onClick={() => setZoomScale(s => Math.min(s * 1.25, 3))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                  <button onClick={() => setZoomScale(1)} style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Reset</button>
+                </div>
+              )}
+
+              {/* Session gallery strip */}
+              {!isWorking && sessionGenerations.length > 1 && (
+                <div style={{ display: 'flex', gap: 6, justifyContent: 'center', overflowX: 'auto', padding: '4px 0', marginBottom: 16 }}>
+                  {sessionGenerations.slice(-10).map((gen, idx) => {
+                    const isActive = activeSessionIdx === -1 ? idx === sessionGenerations.slice(-10).length - 1 : idx === activeSessionIdx;
+                    return (
+                      <img key={gen.timestamp} src={gen.image} alt={`Geração ${idx + 1}`}
+                        onClick={() => { setActiveSessionIdx(idx); setComposedBase64(gen.image); }}
+                        style={{ width: 56, height: 56, borderRadius: 6, objectFit: 'cover', cursor: 'pointer', flexShrink: 0, border: isActive ? '2px solid #ff713d' : '2px solid hsl(var(--border))', opacity: isActive ? 1 : 0.7, transition: 'all 150ms' }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Action buttons */}
               {!isWorking && (
-                <div style={{ display: 'flex', flexDirection: 'column', flex: '2 1 280px', gap: 12, minHeight: 300 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 12, borderBottom: '1px solid hsl(var(--border))' }}>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+                  <button onClick={() => setShowExportModal(true)} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    ↓ Download
+                  </button>
+                  <button onClick={handleRegenerateFromResult} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    ↺ Gerar novamente — {flags.creditsPerGeneration} cr
+                  </button>
+                  <button onClick={() => { setGenerationDone(false); if (editedTexts.length === 0 && v2Analysis) { const texts = (v2Analysis.texts as Array<{ type: string; content: string }>) || []; if (texts.length > 0) { setAnalysisTexts(texts); setEditedTexts(texts.map(t => ({ ...t }))); } } setUiStep(2); }} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    ✎ Editar textos
+                  </button>
+                  <button onClick={resetForNewReference} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    + Nova referência
+                  </button>
+                </div>
+              )}
+
+              {/* Credits */}
+              <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', textAlign: 'center' }}>
+                Créditos restantes: <span style={{ color: storeCredits < 12 ? '#EF4444' : '#ff713d', fontWeight: 600 }}>{storeCredits}</span>
+              </p>
+
+              {/* Chat panel — only when feature flag enabled */}
+              {flags.chatEnabled && !isWorking && (
+                <div style={{ marginTop: 24, padding: 16, border: '1px solid hsl(var(--border))', borderRadius: 12, background: 'hsl(var(--card))' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0 }}>✦</div>
                     <p style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Creatyng AI</p>
                     <span style={{ fontSize: 11, color: '#10B981', marginLeft: 'auto' }}>● Online</span>
                   </div>
-                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>Peça ajustes em linguagem natural. 1 crédito por mensagem.</p>
                   <RefinementChat
                     overrides={refinementOverrides}
-                    onOverridesChange={(newOverrides) => {
-                      setRefinementOverrides(newOverrides);
-                      recomposeWithOverrides(newOverrides);
-                    }}
+                    onOverridesChange={(newOverrides) => { setRefinementOverrides(newOverrides); recomposeWithOverrides(newOverrides); }}
                     onRegenerate={handleRegenerateFromResult}
                     composition={htmlCompositionRef.current}
-                    onCompositionChange={async (updated) => {
-                      htmlCompositionRef.current = updated;
-                      setComposing(true);
-                      try {
-                        const result = await exportCompositionToPNG(updated);
-                        setComposedBase64(result);
-                        setComposedImage(result);
-                      } finally {
-                        setComposing(false);
-                      }
-                    }}
-                    context={{
-                      analysis: v2Analysis,
-                      currentTexts: editedTexts,
-                      currentColors: colorPalette,
-                    }}
-                    onTextsUpdate={(texts) => {
-                      setEditedTexts(texts);
-                      toast.success('Textos atualizados! Clique em "Gerar novamente" pra aplicar.');
-                    }}
-                    onColorsUpdate={(colors) => {
-                      setColorPalette(colors);
-                      toast.success('Cores atualizadas!');
-                    }}
+                    onCompositionChange={async (updated) => { htmlCompositionRef.current = updated; setComposing(true); try { const result = await exportCompositionToPNG(updated); setComposedBase64(result); setComposedImage(result); } finally { setComposing(false); } }}
+                    context={{ analysis: v2Analysis, currentTexts: editedTexts, currentColors: colorPalette }}
+                    onTextsUpdate={(texts) => { setEditedTexts(texts); toast.success('Textos atualizados!'); }}
+                    onColorsUpdate={(colors) => { setColorPalette(colors); toast.success('Cores atualizadas!'); }}
                   />
-                  <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 4 }}>
-                    Edições avançadas com histórico →{" "}
-                    <button
-                      onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)}
-                      style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, textDecoration: 'underline' }}
-                    >
-                      Expandir chat
-                    </button>
-                  </p>
+                  {flags.refinePageEnabled && (
+                    <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 8 }}>
+                      <button onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)} style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, textDecoration: 'underline' }}>
+                        Expandir chat
+                      </button>
+                    </p>
+                  )}
                 </div>
               )}
             </div>
