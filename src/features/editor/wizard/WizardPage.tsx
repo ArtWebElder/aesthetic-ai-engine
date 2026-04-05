@@ -7,7 +7,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getFeatureFlags } from "@/config/featureFlags";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import { FileText, Palette, RectangleHorizontal, SlidersHorizontal, Trash2, Pencil, Plus, ImageIcon } from "lucide-react";
+import { FileText, Palette, RectangleHorizontal, SlidersHorizontal, Trash2, Pencil, Plus, ImageIcon, Upload, User, AlertTriangle } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { useToast } from "@/features/toast/useToast";
@@ -1046,85 +1047,72 @@ export function WizardPage() {
                 <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 6 }}>Suba suas imagens</h1>
                 <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))' }}>Arte de referência + foto do produto ou pessoa (opcional).</p>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20 }}>
-                {/* Reference Upload */}
-                <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 20, minHeight: 260 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Arte de Referência</span><InfoTooltip text="O post, anúncio ou arte que você quer clonar. Pode ser um print de qualquer rede social." />
-                    <span style={{ fontSize: 10, background: '#ff713d', color: '#fff', padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>Obrigatório</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Print do post, anúncio ou arte que quer clonar</p>
-                  {referenceBase64 && !referenceBase64.startsWith('gallery:') ? (
-                    <div style={{ position: 'relative' }}>
-                      <img src={referenceBase64} alt="Referência" style={{ width: '100%', borderRadius: 8, maxHeight: 240, objectFit: 'cover' }} />
-                      <button onClick={() => { useWizardStore.getState().clearReference(); }} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
+                {/* --- Standardized upload cards --- */}
+                {([
+                  {
+                    title: 'Arte de Referência', badge: 'Obrigatório', badgeOrange: true,
+                    desc: 'Print do post, anúncio ou arte que quer clonar',
+                    tooltip: 'O post, anúncio ou arte que você quer clonar. Pode ser um print de qualquer rede social.',
+                    icon: <Upload size={28} strokeWidth={1.5} />, placeholder: 'Clique ou arraste',
+                    image: referenceBase64 && !referenceBase64.startsWith('gallery:') ? referenceBase64 : null,
+                    onClear: () => useWizardStore.getState().clearReference(),
+                    accept: 'image/*',
+                    onFile: (b64: string) => useWizardStore.getState().setReference(b64, 'upload'),
+                  },
+                  {
+                    title: 'Subject', badge: 'Opcional', badgeOrange: false,
+                    desc: 'Foto do produto ou pessoa pra substituir',
+                    tooltip: 'Foto do seu produto ou pessoa pra substituir o que aparece na referência. Se não enviar, a IA mantém o original.',
+                    icon: <User size={28} strokeWidth={1.5} />, placeholder: 'Clique ou arraste',
+                    image: subjectBase64 || null,
+                    onClear: () => useWizardStore.getState().setSubject('', ''),
+                    accept: 'image/*',
+                    onFile: (b64: string) => useWizardStore.getState().setSubject(b64, ''),
+                  },
+                  {
+                    title: 'Logo', badge: 'Opcional', badgeOrange: false,
+                    desc: 'PNG com fundo transparente',
+                    tooltip: 'Sua logo será inserida no criativo, substituindo qualquer placeholder de logo na referência.',
+                    icon: <ImageIcon size={28} strokeWidth={1.5} />, placeholder: 'Upload logo',
+                    image: logoBase64,
+                    onClear: () => setLogoBase64(null),
+                    accept: 'image/png,image/svg+xml,image/webp',
+                    onFile: (b64: string) => setLogoBase64(b64),
+                    maxSize: 2 * 1024 * 1024,
+                  },
+                ] as const).map((card, ci) => (
+                  <div key={ci} style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 20, minHeight: 260, display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <span style={{ fontSize: 14, fontWeight: 500 }}>{card.title}</span>
+                      <InfoTooltip text={card.tooltip} />
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 500, background: card.badgeOrange ? '#FFF0E6' : 'hsl(var(--muted))', color: card.badgeOrange ? '#ff713d' : 'hsl(var(--muted-foreground))' }}>{card.badge}</span>
                     </div>
-                  ) : (
-                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, border: '2px dashed hsl(var(--border))', borderRadius: 10, cursor: 'pointer', transition: 'border-color 150ms' }}>
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => useWizardStore.getState().setReference(reader.result as string, 'upload');
-                        reader.readAsDataURL(file);
-                      }} />
-                      <span style={{ fontSize: 24, marginBottom: 8 }}>📎</span>
-                      <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Clique ou arraste</span>
-                    </label>
-                  )}
-                </div>
-                {/* Subject Upload */}
-                <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 20, minHeight: 260 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Subject</span><InfoTooltip text="Foto do seu produto ou pessoa pra substituir o que aparece na referência. Se não enviar, a IA mantém o original." />
-                    <span style={{ fontSize: 10, background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>
+                    <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 12, lineHeight: 1.4 }}>{card.desc}</p>
+                    {card.image ? (
+                      <div style={{ flex: 1, position: 'relative', borderRadius: 8, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'hsl(var(--muted) / 0.3)' }}>
+                        <img src={card.image} alt={card.title} style={{ maxWidth: '100%', maxHeight: 180, objectFit: 'contain' }} />
+                        <button onClick={card.onClear} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                      </div>
+                    ) : (
+                      <label style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed hsl(var(--border))', borderRadius: 8, cursor: 'pointer', minHeight: 140, transition: 'border-color 150ms' }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; }}
+                        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border))'; }}
+                      >
+                        <input type="file" accept={card.accept} style={{ display: 'none' }} onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if ('maxSize' in card && card.maxSize && file.size > card.maxSize) return;
+                          const reader = new FileReader();
+                          reader.onload = () => card.onFile(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }} />
+                        <div style={{ color: 'hsl(var(--muted-foreground))', marginBottom: 8 }}>{card.icon}</div>
+                        <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>{card.placeholder}</span>
+                      </label>
+                    )}
                   </div>
-                  <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Foto do produto ou pessoa pra substituir</p>
-                  {subjectBase64 ? (
-                    <div style={{ position: 'relative' }}>
-                      <img src={subjectBase64} alt="Subject" style={{ width: '100%', borderRadius: 8, maxHeight: 240, objectFit: 'cover' }} />
-                      <button onClick={() => { useWizardStore.getState().setSubject('', ''); }} style={{ position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                    </div>
-                  ) : (
-                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160, border: '2px dashed hsl(var(--border))', borderRadius: 10, cursor: 'pointer', transition: 'border-color 150ms' }}>
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => useWizardStore.getState().setSubject(reader.result as string, '');
-                        reader.readAsDataURL(file);
-                      }} />
-                      <span style={{ fontSize: 24, marginBottom: 8 }}>🖼</span>
-                      <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Clique ou arraste</span>
-                    </label>
-                  )}
-                </div>
-                {/* Logo Upload */}
-                <div style={{ background: 'hsl(var(--card))', border: '1px dashed hsl(var(--border))', borderRadius: 12, padding: 20, minHeight: 260 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600 }}>Logo</span><InfoTooltip text="Sua logo será inserida no criativo, substituindo qualquer placeholder de logo na referência." />
-                    <span style={{ fontSize: 10, background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', padding: '2px 6px', borderRadius: 4, fontWeight: 500 }}>Opcional</span>
-                  </div>
-                  <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>PNG com fundo transparente</p>
-                  {logoBase64 ? (
-                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-                      <img src={logoBase64} alt="Logo" style={{ maxHeight: 80, maxWidth: 200, objectFit: 'contain' }} />
-                      <button onClick={() => setLogoBase64(null)} style={{ position: 'absolute', top: -4, right: -4, width: 24, height: 24, borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                    </div>
-                  ) : (
-                    <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 80, border: '2px dashed hsl(var(--border))', borderRadius: 10, cursor: 'pointer' }}>
-                      <input type="file" accept="image/png,image/svg+xml,image/webp" style={{ display: 'none' }} onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file || file.size > 2 * 1024 * 1024) return;
-                        const reader = new FileReader();
-                        reader.onload = () => setLogoBase64(reader.result as string);
-                        reader.readAsDataURL(file);
-                      }} />
-                      <ImageIcon size={20} style={{ color: 'hsl(var(--muted-foreground))', marginBottom: 4 }} />
-                      <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>Upload logo</span>
-                    </label>
-                  )}
-                </div>
+                ))}
               </div>
               {analysisLoading && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, color: '#ff713d', fontSize: 13 }}>
@@ -1177,9 +1165,9 @@ export function WizardPage() {
                 ))}
                 <button onClick={() => setEditedTexts([...editedTexts, { type: 'label', content: '' }])} style={{ fontSize: 12, color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, marginTop: 4 }}>+ Adicionar texto</button>
                 <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 8 }}>Textos curtos funcionam melhor. Evite frases longas.</p>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 12px', background: '#FFF7ED', borderRadius: 8, marginTop: 8, fontSize: 12, color: '#92400E' }}>
-                  <span style={{ flexShrink: 0 }}>!</span>
-                  <span>Textos muito pequenos podem apresentar variação na acentuação. Textos curtos e grandes funcionam melhor.</span>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: '#FFF7ED', borderRadius: 8, marginTop: 12, border: '1px solid #FED7AA' }}>
+                  <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>Textos muito pequenos podem apresentar variação na acentuação. Textos curtos e grandes funcionam melhor.</span>
                 </div>
               </div>
               {/* Colors */}
@@ -1207,11 +1195,11 @@ export function WizardPage() {
               </div>
               {/* Variation slider */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Variação Criativa<InfoTooltip text="0% = cópia fiel da referência. 100% = reinterpretação livre. Recomendado: 0-10% pra manter o layout original." /></h3>
-                <input type="range" min={0} max={100} value={variationSlider} onChange={(e) => setVariationSlider(Number(e.target.value))} style={{ width: '100%' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 4 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center' }}>Variação Criativa<InfoTooltip text="0% = cópia fiel da referência. 100% = reinterpretação livre. Recomendado: 0-10% pra manter o layout original." /></h3>
+                <Slider value={[variationSlider]} onValueChange={([val]) => setVariationSlider(val)} min={0} max={100} step={5} className="w-full" />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'hsl(var(--muted-foreground))', marginTop: 10 }}>
                   <span>Cópia exata</span>
-                  <span style={{ color: '#ff713d', fontWeight: 700 }}>{variationSlider}%</span>
+                  <span style={{ color: '#ff713d', fontWeight: 600, fontSize: 14 }}>{variationSlider}%</span>
                   <span>Reinterpretação</span>
                 </div>
               </div>
