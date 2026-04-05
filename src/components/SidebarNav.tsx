@@ -92,7 +92,12 @@ const SidebarNav = ({ onClose, forceExpanded }: SidebarNavProps) => {
   }, [user]);
 
   const handleNav = (path: string) => {
-    navigate(path);
+    if (path === '/app/create' && location.pathname === '/app/create') {
+      // Already on wizard — navigate with fresh flag to trigger reset confirmation
+      navigate('/app/create', { state: { fresh: true, ts: Date.now() }, replace: true });
+    } else {
+      navigate(path);
+    }
     onClose?.();
   };
 

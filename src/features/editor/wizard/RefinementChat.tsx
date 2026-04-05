@@ -60,7 +60,12 @@ async function callChatCreative(
   };
   console.log("[RefinementChat] Calling chat-creative:", { messageLength: message.length, bodyKeys: Object.keys(body), hasContext: !!ctx.analysis });
   try {
-    const { data, error } = await supabase.functions.invoke("chat-creative", { body });
+    // Race between the API call and a 30s timeout
+    const result = await Promise.race([
+      supabase.functions.invoke("chat-creative", { body }),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 30000)),
+    ]);
+    const { data, error } = result;
     console.log("[RefinementChat] chat-creative response:", { data: JSON.stringify(data)?.substring(0, 500), error });
     if (error || !data) {
       console.warn("[RefinementChat] chat-creative error:", error);
@@ -68,7 +73,11 @@ async function callChatCreative(
     }
     return { reply: data.reply ?? "OK", action: data.action ?? null };
   } catch (e) {
-    console.warn("[RefinementChat] invoke error:", e);
+    const msg = (e as Error)?.message ?? "";
+    console.warn("[RefinementChat] invoke error:", msg);
+    if (msg === "timeout") {
+      return { reply: "Tempo esgotado. Tente uma mensagem mais curta.", action: null };
+    }
     return { reply: "Erro ao contatar IA. Tente novamente.", action: null };
   }
 }

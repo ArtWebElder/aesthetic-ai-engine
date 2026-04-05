@@ -4,7 +4,7 @@
 // Apenas o shell visual e navegação foram redesenhados.
 
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useToast } from "@/features/toast/useToast";
 import { useWizardStore } from "@/stores/useWizardStore";
 import { GenerateError } from "@/services/generateService";
@@ -199,6 +199,7 @@ function WizCredTooltip({ credits, children }: { credits: number; children: Reac
 
 export function WizardPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const toast = useToast();
   const { emailVerified } = useAuth();
   const { t } = useI18n();
@@ -207,6 +208,20 @@ export function WizardPage() {
 
   // Fetch credits on mount (Topbar is hidden for /app/create, so we load here)
   useEffect(() => { fetchCredits(); }, [fetchCredits]);
+
+  // Handle "Novo Criativo" from sidebar — location.state.fresh triggers reset confirmation
+  useEffect(() => {
+    const state = location.state as { fresh?: boolean; ts?: number } | null;
+    if (state?.fresh) {
+      // Clear navigation state to prevent re-triggering
+      window.history.replaceState({}, '');
+      if (referenceBase64 || currentGeneration || editedTexts.length > 0) {
+        setShowResetConfirm(true);
+      } else {
+        resetAll();
+      }
+    }
+  }, [location.state]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Smart initial step: resume where user left off based on store state
   const initialStep = (() => {
@@ -218,13 +233,21 @@ export function WizardPage() {
   const [uiStep, setUiStep] = useState<1 | 2 | 3 | 4>(initialStep);
   const [maxStepReachedInit] = useState(() => initialStep >= 4 ? 4 : initialStep >= 2 ? 2 : 1);
   const [analysisLoading, setAnalysisLoading] = useState(false);
-  const [v2Analysis, setV2Analysis] = useState<Record<string, unknown> | null>(null);
-  const [analysisTexts, setAnalysisTexts] = useState<Array<{ type: string; content: string }>>([]);
-  const [editedTexts, setEditedTexts] = useState<Array<{ type: string; content: string }>>([]);
-  const [colorPalette, setColorPalette] = useState<string[]>(['#ff713d', '#1a1a2e', '#ffffff', '#333333', '#666666']);
-  const [variationSlider, setVariationSlider] = useState(10);
-  const [formatSelect, setFormatSelect] = useState('1:1');
-  const [extraInstructions, setExtraInstructions] = useState('');
+  // These 7 fields are in Zustand store (persist across navigation to /app/refine and back)
+  const v2Analysis = useWizardStore((s) => s.v2Analysis);
+  const setV2Analysis = useWizardStore((s) => s.setV2Analysis);
+  const analysisTexts = useWizardStore((s) => s.analysisTexts);
+  const setAnalysisTexts = useWizardStore((s) => s.setAnalysisTexts);
+  const editedTexts = useWizardStore((s) => s.editedTexts);
+  const setEditedTexts = useWizardStore((s) => s.setEditedTexts);
+  const colorPalette = useWizardStore((s) => s.colorPalette);
+  const setColorPalette = useWizardStore((s) => s.setColorPalette);
+  const variationSlider = useWizardStore((s) => s.variationSlider);
+  const setVariationSlider = useWizardStore((s) => s.setVariationSlider);
+  const formatSelect = useWizardStore((s) => s.formatSelect);
+  const setFormatSelect = useWizardStore((s) => s.setFormatSelect);
+  const extraInstructions = useWizardStore((s) => s.extraInstructions);
+  const setExtraInstructions = useWizardStore((s) => s.setExtraInstructions);
   const [stageIndex, setStageIndex] = useState(0);
   const [generationDone, setGenerationDone] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
@@ -1167,7 +1190,8 @@ export function WizardPage() {
                 <span>🎨 {colorPalette.length} cores</span>
                 <span>📐 {formatSelect}</span>
                 <span>🎛️ Variação {variationSlider}%</span>
-                {(() => { const activeContents = new Set(editedTexts.map(t => t.content)); const removed = analysisTexts.filter(t => !activeContents.has(t.content)); return removed.length > 0 ? <span style={{ color: '#EF4444' }}>🗑 {removed.length} removido(s)</span> : null; })()}
+                {analysisTexts.length > editedTexts.length && <span style={{ color: '#EF4444' }}>🗑 {analysisTexts.length - editedTexts.length} removido(s)</span>}
+                {analysisTexts.length > 0 && editedTexts.length > 0 && editedTexts.some((t, i) => analysisTexts[i] && t.content !== analysisTexts[i].content) && <span style={{ color: '#3B82F6' }}>✏️ editado(s)</span>}
               </div>
               {/* Generate button */}
               <button onClick={() => handleGenerate()} disabled={generating} style={{

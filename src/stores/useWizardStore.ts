@@ -70,6 +70,22 @@ interface WizardStore extends WizardState {
   incrementChatCount: () => void;
   resetChatCount: () => void;
 
+  // ── Clone wizard persistent state (survives navigation) ─────────────────────
+  v2Analysis: Record<string, unknown> | null;
+  analysisTexts: Array<{ type: string; content: string }>;
+  editedTexts: Array<{ type: string; content: string }>;
+  colorPalette: string[];
+  variationSlider: number;
+  formatSelect: string;
+  extraInstructions: string;
+  setV2Analysis: (a: Record<string, unknown> | null) => void;
+  setAnalysisTexts: (t: Array<{ type: string; content: string }>) => void;
+  setEditedTexts: (t: Array<{ type: string; content: string }>) => void;
+  setColorPalette: (c: string[]) => void;
+  setVariationSlider: (v: number) => void;
+  setFormatSelect: (f: string) => void;
+  setExtraInstructions: (i: string) => void;
+
   // ── Reset ────────────────────────────────────────────────────────────────────
   reset: () => void;
 }
@@ -209,6 +225,22 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
   incrementChatCount: () => set((s) => ({ chatCount: s.chatCount + 1 })),
   resetChatCount: () => set({ chatCount: 0 }),
 
+  // ── Clone wizard persistent state ──────────────────────────────────────────
+  v2Analysis: null,
+  analysisTexts: [],
+  editedTexts: [],
+  colorPalette: ['#ff713d', '#1a1a2e', '#ffffff', '#333333', '#666666'],
+  variationSlider: 10,
+  formatSelect: '1:1',
+  extraInstructions: '',
+  setV2Analysis: (a) => set({ v2Analysis: a }),
+  setAnalysisTexts: (t) => set({ analysisTexts: t }),
+  setEditedTexts: (t) => set({ editedTexts: t }),
+  setColorPalette: (c) => set({ colorPalette: c }),
+  setVariationSlider: (v) => set({ variationSlider: v }),
+  setFormatSelect: (f) => set({ formatSelect: f }),
+  setExtraInstructions: (i) => set({ extraInstructions: i }),
+
   // ── Session gallery ─────────────────────────────────────────────────────────
   sessionGenerations: [],
   addSessionGeneration: (image) =>
@@ -226,5 +258,13 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
       currentStep: 1,
       currentGeneration: undefined,
       sessionGenerations: [], // clear gallery on full reset
+      chatCount: 0,
+      v2Analysis: null,
+      analysisTexts: [],
+      editedTexts: [],
+      colorPalette: ['#ff713d', '#1a1a2e', '#ffffff', '#333333', '#666666'],
+      variationSlider: 10,
+      formatSelect: '1:1',
+      extraInstructions: '',
     }),
 }));
