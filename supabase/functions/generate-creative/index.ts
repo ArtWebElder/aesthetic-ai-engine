@@ -108,6 +108,7 @@ CRITICAL RULES:
 5. Do NOT add elements that don't exist in the reference (no extra decorations, shapes, or visual elements).
 6. MAINTAIN the same visual style: if the reference has geometric shapes, keep geometric shapes. If organic blobs, keep organic blobs. If gradients, keep gradients.
 7. Do NOT reproduce any watermarks, brand logos, or stock photo marks from the reference.
+8. WATERMARKS: The reference image may contain watermarks (semi-transparent text/logos repeated across the image, typically from stock image sites like Designi, Freepik, Shutterstock, Adobe Stock, etc). You MUST completely IGNORE and REMOVE all watermarks. The generated image must be CLEAN with NO watermarks whatsoever. Do not reproduce any semi-transparent diagonal text overlays.
 
 Generate the image directly. Do not use function calls or tools.`
   );
@@ -120,7 +121,8 @@ Reproduce the reference layout PIXEL-PERFECT. Same positions, sizes, proportions
 Keep the EXACT same background style, shapes, gradients, and decorative elements.
 Keep the EXACT same color scheme unless specific colors are overridden below.
 The ONLY differences: the subject (if provided), the texts, and any overridden colors.
-This must look like the SAME template with different content plugged in.`
+This must look like the SAME template with different content plugged in.
+IGNORE any watermarks in the reference. Clone everything EXCEPT watermarks.`
     );
   } else if (variation <= 30) {
     sections.push(
