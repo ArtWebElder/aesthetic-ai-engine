@@ -177,9 +177,24 @@ ALL texts listed below MUST still appear in the image.`
   sections.push(`MANDATORY TEXT RULE: Every text listed in the TEXTS section below MUST appear in the generated image, at ANY variation level. Never omit, skip, or remove any listed text. Text quality must be sharp and readable.`);
 
   // ── LAYER 2b: Layout & style info from analysis (only structure, NOT content) ──
+  // When user changed colors, patch style description to avoid conflicting color instructions
+  const userColors = body.color_palette || [];
+  const analysisColors = (analysis?.colors as string[]) || [];
+  const hasColorOverride = userColors.length > 0 && colorsChanged(analysisColors, userColors);
+
   if (analysis) {
     const layoutDesc = analysis.layout || "";
-    const styleDesc = analysis.style || "";
+    let styleDesc = analysis.style || "";
+
+    // Patch: replace original color references in style description with user's new colors
+    if (hasColorOverride && styleDesc) {
+      for (let i = 0; i < analysisColors.length && i < userColors.length; i++) {
+        if (analysisColors[i] && userColors[i]) {
+          styleDesc = styleDesc.replace(new RegExp(analysisColors[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), userColors[i]);
+        }
+      }
+    }
+
     if (layoutDesc || styleDesc) {
       sections.push(
         `REFERENCE LAYOUT & STYLE (clone this structure, NOT the content):\n${layoutDesc ? `Layout: ${layoutDesc}` : ""}${layoutDesc && styleDesc ? "\n" : ""}${styleDesc ? `Style: ${styleDesc}` : ""}`
@@ -208,13 +223,19 @@ ALL texts listed below MUST still appear in the image.`
     sections.push("Do NOT include any text in the generated image. Even if the reference image contains text, generate the image with NO text at all.");
   }
 
-  // ── LAYER 4: Colors (conditional — only if user changed colors) ──
-  const userColors = body.color_palette || [];
-  if (userColors.length > 0 && (!analysis || colorsChanged(analysis.colors, userColors))) {
-    const labels = ["Primary", "Secondary", "Accent", "Text primary", "Text secondary"];
-    const colorLines = userColors.slice(0, 5).map((c, i) => `- ${labels[i] || `Color ${i + 1}`}: ${c}`).join("\n");
+  // ── LAYER 4: Colors (inline mapping — zero conflicting instructions) ──
+  if (hasColorOverride) {
+    const labels = ["Background/Primary", "Accent/Secondary", "Highlight/Tertiary", "Text primary", "Text secondary"];
+    const mappingLines: string[] = [];
+    for (let i = 0; i < userColors.length && i < 5; i++) {
+      const orig = analysisColors[i] || "auto";
+      const label = labels[i] || `Color ${i + 1}`;
+      if (userColors[i]) {
+        mappingLines.push(`- ${label}: ${orig} → ${userColors[i]}`);
+      }
+    }
     sections.push(
-      `COLOR OVERRIDE: Use these specific colors instead of the reference colors:\n${colorLines}\nThese colors are MANDATORY. Replace ALL original colors with these.`
+      `COLOR MAPPING — Replace original colors with these new colors:\n${mappingLines.join("\n")}\n\nApply these replacements to ALL elements: backgrounds, shapes, cards, text, icons, borders, buttons, gradients, decorative elements. No element should keep the original color if a replacement is specified above.`
     );
   }
 

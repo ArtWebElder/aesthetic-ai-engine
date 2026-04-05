@@ -228,6 +228,7 @@ export function WizardPage() {
   const [generationDone, setGenerationDone] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
   const confettiTriggered = useRef(false);
@@ -921,13 +922,14 @@ export function WizardPage() {
     setUiStep(1);
   }
 
-  function handleRegenerateFromResult() {
+  async function handleRegenerateFromResult() {
     clearGeneration();
     setComposedBase64(null);
     setGenerationDone(false);
     setRefinementOverrides({});
     htmlCompositionRef.current = null;
-    setUiStep(3);
+    // Regenerate directly with same params — no need to go back to step 3
+    await handleGenerate();
   }
 
   const displayBase64 = composedBase64 ?? currentGeneration?.imageBase64;
@@ -958,7 +960,7 @@ export function WizardPage() {
           </div>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Creatyng</span>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>/</span>
-          <button onClick={resetAll} style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Nova Criação</button>
+          <button onClick={() => { if (uiStep >= 2) setShowResetConfirm(true); else resetAll(); }} style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Nova Criação</button>
         </div>
         {/* Step indicator centered */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
@@ -1449,6 +1451,20 @@ export function WizardPage() {
           onClose={() => setShowExportModal(false)}
           imageBase64={displayBase64}
         />
+      )}
+
+      {/* Reset Confirmation Dialog */}
+      {showResetConfirm && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setShowResetConfirm(false)}>
+          <div style={{ background: 'hsl(var(--card))', borderRadius: 16, padding: 24, maxWidth: 380, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 8 }}>Começar do zero?</h3>
+            <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, marginBottom: 20 }}>Todas as edições, textos, cores e imagens serão descartados.</p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowResetConfirm(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
+              <button onClick={() => { setShowResetConfirm(false); resetAll(); }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#EF4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Descartar e recomeçar</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
