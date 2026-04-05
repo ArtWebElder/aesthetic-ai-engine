@@ -107,6 +107,8 @@ export function RefinementChat({
   ]);
   const [input, setInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [chatCount, setChatCount] = useState(0);
+  const MAX_CHATS = 9;
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -115,6 +117,16 @@ export function RefinementChat({
 
   const processMessage = useCallback(async (commandText: string) => {
     if (!commandText.trim()) return;
+
+    // Check chat limit
+    if (chatCount >= MAX_CHATS) {
+      setMessages(prev => [...prev,
+        { role: "user", text: commandText },
+        { role: "system", text: `🤖 Limite de ${MAX_CHATS} refinamentos atingido. Regenere o criativo (12cr) pra continuar refinando.`, confirmRegenerate: true },
+      ]);
+      return;
+    }
+    setChatCount(c => c + 1);
 
     const userMsg: ChatMessage = { role: "user", text: commandText };
 
@@ -310,9 +322,12 @@ export function RefinementChat({
         <div ref={chatEndRef} />
       </div>
 
-      {/* Input */}
+      {/* Counter + Input */}
+      <div style={{ flexShrink: 0, fontSize: 10, color: chatCount >= MAX_CHATS ? '#EF4444' : '#8e8e96', textAlign: 'center', padding: '4px 0 0', background: '#f5f5f3' }}>
+        {chatCount}/{MAX_CHATS} refinamentos
+      </div>
       <div style={{
-        flexShrink: 0, display: "flex", gap: 8, padding: "10px 12px",
+        flexShrink: 0, display: "flex", gap: 8, padding: "6px 12px 10px",
         borderTop: "1px solid rgba(20,20,23,0.08)",
         background: "#f5f5f3",
       }}>

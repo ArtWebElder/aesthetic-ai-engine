@@ -242,6 +242,8 @@ export function WizardPage() {
   const [resetKey, setResetKey] = useState(0);
   const [maxStepReached, setMaxStepReached] = useState(1);
   const [activeSessionIdx, setActiveSessionIdx] = useState(-1);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
 
   const {
     subjectBase64,
@@ -1232,18 +1234,45 @@ export function WizardPage() {
                 </div>
 
                 {displayBase64 && (
-                  <div style={{
-                    width: '100%', borderRadius: 12, overflow: 'hidden',
-                    border: '1px solid hsl(var(--border))',
-                    boxShadow: '0 8px 32px rgba(20,20,23,0.1)',
-                    background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
+                  <div
+                    style={{
+                      width: '100%', borderRadius: 12, overflow: 'hidden', position: 'relative',
+                      border: '1px solid hsl(var(--border))',
+                      boxShadow: '0 8px 32px rgba(20,20,23,0.1)',
+                      background: 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--card)) 0% 50%) 0 0 / 16px 16px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: zoomScale > 1 ? 'grab' : 'default',
+                    }}
+                    onWheel={(e) => {
+                      e.preventDefault();
+                      setZoomScale(prev => Math.max(0.3, Math.min(3, prev + (e.deltaY < 0 ? 0.15 : -0.15))));
+                    }}
+                    onMouseDown={(e) => {
+                      if (zoomScale <= 1) return;
+                      const startX = e.clientX - zoomPos.x;
+                      const startY = e.clientY - zoomPos.y;
+                      const onMove = (ev: MouseEvent) => setZoomPos({ x: ev.clientX - startX, y: ev.clientY - startY });
+                      const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+                      window.addEventListener('mousemove', onMove);
+                      window.addEventListener('mouseup', onUp);
+                    }}
+                  >
                     <img
                       src={displayBase64}
                       alt="Criativo gerado"
-                      style={{ width: '100%', maxHeight: '55vh', objectFit: 'contain', display: 'block' }}
+                      draggable={false}
+                      style={{
+                        width: '100%', maxHeight: '55vh', objectFit: 'contain', display: 'block',
+                        transform: `scale(${zoomScale}) translate(${zoomPos.x / zoomScale}px, ${zoomPos.y / zoomScale}px)`,
+                        transition: zoomScale === 1 ? 'transform 0.2s ease' : 'none',
+                      }}
                     />
+                    {/* Zoom controls */}
+                    <div style={{ position: 'absolute', bottom: 10, right: 10, display: 'flex', gap: 4, background: 'rgba(20,20,23,0.7)', borderRadius: 8, padding: 3 }}>
+                      <button onClick={() => setZoomScale(prev => Math.min(3, prev * 1.25))} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                      <button onClick={() => setZoomScale(prev => Math.max(0.3, prev * 0.8))} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                      <button onClick={() => { setZoomScale(1); setZoomPos({ x: 0, y: 0 }); }} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent', color: '#fff', cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⊡</button>
+                    </div>
                   </div>
                 )}
 
@@ -1282,17 +1311,7 @@ export function WizardPage() {
                 {!isWorking && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, width: '100%' }}>
                     <button
-                      onClick={() => {
-                        if (!displayBase64) return;
-                        const ext = displayBase64.startsWith('data:image/png') ? 'png'
-                          : displayBase64.startsWith('data:image/webp') ? 'webp' : 'jpg';
-                        const a = document.createElement('a');
-                        a.href = displayBase64;
-                        a.download = `creatyng-${Date.now()}.${ext}`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                      }}
+                      onClick={() => setShowExportModal(true)}
                       style={{ flex: '1 1 100px', padding: '10px 0', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
                     >
                       ↓ Download
@@ -1431,21 +1450,6 @@ export function WizardPage() {
           open={showExportModal}
           onClose={() => setShowExportModal(false)}
           imageBase64={displayBase64}
-          texts={{
-            headline: headline ?? "",
-            subheadline: subheadline ?? undefined,
-            cta: cta ?? undefined,
-          }}
-          presetConfig={textConfigRef.current ?? ({} as TextPresetConfig)}
-          colors={colorsRef.current}
-          composition={compositionRef.current}
-          foodPopOverlay={isFoodPopRef.current}
-          foodPopData={isFoodPopRef.current ? {
-            price: price ?? undefined,
-            whatsapp: whatsapp ?? undefined,
-            instagram: instagram ?? undefined,
-            accentColor: paletteRef.current?.accent,
-          } : undefined}
         />
       )}
     </div>

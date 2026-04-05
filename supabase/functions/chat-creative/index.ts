@@ -46,7 +46,7 @@ Você pode responder com uma das seguintes ações em JSON:
 { "action": "update_colors", "data": { "colors": ["#FF0000", "#000000", "#FFFFFF", "#333333", "#666666"] }, "reply": "Atualizei a paleta para tons vermelhos." }
 
 3. Regenerar imagem (mudanças de layout/estilo/fundo/subject):
-{ "action": "regenerate", "data": { "reason": "mudança de layout" }, "reply": "Para essa alteração preciso regenerar a imagem (10 créditos). Deseja continuar?" }
+{ "action": "regenerate", "data": { "reason": "mudança de layout" }, "reply": "Para essa alteração preciso regenerar a imagem (12 créditos). Deseja continuar?" }
 
 4. Responder perguntas ou dar dicas (sem ação):
 { "action": null, "reply": "Sua resposta aqui." }
@@ -56,7 +56,7 @@ REGRAS CRÍTICAS:
 - Responda SEMPRE em português brasileiro
 - Seja conciso e direto
 - Para mudanças simples (trocar texto, ajustar cor): use update_texts ou update_colors
-- Para mudanças estruturais (layout, estilo, fundo, trocar subject): use regenerate e mencione os 10 créditos
+- Para mudanças estruturais (layout, estilo, fundo, trocar subject): use regenerate e mencione os 12 créditos
 - Nunca invente textos — use exatamente o que o usuário pediu`;
 }
 
