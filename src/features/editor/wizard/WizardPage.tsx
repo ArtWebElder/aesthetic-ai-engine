@@ -443,6 +443,27 @@ export function WizardPage() {
     const state = useWizardStore.getState();
     setError(null);
     setGenerationError(null);
+
+    // ── Check credits BEFORE clearing any state ─────────────────────────────
+    if (!emailVerified) {
+      setError(t('verify_email.block_generate'));
+      return;
+    }
+
+    const creditCost = calculateCost("clone-criativo") || 10;
+    console.log(`[Debit] Debitando ${creditCost} créditos para clone-criativo...`);
+    try {
+      await useCreditStore.getState().debitCredits(creditCost, `Clone Criativo`);
+    } catch (debitErr: unknown) {
+      const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
+      if (msg === "insufficient_credits") {
+        setShowPaywall(true);
+        return; // Don't touch generating, composedBase64, or currentGeneration
+      }
+      console.warn("[Wizard] debit failed, proceeding anyway:", msg);
+    }
+
+    // ── Only NOW clear state and start generating ───────────────────────────
     setGenerating(true);
     setComposedBase64(null);
     clearGeneration();
@@ -453,27 +474,6 @@ export function WizardPage() {
     htmlCompositionRef.current = null;
 
     try {
-      // ── Block unverified email users ───────────────────────────────────────
-      if (!emailVerified) {
-        setError(t('verify_email.block_generate'));
-        setGenerating(false);
-        return;
-      }
-
-      // ── Debit credits before generation ────────────────────────────────────
-      const creditCost = calculateCost("clone-criativo") || 10;
-      console.log(`[Debit] Debitando ${creditCost} créditos para clone-criativo...`);
-      try {
-        await useCreditStore.getState().debitCredits(creditCost, `Clone Criativo`);
-      } catch (debitErr: unknown) {
-        const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
-        if (msg === "insufficient_credits") {
-          setShowPaywall(true);
-          setGenerating(false);
-          return;
-        }
-        console.warn("[Wizard] debit failed, proceeding anyway:", msg);
-      }
 
       // ── Use analysis from Step 1 (already stored in v2Analysis state) ──────
       const currentAnalysis = v2Analysis;

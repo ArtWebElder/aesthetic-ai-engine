@@ -120,7 +120,7 @@ CRITICAL RULES:
 6. MAINTAIN the same visual style: if the reference has geometric shapes, keep geometric shapes. If organic blobs, keep organic blobs. If gradients, keep gradients.
 7. Do NOT reproduce any watermarks, brand logos, or stock photo marks from the reference.
 8. WATERMARKS: The reference image may contain watermarks (semi-transparent text/logos repeated across the image, typically from stock image sites like Designi, Freepik, Shutterstock, Adobe Stock, etc). You MUST completely IGNORE and REMOVE all watermarks. The generated image must be CLEAN with NO watermarks whatsoever. Do not reproduce any semi-transparent diagonal text overlays.
-9. TEXT QUALITY: ALL text MUST be SHARP, CRISP and PERFECTLY READABLE. Small text (phone, address, URL) must be rendered at sufficient size to remain legible — make it larger if needed, NEVER blurry or smeared.
+9. TEXT QUALITY — CRITICAL: ALL text MUST be PIXEL-PERFECT, SHARP, and CRISP. This is NON-NEGOTIABLE. Small text (phone numbers, addresses, URLs, contact info, footer text) requires EXTRA ATTENTION: render each character clearly and distinctly. Small text must NEVER appear blurry, smeared, melted, distorted, or illegible. If in doubt, make small text SLIGHTLY LARGER rather than risk illegibility. Every single character must be individually distinguishable.
 10. PORTUGUESE ACCENTS: Texts may contain Brazilian Portuguese. Reproduce special characters EXACTLY: ç (cedilha curves right), ã/õ (tilde ~), é/ê/á/â/ó/ô/ú (accented vowels). Copy characters exactly from the text list — do NOT approximate or replace accents.
 
 Generate the image directly. Do not use function calls or tools.`
@@ -134,7 +134,8 @@ Reproduce the reference layout as EXACTLY as possible. Near-identical clone.
 Keep the EXACT same layout, positioning, proportions, sizes, background style, shapes, gradients.
 The ONLY changes: the subject (if provided), the specified texts, and any overridden colors.
 Clone everything EXCEPT watermarks (remove those).
-DO NOT remove any text zone. ALL texts listed below MUST appear.`
+DO NOT remove any text zone. ALL texts listed below MUST appear.
+SMALL TEXT FIDELITY: Pay EXTREME attention to small/footer text (phone, address, contact info). Each character must be sharp and individually readable. Clone the exact font size, weight, and spacing of small text from the reference. Do NOT let small text become blurry or merge together.`
     );
   } else if (variation <= 20) {
     sections.push(
@@ -218,7 +219,7 @@ ALL texts listed below MUST still appear in the image.`
       textSection += `\n\nTEXTS EXPLICITLY REMOVED BY THE USER — DO NOT INCLUDE THESE:\n${removedLines}\nThese texts were intentionally deleted by the user. Even if they appear in the reference image, you MUST NOT reproduce them.`;
     }
 
-    textSection += `\n\nTEXT RENDERING QUALITY:\n- Large texts (titles, headings): Bold, prominent, perfectly legible.\n- Medium texts (prices, labels): Clear and readable.\n- Small texts (phone, address, URL, contact info): MUST be particularly sharp and crisp. Render with enough size to be clearly readable. Make slightly larger if needed rather than blurry. NEVER render blurred or smeared small text.\n\nACCENT WARNING: If texts contain Portuguese characters (ç, ã, õ, é, á, ê, â, ó, ô, ú), reproduce them EXACTLY. Wrong accents = wrong spelling in Portuguese.`;
+    textSection += `\n\nTEXT RENDERING QUALITY — STRICTLY ENFORCED:\n- Large texts (titles, headings): Bold, prominent, perfectly legible.\n- Medium texts (prices, labels): Clear, sharp and readable with correct formatting.\n- Small texts (phone, address, URL, contact info, footer): THIS IS THE HIGHEST PRIORITY FOR TEXT QUALITY. Each individual character MUST be perfectly formed and distinguishable. Rules for small text:\n  * Render at MINIMUM 14px equivalent size — if the reference has smaller text, INCREASE the size slightly\n  * Each letter, number, and symbol must be individually sharp and distinct\n  * NEVER allow characters to blur together, melt, or become smeared\n  * Maintain proper spacing between characters (kerning)\n  * Phone numbers: each digit must be perfectly clear (e.g., "83 0000-0000" — every digit distinct)\n  * Addresses: every word must be fully readable, including accented characters\n  * If you cannot render small text clearly at the reference size, make it 10-20% LARGER\n\nACCENT WARNING: If texts contain Portuguese characters (ç, ã, õ, é, á, ê, â, ó, ô, ú), reproduce them EXACTLY. Wrong accents = wrong spelling in Portuguese.`;
 
     sections.push(textSection);
   } else {
