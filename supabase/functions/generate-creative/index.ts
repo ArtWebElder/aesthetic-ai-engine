@@ -92,6 +92,41 @@ function resolveAllTexts(body: GenerateBody): Array<{ type: string; text: string
     .map(r => ({ type: "text", text: r.replacement }));
 }
 
+function patchFullPrompt(
+  prompt: string,
+  removedTexts: string[],
+  textReplacements: TextReplacement[],
+  originalColors: string[],
+  newColors: string[],
+): string {
+  let patched = prompt;
+
+  // Remove mentions of deleted texts
+  for (const removed of removedTexts) {
+    if (!removed || removed.length < 2) continue;
+    const escaped = removed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    patched = patched.replace(new RegExp(`[^.]*['"\`]${escaped}['"\`][^.]*\\.?`, 'gi'), '');
+    patched = patched.replace(new RegExp(escaped, 'gi'), '');
+  }
+
+  // Replace edited texts
+  for (const rep of textReplacements) {
+    if (rep.original && rep.replacement && rep.original !== rep.replacement) {
+      const escaped = rep.original.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      patched = patched.replace(new RegExp(escaped, 'gi'), rep.replacement);
+    }
+  }
+
+  // Replace colors
+  for (let i = 0; i < originalColors.length && i < newColors.length; i++) {
+    if (originalColors[i] && newColors[i] && originalColors[i].toLowerCase() !== newColors[i].toLowerCase()) {
+      patched = patched.replace(new RegExp(originalColors[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), newColors[i]);
+    }
+  }
+
+  return patched.replace(/\n\s*\n\s*\n/g, '\n\n').replace(/  +/g, ' ').trim();
+}
+
 function colorsChanged(analysisColors: unknown, userColors: string[]): boolean {
   if (!Array.isArray(analysisColors)) return true;
   const orig = (analysisColors as string[]).map(c => c.toLowerCase());
@@ -203,6 +238,33 @@ ALL texts listed below MUST still appear in the image.`
         `REFERENCE LAYOUT & STYLE (clone this structure, NOT the content):\n${layoutDesc ? `Layout: ${layoutDesc}` : ""}${layoutDesc && styleDesc ? "\n" : ""}${styleDesc ? `Style: ${styleDesc}` : ""}`
       );
     }
+  }
+
+  // ── LAYER 2c: Full reproduction prompt as typography/position context ──
+  const rawFullPrompt = analysis?.fullPrompt;
+  if (typeof rawFullPrompt === 'string' && rawFullPrompt.length > 50) {
+    // Build inferred replacements from active_texts vs analysis texts
+    const analysisTextsList = (analysis?.texts as Array<{ content: string }>) || [];
+    const activeTextsList = body.active_texts || [];
+    const inferredReplacements: TextReplacement[] = [];
+    for (let i = 0; i < analysisTextsList.length && i < activeTextsList.length; i++) {
+      if (analysisTextsList[i]?.content && activeTextsList[i]?.content &&
+          analysisTextsList[i].content !== activeTextsList[i].content) {
+        inferredReplacements.push({ original: analysisTextsList[i].content, replacement: activeTextsList[i].content });
+      }
+    }
+    const allReplacements = [...(body.text_replacements || []), ...inferredReplacements];
+
+    const patchedPrompt = patchFullPrompt(
+      rawFullPrompt,
+      body.removed_texts || [],
+      allReplacements,
+      analysisColors,
+      userColors,
+    );
+    sections.push(
+      `TYPOGRAPHY & POSITION REFERENCE (use this to understand exact text placement, font styles, and sizes — but ONLY for the texts listed in the TEXTS section below. If a text appears here but NOT in the TEXTS section, do NOT include it):\n${patchedPrompt}`
+    );
   }
 
   // ── LAYER 3: Texts (always present if there are texts) ──

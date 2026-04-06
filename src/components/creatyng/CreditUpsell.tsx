@@ -303,7 +303,7 @@ export default function CreditUpsell() {
   const [criticalShownThisSession, setCriticalShownThisSession] = useState(false);
 
   // BUG 6: never show upsell modals on billing, settings, or onboarding pages
-  const isSuppressedRoute = /\/(billing|settings|onboarding)/.test(pathname);
+  const isSuppressedRoute = /\/(billing|settings|onboarding|create)/.test(pathname);
 
   // Check behavioral triggers
   useEffect(() => {

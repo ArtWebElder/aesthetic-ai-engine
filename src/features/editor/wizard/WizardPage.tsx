@@ -1046,7 +1046,7 @@ export function WizardPage() {
             <AlertTriangle size={14} style={{ color: '#D97706' }} />
             <span style={{ color: '#92400E' }}>Apenas <strong>{storeCredits}</strong> crédito(s) restante(s).</span>
           </div>
-          <button onClick={() => navigate('/app/billing')} style={{ background: '#ff713d', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Recarregar</button>
+          <button onClick={() => navigate('/app/billing')} style={{ background: '#ff713d', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Upgrade</button>
         </div>
       )}
       {storeCredits <= 0 && (
@@ -1055,7 +1055,7 @@ export function WizardPage() {
             <AlertTriangle size={14} style={{ color: '#DC2626' }} />
             <span style={{ color: '#991B1B' }}>Créditos esgotados. Recarregue para gerar.</span>
           </div>
-          <button onClick={() => navigate('/app/billing')} style={{ background: '#DC2626', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Recarregar agora</button>
+          <button onClick={() => navigate('/app/billing')} style={{ background: '#DC2626', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Upgrade agora</button>
         </div>
       )}
 
