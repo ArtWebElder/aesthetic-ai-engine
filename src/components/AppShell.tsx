@@ -173,8 +173,8 @@ const AppShell = () => {
           </div>
         )}
 
-        {/* Credit upsell banners/modals */}
-        <CreditUpsell />
+        {/* Credit upsell banners/modals — suppressed on /app/create (WizardPage has its own) */}
+        {!pathname.startsWith('/app/create') && <CreditUpsell />}
 
         {/* OTP Verification Modal */}
         {showOtpModal && (
