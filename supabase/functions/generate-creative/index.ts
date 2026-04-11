@@ -22,7 +22,7 @@ interface TextReplacement {
 interface AnalysisData {
   fullPrompt?: string;
   texts?: Array<{ type: string; content: string; position?: string }>;
-  colors?: string[];
+  colors?: Array<string | {hex: string; role?: string}>;
   layout?: string;
   style?: string;
   [key: string]: unknown;
@@ -127,9 +127,23 @@ function patchFullPrompt(
   return patched.replace(/\n\s*\n\s*\n/g, '\n\n').replace(/  +/g, ' ').trim();
 }
 
+function parseAnalysisColors(colors: unknown): Array<{hex: string, role: string}> {
+  if (!Array.isArray(colors)) return [];
+  return colors.map((c: unknown) => {
+    if (typeof c === 'string') return { hex: c, role: '' };
+    if (c && typeof c === 'object' && 'hex' in c) {
+      return { hex: String((c as {hex: string}).hex), role: String((c as {role?: string}).role || '') };
+    }
+    return { hex: String(c), role: '' };
+  });
+}
+
 function colorsChanged(analysisColors: unknown, userColors: string[]): boolean {
   if (!Array.isArray(analysisColors)) return true;
-  const orig = (analysisColors as string[]).map(c => c.toLowerCase());
+  // Support both old format (string[]) and new format ({hex, role}[])
+  const orig = (analysisColors as Array<string | {hex: string}>).map(c =>
+    (typeof c === 'string' ? c : c.hex).toLowerCase()
+  );
   const user = userColors.map(c => c.toLowerCase());
   for (let i = 0; i < user.length; i++) {
     if (i >= orig.length || orig[i] !== user[i]) return true;
@@ -217,8 +231,8 @@ ALL texts listed below MUST still appear in the image.`
   // ── LAYER 2b: Layout & style info from analysis (only structure, NOT content) ──
   // When user changed colors, patch style description to avoid conflicting color instructions
   const userColors = body.color_palette || [];
-  const analysisColors = (analysis?.colors as string[]) || [];
-  const hasColorOverride = userColors.length > 0 && colorsChanged(analysisColors, userColors);
+  const parsedAnalysisColors = parseAnalysisColors(analysis?.colors);
+  const hasColorOverride = userColors.length > 0 && colorsChanged(analysis?.colors, userColors);
 
   if (analysis) {
     const layoutDesc = analysis.layout || "";
@@ -226,9 +240,10 @@ ALL texts listed below MUST still appear in the image.`
 
     // Patch: replace original color references in style description with user's new colors
     if (hasColorOverride && styleDesc) {
-      for (let i = 0; i < analysisColors.length && i < userColors.length; i++) {
-        if (analysisColors[i] && userColors[i]) {
-          styleDesc = styleDesc.replace(new RegExp(analysisColors[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), userColors[i]);
+      for (let i = 0; i < parsedAnalysisColors.length && i < userColors.length; i++) {
+        const origHex = parsedAnalysisColors[i]?.hex;
+        if (origHex && userColors[i]) {
+          styleDesc = styleDesc.replace(new RegExp(origHex.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), userColors[i]);
         }
       }
     }
@@ -259,7 +274,7 @@ ALL texts listed below MUST still appear in the image.`
       rawFullPrompt,
       body.removed_texts || [],
       allReplacements,
-      analysisColors,
+      parsedAnalysisColors.map(c => c.hex),
       userColors,
     );
     sections.push(
@@ -288,19 +303,26 @@ ALL texts listed below MUST still appear in the image.`
     sections.push("Do NOT include any text in the generated image. Even if the reference image contains text, generate the image with NO text at all.");
   }
 
-  // ── LAYER 4: Colors (inline mapping — zero conflicting instructions) ──
+  // ── LAYER 4: Colors (with role-based mapping) ──
   if (hasColorOverride) {
-    const labels = ["Background/Primary", "Accent/Secondary", "Highlight/Tertiary", "Text primary", "Text secondary"];
     const mappingLines: string[] = [];
     for (let i = 0; i < userColors.length && i < 5; i++) {
-      const orig = analysisColors[i] || "auto";
-      const label = labels[i] || `Color ${i + 1}`;
-      if (userColors[i]) {
-        mappingLines.push(`- ${label}: ${orig} → ${userColors[i]}`);
+      if (!userColors[i]) continue;
+      const parsed = parsedAnalysisColors[i];
+      const origHex = parsed?.hex || 'auto';
+      const role = parsed?.role || '';
+
+      if (role) {
+        // Role-based: model knows exactly WHERE to apply
+        mappingLines.push(`- ${origHex} → ${userColors[i]} (applies to: ${role})`);
+      } else {
+        // Fallback to generic labels
+        const labels = ["Background/Primary", "Accent/Secondary", "Highlight/Tertiary", "Text primary", "Text secondary"];
+        mappingLines.push(`- ${labels[i] || `Color ${i+1}`}: ${origHex} → ${userColors[i]}`);
       }
     }
     sections.push(
-      `COLOR MAPPING — Replace original colors with these new colors:\n${mappingLines.join("\n")}\n\nApply these replacements to ALL elements: backgrounds, shapes, cards, text, icons, borders, buttons, gradients, decorative elements. No element should keep the original color if a replacement is specified above.\nIMPORTANT: ALL colors listed above MUST appear somewhere in the generated image. If there are more colors than natural elements, apply remaining colors to decorative shapes, gradients, shadows, borders, or background accents.`
+      `COLOR MAPPING — Replace these specific colors in the design:\n${mappingLines.join("\n")}\n\nAPPLY EACH COLOR TO THE EXACT ELEMENTS described in parentheses. If a color applies to "price card background", change ONLY the price card background to the new color. If a color applies to "accent icons", change ONLY the accent icons. Colors not listed above must remain UNCHANGED from the reference.\nIMPORTANT: Be PRECISE — only change the elements specified. Do not apply colors to unrelated elements.`
     );
   }
 

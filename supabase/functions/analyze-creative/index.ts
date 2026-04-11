@@ -30,7 +30,7 @@ Extract ALL text visible in the image, including:
 - Watermark or stock photo text (type: watermark)
 - Any other readable text (type: label)
 
-2. colors: array de 5 cores dominantes em hex (ex: ['#7C3AED', '#FF713D', ...])
+2. colors: array de 5 objetos com { hex: string, role: string } onde role descreve EXATAMENTE onde essa cor aparece no design. Exemplos de role: 'main background', 'price card background', 'title text color', 'accent icons and decorative elements', 'footer bar background', 'CTA button fill', 'price tag background', 'body text color', 'border/separator lines'. Seja ESPECÍFICO sobre quais elementos usam cada cor. Ex: [{ hex: '#FF6B35', role: 'price card background, download arrow icon, accent elements' }, { hex: '#1A1A1A', role: 'main background, footer bar' }, ...]
 3. layout: descrição textual do layout e composição
 4. style: descrição detalhada do estilo visual (iluminação, mood, efeitos, tipografia)
 5. hasAvatar: boolean - se tem pessoa/rosto

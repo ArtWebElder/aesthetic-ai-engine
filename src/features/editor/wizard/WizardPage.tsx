@@ -880,7 +880,8 @@ export function WizardPage() {
         // Deep copy: analysisTexts is the ORIGINAL snapshot, editedTexts is the user's working copy
         setAnalysisTexts(texts.map(t => ({ type: t.type, content: t.content })));
         setEditedTexts(texts.map(t => ({ type: t.type, content: t.content })));
-        const colors = (analysis.colors as string[]) || [];
+        const rawColors = (analysis.colors as Array<string | {hex: string}>) || [];
+        const colors = rawColors.map(c => typeof c === 'string' ? c : c.hex);
         if (colors.length >= 5) setColorPalette(colors.slice(0, 5));
         else if (colors.length > 0) setColorPalette([...colors, ...colorPalette.slice(colors.length)]);
         lastAnalyzedRef.current = refHash;
