@@ -236,7 +236,7 @@ export const useWizardStore = create<WizardStore>((set, get) => ({
   setV2Analysis: (a) => set({ v2Analysis: a }),
   setAnalysisTexts: (t) => set({ analysisTexts: t }),
   setEditedTexts: (t) => set({ editedTexts: t }),
-  setColorPalette: (c) => set({ colorPalette: c }),
+  setColorPalette: (c) => set({ colorPalette: c.map((v: unknown) => typeof v === 'string' ? v : (v && typeof v === 'object' && 'hex' in (v as Record<string, unknown>)) ? String((v as Record<string, string>).hex) : '#000000') }),
   setVariationSlider: (v) => set({ variationSlider: v }),
   setFormatSelect: (f) => set({ formatSelect: f }),
   setExtraInstructions: (i) => set({ extraInstructions: i }),

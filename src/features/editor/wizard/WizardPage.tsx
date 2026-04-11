@@ -1199,12 +1199,15 @@ export function WizardPage() {
                 <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center' }}>Paleta de cores<InfoTooltip text="Cores detectadas na referência. Clique numa cor pra trocar. A IA vai aplicar as novas cores no criativo." /></h3>
                 <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Clique pra alterar as cores do criativo</p>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-                  {colorPalette.map((color, idx) => (
+                  {colorPalette.map((raw, idx) => {
+                    const color = typeof raw === 'string' ? raw : (raw as unknown as {hex:string})?.hex || '#000000';
+                    return (
                     <div key={idx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
                       <ColorPicker value={color} onChange={(c) => { const next = [...colorPalette]; next[idx] = c; setColorPalette(next); }} className="!w-9 !h-9" />
                       <span style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', fontFamily: 'monospace' }}>{color}</span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
