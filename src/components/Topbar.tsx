@@ -8,6 +8,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { LocaleDropdown } from '@/components/LocaleDropdown';
 import RechargeCreditsModal from '@/components/creatyng/RechargeCreditsModal';
+import { Logo } from '@/components/Logo';
 
 interface TopbarProps {
   onMenuToggle?: () => void;
@@ -93,18 +94,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
       )}
 
       {/* Mobile mini logo */}
-      {isMobile && (
-        <div
-          className="flex items-center justify-center rounded-[6px] text-white"
-          style={{
-            width: 26, height: 26,
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
-            fontSize: 13, fontWeight: 800, flexShrink: 0,
-          }}
-        >
-          C
-        </div>
-      )}
+      {isMobile && <Logo iconOnly height={26} />}
 
       {/* Search */}
       <button

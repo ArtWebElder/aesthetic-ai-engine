@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { Logo } from '@/components/Logo';
 import { supabase } from '@/services/supabaseClient';
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -147,12 +148,7 @@ export default function OnboardingPage() {
       {/* Header */}
       <div style={{ width: '100%', maxWidth: 680, padding: '28px 24px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <span style={{ color: '#fff', fontWeight: 800, fontSize: 13 }}>C</span>
-            </div>
-            <span style={{ fontWeight: 700, fontSize: 16 }}>Creatyng</span>
-          </div>
+          <Logo height={26} />
           <span style={{ fontSize: 12, color: '#8e8e96', fontWeight: 500 }}>{t('onboarding.step_counter').replace('{step}', String(step + 1)).replace('{total}', String(TOTAL_STEPS))}</span>
         </div>
         {/* Progress bar */}

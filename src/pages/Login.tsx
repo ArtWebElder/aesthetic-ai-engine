@@ -4,6 +4,7 @@ import { Mail, Lock, User, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, Refr
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { supabase } from '@/services/supabaseClient';
+import { Logo } from '@/components/Logo';
 
 /* ─── Carousel card data ─────────────────────────────── */
 const CARDS = [
@@ -295,20 +296,8 @@ const Login = () => {
         style={{ minWidth: 360, width: '30%', padding: '48px 40px', background: '#f5f5f3', height: '100%', flexShrink: 0 }}
       >
         {/* Logo */}
-        <div className="mb-8 self-start flex items-center gap-2.5">
-          <div
-            className="flex items-center justify-center rounded-full text-white"
-            style={{
-              width: 32,
-              height: 32,
-              background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
-              fontSize: 13,
-              fontWeight: 800,
-            }}
-          >
-            C
-          </div>
-          <span style={{ fontSize: 20, fontWeight: 700, color: '#141417', letterSpacing: '-0.02em' }}>Creatyng</span>
+        <div className="mb-8 self-start">
+          <Logo height={30} />
         </div>
 
         <div className="w-full max-w-sm animate-fade-up">

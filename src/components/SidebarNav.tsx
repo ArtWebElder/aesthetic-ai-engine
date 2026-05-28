@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/services/supabaseClient';
+import { Logo } from '@/components/Logo';
 
 const primaryNavItems = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
@@ -138,23 +139,10 @@ const SidebarNav = ({ onClose, forceExpanded }: SidebarNavProps) => {
 
       {/* Logo + close button */}
       <div className="flex items-center gap-2.5 overflow-hidden" style={{ padding: '16px 18px', height: 60 }}>
-        <div
-          className="shrink-0 flex items-center justify-center rounded-[7px] text-white"
-          style={{
-            width: 28,
-            height: 28,
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
-            fontSize: 14,
-            fontWeight: 800,
-          }}
-        >
-          C
-        </div>
-        {!isCollapsed && (
-          <span className="whitespace-nowrap overflow-hidden" style={{ fontSize: 17, fontWeight: 700, color: 'hsl(var(--foreground))' }}>
-            Creatyng
-          </span>
-        )}
+        {isCollapsed
+          ? <Logo iconOnly height={28} />
+          : <Logo height={24} />
+        }
         {isMobileDrawer && (
           <button
             onClick={onClose}
