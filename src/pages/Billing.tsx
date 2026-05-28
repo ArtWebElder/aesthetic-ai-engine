@@ -242,7 +242,7 @@ const Billing = () => {
   function handlePlanClick(p: typeof PLANS[number]) {
     if (p.id === currentPlan) return;
     if (p.id === 'enterprise') {
-      window.open('mailto:contato@creatyng.com?subject=Enterprise Plan', '_blank');
+      window.open('mailto:support@creatyng.com?subject=Enterprise Plan', '_blank');
     } else if (p.id === 'free') {
       handleCancel();
     } else if (payMethod === 'pix') {

@@ -55,7 +55,7 @@ const ARTICLES: Article[] = [
   {
     id: 'faq-1',
     title: 'Perguntas frequentes',
-    content: 'Veja as perguntas mais comuns abaixo. Se não encontrar sua dúvida, entre em contato pelo suporte@creatyng.com.',
+    content: 'Veja as perguntas mais comuns abaixo. Se não encontrar sua dúvida, entre em contato pelo support@creatyng.com.',
     category: 'faq',
   },
 ];
@@ -212,7 +212,7 @@ const Help = () => {
           <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 4 }}>{t('help.more_help_title')}</h3>
           <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 16 }}>{t('help.more_help_subtitle')}</p>
           <a
-            href="mailto:suporte@creatyng.com"
+            href="mailto:support@creatyng.com"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               padding: '10px 24px', borderRadius: 8,
@@ -222,7 +222,7 @@ const Help = () => {
             }}
           >
             <MessageCircle size={15} />
-            suporte@creatyng.com
+            support@creatyng.com
           </a>
         </div>
       </div>

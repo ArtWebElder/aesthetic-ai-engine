@@ -24,11 +24,11 @@ O Creatyng permite criar criativos de nível agência: o usuário envia foto do 
 Funcionalidades: Food Pop (5 créditos), Pop Design (8 créditos), Chat de refinamento (1 crédito/ajuste), Exportação gratuita.
 Planos: Grátis (100 créditos/mês), Pro (1000 créditos/mês).
 Studio: editor de nodes estilo ComfyUI para power users.
-Se não souber a resposta, direcione para suporte@creatyng.com.`;
+Se não souber a resposta, direcione para support@creatyng.com.`;
 
 async function callGemini(messages: Message[]): Promise<string> {
   if (!GEMINI_API_KEY) {
-    return 'IA não configurada. Entre em contato: suporte@creatyng.com';
+    return 'IA não configurada. Entre em contato: support@creatyng.com';
   }
 
   const contents = [
@@ -59,7 +59,7 @@ async function callGemini(messages: Message[]): Promise<string> {
       continue;
     }
   }
-  return 'Desculpe, não consegui processar sua pergunta. Tente novamente ou entre em contato: suporte@creatyng.com';
+  return 'Desculpe, não consegui processar sua pergunta. Tente novamente ou entre em contato: support@creatyng.com';
 }
 
 export function SupportChat() {

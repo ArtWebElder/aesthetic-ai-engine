@@ -56,8 +56,8 @@ function wrapHtml(title: string, body: string): string {
 <tr><td align="center">
 <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
   <!-- Header -->
-  <tr><td style="background:${ACCENT};padding:24px 32px;text-align:center;">
-    <span style="color:#ffffff;font-size:22px;font-weight:800;letter-spacing:-0.5px;">Creatyng</span>
+  <tr><td style="background:#ffffff;padding:22px 32px;text-align:center;border-bottom:1px solid #F3F4F6;">
+    <img src="${APP_URL}/email-logo.png" alt="Creatyng" width="160" style="display:inline-block;height:auto;max-width:160px;border:0;outline:none;text-decoration:none;" />
   </td></tr>
   <!-- Body -->
   <tr><td style="padding:32px;">
@@ -105,7 +105,7 @@ function buildWelcome(data: Record<string, unknown>): { subject: string; html: s
       heading(`Olá, ${name}!`) +
         paragraph("Sua conta no Creatyng foi criada com sucesso. Você já tem <strong>50 créditos gratuitos</strong> para começar a criar visuais incríveis com IA.") +
         paragraph("Crie banners profissionais, fotos estilizadas e ensaios fotográficos — tudo direto do navegador.") +
-        ctaButton("Criar primeiro criativo", `${APP_URL}/create`) +
+        ctaButton("Criar primeiro criativo", `${APP_URL}/app/create`) +
         muted("Se tiver dúvidas, acesse nossa página de ajuda ou fale conosco pelo chat de suporte.")
     ),
   };
@@ -264,6 +264,7 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         from: "Creatyng <no-reply@creatyng.com>",
+        reply_to: "support@creatyng.com",
         to: [to],
         subject,
         html,

@@ -105,7 +105,7 @@ const Settings = () => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const email = user?.email || 'rodrigo@creatyng.com';
+  const email = user?.email || 'support@creatyng.com';
   const avatarLetter = name.charAt(0).toUpperCase() || email.charAt(0).toUpperCase() || 'U';
 
   const deleteKey = (id: string) => setApiKeys(prev => prev.filter(k => k.id !== id));
