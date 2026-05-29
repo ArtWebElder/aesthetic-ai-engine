@@ -39,7 +39,6 @@ export default function AdminNotifications() {
   const [recipients, setRecipients] = useState<Recipients>('all');
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [sendEmail, setSendEmail] = useState(false);
   const [pinned, setPinned] = useState(false);
   const [sending, setSending] = useState<'idle' | 'loading' | 'success'>('idle');
 
@@ -54,7 +53,7 @@ export default function AdminNotifications() {
     if (!title.trim() || !message.trim()) return;
     setSending('loading');
     try {
-      await adminService.createNotification({ type, recipients, title, message, send_email: sendEmail, pinned });
+      await adminService.createNotification({ type, recipients, title, message, send_email: false, pinned });
       setSending('success');
       // Refresh history
       const fresh = await adminService.fetchNotifications();
@@ -64,7 +63,6 @@ export default function AdminNotifications() {
         setSending('idle');
         setTitle('');
         setMessage('');
-        setSendEmail(false);
         setPinned(false);
       }, 1500);
     } catch {
@@ -184,23 +182,6 @@ export default function AdminNotifications() {
             </label>
           </div>
 
-          {/* Email — secondary/optional section */}
-          <div style={{
-            padding: '12px 14px', borderRadius: 10, marginBottom: 16,
-            background: '#FAFAF8', border: '1px solid rgba(0,0,0,0.06)',
-          }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12, color: '#6B7280' }}>
-              <input type="checkbox" checked={sendEmail} onChange={(e) => setSendEmail(e.target.checked)} style={{ accentColor: '#F97316' }} />
-              <Mail style={{ width: 13, height: 13 }} />
-              Enviar também por email
-            </label>
-            {sendEmail && (
-              <p style={{ fontSize: 11, color: '#9CA3AF', marginTop: 6, marginBottom: 0, lineHeight: 1.4 }}>
-                Emails são enviados via Resend. Use para comunicações importantes como promoções e novidades.
-              </p>
-            )}
-          </div>
-
           {/* Send button */}
           <button
             onClick={handleSend}
@@ -264,11 +245,6 @@ export default function AdminNotifications() {
               <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
                 {RECIPIENT_CONFIG[recipients].label}
               </span>
-              {sendEmail && (
-                <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(59,130,246,0.08)', color: '#3B82F6' }}>
-                  + Email
-                </span>
-              )}
               {pinned && (
                 <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
                   Fixada
