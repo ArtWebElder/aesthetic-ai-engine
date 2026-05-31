@@ -277,17 +277,21 @@ export function StudioPage() {
 
     // ── Debit credits before execution ──
     const flowCostKey = activeFlowId || 'simple-gen';
-    const creditCost = calculateCost(flowCostKey) || 5;
-    console.log(`[Debit] Debitando ${creditCost} créditos para fluxo "${flowCostKey}"...`);
-    try {
-      await useCreditStore.getState().debitCredits(creditCost, `Studio — ${flowCostKey}`);
-    } catch (debitErr: unknown) {
-      const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
-      if (msg === 'insufficient_credits') {
-        setShowPaywall(true);
-        return;
+    // NB: calculateCost always returns a number; do NOT use `|| 5` here —
+    // that would turn a legitimately free flow (0 credits, e.g. remove-bg) into 5.
+    const creditCost = calculateCost(flowCostKey);
+    // Free flows (0 credits, e.g. remove-bg Eco) skip the debit call entirely.
+    if (creditCost > 0) {
+      try {
+        await useCreditStore.getState().debitCredits(creditCost, `Studio — ${flowCostKey}`);
+      } catch (debitErr: unknown) {
+        const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
+        if (msg === 'insufficient_credits') {
+          setShowPaywall(true);
+          return;
+        }
+        console.warn('[Studio] debit failed, proceeding anyway:', msg);
       }
-      console.warn('[Studio] debit failed, proceeding anyway:', msg);
     }
 
     setFlowRunning(true);
