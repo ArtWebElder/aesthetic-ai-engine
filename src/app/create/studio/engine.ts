@@ -916,16 +916,18 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
     }
 
     case 'export': {
-      // Prefer final (text_overlay) → color_grade → composed → generated → any image
+      // Prefer final (text_overlay) → color_grade → composed → generated → cutout (bg_removal) → any image
       const finalUp = findUpstreamByType(inputs, 'final');
       const colorUp = findUpstreamByType(inputs, 'color_grade');
       const composedUp = findUpstreamByType(inputs, 'composed');
       const generatedUp = findUpstreamByType(inputs, 'generated');
+      const cutoutUp = findUpstreamByType(inputs, 'subject_cutout');
 
       const image = finalUp?.image
         || colorUp?.image
         || composedUp?.image
         || generatedUp?.image
+        || cutoutUp?.image
         || inputs.generatedImage
         || inputs.image;
 

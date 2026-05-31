@@ -268,6 +268,27 @@ export interface PresetFlow {
 }
 
 export const PRESET_FLOWS: Record<string, PresetFlow> = {
+  'remove-bg': {
+    id: 'remove-bg',
+    name: 'Remover Fundo',
+    nameEn: 'Remove Background',
+    nameEs: 'Quitar Fondo',
+    description: 'Recorte o fundo de qualquer imagem em 1 clique — direto no navegador, grátis.',
+    descriptionEn: 'Cut out the background of any image in one click — right in your browser, free.',
+    descriptionEs: 'Recorta el fondo de cualquier imagen en un clic — en el navegador, gratis.',
+    icon: 'Scissors',
+    color: '#ec4899',
+    credits: 0,
+    nodes: [
+      { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
+      { id: 'n2', type: 'bg_removal', x: 480, y: 170, data: {} },
+      { id: 'n3', type: 'export', x: 840, y: 170, data: { format: 'png' } },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n2', toPort: 'input' },
+      { id: 'c2', fromNode: 'n2', fromPort: 'output', toNode: 'n3', toPort: 'input' },
+    ],
+  },
   'clone-criativo': {
     id: 'clone-criativo',
     name: 'Clone Criativo',
