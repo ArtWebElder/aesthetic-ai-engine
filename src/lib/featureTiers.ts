@@ -128,4 +128,7 @@ export const FLOW_TIER_MAP: Record<string, { feature: string; tier: Tier }> = {
   'remove-bg': { feature: 'remove_bg', tier: 'eco' },
   'thumbnail': { feature: 'generate', tier: 'pro' },
   'recolor': { feature: 'recolor', tier: 'eco' },
+  // Generation modes stay on 'pro' until the backend is tier-aware (Phase 2):
+  // today every generation runs on Flux (~R$0.22), so 'eco' pricing would lose money.
+  'quote-card': { feature: 'generate', tier: 'pro' },
 };

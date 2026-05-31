@@ -1,6 +1,6 @@
 import {
   Palette, Sparkles, Plus,
-  LayoutTemplate, Copy, Scissors, MonitorPlay, SlidersHorizontal,
+  LayoutTemplate, Copy, Scissors, MonitorPlay, SlidersHorizontal, Quote,
 } from 'lucide-react';
 import { PRESET_FLOWS, type PresetFlow } from './types';
 import { useI18n } from '@/i18n';
@@ -13,6 +13,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Scissors,
   MonitorPlay,
   SlidersHorizontal,
+  Quote,
 };
 
 interface FlowSelectorProps {
