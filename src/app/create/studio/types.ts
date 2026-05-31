@@ -316,6 +316,27 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
       { id: 'c5', fromNode: 'overlay', fromPort: 'output', toNode: 'export', toPort: 'input' },
     ],
   },
+  'recolor': {
+    id: 'recolor',
+    name: 'Re-color / Mood',
+    nameEn: 'Re-color / Mood',
+    nameEs: 'Re-color / Mood',
+    description: 'Aplique um clima de cor (quente, frio, vívido, dramático, vintage) em 1 clique — grátis.',
+    descriptionEn: 'Apply a color mood (warm, cold, vivid, dramatic, vintage) in one click — free.',
+    descriptionEs: 'Aplica un mood de color (cálido, frío, vívido, dramático, vintage) en un clic — gratis.',
+    icon: 'SlidersHorizontal',
+    color: '#a855f7',
+    credits: 0,
+    nodes: [
+      { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
+      { id: 'n2', type: 'color_grade', x: 480, y: 170, data: { mode: 'vivid' } },
+      { id: 'n3', type: 'export', x: 840, y: 170, data: { format: 'png' } },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n2', toPort: 'input' },
+      { id: 'c2', fromNode: 'n2', fromPort: 'output', toNode: 'n3', toPort: 'input' },
+    ],
+  },
   'clone-criativo': {
     id: 'clone-criativo',
     name: 'Clone Criativo',

@@ -127,4 +127,5 @@ export function planAllows(plan: Plan, feature: string, tier: Tier): boolean {
 export const FLOW_TIER_MAP: Record<string, { feature: string; tier: Tier }> = {
   'remove-bg': { feature: 'remove_bg', tier: 'eco' },
   'thumbnail': { feature: 'generate', tier: 'pro' },
+  'recolor': { feature: 'recolor', tier: 'eco' },
 };
