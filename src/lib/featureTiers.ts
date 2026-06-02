@@ -85,6 +85,16 @@ export const FEATURE_TIERS: Record<string, FeatureSpec> = {
       ultra: { model: 'replicate:black-forest-labs/flux-1.1-pro-ultra', providerCostBRL: 0.33, credits: 7, minPlan: 'team', anon: { enabled: false, dailyCap: 0 } },
     },
   },
+  thumbnail: {
+    id: 'thumbnail',
+    labelKey: 'tools.thumbnail',
+    tiers: {
+      // Text baked into the image needs a text-strong model — OpenAI GPT Image.
+      // Needs OPENAI_API_KEY secret + edge deploy. Credits respect creditFloor(cost).
+      pro:   { model: 'openai:gpt-image-1', providerCostBRL: 0.40, credits: 8,  minPlan: 'pro',  anon: { enabled: false, dailyCap: 0 } },
+      ultra: { model: 'openai:gpt-image-1', providerCostBRL: 0.80, credits: 16, minPlan: 'team', anon: { enabled: false, dailyCap: 0 } },
+    },
+  },
   headshot: {
     id: 'headshot',
     labelKey: 'tools.headshot',
@@ -126,11 +136,11 @@ export function planAllows(plan: Plan, feature: string, tier: Tier): boolean {
  */
 export const FLOW_TIER_MAP: Record<string, { feature: string; tier: Tier }> = {
   'remove-bg': { feature: 'remove_bg', tier: 'eco' },
-  'thumbnail': { feature: 'generate', tier: 'pro' },
   'recolor': { feature: 'recolor', tier: 'eco' },
   // Generation modes stay on 'pro' until the backend is tier-aware (Phase 2):
   // today every generation runs on Flux (~R$0.22), so 'eco' pricing would lose money.
   'quote-card': { feature: 'generate', tier: 'pro' },
+  'thumbnail': { feature: 'thumbnail', tier: 'pro' },
   'headshot': { feature: 'headshot', tier: 'pro' },
   'product-scene': { feature: 'generate', tier: 'pro' },
 };

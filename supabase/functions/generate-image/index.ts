@@ -755,7 +755,7 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
     }
 
     const aspectRatio = pickClosestAspectRatio(input.width, input.height);
-    const selectedProvider = selectProvider({ strictIdentity: input.strictIdentity });
+    const selectedProvider = selectProvider({ strictIdentity: input.strictIdentity, module: input.module });
     const modeUsed = input.strictIdentity ? "strict_identity" : "legacy";
 
     // ── DEBUG LOG TEMPORÁRIO ──────────────────────────────────────────────────

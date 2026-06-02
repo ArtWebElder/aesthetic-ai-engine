@@ -414,6 +414,28 @@ CRITICAL RULES:
 ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.customPrompt}` : ''}`;
       }
 
+      // ── thumbnail: bake the title TEXT into the image via OpenAI GPT Image ──
+      // The title and style fields come from the upstream text_input. module
+      // 'sys-img-thumbnail' (set on node.data) routes the request to the OpenAI
+      // provider in the backend, which renders legible integrated typography.
+      if (node.data.mode === 'thumbnail') {
+        const textData = findUpstreamByType(inputs, 'text');
+        const f = (textData?.fields || inputs.fields || {}) as Record<string, string>;
+        const title = (f.title || '').trim();
+        prompt = [
+          'Professional YouTube/Reels thumbnail, 16:9, high-CTR, bold and eye-catching.',
+          f.channel ? `Channel/topic context: ${f.channel}.` : '',
+          f.style ? `Visual style: ${f.style}.` : '',
+          f.lighting ? `Lighting: ${f.lighting}.` : '',
+          f.assets ? `Scene elements: ${f.assets}.` : '',
+          subject ? 'Feature the provided subject prominently and keep their identity.' : '',
+          title
+            ? `Render the title text "${title}" large and INTEGRATED into the design as bold graphic typography with strong outline/shadow for maximum legibility. Spell it EXACTLY as written. No other text.`
+            : 'No text unless specified.',
+          'Vivid saturated colors, dramatic depth, sharp focus, one clear focal point. The title text must be part of the rendered image.',
+        ].filter(Boolean).join(' ');
+      }
+
       console.log('[ImageGen] Final prompt being sent:', prompt.slice(0, 500));
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;

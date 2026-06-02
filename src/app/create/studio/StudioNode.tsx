@@ -325,39 +325,24 @@ function NodeContent({
     case 'text_input': {
       const hasFields = node.data.fields !== undefined;
       if (hasFields) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const fields = node.data.fields as any;
-        // Banner mode — multiple text fields stored as individual data keys
+        // Multi-field mode — renders one input per key in node.data.fields.
+        // Keys drive the i18n placeholder (studio.node.field_<key>) and the
+        // field_<key> data change. Works for banner (headline/price/cta/contact)
+        // and thumbnail (title/channel/style/lighting/assets) alike.
+        const fields = (node.data.fields ?? {}) as Record<string, string>;
+        const keys = Object.keys(fields);
         return (
           <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 5 }}>
-            <input
-              style={{ ...inputStyle, fontSize: 13, fontWeight: 600 }}
-              placeholder={t('studio.node.field_headline')}
-              value={fields?.headline ?? ''}
-              onChange={e => onDataChange(node.id, 'field_headline', e.target.value)}
-              onMouseDown={e => e.stopPropagation()}
-            />
-            <input
-              style={inputStyle}
-              placeholder={t('studio.node.field_price')}
-              value={fields?.price ?? ''}
-              onChange={e => onDataChange(node.id, 'field_price', e.target.value)}
-              onMouseDown={e => e.stopPropagation()}
-            />
-            <input
-              style={inputStyle}
-              placeholder={t('studio.node.field_cta')}
-              value={fields?.cta ?? ''}
-              onChange={e => onDataChange(node.id, 'field_cta', e.target.value)}
-              onMouseDown={e => e.stopPropagation()}
-            />
-            <input
-              style={inputStyle}
-              placeholder={t('studio.node.field_contact')}
-              value={fields?.contact ?? ''}
-              onChange={e => onDataChange(node.id, 'field_contact', e.target.value)}
-              onMouseDown={e => e.stopPropagation()}
-            />
+            {keys.map((key, i) => (
+              <input
+                key={key}
+                style={i === 0 ? { ...inputStyle, fontSize: 13, fontWeight: 600 } : inputStyle}
+                placeholder={t(`studio.node.field_${key}`)}
+                value={fields?.[key] ?? ''}
+                onChange={e => onDataChange(node.id, `field_${key}`, e.target.value)}
+                onMouseDown={e => e.stopPropagation()}
+              />
+            ))}
           </div>
         );
       }

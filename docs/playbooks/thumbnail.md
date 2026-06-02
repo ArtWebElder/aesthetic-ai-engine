@@ -1,61 +1,71 @@
 ---
-feature: generate
+feature: thumbnail
 title: Thumbnail
-tiers: [eco, pro, ultra]
-status: pro-live          # roda hoje via text-to-image (Replicate Flux); tier pro
+tiers: [pro, ultra]
+status: needs-activation   # código pronto; precisa de OPENAI_API_KEY + deploy da edge function
 anon: false
-flow_id: thumbnail        # PRESET_FLOWS['thumbnail'] no Studio
-updated: 2026-05-31
+flow_id: thumbnail         # PRESET_FLOWS['thumbnail'] no Studio
+provider: openai-gpt-image
+updated: 2026-06-01
 ---
 
-# Thumbnail (YouTube / Reels)
+# Thumbnail (YouTube / Reels) — texto na imagem (OpenAI)
 
 > Playbook vivo. Fonte única pro FAQ in-app, tooltips, onboarding e copy de anúncio.
 
 ## O que faz
-Gera um **fundo 16:9 de alto impacto** com IA (text-to-image) e renderiza o **título por cima
-via Canvas** — texto sempre nítido, nunca dependente da IA. É a vantagem do Creatyng sobre
-gerador comum: a IA cuida da cena, o Canvas cuida da tipografia.
+Gera uma thumbnail 16:9 com o **TÍTULO desenhado DENTRO da imagem pela IA** (OpenAI GPT Image),
+não como camada Canvas por cima. Isso resolve o problema da v1 (texto "colado"/desconectado). Aceita
+**upload de subject** (seu rosto/produto), e campos de **estilo, iluminação, assets e contexto do canal**.
 
 ## Como funciona (pipeline)
-`Tema da cena (texto)` → `Prompt Builder` → `Image Gen (1280×720, text-to-image)` →
-`Overlay de Texto (título)` → `Export (PNG)`.
-Sem subject = geração pura (`strictIdentity:false`). O `negativePrompt` já bloqueia texto/logo
-na imagem, deixando espaço limpo pro título.
+`Campos (título, canal, estilo, iluminação, assets)` + `Subject (opcional)` → `Image Gen [mode: thumbnail]`
+→ `Export`.
+- O `Image Gen` monta um prompt rico a partir dos campos e envia com `module: 'sys-img-thumbnail'`.
+- O backend roteia esse module pro **provider OpenAI** (`openai-image.ts`):
+  - **sem subject** → `images/generations` (text-to-image)
+  - **com subject** → `images/edits` (mantém o subject, restila ao redor)
+
+## Campos
+| Campo | Pra quê |
+|---|---|
+| **Título** | O texto curto que a IA desenha integrado na imagem (ex: "GANHEI 10K"). |
+| **Canal / contexto** | Nicho/tom do canal pra IA acertar o clima. |
+| **Estilo** | Ex: gamer agressivo, cinematográfico, clean. |
+| **Iluminação** | Ex: neon, dramática, dourada. |
+| **Assets** | Elementos da cena (ex: explosão, dinheiro, seta). |
 
 ## Melhor input (pra resultado high)
-- **Tema da cena:** descreva o clima, não o texto. Ex: "explosão de dinheiro, fundo dourado dramático,
-  estilo gamer agressivo". Quanto mais visual e específico, melhor.
-- **Título:** curto e punchy (3–6 palavras). Títulos longos competem com a imagem.
-- Deixe a IA criar o foco visual; o título entra no espaço vazio.
+- **Título curto** (≤ 4-5 palavras). Texto longo aumenta risco de erro de ortografia da IA.
+- **Subject:** foto nítida e de frente, se quiser aparecer.
+- Capriche em **estilo + iluminação** — é o que dá o "tapa" de thumbnail viral.
 
 ## Do & Don't
-- ✅ Descreva luz, cor e emoção da cena ("dramático", "vibrante", "cinematográfico").
-- ✅ Título curto e em CAIXA quando quiser impacto.
-- ❌ Não peça o texto dentro do prompt da cena — o texto é renderizado depois, nítido.
-- ❌ Não escreva frase inteira no título — thumbnail é gancho, não legenda.
+- ✅ Título curto e punchy; descreva estilo/luz/assets.
+- ✅ Use subject pra thumbnails de "reação"/rosto.
+- ❌ Frase longa no título (IA pode errar letras).
+- ❌ Não espere o texto via Canvas — agora é a IA que desenha (integrado).
 
-## Troubleshooting
-| Sintoma | Causa provável | O que fazer |
-|---|---|---|
-| Cena "sem graça" | tema vago | adicionar luz/cor/emoção ao tema |
-| Texto sobrepôs o foco | título muito longo | encurtar o título |
-| Apareceu texto torto na imagem | raro (IA tentou escrever) | regenerar — o overlay é quem renderiza o texto |
-| Proporção errada | dims alteradas | manter 1280×720 (16:9) |
+## ⚙️ Ativação (necessária — uma vez)
+Este modo precisa de setup que **só você faz**:
+1. Pegue uma **OpenAI API key** (platform.openai.com) com acesso ao GPT Image.
+2. No Supabase → Edge Functions → Secrets, adicione **`OPENAI_API_KEY`** (e opcional
+   `OPENAI_IMAGE_MODEL` se quiser fixar um modelo, ex: a versão mais nova; default `gpt-image-1`).
+3. **Deploy** da edge function: `supabase functions deploy generate-image`.
+Sem isso, o thumbnail falha com `openai_missing_api_key`.
 
-## Roadmap de qualidade (Eco → Pro → Ultra)
-> Definido em `src/lib/featureTiers.ts` → `FEATURE_TIERS.generate`.
+## Roadmap de qualidade (Pro → Ultra)
+> `src/lib/featureTiers.ts` → `FEATURE_TIERS.thumbnail`.
 
-| Tier | Modelo | Custo/img | Créditos | Plano |
-|---|---|---|---|---|
-| 🟢 Eco | Flux schnell | ~R$ 0,02 | 2 | free |
-| 🔵 **Pro** | Flux Kontext Pro | ~R$ 0,22 | 5 | pro (atual) |
-| 🟣 Ultra | Flux 1.1 Pro Ultra | ~R$ 0,33 | 7 | team |
+| Tier | Modelo | Qualidade | Custo/img | Créditos | Plano |
+|---|---|---|---|---|---|
+| 🔵 **Pro** | GPT Image (medium) | ótima | ~R$ 0,40 | 8 | pro (atual) |
+| 🟣 Ultra | GPT Image (high) | máxima | ~R$ 0,80 | 16 | team |
 
-> Hoje o backend usa o provider padrão (Flux text-to-image) independente do tier — o tier define o
-> **preço**. Seleção de modelo por tier entra na Fase 2 (backend tier-aware + deploy).
+> Créditos respeitam o piso de margem (`creditFloor`). GPT Image é mais caro que Flux, por isso
+> custa mais créditos que os outros modos de geração — é o preço da qualidade de texto.
 
 ## Ângulo comercial
-- **Público que paga e usa toda semana:** criador de conteúdo.
-- **Pitch:** "thumbnail nível agência em 10s, com texto nítido de verdade".
-- Margem confortável: 5 créditos (~R$ 0,50) sobre custo ~R$ 0,22.
+- **Público:** criador de conteúdo — paga e usa toda semana.
+- **Pitch:** "thumbnail com texto nível agência, desenhado pela IA, em segundos".
+- O texto-na-imagem é o diferencial: nada de tipografia "colada".
