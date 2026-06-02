@@ -30,11 +30,10 @@
 - "Meus projetos" — abrir, duplicar, continuar de onde parou.
 - *Por quê:* hoje o trabalho do usuário some ao recarregar. É base pra retenção.
 
-### 2. Cards de features na Dashboard → abre o Studio (alta)
-- Dashboard mostra um card por feature (descoberta de "novas features").
-- Clicar no card → abre o **modal do Studio já na categoria** (FlowSelector) → escolhe o estilo pré-moldado → carrega os nodes.
-- Reaproveita o `FlowSelector` (categorias) + `flowStyles.ts` (subtipos).
-- *Por quê:* é o funil de descoberta — guia o cliente pro produto pronto.
+### 2. ✅ Cards de features na Dashboard → abre o Studio (FEITO)
+- Dashboard mostra um card por fluxo (PRESET_FLOWS). Tocar → `/app/create/studio?flow=<id>`.
+- Fluxos COM estilos (thumbnail) abrem o sub-seletor de estilos; sem estilos carregam direto.
+- Falta (polimento futuro): badge "Novo", ordenar/curar quais aparecem, thumbnails reais nos cards.
 
 ### 3. Mais estilos pré-moldados (contínuo)
 - Gerar templates via prompt do Behance (ver `thumbnail.md` / `thumbnail-templates.md`).
