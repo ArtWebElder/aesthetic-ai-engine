@@ -43,19 +43,6 @@ function KPICard({ icon: Icon, label, numericValue, prefix = '', suffix = '', de
 
 const CHART_STYLE = { fontSize: 11, fill: '#8e8e96' };
 
-// Static chart data (these don't have real DB equivalents yet)
-const FEATURE_DATA = [
-  { name: 'Ecom Banner', value: 42, color: '#ff713d' },
-  { name: 'Social Post', value: 31, color: '#818cf8' },
-  { name: 'Chat AI', value: 15, color: '#34d399' },
-  { name: 'Photoshoot', value: 12, color: '#fbbf24' },
-];
-
-const DAILY_DATA = [
-  { day: 'Seg', count: 48 }, { day: 'Ter', count: 61 }, { day: 'Qua', count: 55 },
-  { day: 'Qui', count: 72 }, { day: 'Sex', count: 89 }, { day: 'Sáb', count: 34 }, { day: 'Dom', count: 20 },
-];
-
 export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);

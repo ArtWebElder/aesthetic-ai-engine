@@ -3,14 +3,16 @@ import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { adminService } from '@/services/adminService';
-import { TrendingUp, TrendingDown, Percent } from 'lucide-react';
+import { TrendingUp, Wallet, Users } from 'lucide-react';
 import { Skeleton } from '@/components/creatyng';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
 
 interface FinanceStats {
   mrr: number;
-  churnRate: number;
-  conversionRate: number;
+  revenueTotal: number;
+  conversion: number;
+  payers: number;
+  totalUsers: number;
 }
 
 const CHART_STYLE = { fontSize: 11, fill: '#8e8e96' };
@@ -33,13 +35,13 @@ const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color
 
 export default function AdminFinance() {
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<FinanceStats>({ mrr: 8400, churnRate: 3.2, conversionRate: 12.5 });
+  const [stats, setStats] = useState<FinanceStats>({ mrr: 0, revenueTotal: 0, conversion: 0, payers: 0, totalUsers: 0 });
   const [revenue, setRevenue] = useState<{ month: string; revenue: number }[]>([]);
   const [transactions, setTransactions] = useState<Array<{ user: string; type: string; amount: number; date: string }>>([]);
 
   const mrrCount = useAnimatedCounter(stats.mrr);
-  const churnCount = useAnimatedCounter(Math.round(stats.churnRate * 10));
-  const convCount = useAnimatedCounter(Math.round(stats.conversionRate * 10));
+  const revenueCount = useAnimatedCounter(stats.revenueTotal);
+  const convCount = useAnimatedCounter(Math.round(stats.conversion * 10));
 
   useEffect(() => {
     Promise.all([
@@ -47,7 +49,9 @@ export default function AdminFinance() {
       adminService.fetchRevenueByPeriod(365),
       adminService.fetchPayments(1, 10),
     ]).then(([kpis, rev, pay]) => {
-      setStats({ mrr: Math.round(kpis.mrr), churnRate: 0, conversionRate: 0 });
+      const payers = (kpis.totalPro ?? 0) + (kpis.totalTeam ?? 0);
+      const conversion = kpis.totalUsers > 0 ? (payers / kpis.totalUsers) * 100 : 0;
+      setStats({ mrr: Math.round(kpis.mrr), revenueTotal: Math.round(kpis.totalRevenue), conversion, payers, totalUsers: kpis.totalUsers });
       setRevenue(rev.map(r => ({ month: r.date, revenue: r.revenue })));
       setTransactions(pay.payments.map(p => ({
         user: p.user_name || p.user_email || p.user_id?.slice(0, 8) || '—',
@@ -77,27 +81,27 @@ export default function AdminFinance() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>MRR</span>
+            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>MRR (estimativa)</span>
             <TrendingUp style={{ width: 16, height: 16, color: '#10B981' }} />
           </div>
           <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>R$ {mrrCount.toLocaleString('pt-BR')}</span>
-          <span style={{ fontSize: 11.5, color: '#10B981', fontWeight: 600 }}>+12.5% este mês</span>
+          <span style={{ fontSize: 11.5, color: '#8e8e96', fontWeight: 500 }}>Pro + Team ativos</span>
         </div>
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Churn Rate</span>
-            <TrendingDown style={{ width: 16, height: 16, color: '#EF4444' }} />
+            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Receita Total</span>
+            <Wallet style={{ width: 16, height: 16, color: '#6366f1' }} />
           </div>
-          <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>{(churnCount / 10).toFixed(1)}%</span>
-          <span style={{ fontSize: 11.5, color: '#EF4444', fontWeight: 600 }}>+0.4% vs mês anterior</span>
+          <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>R$ {revenueCount.toLocaleString('pt-BR')}</span>
+          <span style={{ fontSize: 11.5, color: '#8e8e96', fontWeight: 500 }}>Pagamentos confirmados</span>
         </div>
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Conversão Free→Pro</span>
-            <Percent style={{ width: 16, height: 16, color: '#6366f1' }} />
+            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Conversão (pagantes)</span>
+            <Users style={{ width: 16, height: 16, color: '#ff713d' }} />
           </div>
           <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>{(convCount / 10).toFixed(1)}%</span>
-          <span style={{ fontSize: 11.5, color: '#10B981', fontWeight: 600 }}>+2.1% vs mês anterior</span>
+          <span style={{ fontSize: 11.5, color: '#8e8e96', fontWeight: 500 }}>{stats.payers} de {stats.totalUsers} usuários</span>
         </div>
       </div>
 
