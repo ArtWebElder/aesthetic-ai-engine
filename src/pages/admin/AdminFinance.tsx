@@ -18,13 +18,23 @@ interface FinanceStats {
 const CHART_STYLE = { fontSize: 11, fill: '#8e8e96' };
 
 const TX_TYPE_STYLES: Record<string, React.CSSProperties> = {
+  purchase: { background: 'rgba(99,102,241,0.08)', color: '#6366f1' },
   subscription: { background: 'rgba(16,185,129,0.08)', color: '#10B981' },
-  recharge: { background: 'rgba(99,102,241,0.08)', color: '#6366f1' },
+  subscription_renewal: { background: 'rgba(16,185,129,0.08)', color: '#10B981' },
+  admin_bonus: { background: 'rgba(245,158,11,0.10)', color: '#d97706' },
+  bonus: { background: 'rgba(245,158,11,0.10)', color: '#d97706' },
+  admin_debit: { background: 'rgba(239,68,68,0.08)', color: '#EF4444' },
+  debit: { background: 'rgba(20,20,23,0.05)', color: '#8e8e96' },
   refund: { background: 'rgba(239,68,68,0.08)', color: '#EF4444' },
 };
 const TX_TYPE_LABELS: Record<string, string> = {
+  purchase: 'Recarga',
   subscription: 'Assinatura',
-  recharge: 'Recarga',
+  subscription_renewal: 'Renovação',
+  admin_bonus: 'Bônus',
+  bonus: 'Bônus',
+  admin_debit: 'Ajuste',
+  debit: 'Consumo',
   refund: 'Reembolso',
 };
 
@@ -47,18 +57,13 @@ export default function AdminFinance() {
     Promise.all([
       adminService.fetchDashboardKPIs(),
       adminService.fetchRevenueByPeriod(365),
-      adminService.fetchPayments(1, 10),
-    ]).then(([kpis, rev, pay]) => {
+      adminService.fetchCreditLedger(12),
+    ]).then(([kpis, rev, ledger]) => {
       const payers = (kpis.totalPro ?? 0) + (kpis.totalTeam ?? 0);
       const conversion = kpis.totalUsers > 0 ? (payers / kpis.totalUsers) * 100 : 0;
       setStats({ mrr: Math.round(kpis.mrr), revenueTotal: Math.round(kpis.totalRevenue), conversion, payers, totalUsers: kpis.totalUsers });
       setRevenue(rev.map(r => ({ month: r.date, revenue: r.revenue })));
-      setTransactions(pay.payments.map(p => ({
-        user: p.user_name || p.user_email || p.user_id?.slice(0, 8) || '—',
-        type: p.status === 'refunded' ? 'refund' : p.credits > 0 && p.amount_cents < 5000 ? 'recharge' : 'subscription',
-        amount: (p.amount_cents || 0) / 100 * (p.status === 'refunded' ? -1 : 1),
-        date: new Date(p.created_at).toLocaleDateString('pt-BR'),
-      })));
+      setTransactions(ledger);
       setTimeout(() => setLoading(false), 400);
     });
   }, []);
@@ -126,10 +131,10 @@ export default function AdminFinance() {
 
       {/* Transactions Table */}
       <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Últimas transações</div>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Últimos movimentos de crédito</div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>
-            {['Usuário', 'Tipo', 'Valor', 'Data'].map((h) => (
+            {['Usuário', 'Tipo', 'Créditos', 'Data'].map((h) => (
               <th key={h} style={thStyle}>{h}</th>
             ))}
           </tr></thead>
@@ -142,7 +147,7 @@ export default function AdminFinance() {
                 <td style={{ ...tdStyle, color: '#5a5a60' }}>{tx.user}</td>
                 <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, ...(TX_TYPE_STYLES[tx.type] ?? {}) }}>{TX_TYPE_LABELS[tx.type]}</span></td>
                 <td style={{ ...tdStyle, fontWeight: 600, color: tx.amount < 0 ? '#EF4444' : '#10B981' }}>
-                  {tx.amount < 0 ? `- R$ ${Math.abs(tx.amount).toFixed(2)}` : `+ R$ ${tx.amount.toFixed(2)}`}
+                  {tx.amount < 0 ? `${tx.amount} cr` : `+${tx.amount} cr`}
                 </td>
                 <td style={{ ...tdStyle, color: '#b5b5bb', fontSize: 12 }}>{tx.date}</td>
               </tr>

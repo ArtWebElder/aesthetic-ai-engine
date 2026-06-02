@@ -374,6 +374,33 @@ export const adminService = {
     return data || [];
   },
 
+  // Recent credit movements across all users — the real ledger that distinguishes
+  // recarga real (purchase) vs assinatura (subscription) vs bônus (admin_bonus) vs
+  // consumo (debit). Source of truth = credit_history.type (no amount-based guessing).
+  async fetchCreditLedger(limit = 12): Promise<Array<{ user: string; type: string; amount: number; date: string }>> {
+    const { data, error } = await supabase
+      .from('credit_history')
+      .select('user_id, amount, type, created_at')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error || !data) {
+      console.warn('[adminService] fetchCreditLedger failed:', error?.message);
+      return [];
+    }
+    const ids = [...new Set(data.map(d => d.user_id).filter(Boolean))];
+    const nameById = new Map<string, string>();
+    if (ids.length > 0) {
+      const { data: profs } = await supabase.from('profiles').select('id, name, email').in('id', ids);
+      for (const p of profs || []) nameById.set(p.id, p.name || p.email || String(p.id).slice(0, 8));
+    }
+    return data.map(d => ({
+      user: nameById.get(d.user_id) || String(d.user_id ?? '').slice(0, 8) || '—',
+      type: d.type,
+      amount: d.amount,
+      date: new Date(d.created_at).toLocaleDateString('pt-BR'),
+    }));
+  },
+
   // ── REALTIME ────────────────────────────────────────────────────────────────
 
   subscribeToChanges(callback: (payload: unknown) => void) {
