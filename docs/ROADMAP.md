@@ -42,10 +42,13 @@
 - Cada feature nova nasce já com seu submenu de estilos.
 
 ### 4. Limpeza de ruído / bugs bobos (média, contínua)
-- ✅ Admin: mocks de Churn/Conversão + badges "+%" fake removidos → KPIs reais (feito).
-- ⏳ **Recarga real vs bônus:** usar `credit_history.type` como fonte + verificar/corrigir a CHECK constraint do `credit_history` (pode rejeitar `subscription`/`admin_bonus`). *— ainda aberto.*
-- ⏳ **Node-add no canvas:** node nasce em posição fixa (ignora pan/zoom) → parece que "não adiciona". Nascer no centro da view atual. *— ainda aberto.*
-- ⏳ **Lapidar o sub-seletor de estilos** (visual) + auditoria dos 17 nodes. *— ainda aberto.*
+- ✅ Admin: mocks de Churn/Conversão + badges "+%" fake removidos → KPIs reais.
+- ✅ **Recarga real vs bônus:** AdminFinance lê `credit_history.type` (Recarga/Assinatura/Bônus/Consumo, sem chute) + CHECK constraint ampliada (migration `20260602120000` aplicada).
+- ✅ **Node-add no canvas:** node nasce no centro da view (pan/zoom).
+- ⏳ **Lapidar o sub-seletor de estilos** (visual — precisa do seu feedback). *— aberto.*
+- ⏳ **Auditoria dos 17 nodes** (o que cada um faz / pass-through / funciona). *— aberto.*
+
+> Nota: a migration de superadmin RLS (`20260403120000`) segue "marcada como aplicada, não rodada" (via `migration repair`) — decisão separada de segurança, não rodou no prod.
 
 > Híbrido do Thumbnail e Tiers premium/providers → ver seção "🅿️ Parado" no topo.
 
