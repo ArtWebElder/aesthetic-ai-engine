@@ -34,6 +34,7 @@ import { StudioChat } from './studio/StudioChat';
 import { StudioNodePanel } from './studio/StudioNodePanel';
 import { StudioProperties } from './studio/StudioProperties';
 import { FlowSelector } from './studio/FlowSelector';
+import { FLOW_STYLES } from './studio/flowStyles';
 import { useI18n } from '@/i18n';
 import { useCreditStore } from '@/stores/useCreditStore';
 import { calculateCost } from '@/lib/creditCosts';
@@ -431,11 +432,23 @@ export function StudioPage() {
     }));
   }, [pushSnapshot]);
 
-  const loadFlow = useCallback((flowId: string) => {
+  const loadFlow = useCallback((flowId: string, styleId?: string) => {
     const flow = PRESET_FLOWS[flowId];
     if (!flow) return;
     pushSnapshot();
-    setNodes(JSON.parse(JSON.stringify(flow.nodes)));
+    const nextNodes = JSON.parse(JSON.stringify(flow.nodes)) as StudioNodeType[];
+    // Apply a pre-molded style: merge its fields into the flow's text_input(fields) node.
+    if (styleId) {
+      const tpl = FLOW_STYLES[flowId]?.find(s => s.id === styleId);
+      if (tpl) {
+        const fieldsNode = nextNodes.find(n => n.data && (n.data as Record<string, unknown>).fields);
+        if (fieldsNode) {
+          const current = (fieldsNode.data.fields || {}) as Record<string, string>;
+          fieldsNode.data = { ...fieldsNode.data, fields: { ...current, ...tpl.fields } };
+        }
+      }
+    }
+    setNodes(nextNodes);
     setConnections(JSON.parse(JSON.stringify(flow.connections)));
     setExecStates({});
     setNodeOutputs({});
@@ -638,7 +651,7 @@ export function StudioPage() {
       {/* Flow selector modal */}
       {showFlowSelector && (
         <FlowSelector
-          onSelectFlow={(flowId) => loadFlow(flowId)}
+          onSelectFlow={(flowId, styleId) => loadFlow(flowId, styleId)}
           onEmptyFlow={() => {
             pushSnapshot();
             setNodes([]);
