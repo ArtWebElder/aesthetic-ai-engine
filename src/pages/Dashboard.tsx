@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Copy, Sparkles, BookOpen, Zap, ChevronLeft, ChevronRight,
+  Copy, Sparkles, ChevronLeft, ChevronRight,
   FolderOpen, Plus, Image,
+  Scissors, SlidersHorizontal, MonitorPlay, Quote, UserRound, Package, Palette, LayoutTemplate,
 } from 'lucide-react';
 import { EmptyState } from '@/components/creatyng';
 import { listProjects } from '@/features/projects/store';
@@ -10,40 +11,13 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import type { Project } from '@/types/spec';
 import { useEffect } from 'react';
+import { PRESET_FLOWS, type PresetFlow } from '@/app/create/studio/types';
+import { FLOW_STYLES } from '@/app/create/studio/flowStyles';
 
-/* ── Feature cards ────────────────────────────────────── */
-const FEATURES = [
-  {
-    id: 'clone_criativo',
-    labelKey: 'dashboard.feature.clone_criativo',
-    descKey: 'dashboard.feature.clone_criativo_desc',
-    gradient: 'linear-gradient(135deg, #ff713d, #e11d48)',
-    Icon: Copy,
-    badgeLabel: 'Popular',
-    badgeBg: '#ff713d',
-    active: true,
-  },
-  {
-    id: 'editorial',
-    labelKey: 'dashboard.feature.editorial',
-    descKey: 'dashboard.feature.editorial_desc',
-    gradient: 'linear-gradient(135deg, #475569, #334155)',
-    Icon: BookOpen,
-    badgeLabel: 'Em breve',
-    badgeBg: null,
-    active: false,
-  },
-  {
-    id: 'neon',
-    labelKey: 'dashboard.feature.neon',
-    descKey: 'dashboard.feature.neon_desc',
-    gradient: 'linear-gradient(135deg, #a855f7, #06b6d4)',
-    Icon: Zap,
-    badgeLabel: 'Em breve',
-    badgeBg: null,
-    active: false,
-  },
-];
+// Lucide icon names used by PRESET_FLOWS → components
+const FLOW_ICONS: Record<string, React.ElementType> = {
+  Scissors, SlidersHorizontal, MonitorPlay, Quote, UserRound, Package, Copy, Palette, LayoutTemplate, Sparkles,
+};
 
 /* ── Discover mosaic data ─────────────────────────────── */
 const DISCOVER = [
@@ -122,23 +96,27 @@ function SectionHeader({
   );
 }
 
-/* ── Feature card ────────────────────────────────────── */
-function FeatureCard({ f, onNavigate }: { f: typeof FEATURES[0]; onNavigate: () => void }) {
-  const { t } = useI18n();
-
+/* ── Flow card (real Studio flows) ───────────────────── */
+function FlowCard({ flow, label, desc, chip, onClick }: {
+  flow: PresetFlow;
+  label: string;
+  desc: string;
+  chip: string;
+  onClick: () => void;
+}) {
+  const Icon = FLOW_ICONS[flow.icon] || Sparkles;
   return (
     <div
       className="relative shrink-0 overflow-hidden transition-transform duration-200"
       style={{
         width: 210,
         borderRadius: 12,
-        background: f.gradient,
-        opacity: f.active ? 1 : 0.55,
-        cursor: f.active ? 'pointer' : 'default',
+        background: `linear-gradient(135deg, ${flow.color} 0%, rgba(20,20,23,0.55) 135%)`,
+        cursor: 'pointer',
       }}
-      onMouseEnter={(e) => f.active && (e.currentTarget.style.transform = 'translateY(-2px)')}
+      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
       onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-      onClick={() => f.active && onNavigate()}
+      onClick={onClick}
     >
       <div className="relative z-10 p-[14px] flex flex-col" style={{ minHeight: 170 }}>
         <div className="flex items-start justify-between">
@@ -146,29 +124,25 @@ function FeatureCard({ f, onNavigate }: { f: typeof FEATURES[0]; onNavigate: () 
             className="flex items-center justify-center"
             style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.2)' }}
           >
-            <f.Icon style={{ width: 18, height: 18, color: '#ffffff' }} />
+            <Icon style={{ width: 18, height: 18, color: '#ffffff' }} />
           </div>
           <span
             className="text-white"
             style={{
-              fontSize: 10.5,
-              fontWeight: 600,
-              padding: '3px 8px',
-              borderRadius: 20,
-              background: f.badgeBg || 'rgba(255,255,255,0.15)',
-              backdropFilter: f.badgeBg ? 'none' : 'blur(6px)',
-              border: f.badgeBg ? 'none' : '1px solid rgba(255,255,255,0.12)',
+              fontSize: 10.5, fontWeight: 600, padding: '3px 8px', borderRadius: 20,
+              background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)',
+              border: '1px solid rgba(255,255,255,0.12)',
             }}
           >
-            {t(('dashboard.badge.' + (f.badgeLabel === 'Popular' ? 'popular' : f.badgeLabel === 'Novo' ? 'new' : 'coming')) as string) || f.badgeLabel}
+            {chip}
           </span>
         </div>
         <div className="mt-auto">
           <p style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', marginBottom: 4 }} className="line-clamp-1">
-            {t(f.labelKey)}
+            {label}
           </p>
           <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }} className="line-clamp-2">
-            {t(f.descKey)}
+            {desc}
           </p>
         </div>
       </div>
@@ -263,7 +237,7 @@ function DiscoverItem({ gradient, height }: { gradient: string; height: number }
 /* ── Dashboard ───────────────────────────────────────── */
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { user } = useAuth();
 
   const [projects, setProjects] = useState<Project[]>(() => listProjects());
@@ -298,9 +272,24 @@ const Dashboard = () => {
           scrollRef={featureScrollRef}
         />
         <div ref={featureScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
-          {FEATURES.map((f) => (
-            <FeatureCard key={f.id} f={f} onNavigate={() => navigate('/app/create')} />
-          ))}
+          {Object.entries(PRESET_FLOWS).map(([id, flow]) => {
+            const styleCount = FLOW_STYLES[id]?.length ?? 0;
+            const chip = styleCount > 0
+              ? `${styleCount} ${t('studio.flow_selector.styles_chip')}`
+              : `${flow.credits} cr`;
+            const label = lang === 'en' ? flow.nameEn : lang === 'es' ? flow.nameEs : flow.name;
+            const desc = lang === 'en' ? flow.descriptionEn : lang === 'es' ? flow.descriptionEs : flow.description;
+            return (
+              <FlowCard
+                key={id}
+                flow={flow}
+                label={label}
+                desc={desc}
+                chip={chip}
+                onClick={() => navigate(`/app/create/studio?flow=${id}`)}
+              />
+            );
+          })}
         </div>
       </section>
 

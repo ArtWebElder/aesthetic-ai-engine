@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Sparkles, Play, Download } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   StudioNode as StudioNodeType,
@@ -124,7 +124,17 @@ export function StudioPage() {
   // UI state
   const [openPanel, setOpenPanel] = useState<PanelTab | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [showFlowSelector, setShowFlowSelector] = useState(true);
+  // Optional ?flow=<id> from a dashboard card. Flows WITH styles open the selector
+  // on their styles; flows WITHOUT styles load directly (see effect below).
+  const [searchParams] = useSearchParams();
+  const flowParam = searchParams.get('flow');
+  const flowParamHasStyles = !!flowParam && !!PRESET_FLOWS[flowParam] && (FLOW_STYLES[flowParam]?.length ?? 0) > 0;
+  const [initialStyleFlow] = useState<string | null>(() => (flowParamHasStyles ? flowParam : null));
+  const [showFlowSelector, setShowFlowSelector] = useState(() => {
+    // Don't flash the full selector for a no-styles flow param — it loads directly.
+    if (flowParam && PRESET_FLOWS[flowParam] && (FLOW_STYLES[flowParam]?.length ?? 0) === 0) return false;
+    return true;
+  });
 
   // ── History stack (undo/redo) — past/future model ─────────────────────
   const MAX_HISTORY = 30;
@@ -461,6 +471,17 @@ export function StudioPage() {
     setShowFlowSelector(false);
   }, [pushSnapshot]);
 
+  // Dashboard card with ?flow=<no-styles flow> → load it directly (styles flows open
+  // the selector on their styles via initialStyleFlow instead).
+  const didInitFlowParam = useRef(false);
+  useEffect(() => {
+    if (didInitFlowParam.current) return;
+    if (flowParam && PRESET_FLOWS[flowParam] && (FLOW_STYLES[flowParam]?.length ?? 0) === 0) {
+      didInitFlowParam.current = true;
+      loadFlow(flowParam);
+    }
+  }, [flowParam, loadFlow]);
+
   const handleNewFlow = useCallback(() => {
     setShowFlowSelector(true);
   }, []);
@@ -655,6 +676,7 @@ export function StudioPage() {
       {/* Flow selector modal */}
       {showFlowSelector && (
         <FlowSelector
+          initialStyleFlow={initialStyleFlow ?? undefined}
           onSelectFlow={(flowId, styleId) => loadFlow(flowId, styleId)}
           onEmptyFlow={() => {
             pushSnapshot();

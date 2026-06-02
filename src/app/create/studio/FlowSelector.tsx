@@ -24,6 +24,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
 interface FlowSelectorProps {
   onSelectFlow: (flowId: string, styleId?: string) => void;
   onEmptyFlow: () => void;
+  initialStyleFlow?: string; // open directly on this flow's styles (e.g. from a dashboard card)
 }
 
 const cardBase: React.CSSProperties = {
@@ -41,10 +42,10 @@ const cardBase: React.CSSProperties = {
   fontFamily: 'inherit',
 };
 
-export function FlowSelector({ onSelectFlow, onEmptyFlow }: FlowSelectorProps) {
+export function FlowSelector({ onSelectFlow, onEmptyFlow, initialStyleFlow }: FlowSelectorProps) {
   const { t, lang } = useI18n();
   // When set, the modal shows the pre-molded STYLES for that flow instead of the flows list.
-  const [styleFlow, setStyleFlow] = useState<string | null>(null);
+  const [styleFlow, setStyleFlow] = useState<string | null>(initialStyleFlow ?? null);
 
   const getName = (flow: PresetFlow) => {
     if (lang === 'en') return flow.nameEn;
