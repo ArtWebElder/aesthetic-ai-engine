@@ -93,26 +93,30 @@ async function processPaymentConfirmed(
     console.error("[asaas-webhook] credit_history insert failed:", historyErr.message);
   }
 
-  // 3. Add credits to profile
+  // 3. Add credits to profile.
+  // One-time Pix top-ups are BONUS credits — write bonus_credits (the spendable
+  // balance is plan_credits + bonus_credits) and keep legacy `credits` in sync.
   const { data: profile } = await adminClient
     .from("profiles")
-    .select("credits, email")
+    .select("credits, bonus_credits, email")
     .eq("id", userId)
     .single();
 
   const currentCredits = profile?.credits ?? 0;
+  const currentBonus = profile?.bonus_credits ?? 0;
+  const newBonus = currentBonus + credits;
   const newCredits = currentCredits + credits;
 
   const { error: creditErr } = await adminClient
     .from("profiles")
-    .update({ credits: newCredits })
+    .update({ bonus_credits: newBonus, credits: newCredits })
     .eq("id", userId);
 
   if (creditErr) {
     console.error("[asaas-webhook] credits update failed:", creditErr.message);
   }
 
-  console.log(`[asaas-webhook] credits updated — ${currentCredits} → ${newCredits}`);
+  console.log(`[asaas-webhook] credits updated — bonus ${currentBonus} → ${newBonus}, legacy ${currentCredits} → ${newCredits}`);
 
   // 4. Send confirmation email
   if (profile?.email) {
