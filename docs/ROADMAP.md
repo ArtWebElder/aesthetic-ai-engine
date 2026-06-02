@@ -9,8 +9,18 @@
 - 6 modos no Studio: Remover Fundo, Re-color, Thumbnail (OpenAI), Card de Citação, Headshot, Produto em Cena.
 - Fundação de tiers (`featureTiers.ts`, Eco/Pro/Ultra + piso de margem).
 - Thumbnail OpenAI (texto desenhado na imagem) + provider `openai-image` roteado por `module`.
-- **Fase 0 — Sub-seletor de Estilos** do Thumbnail (categorias → estilos pré-moldados; 7 templates seed em `flowStyles.ts`).
+- **Fase 0 — Sub-seletor de Estilos** do Thumbnail (categorias → estilos pré-moldados; 7 templates seed em `flowStyles.ts`). *Funciona; falta lapidar visual.*
 - Fix Pix avulso (creditava só `credits` legado → agora `bonus_credits`).
+- Admin: removidos mocks/fakes (Churn sempre-0, badges "+%" inventados, arrays mortos) → KPIs reais (MRR, Receita Total, Conversão de pagantes).
+
+## ⏳ Falta VOCÊ (curto)
+- Creditar sua conta: Admin → Ajustar Créditos → **Adicionar 90** (R$9,90 = 100 cr; você já pôs 10).
+- Testar/validar ao vivo: os 6 modos + sub-seletor de estilos.
+- (Opcional) Reativar auto-deploy Git na Vercel (GitHub App). Hoje deploy é por CLI e funciona.
+
+## 🅿️ Parado (decisão consciente)
+- **Híbrido do Thumbnail** (compositor multi-camada + multi-upload de logos/prints + multi-texto): pesado e alto-toque → só com ambiente **local + Chrome** ou decisão de investir dias.
+- **Tiers premium / providers** (Upscale, Bria, InstantID, OpenAI fallback p/ outras features): quando o mercado pedir.
 
 ## 🔜 Backlog priorizado
 
@@ -32,21 +42,12 @@
 - Cada feature nova nasce já com seu submenu de estilos.
 
 ### 4. Limpeza de ruído / bugs bobos (média, contínua)
-- **Admin:** remover mocks/fakes — Churn e Conversão sempre 0 com badges hardcoded (`AdminFinance`); "tipo" de transação por chute de valor.
-- **Recarga real vs bônus:** usar `credit_history.type` como fonte; verificar/corrigir a CHECK constraint do `credit_history` (pode rejeitar `subscription`/`admin_bonus`).
-- **Node-add no canvas:** node nasce em posição fixa (ignora pan/zoom) → parece que "não adiciona". Nascer no centro da view atual.
-- Auditoria dos 17 nodes (o que cada um faz / pass-through / funciona).
-- *Origem:* mesma família dos bugs já corrigidos (Pix, créditos não creditados).
+- ✅ Admin: mocks de Churn/Conversão + badges "+%" fake removidos → KPIs reais (feito).
+- ⏳ **Recarga real vs bônus:** usar `credit_history.type` como fonte + verificar/corrigir a CHECK constraint do `credit_history` (pode rejeitar `subscription`/`admin_bonus`). *— ainda aberto.*
+- ⏳ **Node-add no canvas:** node nasce em posição fixa (ignora pan/zoom) → parece que "não adiciona". Nascer no centro da view atual. *— ainda aberto.*
+- ⏳ **Lapidar o sub-seletor de estilos** (visual) + auditoria dos 17 nodes. *— ainda aberto.*
 
-### 5. Híbrido do Thumbnail (flagship — parado por enquanto)
-- Compositor multi-camada + multi-upload (logos/prints) + multi-texto + posicionamento.
-- Subject perfeito + assets reais fiéis (composição Canvas) sobre fundo gerado por IA.
-- *Status:* pesado e alto-toque; só atacar com ambiente **local + Chrome** (iteração visual rápida) ou decisão explícita de investir dias.
-
-### 6. Tiers premium / providers (quando o mercado pedir)
-- Backend tier-aware (eco→flux-schnell, pro→kontext, ultra→1.1-pro-ultra).
-- Upscale (Replicate, Tier C), Bria RMBG-2.0 (remover fundo Pro), InstantID (headshot Ultra).
-- OpenAI como fallback/primário em features além do thumbnail.
+> Híbrido do Thumbnail e Tiers premium/providers → ver seção "🅿️ Parado" no topo.
 
 ## Notas de processo
 - Deploy: frontend via `vercel --prod` (CLI); edge functions via `supabase functions deploy <nome>`. Git auto-deploy NÃO está ligado (webhook GitHub→Vercel inativo).
