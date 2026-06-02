@@ -132,4 +132,5 @@ export const FLOW_TIER_MAP: Record<string, { feature: string; tier: Tier }> = {
   // today every generation runs on Flux (~R$0.22), so 'eco' pricing would lose money.
   'quote-card': { feature: 'generate', tier: 'pro' },
   'headshot': { feature: 'headshot', tier: 'pro' },
+  'product-scene': { feature: 'generate', tier: 'pro' },
 };
