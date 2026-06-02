@@ -396,19 +396,23 @@ export function StudioPage() {
   const handleAddNode = useCallback((typeId: NodeTypeId) => {
     const def = NODE_TYPE_DEFS[typeId];
     pushSnapshot();
+    // Spawn at the CENTER of the current viewport (accounting for pan/zoom) so the
+    // node is always visible. A fixed position lands off-screen once you pan/zoom —
+    // which made it look like clicking a node "did nothing".
+    const scale = zoom / 100;
+    const cx = (window.innerWidth / 2 - pan.x) / scale - def.defaultWidth / 2;
+    const cy = (window.innerHeight / 2 - pan.y) / scale - def.defaultHeight / 2;
     const newNode: StudioNodeType = {
       id: `n${Date.now()}`,
       type: typeId,
-      x: 200 + Math.random() * 300,
-      y: 100 + Math.random() * 250,
+      x: cx + (Math.random() * 40 - 20),
+      y: cy + (Math.random() * 40 - 20),
       data: {},
     };
     setNodes(prev => [...prev, newNode]);
     setOpenPanel(null);
     setSelectedNodeId(newNode.id);
-    // Suppress unused variable warning
-    void def;
-  }, [pushSnapshot]);
+  }, [pushSnapshot, pan, zoom]);
 
   // Auto layout
   const handleAutoLayout = useCallback(() => {
