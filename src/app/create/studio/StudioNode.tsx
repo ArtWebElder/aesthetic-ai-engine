@@ -686,6 +686,8 @@ export function StudioNode({
   onOutputPortDown, onInputPortUp, onTouchStart, onOutputPortTouchStart,
 }: StudioNodeProps) {
   const def = NODE_TYPE_DEFS[node.type];
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
+  const portSize = isMobile ? 30 : 13; // bigger touch target on mobile
   const IconComp = ICON_MAP[def.icon] ?? Building2;
   const isRunning = execState === 'running';
   const isDone = execState === 'done';
@@ -730,8 +732,8 @@ export function StudioNode({
         onMouseDown={(e) => e.stopPropagation()}
         onMouseUp={() => onInputPortUp(node.id)}
         style={{
-          position: 'absolute', left: -7, top: '50%', transform: 'translateY(-50%)',
-          width: 13, height: 13, borderRadius: '50%',
+          position: 'absolute', left: -(portSize / 2), top: '50%', transform: 'translateY(-50%)',
+          width: portSize, height: portSize, borderRadius: '50%',
           border: `2px solid ${def.color}`, background: 'hsl(var(--card))', zIndex: 30,
           cursor: isConnecting ? 'crosshair' : 'default',
           transition: 'transform 0.1s, box-shadow 0.1s',
@@ -743,10 +745,11 @@ export function StudioNode({
         onMouseDown={(e) => { e.stopPropagation(); onOutputPortDown(e, node.id); }}
         onTouchStart={(e) => { e.stopPropagation(); onOutputPortTouchStart(e, node.id); }}
         style={{
-          position: 'absolute', right: -7, top: '50%', transform: 'translateY(-50%)',
-          width: 13, height: 13, borderRadius: '50%',
+          position: 'absolute', right: -(portSize / 2), top: '50%', transform: 'translateY(-50%)',
+          width: portSize, height: portSize, borderRadius: '50%',
           background: def.color, zIndex: 30,
-          cursor: 'crosshair',
+          cursor: 'crosshair', touchAction: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
           transition: 'transform 0.1s',
         }}
         onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-50%) scale(1.3)'; }}

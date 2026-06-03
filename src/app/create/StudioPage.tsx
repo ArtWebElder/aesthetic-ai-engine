@@ -576,7 +576,10 @@ export function StudioPage() {
 
   return (
     <div style={{
-      position: 'absolute',
+      // Mobile: fixed to the visual viewport so the keyboard / body scroll can't
+      // shift the studio (header off-screen, gap under the footer). Desktop stays
+      // absolute within the shell main (right of the sidebar).
+      position: isMobile ? 'fixed' : 'absolute',
       top: 0, left: 0, right: 0,
       // 100dvh = the VISIBLE viewport on mobile (excludes the browser toolbar area).
       // Using inset:0 inherited 100vh from the shell, pushing the footer bar below
