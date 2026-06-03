@@ -252,7 +252,7 @@ const Login = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden flex" style={{ background: '#f5f5f3' }}>
+    <div className="h-[100dvh] overflow-hidden flex" style={{ background: '#f5f5f3' }}>
       {/* ── Left panel (dark carousel) — 70% ────────────── */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden" style={{ background: '#141417' }}>
         {/* Top fade */}
@@ -292,8 +292,8 @@ const Login = () => {
 
       {/* ── Right panel (login form) — 30% ───────────────── */}
       <div
-        className="flex flex-col items-center justify-center relative z-10 overflow-y-auto"
-        style={{ minWidth: 360, width: '30%', padding: '48px 40px', background: '#f5f5f3', height: '100%', flexShrink: 0 }}
+        className="flex flex-col items-center justify-center relative z-10 overflow-y-auto w-full lg:w-[30%] lg:min-w-[360px] lg:shrink-0 px-6 py-10 lg:px-10 lg:py-12"
+        style={{ background: '#f5f5f3', height: '100%' }}
       >
         {/* Logo */}
         <div className="mb-8 self-start">
