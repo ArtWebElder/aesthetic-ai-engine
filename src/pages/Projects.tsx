@@ -71,6 +71,13 @@ const Projects = () => {
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   useEffect(() => { setReady(true); }, []);
   useEffect(() => { setProjects(listProjects()); }, []);
@@ -107,7 +114,7 @@ const Projects = () => {
   return (
     <div style={{
       fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", minHeight: '100%', color: 'hsl(var(--foreground))',
-      padding: '24px 32px 48px',
+      padding: isMobile ? '18px 16px 40px' : '24px 32px 48px',
     }}>
       <style>{`
         @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -142,11 +149,12 @@ const Projects = () => {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 10,
         animation: ready ? 'fdUp 450ms 40ms ease both' : 'none', flexWrap: 'wrap',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           {/* Search */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 7, padding: '7px 13px',
-            background: 'hsl(var(--card))', borderRadius: 8, border: '1px solid hsl(var(--border))', width: 220,
+            background: 'hsl(var(--card))', borderRadius: 8, border: '1px solid hsl(var(--border))',
+            width: isMobile ? '100%' : 220,
           }}>
             <Search size={14} color="hsl(var(--muted-foreground))" />
             <input
@@ -201,7 +209,7 @@ const Projects = () => {
 
       {/* GRID VIEW */}
       {view === 'grid' && filtered.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: isMobile ? 10 : 14 }}>
           {filtered.map((p, i) => {
             const hue = PROJECT_HUES[i % PROJECT_HUES.length];
             const color = PROJECT_COLORS[i % PROJECT_COLORS.length];
@@ -286,8 +294,8 @@ const Projects = () => {
       {view === 'list' && filtered.length > 0 && (
         <div style={{ background: 'hsl(var(--card))', borderRadius: 14, border: '1px solid hsl(var(--border))', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           {/* Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '10px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
-            {['Projeto', 'Template', 'Versões', 'Data', ''].map((h, i) => (
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 80px' : '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '10px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
+            {(isMobile ? ['Projeto', ''] : ['Projeto', 'Template', 'Versões', 'Data', '']).map((h, i) => (
               <span key={i} style={{ fontSize: 10.5, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
             ))}
           </div>
@@ -295,7 +303,7 @@ const Projects = () => {
             const color = PROJECT_COLORS[i % PROJECT_COLORS.length];
             return (
               <div key={p.id} style={{
-                display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '11px 16px',
+                display: 'grid', gridTemplateColumns: isMobile ? '1fr 80px' : '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '11px 16px',
                 borderBottom: i < filtered.length - 1 ? '1px solid hsl(var(--border))' : 'none',
                 cursor: 'pointer', transition: 'background 100ms', alignItems: 'center',
                 animation: ready ? `fdUp 300ms ${i * 30}ms ease both` : 'none',
@@ -314,9 +322,13 @@ const Projects = () => {
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
                 </div>
-                <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{(p.spec as any)?.module?.replace('_', ' ') || 'project'}</span>
-                <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>1</span>
-                <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{new Date(p.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                {!isMobile && (
+                  <>
+                    <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{(p.spec as any)?.module?.replace('_', ' ') || 'project'}</span>
+                    <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>1</span>
+                    <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{new Date(p.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  </>
+                )}
                 <div style={{ display: 'flex', gap: 3, justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
                   {[
                     { Icon: Edit2, danger: false },

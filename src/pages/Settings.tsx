@@ -77,6 +77,13 @@ const Settings = () => {
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [ready, setReady] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
   const [name, setName] = useState(user?.user_metadata?.full_name || 'Rodrigo Nutra');
   const [phone, setPhone] = useState('+55 63 9 9999-0000');
   const [emailNotif, setEmailNotif] = useState(true);
@@ -503,7 +510,10 @@ const Settings = () => {
           {apiKeys.map(k => (
             <div key={k.id} style={{
               padding: '14px 18px', borderRadius: 10, border: '1px solid hsl(var(--border))',
-              background: 'hsl(var(--card))', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              background: 'hsl(var(--card))', display: 'flex',
+              flexDirection: isMobile ? 'column' : 'row',
+              alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between',
+              gap: isMobile ? 12 : 0,
               boxShadow: '0 1px 3px hsl(var(--foreground) / 0.04)',
             }}>
               <div>
@@ -559,7 +569,8 @@ const Settings = () => {
   return (
     <div style={{
       fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
-      minHeight: '100vh', color: 'hsl(var(--foreground))', display: 'flex', alignItems: 'stretch',
+      minHeight: '100%', color: 'hsl(var(--foreground))', display: 'flex',
+      flexDirection: isMobile ? 'column' : 'row', alignItems: 'stretch',
     }}>
       <style>{`
         @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -570,17 +581,21 @@ const Settings = () => {
 
       {/* Settings sub-sidebar */}
       <div style={{
-        width: 220, minWidth: 220, borderRight: '1px solid hsl(var(--border))',
-        padding: '28px 16px', alignSelf: 'stretch',
+        width: isMobile ? '100%' : 220, minWidth: isMobile ? 'auto' : 220,
+        borderRight: isMobile ? 'none' : '1px solid hsl(var(--border))',
+        borderBottom: isMobile ? '1px solid hsl(var(--border))' : 'none',
+        padding: isMobile ? '14px 12px' : '28px 16px', alignSelf: 'stretch',
         background: 'hsl(var(--card) / 0.7)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 20, padding: '0 8px' }}>Configurações</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: isMobile ? 12 : 20, padding: '0 8px' }}>Configurações</h2>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 6 : 0, overflowX: isMobile ? 'auto' : 'visible' }}>
         {TABS.map(tab => {
           const active = activeTab === tab.id;
           return (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-              display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-              padding: '9px 12px', borderRadius: 8, marginBottom: 2, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 10, width: isMobile ? 'auto' : '100%',
+              flexShrink: 0, whiteSpace: 'nowrap',
+              padding: '9px 12px', borderRadius: 8, marginBottom: isMobile ? 0 : 2, cursor: 'pointer',
               background: active ? 'hsl(var(--primary) / 0.1)' : 'transparent',
               border: active ? '1px solid hsl(var(--primary) / 0.2)' : '1px solid transparent',
               color: active ? '#ff713d' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
@@ -593,10 +608,11 @@ const Settings = () => {
             </button>
           );
         })}
+        </div>
       </div>
 
       {/* Tab content */}
-      <div style={{ flex: 1, padding: '28px 36px 48px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: isMobile ? '18px 16px 40px' : '28px 36px 48px', overflowY: 'auto' }}>
         {renderTab()}
       </div>
 
