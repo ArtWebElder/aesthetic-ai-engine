@@ -398,7 +398,8 @@ const RechargeCreditsModal = ({
         onClick={e => e.stopPropagation()}
         style={{
           background: '#ffffff', borderRadius: 20, width: 460, maxWidth: '100%',
-          boxShadow: '0 24px 80px rgba(0,0,0,0.18)', overflow: 'hidden',
+          boxShadow: '0 24px 80px rgba(0,0,0,0.18)', overflowX: 'hidden', overflowY: 'auto',
+          maxHeight: 'calc(100dvh - 32px)',
           animation: 'rcmMdIn 250ms cubic-bezier(.4,0,.2,1) both',
           fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
         }}

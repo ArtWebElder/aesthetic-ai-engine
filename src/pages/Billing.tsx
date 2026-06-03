@@ -78,6 +78,13 @@ const Billing = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const { user } = useAuth();
   const { t } = useI18n();
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
   const credits = useCreditStore((s) => s.credits);
   const planCredits = useCreditStore((s) => s.planCredits);
   const bonusCredits = useCreditStore((s) => s.bonusCredits);
@@ -255,7 +262,7 @@ const Billing = () => {
   return (
     <div style={{
       fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
-      minHeight: '100%', color: 'hsl(var(--foreground))', padding: '28px 36px 48px',
+      minHeight: '100%', color: 'hsl(var(--foreground))', padding: isMobile ? '18px 16px 40px' : '28px 36px 48px',
     }}>
       <style>{`
         @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -264,16 +271,18 @@ const Billing = () => {
 
       {/* Title + Tabs */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24,
+        display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between',
+        flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 14 : 0, marginBottom: 24,
         animation: ready ? 'fdUp 450ms ease both' : 'none',
       }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 3 }}>{t('billing.page_title')}</h1>
+          <h1 style={{ fontSize: isMobile ? 22 : 24, fontWeight: 700, marginBottom: 3 }}>{t('billing.page_title')}</h1>
           <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>{t('billing.page_subtitle')}</p>
         </div>
         <div style={{ display: 'flex', gap: 2, background: 'hsl(var(--muted))', borderRadius: 8, padding: 3 }}>
           {[{ id: 'plans' as const, label: t('billing.tab.plans') }, { id: 'usage' as const, label: t('billing.tab.usage') }].map(tb => (
             <button key={tb.id} onClick={() => setTab(tb.id)} style={{
+              flex: isMobile ? 1 : 'none',
               padding: '6px 16px', borderRadius: 6, border: 'none', fontFamily: 'inherit',
               background: tab === tb.id ? 'hsl(var(--card))' : 'transparent',
               color: tab === tb.id ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
@@ -291,12 +300,13 @@ const Billing = () => {
           {/* Usage summary card */}
           <div style={{
             background: 'hsl(var(--card))', borderRadius: 14, border: '1px solid hsl(var(--border))',
-            padding: '20px 24px', marginBottom: 28,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: isMobile ? '18px 18px' : '20px 24px', marginBottom: 28,
+            display: 'flex', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between',
+            flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 18 : 0,
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             animation: ready ? 'fdUp 450ms 60ms ease both' : 'none',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: isMobile ? 'stretch' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 20 }}>
               <div>
                 <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', fontWeight: 500, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('billing.summary.current_plan')}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -310,7 +320,7 @@ const Billing = () => {
                   )}
                 </div>
               </div>
-              <div style={{ width: 1, height: 40, background: 'hsl(var(--border))' }} />
+              <div style={{ width: 1, height: 40, background: 'hsl(var(--border))', display: isMobile ? 'none' : 'block' }} />
               <div>
                 <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', fontWeight: 500, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('billing.summary.credits_used')}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -319,13 +329,13 @@ const Billing = () => {
                     ({t('billing.summary.plan_label')}: {planCredits} + {t('billing.summary.bonus_label')}: {bonusCredits})
                   </span>
                 </div>
-                <div style={{ width: 180, height: 6, borderRadius: 3, background: 'hsl(var(--muted))', marginTop: 6 }}>
+                <div style={{ width: isMobile ? '100%' : 180, height: 6, borderRadius: 3, background: 'hsl(var(--muted))', marginTop: 6 }}>
                   <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, #ff713d, #FF9B70)', transition: 'width 600ms ease' }} />
                 </div>
               </div>
               {daysUntilRenewal !== null && (
                 <>
-                  <div style={{ width: 1, height: 40, background: 'hsl(var(--border))' }} />
+                  <div style={{ width: 1, height: 40, background: 'hsl(var(--border))', display: isMobile ? 'none' : 'block' }} />
                   <div>
                     <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', fontWeight: 500, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('billing.summary.renews_in')}</div>
                     <div style={{ fontSize: 20, fontWeight: 700 }}>{daysUntilRenewal} {t('billing.summary.days')}</div>
@@ -333,11 +343,12 @@ const Billing = () => {
                 </>
               )}
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: isMobile ? '100%' : 'auto' }}>
               {currentPlan !== 'free' && (
                 <button
                   onClick={() => setShowReloadModal(true)}
                   style={{
+                    flex: isMobile ? 1 : 'none', justifyContent: 'center',
                     padding: '9px 20px', borderRadius: 9, border: '1.5px solid #ff713d',
                     background: 'hsl(var(--primary) / 0.1)', color: '#ff713d', fontSize: 13, fontWeight: 600,
                     cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
@@ -351,6 +362,7 @@ const Billing = () => {
                   onClick={handleCancel}
                   disabled={cancelLoading}
                   style={{
+                    flex: isMobile ? 1 : 'none',
                     padding: '9px 16px', borderRadius: 9, border: '1px solid hsl(var(--border))',
                     background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 500,
                     cursor: cancelLoading ? 'not-allowed' : 'pointer', fontFamily: 'inherit',
@@ -412,7 +424,7 @@ const Billing = () => {
                   }}
                   style={{
                     padding: '7px 12px', borderRadius: 8, border: '1px solid hsl(var(--border))',
-                    fontSize: 13, fontFamily: 'monospace', width: 200, outline: 'none',
+                    fontSize: 13, fontFamily: 'monospace', width: isMobile ? '100%' : 200, outline: 'none',
                     background: 'hsl(var(--card))',
                   }}
                 />
@@ -422,7 +434,7 @@ const Billing = () => {
 
           {/* Plan cards */}
           <div style={{
-            display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16,
+            display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: 16,
             animation: ready ? 'fdUp 450ms 140ms ease both' : 'none',
           }}>
             {PLANS.map((p, i) => {
@@ -509,7 +521,7 @@ const Billing = () => {
       {tab === 'usage' && (
         <div style={{ animation: ready ? 'fdUp 450ms 60ms ease both' : 'none' }}>
           {/* KPI cards */}
-          <div style={{ display: 'flex', gap: 14, marginBottom: 28 }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 14, marginBottom: 28 }}>
             {[
               { label: t('billing.kpi.remaining'), value: String(currentCredits), sub: `${t('billing.summary.plan_label')}: ${planCredits} + ${t('billing.summary.bonus_label')}: ${bonusCredits}`, color: '#ff713d' },
               { label: t('billing.kpi.generations'), value: '—', sub: '', color: '#7C3AED', trend: false },
