@@ -95,7 +95,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
   return (
     <div style={isMobile ? {
       position: 'absolute',
-      left: 0, right: 0, bottom: 78, top: 'auto',
+      left: 0, right: 0, bottom: 'calc(66px + env(safe-area-inset-bottom, 0px))', top: 'auto',
       width: '100%', maxHeight: '62vh', minHeight: 220,
       zIndex: 400,
       background: 'hsl(var(--card))',
@@ -186,7 +186,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
               if (unique.length === 0) return null;
               return (
                 <div key={gi} style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'hsl(var(--muted-foreground))', letterSpacing: 0.8, padding: '6px 4px 4px' }}>
+                  <div style={{ fontSize: isMobile ? 11 : 9, fontWeight: 700, color: 'hsl(var(--muted-foreground))', letterSpacing: 0.8, padding: '6px 4px 4px' }}>
                     {t(group.labelKey)}
                   </div>
                   {unique.map(typeId => {
@@ -199,8 +199,8 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                           width: '100%',
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 8,
-                          padding: '7px 8px',
+                          gap: isMobile ? 11 : 8,
+                          padding: isMobile ? '11px 8px' : '7px 8px',
                           borderRadius: 7,
                           border: 'none',
                           background: 'transparent',
@@ -212,8 +212,8 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
                         <div style={{
-                          width: 26,
-                          height: 26,
+                          width: isMobile ? 34 : 26,
+                          height: isMobile ? 34 : 26,
                           borderRadius: 7,
                           background: `${def.color}25`,
                           border: `1px solid ${def.color}40`,
@@ -223,16 +223,16 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                           justifyContent: 'center',
                           color: def.color,
                         }}>
-                          <CategoryIcon category={def.category} size={12} />
+                          <CategoryIcon category={def.category} size={isMobile ? 17 : 12} />
                         </div>
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{def.label}</div>
+                          <div style={{ fontSize: isMobile ? 15 : 11, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{def.label}</div>
                           {def.aiProvider && (
-                            <div style={{ fontSize: 9, color: 'hsl(var(--muted-foreground))' }}>{def.aiProvider}</div>
+                            <div style={{ fontSize: isMobile ? 12 : 9, color: 'hsl(var(--muted-foreground))' }}>{def.aiProvider}</div>
                           )}
                         </div>
                         {def.creditCost && (
-                          <div style={{ marginLeft: 'auto', fontSize: 9, color: '#ff713d', fontWeight: 700 }}>
+                          <div style={{ marginLeft: 'auto', fontSize: isMobile ? 13 : 9, color: '#ff713d', fontWeight: 700 }}>
                             {def.creditCost}cr
                           </div>
                         )}

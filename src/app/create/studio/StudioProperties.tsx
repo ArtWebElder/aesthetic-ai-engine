@@ -50,7 +50,7 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
   return (
     <div style={isMobile ? {
       position: 'absolute',
-      left: 0, right: 0, bottom: 78, top: 'auto',
+      left: 0, right: 0, bottom: 'calc(66px + env(safe-area-inset-bottom, 0px))', top: 'auto',
       width: '100%', maxHeight: '58vh', minHeight: 180,
       zIndex: 400,
       background: 'hsl(var(--card))',

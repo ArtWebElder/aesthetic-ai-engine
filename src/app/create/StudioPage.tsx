@@ -23,6 +23,7 @@ import {
   executeNode,
   collectInputs,
   prePopulateInputOutputs,
+  getExecutionOrder,
   type NodeOutputs,
 } from './studio/engine';
 
@@ -474,6 +475,24 @@ export function StudioPage() {
     });
   }, []);
 
+  // Mobile: stack nodes vertically (top→bottom in execution order) instead of the
+  // desktop horizontal layout. The tree grows downward.
+  const verticalLayout = useCallback((nodeList: StudioNodeType[], conns: Connection[]): StudioNodeType[] => {
+    const order = getExecutionOrder(nodeList, conns);
+    const byId = new Map(nodeList.map(n => [n.id, n]));
+    const ordered: StudioNodeType[] = [];
+    for (const id of order) { const n = byId.get(id); if (n) ordered.push(n); }
+    for (const n of nodeList) if (!order.includes(n.id)) ordered.push(n); // safety
+    const colX = 40, gap = 40;
+    let y = 40;
+    return ordered.map(n => {
+      const def = NODE_TYPE_DEFS[n.type];
+      const placed = { ...n, x: colX, y };
+      y += (def?.defaultHeight ?? 180) + gap;
+      return placed;
+    });
+  }, []);
+
   const loadFlow = useCallback((flowId: string, styleId?: string) => {
     const flow = PRESET_FLOWS[flowId];
     if (!flow) return;
@@ -490,7 +509,9 @@ export function StudioPage() {
         }
       }
     }
-    setNodes(nextNodes);
+    // Mobile defaults to a vertical node tree; desktop keeps the preset's horizontal layout.
+    const positioned = isMobile ? verticalLayout(nextNodes, flow.connections) : nextNodes;
+    setNodes(positioned);
     setConnections(JSON.parse(JSON.stringify(flow.connections)));
     setExecStates({});
     setNodeOutputs({});
@@ -499,8 +520,8 @@ export function StudioPage() {
     setShowFlowSelector(false);
 
     // Mobile: auto fit-to-view so the whole flow is visible and nodes are separated.
-    if (isMobile) fitToView(nextNodes);
-  }, [pushSnapshot, isMobile, fitToView]);
+    if (isMobile) fitToView(positioned);
+  }, [pushSnapshot, isMobile, fitToView, verticalLayout]);
 
   // Dashboard card with ?flow=<no-styles flow> → load it directly (styles flows open
   // the selector on their styles via initialStyleFlow instead).
@@ -800,11 +821,11 @@ export function StudioPage() {
         };
         return (
         <div
-          className="safe-area-pb"
           style={{
             position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 300,
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '10px 10px',
+            paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))',
             background: 'hsl(var(--card))',
             borderTop: '1px solid hsl(var(--border))',
             boxShadow: '0 -4px 20px rgba(0,0,0,0.10)',
