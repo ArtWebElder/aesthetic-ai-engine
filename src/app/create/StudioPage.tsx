@@ -520,6 +520,18 @@ export function StudioPage() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  // The Studio is a full-screen (100dvh) app — lock body scroll so focusing an
+  // input (e.g. the support chat) doesn't scroll the shell and leave the header
+  // off-screen / a gap under the footer after the keyboard closes.
+  useEffect(() => {
+    const html = document.documentElement, body = document.body;
+    const prevHtml = html.style.overflow, prevBody = body.style.overflow;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    window.scrollTo(0, 0);
+    return () => { html.style.overflow = prevHtml; body.style.overflow = prevBody; };
+  }, []);
+
   const handleNewFlow = useCallback(() => {
     setShowFlowSelector(true);
   }, []);
