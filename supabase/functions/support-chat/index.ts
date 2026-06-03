@@ -6,7 +6,7 @@
 
 import { corsHeaders } from "../_shared/cors.ts";
 
-const MODELS = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest", "gemini-2.0-flash-exp"];
+const MODELS = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-flash-latest", "gemini-1.5-flash-latest", "gemini-2.0-flash-exp"];
 
 const SYSTEM_PROMPT = `Você é o assistente de suporte do Creatyng, um SaaS de criação visual com IA.
 Tom: claro, amigável e direto (máx 4 frases). Responda no idioma do usuário (padrão PT-BR).
@@ -61,6 +61,7 @@ Deno.serve(async (req: Request) => {
       })),
     ];
 
+    let lastErr = "";
     for (const model of MODELS) {
       try {
         const r = await fetch(
@@ -71,14 +72,16 @@ Deno.serve(async (req: Request) => {
             body: JSON.stringify({ contents, generationConfig: { temperature: 0.4, maxOutputTokens: 320 } }),
           },
         );
-        if (!r.ok) continue;
+        if (!r.ok) { lastErr = `${model}: ${r.status} ${(await r.text()).slice(0, 160)}`; continue; }
         const d = await r.json();
         const text = d?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (text) return json({ text: String(text).trim() }, 200, cors);
-      } catch {
-        continue;
+        lastErr = `${model}: no_text`;
+      } catch (e) {
+        lastErr = `${model}: ${String(e).slice(0, 120)}`;
       }
     }
+    console.error("[support-chat] all models failed:", lastErr);
     return json({ text: "Desculpe, não consegui processar agora. Tente de novo ou fale com support@creatyng.com" }, 200, cors);
   } catch {
     return json({ text: "Erro ao processar. Fale com support@creatyng.com" }, 200, cors);
