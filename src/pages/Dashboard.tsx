@@ -115,7 +115,7 @@ function FlowCard({ flow, label, desc, chip, onClick }: {
   const Icon = FLOW_ICONS[flow.icon] || Sparkles;
   return (
     <div
-      className="relative shrink-0 overflow-hidden transition-transform duration-200 snap-start w-[82vw] max-w-[300px] sm:w-[220px]"
+      className="relative shrink-0 overflow-hidden transition-transform duration-200 snap-start w-[86vw] max-w-[340px] sm:w-[230px]"
       style={{
         borderRadius: 12,
         background: `linear-gradient(135deg, ${flow.color} 0%, rgba(20,20,23,0.55) 135%)`,
@@ -281,7 +281,7 @@ const Dashboard = () => {
             <h2 style={{ fontSize: 15, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 12 }}>
               {t(cat.labelKey)}
             </h2>
-            <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory">
+            <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory -mx-4 px-4 sm:mx-0 sm:px-0">
               {entries.map(([id, flow]) => {
                 const styleCount = FLOW_STYLES[id]?.length ?? 0;
                 const chip = styleCount > 0
@@ -326,7 +326,7 @@ const Dashboard = () => {
             </div>
           </div>
         ) : (
-          <div ref={projectScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+          <div ref={projectScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
             {/* New project button */}
             <button
               onClick={() => navigate('/app/create')}
@@ -398,7 +398,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="columns-2 sm:columns-3 lg:columns-4" style={{ columnGap: 12 }}>
+        <div className="columns-2 sm:columns-3 lg:columns-4 -mx-4 px-4 sm:mx-0 sm:px-0" style={{ columnGap: 12 }}>
           {DISCOVER.map((item, i) => (
             <DiscoverItem key={i} gradient={item.gradient} height={item.h} />
           ))}
