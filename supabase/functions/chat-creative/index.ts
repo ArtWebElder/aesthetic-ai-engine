@@ -5,9 +5,9 @@
 import { corsHeaders } from "../_shared/cors.ts";
 
 const GEMINI_MODELS = [
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-pro-latest",
-  "gemini-2.0-flash-exp",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-2.0-flash",
 ];
 
 function json(data: unknown, status = 200, extra: Record<string, string> = {}) {
