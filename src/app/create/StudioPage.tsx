@@ -649,7 +649,9 @@ export function StudioPage() {
         </div>
       )}
 
-      <CreditsBar propertiesOpen={showProperties} />
+      {/* On mobile the properties panel is a bottom-sheet, so the credits bar must
+          NOT shift left (that shift is for the desktop right-side panel). */}
+      <CreditsBar propertiesOpen={showProperties && !isMobile} />
       {showPaywall && <PaywallModal plan={useCreditStore.getState().plan} onClose={() => setShowPaywall(false)} />}
 
       {/* Run All + Download result buttons (desktop; mobile uses the bottom bar) */}

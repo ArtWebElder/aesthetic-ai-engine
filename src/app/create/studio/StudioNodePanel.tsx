@@ -95,8 +95,8 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
   return (
     <div style={isMobile ? {
       position: 'absolute',
-      left: 0, right: 0, bottom: 0, top: 'auto',
-      width: '100%', maxHeight: '72vh',
+      left: 0, right: 0, bottom: 78, top: 'auto',
+      width: '100%', maxHeight: '62vh', minHeight: 220,
       zIndex: 400,
       background: 'hsl(var(--card))',
       borderTop: '1px solid hsl(var(--border))',

@@ -376,7 +376,12 @@ export function StudioCanvas({
       onTouchStart={handleCanvasTouchStart}
       style={{
         position: 'absolute',
-        inset: 0,
+        // Mobile: leave room for the top menu/credits and the bottom action bar so
+        // both are ALWAYS visible; the canvas occupies only the middle band.
+        top: isMobile ? 60 : 0,
+        bottom: isMobile ? 78 : 0,
+        left: 0,
+        right: 0,
         overflow: 'hidden',
         touchAction: 'none',
         cursor: connectingFrom ? 'crosshair' : toolMode === 'hand' ? 'grab' : 'default',

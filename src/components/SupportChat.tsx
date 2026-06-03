@@ -2,7 +2,7 @@
 // CREATYNG — Floating AI support chat (Gemini Flash)
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react';
+import { LifeBuoy, X, Send, Loader2, Sparkles } from 'lucide-react';
 import { useI18n } from '@/i18n';
 
 const GEMINI_API_KEY = (import.meta as { env: Record<string, string> }).env.VITE_GEMINI_API_KEY ?? '';
@@ -71,6 +71,40 @@ export function SupportChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Draggable floating button — position persisted; default bottom-right, 60px higher.
+  const [pos, setPos] = useState<{ x: number; y: number }>(() => {
+    try {
+      const s = localStorage.getItem('creatyng.fab.pos');
+      if (s) { const p = JSON.parse(s); if (typeof p?.x === 'number' && typeof p?.y === 'number') return p; }
+    } catch { /* ignore */ }
+    const w = typeof window !== 'undefined' ? window.innerWidth : 400;
+    const h = typeof window !== 'undefined' ? window.innerHeight : 800;
+    return { x: w - 24 - 52, y: h - 84 - 52 };
+  });
+  const posRef = useRef(pos);
+  const dragRef = useRef<{ offX: number; offY: number; startX: number; startY: number; moved: boolean } | null>(null);
+
+  const onFabPointerDown = (e: React.PointerEvent) => {
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    dragRef.current = { offX: e.clientX - posRef.current.x, offY: e.clientY - posRef.current.y, startX: e.clientX, startY: e.clientY, moved: false };
+  };
+  const onFabPointerMove = (e: React.PointerEvent) => {
+    const d = dragRef.current; if (!d) return;
+    if (Math.hypot(e.clientX - d.startX, e.clientY - d.startY) > 6) d.moved = true;
+    const np = {
+      x: Math.max(4, Math.min(window.innerWidth - 56, e.clientX - d.offX)),
+      y: Math.max(4, Math.min(window.innerHeight - 56, e.clientY - d.offY)),
+    };
+    posRef.current = np; setPos(np);
+  };
+  const onFabPointerUp = (e: React.PointerEvent) => {
+    const d = dragRef.current; if (!d) return;
+    (e.currentTarget as HTMLElement).releasePointerCapture?.(e.pointerId);
+    if (!d.moved) setOpen(true);
+    else { try { localStorage.setItem('creatyng.fab.pos', JSON.stringify(posRef.current)); } catch { /* ignore */ } }
+    dragRef.current = null;
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -110,23 +144,23 @@ export function SupportChat() {
 
   return (
     <>
-      {/* Floating button */}
+      {/* Floating button — draggable; tap (no drag) opens the chat */}
       {!open && (
         <button
-          onClick={() => setOpen(true)}
+          onPointerDown={onFabPointerDown}
+          onPointerMove={onFabPointerMove}
+          onPointerUp={onFabPointerUp}
+          aria-label={t('support.title')}
           style={{
-            position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
+            position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999,
             width: 52, height: 52, borderRadius: '50%',
             background: 'linear-gradient(135deg, #F97316, #EA580C)',
-            border: 'none', cursor: 'pointer',
+            border: 'none', cursor: 'grab', touchAction: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 16px rgba(249,115,22,0.35)',
-            transition: 'transform 150ms',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.08)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
         >
-          <MessageCircle size={22} color="#fff" />
+          <LifeBuoy size={24} color="#fff" />
         </button>
       )}
 
@@ -134,7 +168,7 @@ export function SupportChat() {
       {open && (
         <div style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 9999,
-          width: 380, maxHeight: 520, borderRadius: 16,
+          width: 'min(380px, calc(100vw - 32px))', maxHeight: 'min(520px, calc(100vh - 120px))', borderRadius: 16,
           background: 'hsl(var(--card))',
           border: '1px solid hsl(var(--border))',
           boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
