@@ -12,6 +12,14 @@
 - **Fase 0 — Sub-seletor de Estilos** do Thumbnail (categorias → estilos pré-moldados; 7 templates seed em `flowStyles.ts`). *Funciona; falta lapidar visual.*
 - Fix Pix avulso (creditava só `credits` legado → agora `bonus_credits`).
 - Admin: removidos mocks/fakes (Churn sempre-0, badges "+%" inventados, arrays mortos) → KPIs reais (MRR, Receita Total, Conversão de pagantes).
+- Mobile Fase 0 + Dashboard: fix do zoom iPhone (inputs 16px), safe-area, padding fluido; Dashboard em categorias+carrosséis com cards responsivos (full-width).
+
+## 📱 Mobile / Responsividade (em curso)
+- ✅ Fase 0 (fundação: zoom iPhone, safe-area, padding fluido).
+- ✅ Dashboard mobile (categorias + carrosséis + cards full-width).
+- ⏳ **Studio** — "só não quebrar o canvas" (painéis em bottom-sheet, toque, não estourar). *Decidido: NÃO é o modo guiado.*
+- ⏳ **Admin** — tabelas → cards empilhados, KPIs empilham, padding fluido.
+- ⏳ Discover (cards coloridos) — avaliar se quer ainda mais largos.
 
 ## ⏳ Falta VOCÊ (curto)
 - Creditar sua conta: Admin → Ajustar Créditos → **Adicionar 90** (R$9,90 = 100 cr; você já pôs 10).
