@@ -19,6 +19,14 @@ const FLOW_ICONS: Record<string, React.ElementType> = {
   Scissors, SlidersHorizontal, MonitorPlay, Quote, UserRound, Package, Copy, Palette, LayoutTemplate, Sparkles,
 };
 
+// Flows grouped into categories → each renders as a horizontal carousel on the dashboard.
+const FLOW_CATEGORIES: { key: string; labelKey: string; ids: string[] }[] = [
+  { key: 'free',     labelKey: 'dashboard.cat.free',     ids: ['remove-bg', 'recolor'] },
+  { key: 'social',   labelKey: 'dashboard.cat.social',   ids: ['thumbnail', 'quote-card', 'headshot'] },
+  { key: 'ecom',     labelKey: 'dashboard.cat.ecom',     ids: ['product-scene', 'creative-banner'] },
+  { key: 'advanced', labelKey: 'dashboard.cat.advanced', ids: ['clone-criativo', 'styled-photo', 'simple-gen'] },
+];
+
 /* ── Discover mosaic data ─────────────────────────────── */
 const DISCOVER = [
   { gradient: 'linear-gradient(135deg, #f97316, #e11d48)', h: 176 },
@@ -107,9 +115,8 @@ function FlowCard({ flow, label, desc, chip, onClick }: {
   const Icon = FLOW_ICONS[flow.icon] || Sparkles;
   return (
     <div
-      className="relative shrink-0 overflow-hidden transition-transform duration-200"
+      className="relative shrink-0 overflow-hidden transition-transform duration-200 snap-start w-[82vw] max-w-[300px] sm:w-[220px]"
       style={{
-        width: 210,
         borderRadius: 12,
         background: `linear-gradient(135deg, ${flow.color} 0%, rgba(20,20,23,0.55) 135%)`,
         cursor: 'pointer',
@@ -243,7 +250,6 @@ const Dashboard = () => {
   const [projects, setProjects] = useState<Project[]>(() => listProjects());
   const [discoverTab, setDiscoverTab] = useState<'explore' | 'templates'>('explore');
 
-  const featureScrollRef = useRef<HTMLDivElement>(null);
   const projectScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setProjects(listProjects()); }, []);
@@ -254,7 +260,7 @@ const Dashboard = () => {
     t('dashboard.fallback_name');
 
   return (
-    <div className="min-h-full px-8 py-7 space-y-10">
+    <div className="min-h-full px-4 sm:px-8 py-6 sm:py-7 space-y-8 sm:space-y-10">
 
       {/* ── 1. Greeting ─────────────────────────────── */}
       <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
@@ -264,34 +270,40 @@ const Dashboard = () => {
         <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))', marginTop: 2 }}>{t('dashboard.greeting_sub')}</p>
       </div>
 
-      {/* ── 2. Quick start ──────────────────────────── */}
-      <section className="animate-fade-up" style={{ animationDelay: '60ms' }}>
-        <SectionHeader
-          title={t('dashboard.quick_create')}
-          onViewAll={() => navigate('/app/templates')}
-          scrollRef={featureScrollRef}
-        />
-        <div ref={featureScrollRef} className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
-          {Object.entries(PRESET_FLOWS).map(([id, flow]) => {
-            const styleCount = FLOW_STYLES[id]?.length ?? 0;
-            const chip = styleCount > 0
-              ? `${styleCount} ${t('studio.flow_selector.styles_chip')}`
-              : `${flow.credits} cr`;
-            const label = lang === 'en' ? flow.nameEn : lang === 'es' ? flow.nameEs : flow.name;
-            const desc = lang === 'en' ? flow.descriptionEn : lang === 'es' ? flow.descriptionEs : flow.description;
-            return (
-              <FlowCard
-                key={id}
-                flow={flow}
-                label={label}
-                desc={desc}
-                chip={chip}
-                onClick={() => navigate(`/app/create/studio?flow=${id}`)}
-              />
-            );
-          })}
-        </div>
-      </section>
+      {/* ── 2. Criar — por categoria (carrosséis) ───── */}
+      {FLOW_CATEGORIES.map((cat, ci) => {
+        const entries = cat.ids
+          .map((id) => (PRESET_FLOWS[id] ? ([id, PRESET_FLOWS[id]] as const) : null))
+          .filter((x): x is readonly [string, PresetFlow] => x !== null);
+        if (entries.length === 0) return null;
+        return (
+          <section key={cat.key} className="animate-fade-up" style={{ animationDelay: `${60 + ci * 40}ms` }}>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 12 }}>
+              {t(cat.labelKey)}
+            </h2>
+            <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1 snap-x snap-mandatory">
+              {entries.map(([id, flow]) => {
+                const styleCount = FLOW_STYLES[id]?.length ?? 0;
+                const chip = styleCount > 0
+                  ? `${styleCount} ${t('studio.flow_selector.styles_chip')}`
+                  : `${flow.credits} cr`;
+                const label = lang === 'en' ? flow.nameEn : lang === 'es' ? flow.nameEs : flow.name;
+                const desc = lang === 'en' ? flow.descriptionEn : lang === 'es' ? flow.descriptionEs : flow.description;
+                return (
+                  <FlowCard
+                    key={id}
+                    flow={flow}
+                    label={label}
+                    desc={desc}
+                    chip={chip}
+                    onClick={() => navigate(`/app/create/studio?flow=${id}`)}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
 
       {/* ── 3. My Projects ──────────────────────────── */}
       <section className="animate-fade-up" style={{ animationDelay: '120ms' }}>
