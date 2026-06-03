@@ -2,7 +2,7 @@
 // CREATYNG — Floating AI support chat (Gemini Flash)
 
 import { useState, useRef, useEffect } from 'react';
-import { LifeBuoy, X, Send, Loader2, Sparkles } from 'lucide-react';
+import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react';
 import { useI18n } from '@/i18n';
 
 const GEMINI_API_KEY = (import.meta as { env: Record<string, string> }).env.VITE_GEMINI_API_KEY ?? '';
@@ -160,7 +160,7 @@ export function SupportChat() {
             boxShadow: '0 4px 16px rgba(249,115,22,0.35)',
           }}
         >
-          <LifeBuoy size={24} color="#fff" />
+          <MessageCircle size={24} color="#fff" />
         </button>
       )}
 

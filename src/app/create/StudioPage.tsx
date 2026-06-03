@@ -565,7 +565,11 @@ export function StudioPage() {
   return (
     <div style={{
       position: 'absolute',
-      inset: 0,
+      top: 0, left: 0, right: 0,
+      // 100dvh = the VISIBLE viewport on mobile (excludes the browser toolbar area).
+      // Using inset:0 inherited 100vh from the shell, pushing the footer bar below
+      // the fold / under the Safari toolbar where it couldn't be scrolled to.
+      height: '100dvh',
       zIndex: 0,
       background: 'hsl(var(--background))',
       overflow: 'hidden',
