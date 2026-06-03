@@ -88,9 +88,11 @@ export function FlowSelector({ onSelectFlow, onEmptyFlow, initialStyleFlow }: Fl
         background: 'hsl(var(--card))',
         border: '1px solid hsl(var(--border))',
         borderRadius: 20,
-        padding: '32px 36px',
+        padding: 'clamp(20px, 5vw, 32px) clamp(18px, 5vw, 36px)',
         maxWidth: 560,
         width: '90%',
+        maxHeight: '85vh',
+        overflowY: 'auto',
         boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
         animation: 'fadeIn 0.2s ease',
       }}>
