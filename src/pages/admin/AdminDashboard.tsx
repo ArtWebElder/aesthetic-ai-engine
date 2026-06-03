@@ -48,6 +48,13 @@ export default function AdminDashboard() {
   const [kpis, setKpis] = useState<DashboardKPIs | null>(null);
   const [revenueData, setRevenueData] = useState<{ month: string; mrr: number }[]>([]);
   const [recentGens, setRecentGens] = useState<Array<Record<string, unknown>>>([]);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   async function loadData() {
     setLoading(true);
@@ -99,7 +106,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 14 }}>
         <KPICard icon={TrendingUp} label="MRR" numericValue={Math.round(kpis.mrr)} prefix="R$ " change={`${kpis.totalPro + kpis.totalTeam} assinantes`} positive />
         <KPICard icon={Users} label="Usuários Ativos" numericValue={kpis.activeUsersWeek} change={`+${kpis.newUsersWeek} esta semana`} positive />
         <KPICard icon={Image} label="Gerações Total" numericValue={kpis.totalGenerations} change={`+${kpis.newUsersToday} hoje`} positive />
@@ -107,7 +114,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr', gap: 14 }}>
         {/* MRR Area Chart */}
         <div style={cardStyle}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>Receita Mensal (MRR)</div>
@@ -173,9 +180,9 @@ export default function AdminDashboard() {
       </div>
 
       {/* Latest generations table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
         <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Últimas gerações</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse' }}>
           <thead><tr>
             {['Usuário', 'Provider', 'Status', 'Créditos', 'Duração', 'Data'].map((h) => (
               <th key={h} style={thStyle}>{h}</th>

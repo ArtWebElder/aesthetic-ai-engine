@@ -35,6 +35,13 @@ export default function AdminTokens() {
   const [providers, setProviders] = useState<Provider[]>([]);
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
   const [dailyData, setDailyData] = useState<{ day: string; geminiPro: number; geminiFlash: number; replicate: number }[]>([]);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   useEffect(() => {
     // Token tracking not yet in DB — using placeholders
@@ -61,7 +68,7 @@ export default function AdminTokens() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Provider Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 14 }}>
         {providers.map((p) => {
           const usePct = Math.round((p.tokensToday / p.totalCapacity) * 100);
           return (
@@ -96,7 +103,7 @@ export default function AdminTokens() {
       </div>
 
       {/* Bottom row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
         {/* Stacked Bar Chart */}
         <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>Consumo diário por provedor</div>
@@ -114,9 +121,9 @@ export default function AdminTokens() {
         </div>
 
         {/* Top Users Ranking */}
-        <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+        <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
           <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Top 10 por consumo</div>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', minWidth: 420, borderCollapse: 'collapse' }}>
             <thead><tr>
               {['#', 'Usuário', 'Tokens', 'Gerações', 'Custo'].map((h) => (
                 <th key={h} style={thStyle}>{h}</th>

@@ -26,6 +26,13 @@ export default function AdminGenerations() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [total, setTotal] = useState(0);
   const [statusFilter, setStatusFilter] = useState<'all' | 'success' | 'error'>('all');
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   useEffect(() => {
     adminService.fetchGenerations(1, 50).then(({ generations, total }) => {
@@ -71,7 +78,7 @@ export default function AdminGenerations() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* KPI Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 14 }}>
         <div style={kpiCard}>
           <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(20,20,23,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Clock style={{ width: 16, height: 16, color: '#8e8e96' }} />
@@ -116,8 +123,8 @@ export default function AdminGenerations() {
       </div>
 
       {/* Logs Table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+        <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse' }}>
           <thead><tr>
             {['ID', 'Usuário', 'Feature', 'Status', 'Créditos', 'Tokens', 'Provider', 'Duração', 'Hora'].map((h) => (
               <th key={h} style={thStyle}>{h}</th>

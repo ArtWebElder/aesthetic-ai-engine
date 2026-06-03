@@ -114,8 +114,8 @@ export default function AdminUsers() {
       </div>
 
       {/* Table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+        <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse' }}>
           <thead><tr>
             {['Nome', 'Email', 'Plano', 'Créditos', 'Role', 'Cadastro', 'Ações'].map((h) => (
               <th key={h} style={thStyle}>{h}</th>

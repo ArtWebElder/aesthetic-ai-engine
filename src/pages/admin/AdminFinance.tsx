@@ -48,6 +48,13 @@ export default function AdminFinance() {
   const [stats, setStats] = useState<FinanceStats>({ mrr: 0, revenueTotal: 0, conversion: 0, payers: 0, totalUsers: 0 });
   const [revenue, setRevenue] = useState<{ month: string; revenue: number }[]>([]);
   const [transactions, setTransactions] = useState<Array<{ user: string; type: string; amount: number; date: string }>>([]);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   const mrrCount = useAnimatedCounter(stats.mrr);
   const revenueCount = useAnimatedCounter(stats.revenueTotal);
@@ -83,7 +90,7 @@ export default function AdminFinance() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 14 }}>
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>MRR (estimativa)</span>
@@ -130,9 +137,9 @@ export default function AdminFinance() {
       </div>
 
       {/* Transactions Table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
         <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Últimos movimentos de crédito</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', minWidth: 480, borderCollapse: 'collapse' }}>
           <thead><tr>
             {['Usuário', 'Tipo', 'Créditos', 'Data'].map((h) => (
               <th key={h} style={thStyle}>{h}</th>

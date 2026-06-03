@@ -41,6 +41,13 @@ export default function AdminNotifications() {
   const [message, setMessage] = useState('');
   const [pinned, setPinned] = useState(false);
   const [sending, setSending] = useState<'idle' | 'loading' | 'success'>('idle');
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   useEffect(() => {
     adminService.fetchNotifications().then((data) => {
@@ -94,7 +101,7 @@ export default function AdminNotifications() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Compose + Preview */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
         {/* Compose Form */}
         <div style={cardStyle}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -256,9 +263,9 @@ export default function AdminNotifications() {
       </div>
 
       {/* History table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+      <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
         <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>Últimas notificações enviadas</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
           <thead><tr>
             {['Tipo', 'Título', 'Dest.', 'Email', 'Fixada', 'Data'].map((h) => (
               <th key={h} style={thStyle}>{h}</th>
