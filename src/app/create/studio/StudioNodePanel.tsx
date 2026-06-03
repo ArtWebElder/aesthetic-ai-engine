@@ -82,6 +82,7 @@ interface StudioNodePanelProps {
 export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProps) {
   const { t } = useI18n();
   const [search, setSearch] = useState('');
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
 
   const filterBySearch = (items: NodeTypeId[]) => {
     if (!search) return items;
@@ -92,7 +93,20 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
   };
 
   return (
-    <div style={{
+    <div style={isMobile ? {
+      position: 'absolute',
+      left: 0, right: 0, bottom: 0, top: 'auto',
+      width: '100%', maxHeight: '72vh',
+      zIndex: 400,
+      background: 'hsl(var(--card))',
+      borderTop: '1px solid hsl(var(--border))',
+      borderTopLeftRadius: 16, borderTopRightRadius: 16,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      boxShadow: '0 -8px 28px rgba(0,0,0,0.18)',
+      animation: 'fadeIn 0.15s ease',
+    } : {
       position: 'absolute',
       left: 62,
       top: 60,

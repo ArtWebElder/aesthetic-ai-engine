@@ -45,9 +45,22 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
   if (!node) return null;
 
   const def = NODE_TYPE_DEFS[node.type];
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
 
   return (
-    <div style={{
+    <div style={isMobile ? {
+      position: 'absolute',
+      left: 0, right: 0, bottom: 0, top: 'auto',
+      width: '100%', maxHeight: '72vh',
+      zIndex: 400,
+      background: 'hsl(var(--card))',
+      borderTop: '1px solid hsl(var(--border))',
+      borderTopLeftRadius: 16, borderTopRightRadius: 16,
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      boxShadow: '0 -8px 28px rgba(0,0,0,0.18)',
+    } : {
       position: 'absolute',
       right: 0,
       top: 0,

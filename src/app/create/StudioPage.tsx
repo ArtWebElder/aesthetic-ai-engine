@@ -474,7 +474,29 @@ export function StudioPage() {
     setSelectedNodeId(null);
     setActiveFlowId(flowId);
     setShowFlowSelector(false);
-  }, [pushSnapshot]);
+
+    // Mobile: auto fit-to-view so the whole flow is visible and the nodes are
+    // spread out / identifiable (instead of cramped/overlapping at desktop zoom).
+    if (isMobile && nextNodes.length > 0) {
+      const pad = 20, topOffset = 64, bottomOffset = 96;
+      const vw = window.innerWidth;
+      const availH = window.innerHeight - topOffset - bottomOffset;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const n of nextNodes) {
+        const def = NODE_TYPE_DEFS[n.type];
+        const w = def?.defaultWidth ?? 260, h = def?.defaultHeight ?? 180;
+        minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
+        maxX = Math.max(maxX, n.x + w); maxY = Math.max(maxY, n.y + h);
+      }
+      const W = Math.max(1, maxX - minX), H = Math.max(1, maxY - minY);
+      const scale = Math.max(0.15, Math.min(1, Math.min((vw - pad * 2) / W, (availH - pad * 2) / H)));
+      setZoom(Math.round(scale * 100));
+      setPan({
+        x: (vw - W * scale) / 2 - minX * scale,
+        y: topOffset + (availH - H * scale) / 2 - minY * scale,
+      });
+    }
+  }, [pushSnapshot, isMobile]);
 
   // Dashboard card with ?flow=<no-styles flow> → load it directly (styles flows open
   // the selector on their styles via initialStyleFlow instead).
