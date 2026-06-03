@@ -5,12 +5,8 @@ import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Loader2, Sparkles } from 'lucide-react';
 import { useI18n } from '@/i18n';
 
-const GEMINI_API_KEY = (import.meta as { env: Record<string, string> }).env.VITE_GEMINI_API_KEY ?? '';
-const GEMINI_MODELS = [
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-pro-latest',
-  'gemini-2.0-flash-exp',
-];
+const SUPABASE_URL = (import.meta as { env: Record<string, string> }).env.VITE_SUPABASE_URL ?? '';
+const SUPABASE_ANON_KEY = (import.meta as { env: Record<string, string> }).env.VITE_SUPABASE_ANON_KEY ?? '';
 
 interface Message {
   id: string;
@@ -18,64 +14,27 @@ interface Message {
   text: string;
 }
 
-const SYSTEM_PROMPT = `Você é o assistente de suporte do Creatyng, um SaaS de criação visual com IA.
-Tom: claro, amigável e direto (máx 4 frases). Responda no idioma do usuário (padrão PT-BR).
-
-O QUE É: o usuário escolhe um fluxo (modo), preenche campos simples e recebe um criativo pronto — sem precisar escrever prompt.
-
-MODOS DO STUDIO (e custo em créditos):
-- Remover Fundo (grátis): recorta o fundo de uma imagem, direto no navegador.
-- Re-color / Mood (grátis): aplica um clima de cor (quente, frio, vívido, dramático, vintage).
-- Thumbnail (8 cr): thumbnail 16:9 com o TÍTULO desenhado na imagem pela IA; subject opcional; tem estilos pré-moldados.
-- Card de Citação (5 cr): post social com frase em destaque.
-- Headshot / Perfil (5 cr): transforma uma selfie em retrato profissional (mantém o rosto).
-- Produto em Cena (5 cr): produto real recortado sobre um cenário profissional gerado por IA.
-- Clone Criativo (12 cr): clona um anúncio trocando textos, cores e subject.
-
-COMO USAR: na Dashboard escolha um card de feature → escolha o estilo → preencha os campos → "Executar fluxo". No celular dá pra arrastar nodes, pinçar pra dar zoom e usar o menu (☰) pra Dashboard/Desfazer/Auto Layout.
-
-PLANOS: Free (50 créditos), Pro R$49,90/mês (500 cr/mês), Team R$149,90/mês (2000 cr/mês). Há recarga avulsa por Pix ou cartão.
-
-CRÉDITOS: cada geração consome créditos conforme o modo. Para recarregar: Billing → Recarregar créditos.
-
-REGRAS:
-- Se for um problema técnico/financeiro específico da conta (pagamento, bug, reembolso) ou algo que você não tem certeza, direcione para support@creatyng.com.
-- NUNCA invente preços ou recursos. Na dúvida, seja honesto e ofereça o e-mail de suporte.`;
-
-async function callGemini(messages: Message[]): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    return 'IA não configurada. Entre em contato: support@creatyng.com';
+// Calls the support-chat edge function (uses the BACKEND GEMINI_API_KEY — the key
+// is never exposed to the browser). The system prompt lives in the function.
+async function callSupport(messages: Message[]): Promise<string> {
+  const fallback = 'Não consegui responder agora. Fale com a gente: support@creatyng.com';
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return fallback;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/support-chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ messages: messages.map((m) => ({ role: m.role, text: m.text })) }),
+    });
+    if (!res.ok) return fallback;
+    const data = await res.json();
+    return (data?.text as string) || fallback;
+  } catch {
+    return fallback;
   }
-
-  const contents = [
-    { role: 'user', parts: [{ text: SYSTEM_PROMPT }] },
-    { role: 'model', parts: [{ text: 'Entendido! Sou o assistente do Creatyng. Como posso ajudar?' }] },
-    ...messages.map((m) => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text }],
-    })),
-  ];
-
-  for (const model of GEMINI_MODELS) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents,
-          generationConfig: { temperature: 0.4, maxOutputTokens: 300 },
-        }),
-      });
-      if (!res.ok) continue;
-      const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) return text.trim();
-    } catch {
-      continue;
-    }
-  }
-  return 'Desculpe, não consegui processar sua pergunta. Tente novamente ou entre em contato: support@creatyng.com';
 }
 
 export function SupportChat() {
@@ -148,7 +107,7 @@ export function SupportChat() {
     setLoading(true);
 
     try {
-      const reply = await callGemini(updated);
+      const reply = await callSupport(updated);
       setMessages((prev) => [
         ...prev,
         { id: `a-${Date.now()}`, role: 'assistant', text: reply },

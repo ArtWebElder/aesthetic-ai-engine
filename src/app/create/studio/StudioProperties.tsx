@@ -77,14 +77,14 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
-        padding: '10px 12px',
+        gap: isMobile ? 10 : 8,
+        padding: isMobile ? '14px 16px' : '10px 12px',
         borderBottom: '1px solid hsl(var(--border))',
       }}>
         <div style={{
-          width: 22,
-          height: 22,
-          borderRadius: 6,
+          width: isMobile ? 34 : 22,
+          height: isMobile ? 34 : 22,
+          borderRadius: 8,
           background: `${def.color}25`,
           border: `1px solid ${def.color}40`,
           display: 'flex',
@@ -93,19 +93,20 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
           flexShrink: 0,
           color: def.color,
         }}>
-          <CategoryIcon category={def.category} size={11} />
+          <CategoryIcon category={def.category} size={isMobile ? 17 : 11} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'hsl(var(--foreground))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: isMobile ? 16 : 11, fontWeight: 700, color: 'hsl(var(--foreground))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {def.label}
           </div>
-          <div style={{ fontSize: 9, color: 'hsl(var(--muted-foreground))' }}>{def.category}</div>
+          <div style={{ fontSize: isMobile ? 12 : 9, color: 'hsl(var(--muted-foreground))' }}>{def.category}</div>
         </div>
         <button
           onClick={onClose}
-          style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'hsl(var(--muted-foreground))', cursor: 'pointer', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+          aria-label="Fechar"
+          style={{ width: isMobile ? 34 : 22, height: isMobile ? 34 : 22, border: 'none', background: 'transparent', color: 'hsl(var(--muted-foreground))', cursor: 'pointer', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
         >
-          <X size={12} />
+          <X size={isMobile ? 22 : 12} />
         </button>
       </div>
 

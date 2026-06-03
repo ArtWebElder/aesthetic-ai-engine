@@ -127,10 +127,10 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
         display: 'flex',
         alignItems: 'center',
         gap: 8,
-        padding: '10px 12px',
+        padding: isMobile ? '14px 16px' : '10px 12px',
         borderBottom: '1px solid hsl(var(--border))',
       }}>
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 600, color: 'hsl(var(--foreground))' }}>
+        <span style={{ flex: 1, fontSize: isMobile ? 17 : 12, fontWeight: 700, color: 'hsl(var(--foreground))' }}>
           {tab === 'nodes' && t('studio.nav.add_node')}
           {tab === 'assets' && t('studio.nav.assets')}
           {tab === 'templates' && t('studio.nav.templates')}
@@ -138,9 +138,10 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
         </span>
         <button
           onClick={onClose}
-          style={{ width: 22, height: 22, border: 'none', background: 'transparent', color: 'hsl(var(--muted-foreground))', cursor: 'pointer', borderRadius: 5, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          aria-label="Fechar"
+          style={{ width: isMobile ? 34 : 22, height: isMobile ? 34 : 22, border: 'none', background: 'transparent', color: 'hsl(var(--muted-foreground))', cursor: 'pointer', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
-          <X size={12} />
+          <X size={isMobile ? 22 : 12} />
         </button>
       </div>
 

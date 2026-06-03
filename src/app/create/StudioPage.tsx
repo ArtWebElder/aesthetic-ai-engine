@@ -434,6 +434,24 @@ export function StudioPage() {
   // Auto layout
   const handleAutoLayout = useCallback(() => {
     pushSnapshot();
+    // Mobile: stack vertically (top→bottom in execution order) instead of columns.
+    if (isMobile) {
+      setNodes(prev => {
+        const order = getExecutionOrder(prev, connections);
+        const byId = new Map(prev.map(n => [n.id, n]));
+        const ordered: StudioNodeType[] = [];
+        for (const id of order) { const n = byId.get(id); if (n) ordered.push(n); }
+        for (const n of prev) if (!order.includes(n.id)) ordered.push(n);
+        let y = 40;
+        return ordered.map(n => {
+          const def = NODE_TYPE_DEFS[n.type];
+          const placed = { ...n, x: 40, y };
+          y += (def?.defaultHeight ?? 180) + 40;
+          return placed;
+        });
+      });
+      return;
+    }
     setNodes(prev => prev.map(node => {
       let colIdx = 3; // default: last column
       let rowIdx = 0;
@@ -451,7 +469,7 @@ export function StudioPage() {
         y: 40 + rowIdx * AUTO_LAYOUT_ROW_GAP,
       };
     }));
-  }, [pushSnapshot]);
+  }, [pushSnapshot, isMobile, connections]);
 
   // Fit all nodes into the current viewport (used on flow load + the mobile "fit" button).
   const fitToView = useCallback((nodeList: StudioNodeType[]) => {
