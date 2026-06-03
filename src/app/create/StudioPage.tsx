@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Play, Download, Plus, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Sparkles, Play, Download, Plus, Maximize2, ZoomIn, ZoomOut, LayoutGrid } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -591,12 +591,32 @@ export function StudioPage() {
       />
 
       {/* Fixed UI overlays */}
-      <StudioTopMenu
-        onNewFlow={handleNewFlow}
-        onCloneFlow={handleCloneFlow}
-        onAutoLayout={handleAutoLayout}
-        onDeleteFlow={handleDeleteFlow}
-      />
+      {!isMobile && (
+        <StudioTopMenu
+          onNewFlow={handleNewFlow}
+          onCloneFlow={handleCloneFlow}
+          onAutoLayout={handleAutoLayout}
+          onDeleteFlow={handleDeleteFlow}
+        />
+      )}
+
+      {/* Mobile: top-left "Fluxos" button (reopen selector = back / new flow) */}
+      {isMobile && (
+        <button
+          onClick={handleNewFlow}
+          aria-label="Fluxos"
+          style={{
+            position: 'absolute', top: 'max(12px, env(safe-area-inset-top))', left: 12, zIndex: 250,
+            display: 'flex', alignItems: 'center', gap: 6,
+            height: 38, padding: '0 12px', borderRadius: 12,
+            background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
+            color: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer',
+          }}
+        >
+          <LayoutGrid size={16} /> Fluxos
+        </button>
+      )}
 
       <CreditsBar propertiesOpen={showProperties} />
       {showPaywall && <PaywallModal plan={useCreditStore.getState().plan} onClose={() => setShowPaywall(false)} />}

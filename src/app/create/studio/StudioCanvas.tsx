@@ -70,6 +70,13 @@ export function StudioCanvas({
     startPanY: number;
   } | null>(null);
 
+  // Two-finger pinch-to-zoom state (mobile)
+  const pinchRef = useRef<{
+    startDist: number; startZoom: number;
+    startPanX: number; startPanY: number;
+    startMidX: number; startMidY: number;
+  } | null>(null);
+
   // Connection drag state
   const [connectingFrom, setConnectingFrom] = useState<string | null>(null);
   const [connectingMouse, setConnectingMouse] = useState<{ x: number; y: number } | null>(null);
@@ -245,6 +252,33 @@ export function StudioCanvas({
     };
 
     const onTouchMove = (e: TouchEvent) => {
+      // Two-finger pinch → zoom around the fingers' midpoint
+      if (e.touches.length >= 2) {
+        const a = e.touches[0], b = e.touches[1];
+        const dist = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+        const midX = (a.clientX + b.clientX) / 2, midY = (a.clientY + b.clientY) / 2;
+        const rect = outer.getBoundingClientRect();
+        if (!pinchRef.current) {
+          pinchRef.current = {
+            startDist: dist, startZoom: zoomRef.current,
+            startPanX: panRef.current.x, startPanY: panRef.current.y,
+            startMidX: midX, startMidY: midY,
+          };
+          nodeDragRef.current = null; panDragRef.current = null;
+          if (connectingRef.current) { connectingRef.current = null; setConnectingFrom(null); setConnectingMouse(null); }
+        } else {
+          const p = pinchRef.current;
+          const newZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, p.startZoom * (dist / Math.max(1, p.startDist))));
+          const startScale = p.startZoom / 100;
+          const cx = (p.startMidX - rect.left - p.startPanX) / startScale;
+          const cy = (p.startMidY - rect.top - p.startPanY) / startScale;
+          const newScale = newZoom / 100;
+          onZoomChange(Math.round(newZoom));
+          onPanChange({ x: (midX - rect.left) - cx * newScale, y: (midY - rect.top) - cy * newScale });
+        }
+        e.preventDefault();
+        return;
+      }
       const t = e.touches[0]; if (!t) return;
       const scale = zoomRef.current / 100;
       if (connectingRef.current) {
@@ -288,6 +322,7 @@ export function StudioCanvas({
       }
       nodeDragRef.current = null;
       panDragRef.current = null;
+      pinchRef.current = null;
     };
 
     outer.addEventListener('wheel', handleWheel, { passive: false });
