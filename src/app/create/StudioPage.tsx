@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Play, Download, Plus } from 'lucide-react';
+import { Sparkles, Play, Download, Plus, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -451,6 +451,28 @@ export function StudioPage() {
     }));
   }, [pushSnapshot]);
 
+  // Fit all nodes into the current viewport (used on flow load + the mobile "fit" button).
+  const fitToView = useCallback((nodeList: StudioNodeType[]) => {
+    if (nodeList.length === 0) return;
+    const pad = 20, topOffset = 64, bottomOffset = 96;
+    const vw = window.innerWidth;
+    const availH = window.innerHeight - topOffset - bottomOffset;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const n of nodeList) {
+      const def = NODE_TYPE_DEFS[n.type];
+      const w = def?.defaultWidth ?? 260, h = def?.defaultHeight ?? 180;
+      minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
+      maxX = Math.max(maxX, n.x + w); maxY = Math.max(maxY, n.y + h);
+    }
+    const W = Math.max(1, maxX - minX), H = Math.max(1, maxY - minY);
+    const scale = Math.max(0.15, Math.min(1, Math.min((vw - pad * 2) / W, (availH - pad * 2) / H)));
+    setZoom(Math.round(scale * 100));
+    setPan({
+      x: (vw - W * scale) / 2 - minX * scale,
+      y: topOffset + (availH - H * scale) / 2 - minY * scale,
+    });
+  }, []);
+
   const loadFlow = useCallback((flowId: string, styleId?: string) => {
     const flow = PRESET_FLOWS[flowId];
     if (!flow) return;
@@ -475,28 +497,9 @@ export function StudioPage() {
     setActiveFlowId(flowId);
     setShowFlowSelector(false);
 
-    // Mobile: auto fit-to-view so the whole flow is visible and the nodes are
-    // spread out / identifiable (instead of cramped/overlapping at desktop zoom).
-    if (isMobile && nextNodes.length > 0) {
-      const pad = 20, topOffset = 64, bottomOffset = 96;
-      const vw = window.innerWidth;
-      const availH = window.innerHeight - topOffset - bottomOffset;
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      for (const n of nextNodes) {
-        const def = NODE_TYPE_DEFS[n.type];
-        const w = def?.defaultWidth ?? 260, h = def?.defaultHeight ?? 180;
-        minX = Math.min(minX, n.x); minY = Math.min(minY, n.y);
-        maxX = Math.max(maxX, n.x + w); maxY = Math.max(maxY, n.y + h);
-      }
-      const W = Math.max(1, maxX - minX), H = Math.max(1, maxY - minY);
-      const scale = Math.max(0.15, Math.min(1, Math.min((vw - pad * 2) / W, (availH - pad * 2) / H)));
-      setZoom(Math.round(scale * 100));
-      setPan({
-        x: (vw - W * scale) / 2 - minX * scale,
-        y: topOffset + (availH - H * scale) / 2 - minY * scale,
-      });
-    }
-  }, [pushSnapshot, isMobile]);
+    // Mobile: auto fit-to-view so the whole flow is visible and nodes are separated.
+    if (isMobile) fitToView(nextNodes);
+  }, [pushSnapshot, isMobile, fitToView]);
 
   // Dashboard card with ?flow=<no-styles flow> → load it directly (styles flows open
   // the selector on their styles via initialStyleFlow instead).
@@ -716,43 +719,50 @@ export function StudioPage() {
       )}
 
       {/* Mobile sticky bottom action bar */}
-      {isMobile && (
+      {isMobile && (() => {
+        const sbtn: React.CSSProperties = {
+          flexShrink: 0, width: 44, height: 46, borderRadius: 12,
+          background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))',
+          color: 'hsl(var(--foreground))', display: 'flex', alignItems: 'center',
+          justifyContent: 'center', cursor: 'pointer', padding: 0,
+        };
+        return (
         <div
           className="safe-area-pb"
           style={{
             position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 300,
-            display: 'flex', alignItems: 'center', gap: 8,
-            padding: '10px 12px',
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '10px 10px',
             background: 'hsl(var(--card))',
             borderTop: '1px solid hsl(var(--border))',
             boxShadow: '0 -4px 20px rgba(0,0,0,0.10)',
           }}
         >
-          <button
-            onClick={() => setOpenPanel(openPanel === 'nodes' ? null : 'nodes')}
-            aria-label="Adicionar node"
-            style={{
-              flexShrink: 0, width: 50, height: 50, borderRadius: 14,
-              background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))',
-              color: 'hsl(var(--foreground))', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', cursor: 'pointer',
-            }}
-          >
-            <Plus size={24} />
+          <button onClick={() => setOpenPanel(openPanel === 'nodes' ? null : 'nodes')} aria-label="Adicionar node" style={sbtn}>
+            <Plus size={22} />
+          </button>
+          <button onClick={() => fitToView(nodes)} aria-label="Enquadrar" style={sbtn}>
+            <Maximize2 size={19} />
+          </button>
+          <button onClick={() => setZoom(z => Math.max(20, z - 20))} aria-label="Diminuir zoom" style={sbtn}>
+            <ZoomOut size={19} />
+          </button>
+          <button onClick={() => setZoom(z => Math.min(200, z + 20))} aria-label="Aumentar zoom" style={sbtn}>
+            <ZoomIn size={19} />
           </button>
           <button
             onClick={handleRunAll}
             disabled={flowRunning || nodes.length === 0}
             style={{
-              flex: 1, height: 50, borderRadius: 14, border: 'none',
+              flex: 1, minWidth: 0, height: 46, borderRadius: 12, border: 'none',
               background: flowRunning ? 'hsl(var(--muted))' : 'linear-gradient(135deg, #ff713d, #FF9B70)',
               color: flowRunning ? 'hsl(var(--muted-foreground))' : '#fff',
-              fontSize: 15, fontWeight: 700, fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               cursor: flowRunning || nodes.length === 0 ? 'not-allowed' : 'pointer',
             }}
           >
-            <Play size={18} /> {flowRunning ? 'Executando...' : 'Executar fluxo'}
+            <Play size={17} /> {flowRunning ? '...' : 'Executar'}
           </button>
           {lastExportImage && (
             <button
@@ -766,17 +776,14 @@ export function StudioPage() {
                 document.body.removeChild(a);
               }}
               aria-label="Baixar resultado"
-              style={{
-                flexShrink: 0, width: 50, height: 50, borderRadius: 14, border: 'none',
-                background: '#10B981', color: '#fff', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', cursor: 'pointer',
-              }}
+              style={{ ...sbtn, background: '#10B981', border: 'none', color: '#fff' }}
             >
-              <Download size={22} />
+              <Download size={20} />
             </button>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* Flow selector modal */}
       {showFlowSelector && (

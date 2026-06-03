@@ -68,6 +68,8 @@ interface StudioNodeProps {
   onDelete?: (nodeId: string) => void;
   onOutputPortDown: (e: React.MouseEvent, nodeId: string) => void;
   onInputPortUp: (nodeId: string) => void;
+  onTouchStart: (e: React.TouchEvent, nodeId: string) => void;
+  onOutputPortTouchStart: (e: React.TouchEvent, nodeId: string) => void;
 }
 
 // ── Output Preview ──────────────────────────────────────────────────────────
@@ -681,7 +683,7 @@ function NodeContent({
 export function StudioNode({
   node, isSelected, execState, output, isConnecting,
   onMouseDown, onSelect, onRun, onDataChange, onDelete,
-  onOutputPortDown, onInputPortUp,
+  onOutputPortDown, onInputPortUp, onTouchStart, onOutputPortTouchStart,
 }: StudioNodeProps) {
   const def = NODE_TYPE_DEFS[node.type];
   const IconComp = ICON_MAP[def.icon] ?? Building2;
@@ -707,6 +709,7 @@ export function StudioNode({
 
   return (
     <div
+      data-input-node={node.id}
       style={{
         position: 'absolute', left: node.x, top: node.y,
         width: def.defaultWidth,
@@ -738,6 +741,7 @@ export function StudioNode({
       {/* Output port — interactive: starts connection drag */}
       <div
         onMouseDown={(e) => { e.stopPropagation(); onOutputPortDown(e, node.id); }}
+        onTouchStart={(e) => { e.stopPropagation(); onOutputPortTouchStart(e, node.id); }}
         style={{
           position: 'absolute', right: -7, top: '50%', transform: 'translateY(-50%)',
           width: 13, height: 13, borderRadius: '50%',
@@ -753,6 +757,7 @@ export function StudioNode({
       <div
         ref={headerRef}
         onMouseDown={e => { e.stopPropagation(); onMouseDown(e, node.id); }}
+        onTouchStart={e => { e.stopPropagation(); onTouchStart(e, node.id); }}
         style={{
           display: 'flex', alignItems: 'center', gap: 7,
           padding: '8px 10px',

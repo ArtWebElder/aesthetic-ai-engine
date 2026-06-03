@@ -156,6 +156,47 @@ export function StudioCanvas({
     onZoomChange(newZoom);
   }, [onZoomChange]);
 
+  // ── Touch (mobile): drag nodes, pan, and connect ports ──────────────────────
+  const handleNodeTouchStart = useCallback((e: React.TouchEvent, nodeId: string) => {
+    const t = e.touches[0]; if (!t) return;
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    onNodeDragStart?.();
+    nodeDragRef.current = {
+      nodeId, startMouseX: t.clientX, startMouseY: t.clientY,
+      startNodeX: node.x, startNodeY: node.y,
+    };
+  }, [nodes, onNodeDragStart]);
+
+  const handleOutputPortTouchStart = useCallback((e: React.TouchEvent, nodeId: string) => {
+    e.stopPropagation();
+    const t = e.touches[0]; if (!t) return;
+    connectingRef.current = nodeId;
+    setConnectingFrom(nodeId);
+    const outer = outerRef.current;
+    if (outer) {
+      const rect = outer.getBoundingClientRect();
+      const scale = zoomRef.current / 100;
+      setConnectingMouse({
+        x: (t.clientX - rect.left - panRef.current.x) / scale,
+        y: (t.clientY - rect.top - panRef.current.y) / scale,
+      });
+    }
+  }, []);
+
+  const handleCanvasTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.target !== e.currentTarget) return; // only when touching the background
+    const t = e.touches[0]; if (!t) return;
+    panDragRef.current = {
+      startMouseX: t.clientX, startMouseY: t.clientY,
+      startPanX: panRef.current.x, startPanY: panRef.current.y,
+    };
+    onSelectNode(null);
+    if (connectingRef.current) {
+      connectingRef.current = null; setConnectingFrom(null); setConnectingMouse(null);
+    }
+  }, [onSelectNode]);
+
   useEffect(() => {
     const outer = outerRef.current;
     if (!outer) return;
@@ -203,16 +244,66 @@ export function StudioCanvas({
       panDragRef.current = null;
     };
 
+    const onTouchMove = (e: TouchEvent) => {
+      const t = e.touches[0]; if (!t) return;
+      const scale = zoomRef.current / 100;
+      if (connectingRef.current) {
+        const rect = outer.getBoundingClientRect();
+        setConnectingMouse({
+          x: (t.clientX - rect.left - panRef.current.x) / scale,
+          y: (t.clientY - rect.top - panRef.current.y) / scale,
+        });
+        e.preventDefault(); return;
+      }
+      if (nodeDragRef.current) {
+        const dx = (t.clientX - nodeDragRef.current.startMouseX) / scale;
+        const dy = (t.clientY - nodeDragRef.current.startMouseY) / scale;
+        onNodeMove(
+          nodeDragRef.current.nodeId,
+          Math.max(0, nodeDragRef.current.startNodeX + dx),
+          Math.max(0, nodeDragRef.current.startNodeY + dy),
+        );
+        e.preventDefault(); return;
+      }
+      if (panDragRef.current) {
+        onPanChange({
+          x: panDragRef.current.startPanX + (t.clientX - panDragRef.current.startMouseX),
+          y: panDragRef.current.startPanY + (t.clientY - panDragRef.current.startMouseY),
+        });
+        e.preventDefault();
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      // Complete a connection: find the input port under the finger via elementFromPoint
+      if (connectingRef.current) {
+        const t = e.changedTouches[0];
+        if (t) {
+          const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null;
+          const portEl = el?.closest('[data-input-node]') as HTMLElement | null;
+          const targetId = portEl?.getAttribute('data-input-node');
+          if (targetId && targetId !== connectingRef.current) onAddConnection(connectingRef.current, targetId);
+        }
+        connectingRef.current = null; setConnectingFrom(null); setConnectingMouse(null);
+      }
+      nodeDragRef.current = null;
+      panDragRef.current = null;
+    };
+
     outer.addEventListener('wheel', handleWheel, { passive: false });
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
 
     return () => {
       outer.removeEventListener('wheel', handleWheel);
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [handleWheel, onNodeMove, onPanChange]);
+  }, [handleWheel, onNodeMove, onPanChange, onAddConnection]);
 
   const scale = zoom / 100;
   const dotSize = 24;
@@ -241,10 +332,12 @@ export function StudioCanvas({
     <div
       ref={outerRef}
       onMouseDown={handleCanvasMouseDown}
+      onTouchStart={handleCanvasTouchStart}
       style={{
         position: 'absolute',
         inset: 0,
         overflow: 'hidden',
+        touchAction: 'none',
         cursor: connectingFrom ? 'crosshair' : toolMode === 'hand' ? 'grab' : 'default',
         background: 'hsl(var(--background))',
         backgroundImage: 'radial-gradient(circle, hsl(var(--foreground) / 0.09) 1.2px, transparent 1.2px)',
@@ -307,11 +400,13 @@ export function StudioCanvas({
             output={nodeOutputs[node.id]}
             isConnecting={Boolean(connectingFrom)}
             onMouseDown={handleNodeMouseDown}
+            onTouchStart={handleNodeTouchStart}
             onSelect={onSelectNode}
             onRun={onNodeRun}
             onDataChange={onNodeDataChange}
             onDelete={onDeleteNode}
             onOutputPortDown={handleOutputPortDown}
+            onOutputPortTouchStart={handleOutputPortTouchStart}
             onInputPortUp={handleInputPortUp}
           />
         ))}
