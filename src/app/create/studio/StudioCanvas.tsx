@@ -192,15 +192,20 @@ export function StudioCanvas({
   }, []);
 
   const handleCanvasTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.target !== e.currentTarget) return; // only when touching the background
+    if (e.touches.length !== 1) return; // 2-finger pinch handled in touchmove
     const t = e.touches[0]; if (!t) return;
+    // Single finger anywhere → pan the canvas (node headers/ports stopPropagation,
+    // so dragging a node or connecting still wins). This makes panning fluid even
+    // when zoomed in and a node is under the finger.
     panDragRef.current = {
       startMouseX: t.clientX, startMouseY: t.clientY,
       startPanX: panRef.current.x, startPanY: panRef.current.y,
     };
-    onSelectNode(null);
-    if (connectingRef.current) {
-      connectingRef.current = null; setConnectingFrom(null); setConnectingMouse(null);
+    if (e.target === e.currentTarget) {
+      onSelectNode(null);
+      if (connectingRef.current) {
+        connectingRef.current = null; setConnectingFrom(null); setConnectingMouse(null);
+      }
     }
   }, [onSelectNode]);
 
@@ -340,6 +345,7 @@ export function StudioCanvas({
     };
   }, [handleWheel, onNodeMove, onPanChange, onAddConnection]);
 
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
   const scale = zoom / 100;
   const dotSize = 24;
 
@@ -375,7 +381,9 @@ export function StudioCanvas({
         touchAction: 'none',
         cursor: connectingFrom ? 'crosshair' : toolMode === 'hand' ? 'grab' : 'default',
         background: 'hsl(var(--background))',
-        backgroundImage: 'radial-gradient(circle, hsl(var(--foreground) / 0.09) 1.2px, transparent 1.2px)',
+        // Hide the dot grid on mobile — it caused a "stuck/flicker" look during
+        // pinch-zoom (the dots scaling). Desktop keeps it.
+        backgroundImage: isMobile ? 'none' : 'radial-gradient(circle, hsl(var(--foreground) / 0.09) 1.2px, transparent 1.2px)',
         backgroundSize: `${bgPatternSize}px ${bgPatternSize}px`,
         backgroundPosition: `${bgOffsetX}px ${bgOffsetY}px`,
       }}

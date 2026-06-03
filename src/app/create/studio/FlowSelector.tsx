@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Palette, Sparkles, Plus,
   LayoutTemplate, Copy, Scissors, MonitorPlay, SlidersHorizontal, Quote, UserRound, Package,
-  ArrowLeft,
+  ArrowLeft, X,
 } from 'lucide-react';
 import { PRESET_FLOWS, type PresetFlow } from './types';
 import { FLOW_STYLES } from './flowStyles';
@@ -25,6 +25,7 @@ interface FlowSelectorProps {
   onSelectFlow: (flowId: string, styleId?: string) => void;
   onEmptyFlow: () => void;
   initialStyleFlow?: string; // open directly on this flow's styles (e.g. from a dashboard card)
+  onClose?: () => void; // dismiss the modal (keeps current canvas)
 }
 
 const cardBase: React.CSSProperties = {
@@ -42,7 +43,7 @@ const cardBase: React.CSSProperties = {
   fontFamily: 'inherit',
 };
 
-export function FlowSelector({ onSelectFlow, onEmptyFlow, initialStyleFlow }: FlowSelectorProps) {
+export function FlowSelector({ onSelectFlow, onEmptyFlow, initialStyleFlow, onClose }: FlowSelectorProps) {
   const { t, lang } = useI18n();
   // When set, the modal shows the pre-molded STYLES for that flow instead of the flows list.
   const [styleFlow, setStyleFlow] = useState<string | null>(initialStyleFlow ?? null);
@@ -74,7 +75,9 @@ export function FlowSelector({ onSelectFlow, onEmptyFlow, initialStyleFlow }: Fl
   };
 
   return (
-    <div style={{
+    <div
+      onClick={(e) => { if (onClose && e.target === e.currentTarget) onClose(); }}
+      style={{
       position: 'absolute',
       inset: 0,
       zIndex: 500,
@@ -84,6 +87,21 @@ export function FlowSelector({ onSelectFlow, onEmptyFlow, initialStyleFlow }: Fl
       background: 'rgba(0,0,0,0.5)',
       backdropFilter: 'blur(8px)',
     }}>
+      {onClose && (
+        <button
+          onClick={onClose}
+          aria-label="Fechar"
+          style={{
+            position: 'absolute', top: 'max(14px, env(safe-area-inset-top))', right: 16, zIndex: 510,
+            width: 40, height: 40, borderRadius: 12, border: '1px solid hsl(var(--border))',
+            background: 'hsl(var(--card))', color: 'hsl(var(--foreground))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          }}
+        >
+          <X size={20} />
+        </button>
+      )}
       <div style={{
         background: 'hsl(var(--card))',
         border: '1px solid hsl(var(--border))',

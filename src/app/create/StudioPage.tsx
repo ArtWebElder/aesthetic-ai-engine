@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Play, Download, Plus, Maximize2, ZoomIn, ZoomOut, LayoutGrid } from 'lucide-react';
+import { Sparkles, Play, Download, Plus, Maximize2, ZoomIn, ZoomOut, LayoutGrid, Menu, LayoutDashboard, Undo2, Redo2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -129,6 +129,7 @@ export function StudioPage() {
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches,
   );
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // Optional ?flow=<id> from a dashboard card. Flows WITH styles open the selector
   // on their styles; flows WITHOUT styles load directly (see effect below).
   const [searchParams] = useSearchParams();
@@ -600,22 +601,52 @@ export function StudioPage() {
         />
       )}
 
-      {/* Mobile: top-left "Fluxos" button (reopen selector = back / new flow) */}
+      {/* Mobile: top-left menu with all the desktop studio actions */}
       {isMobile && (
-        <button
-          onClick={handleNewFlow}
-          aria-label="Fluxos"
-          style={{
-            position: 'absolute', top: 'max(12px, env(safe-area-inset-top))', left: 12, zIndex: 250,
-            display: 'flex', alignItems: 'center', gap: 6,
-            height: 38, padding: '0 12px', borderRadius: 12,
-            background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
-            color: 'hsl(var(--foreground))', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer',
-          }}
-        >
-          <LayoutGrid size={16} /> Fluxos
-        </button>
+        <div style={{ position: 'absolute', top: 'max(12px, env(safe-area-inset-top))', left: 12, zIndex: 260 }}>
+          <button
+            onClick={() => setMobileMenuOpen(v => !v)}
+            aria-label="Menu"
+            style={{
+              width: 40, height: 40, borderRadius: 12, border: '1px solid hsl(var(--border))',
+              background: 'hsl(var(--card))', color: 'hsl(var(--foreground))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.08)', cursor: 'pointer', padding: 0,
+            }}
+          >
+            <Menu size={20} />
+          </button>
+          {mobileMenuOpen && (
+            <>
+              <div onClick={() => setMobileMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 1 }} />
+              <div style={{
+                position: 'absolute', top: 48, left: 0, zIndex: 2, minWidth: 210,
+                background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
+                borderRadius: 14, boxShadow: '0 12px 32px rgba(0,0,0,0.18)', overflow: 'hidden', padding: 6,
+              }}>
+                {[
+                  { icon: <LayoutDashboard size={16} />, label: 'Voltar pra Dashboard', fn: () => navigate('/app/dashboard') },
+                  { icon: <LayoutGrid size={16} />, label: 'Novo fluxo', fn: handleNewFlow },
+                  { icon: <Undo2 size={16} />, label: 'Desfazer', fn: undo },
+                  { icon: <Redo2 size={16} />, label: 'Refazer', fn: redo },
+                  { icon: <Sparkles size={16} />, label: 'Auto Layout', fn: handleAutoLayout },
+                ].map((it, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { it.fn(); setMobileMenuOpen(false); }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                      padding: '11px 12px', borderRadius: 10, border: 'none', background: 'transparent',
+                      color: 'hsl(var(--foreground))', fontSize: 14, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    {it.icon} {it.label}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
       )}
 
       <CreditsBar propertiesOpen={showProperties} />
@@ -809,6 +840,7 @@ export function StudioPage() {
       {showFlowSelector && (
         <FlowSelector
           initialStyleFlow={initialStyleFlow ?? undefined}
+          onClose={() => setShowFlowSelector(false)}
           onSelectFlow={(flowId, styleId) => loadFlow(flowId, styleId)}
           onEmptyFlow={() => {
             pushSnapshot();
