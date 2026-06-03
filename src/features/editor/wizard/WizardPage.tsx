@@ -117,7 +117,7 @@ function getFoodPalette(
 
 // ── StepIndicator ─────────────────────────────────────────────────────────────
 
-function StepIndicator({ current, maxReached, onStepClick }: { current: number; maxReached: number; onStepClick?: (step: number) => void }) {
+function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current: number; maxReached: number; onStepClick?: (step: number) => void; isMobile?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
       {STEP_LABELS.map((label, idx) => {
@@ -129,7 +129,7 @@ function StepIndicator({ current, maxReached, onStepClick }: { current: number; 
           <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
             {idx > 0 && (
               <div style={{
-                height: 1, width: 32,
+                height: 1, width: isMobile ? 18 : 32,
                 background: isDone || isActive ? '#ff713d' : 'hsl(var(--border))',
                 transition: 'background 500ms',
               }} />
@@ -212,6 +212,13 @@ export function WizardPage() {
   const { t } = useI18n();
   const storeCredits = useCreditStore((s) => s.credits);
   const fetchCredits = useCreditStore((s) => s.fetchCredits);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   // Fetch credits on mount (Topbar is hidden for /app/create, so we load here)
   useEffect(() => { fetchCredits(); }, [fetchCredits]);
@@ -984,7 +991,7 @@ export function WizardPage() {
   const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, hsl(var(--background))`, color: 'hsl(var(--foreground))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
+    <div style={{ height: isMobile ? '100dvh' : '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, hsl(var(--background))`, color: 'hsl(var(--foreground))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
       <ConfettiEffect active={showConfetti} onComplete={() => setShowConfetti(false)} count={80} duration={3500} />
       {showPaywall && <PaywallModal plan={useCreditStore.getState().plan} onClose={() => setShowPaywall(false)} />}
       <style>{`
@@ -996,7 +1003,7 @@ export function WizardPage() {
       {/* Header + StepIndicator */}
       <header style={{
         flexShrink: 0, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px', borderBottom: '1px solid hsl(var(--border))',
+        padding: isMobile ? '0 14px' : '0 24px', borderBottom: '1px solid hsl(var(--border))',
         background: 'hsl(var(--background))', zIndex: 10,
       }}>
         {/* Logo + breadcrumb */}
@@ -1008,8 +1015,8 @@ export function WizardPage() {
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>/</span>
           <button onClick={() => { if (uiStep >= 2 || referenceBase64 || currentGeneration) setShowResetConfirm(true); else resetAll(); }} style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Nova Criação</button>
         </div>
-        {/* Step indicator centered */}
-        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+        {/* Step indicator centered (desktop only — mobile shows it in its own row below) */}
+        <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: isMobile ? 'none' : 'block' }}>
           <StepIndicator current={uiStep} maxReached={maxStepReached} onStepClick={(s) => setUiStep(s as 1 | 2 | 3 | 4)} />
         </div>
         {/* Credits badge + upgrade */}
@@ -1027,18 +1034,27 @@ export function WizardPage() {
               <span>{storeCredits}</span>
             </div>
           </WizCredTooltip>
-          <button
-            onClick={() => navigate('/app/billing')}
-            style={{
-              padding: '4px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))',
-              background: 'transparent', color: 'hsl(var(--muted-foreground))',
-              fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            Upgrade
-          </button>
+          {!isMobile && (
+            <button
+              onClick={() => navigate('/app/billing')}
+              style={{
+                padding: '4px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))',
+                background: 'transparent', color: 'hsl(var(--muted-foreground))',
+                fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              Upgrade
+            </button>
+          )}
         </div>
       </header>
+
+      {/* Mobile step indicator row (header has no room for the absolute-centered one) */}
+      {isMobile && (
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'center', padding: '8px 12px', borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--background))' }}>
+          <StepIndicator current={uiStep} maxReached={maxStepReached} onStepClick={(s) => setUiStep(s as 1 | 2 | 3 | 4)} isMobile />
+        </div>
+      )}
 
       {/* Credit banner — persistent, non-disruptive */}
       {storeCredits < 12 && storeCredits > 0 && (
@@ -1062,7 +1078,7 @@ export function WizardPage() {
 
       {/* Content */}
       <main style={{ flex: 1, overflowY: 'auto' }}>
-        <div style={{ maxWidth: uiStep === 4 ? 1100 : (uiStep === 1 ? 960 : 720), margin: '0 auto', padding: '32px 24px', transition: 'max-width 300ms' }}>
+        <div style={{ maxWidth: uiStep === 4 ? 1100 : (uiStep === 1 ? 960 : 720), margin: '0 auto', padding: isMobile ? '20px 16px' : '32px 24px', transition: 'max-width 300ms' }}>
 
           {/* Step 1: Upload (Reference + Subject) */}
           {uiStep === 1 && (
@@ -1479,7 +1495,7 @@ export function WizardPage() {
           flexShrink: 0, borderTop: '1px solid hsl(var(--border))',
           background: 'hsl(var(--background))', zIndex: 10,
         }}>
-          <div style={{ maxWidth: 680, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ maxWidth: 680, margin: '0 auto', padding: isMobile ? '12px 16px' : '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <button
               onClick={handleBack}
               disabled={uiStep === 1}

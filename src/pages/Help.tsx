@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MessageCircle, Search, Rocket, Paintbrush, MessageSquare, CreditCard, UserCircle, HelpCircle, Sparkles } from 'lucide-react';
 import {
   Accordion,
@@ -82,6 +82,13 @@ const Help = () => {
   const { t } = useI18n();
   const [activeCategory, setActiveCategory] = useState('all');
   const [search, setSearch] = useState('');
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    const fn = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
 
   const filtered = ARTICLES.filter((a) => {
     const matchCat = activeCategory === 'all' || a.category === activeCategory;
@@ -90,16 +97,19 @@ const Help = () => {
   });
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', minHeight: '100%', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
       {/* Sidebar */}
       <div style={{
-        width: 240, minWidth: 240, padding: '28px 16px',
-        borderRight: '1px solid hsl(var(--border))',
+        width: isMobile ? '100%' : 240, minWidth: isMobile ? 'auto' : 240,
+        padding: isMobile ? '14px 12px' : '28px 16px',
+        borderRight: isMobile ? 'none' : '1px solid hsl(var(--border))',
+        borderBottom: isMobile ? '1px solid hsl(var(--border))' : 'none',
         background: 'hsl(var(--card) / 0.7)',
       }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 20, padding: '0 8px' }}>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: isMobile ? 12 : 20, padding: '0 8px' }}>
           {t('help.title')}
         </h2>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 6 : 0, overflowX: isMobile ? 'auto' : 'visible' }}>
         {CATEGORIES.map((cat) => {
           const active = activeCategory === cat.id;
           const Icon = cat.icon;
@@ -108,8 +118,9 @@ const Help = () => {
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-                padding: '9px 12px', borderRadius: 8, marginBottom: 2, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 10, width: isMobile ? 'auto' : '100%',
+                flexShrink: 0, whiteSpace: 'nowrap',
+                padding: '9px 12px', borderRadius: 8, marginBottom: isMobile ? 0 : 2, cursor: 'pointer',
                 background: active ? 'hsl(var(--primary) / 0.1)' : 'transparent',
                 border: active ? '1px solid hsl(var(--primary) / 0.2)' : '1px solid transparent',
                 color: active ? '#F97316' : 'hsl(var(--muted-foreground))',
@@ -122,10 +133,11 @@ const Help = () => {
             </button>
           );
         })}
+        </div>
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, padding: '28px 36px 48px', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: isMobile ? '18px 16px 40px' : '28px 36px 48px', overflowY: 'auto' }}>
         {/* Search */}
         <div style={{ position: 'relative', maxWidth: 480, marginBottom: 28 }}>
           <Search style={{
