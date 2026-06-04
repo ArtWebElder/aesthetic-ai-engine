@@ -16,10 +16,10 @@ import { useTheme } from 'next-themes';
 type SettingsTab = 'profile' | 'preferences' | 'brandkit' | 'apikeys';
 
 const TABS: { id: SettingsTab; label: string; Icon: React.FC<{ size?: number }> }[] = [
-  { id: 'profile', label: 'Perfil', Icon: User },
-  { id: 'preferences', label: 'Preferências', Icon: Settings2 },
-  { id: 'brandkit', label: 'Brand Kit', Icon: Palette },
-  { id: 'apikeys', label: 'API Keys', Icon: Key },
+  { id: 'profile', label: 'settings.tab.profile', Icon: User },
+  { id: 'preferences', label: 'settings.tab.preferences', Icon: Settings2 },
+  { id: 'brandkit', label: 'settings.tab.brandkit', Icon: Palette },
+  { id: 'apikeys', label: 'settings.tab.apikeys', Icon: Key },
 ];
 
 const MOCK_KEYS = [
@@ -126,8 +126,8 @@ const Settings = () => {
   const renderTab = () => {
     if (activeTab === 'profile') return (
       <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>Perfil</h2>
-        <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>Gerencie suas informações pessoais.</p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>{t('settings.profile')}</h2>
+        <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>{t('settings.profile_subtitle')}</p>
 
         {/* Avatar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 28 }}>
@@ -147,25 +147,25 @@ const Settings = () => {
           </div>
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{name}</div>
-            <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginTop: 2 }}>Plano Pro · Membro desde Jan 2026</div>
+            <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginTop: 2 }}>{t('settings.profile_member')}</div>
           </div>
         </div>
 
         <div style={{ maxWidth: 420 }}>
-          <Field label="Nome completo" value={name} onChange={setName} placeholder="Seu nome" />
-          <Field label="Email" value={email} onChange={() => {}} disabled />
-          <Field label="Telefone" value={phone} onChange={setPhone} placeholder="+55 00 0000-0000" type="tel" />
+          <Field label={t('settings.full_name')} value={name} onChange={setName} placeholder={t('settings.name_ph')} />
+          <Field label={t('settings.email')} value={email} onChange={() => {}} disabled />
+          <Field label={t('settings.phone')} value={phone} onChange={setPhone} placeholder={t('settings.phone_ph')} type="tel" />
         </div>
 
         <button
-          onClick={() => toast.success('Configurações salvas!')}
+          onClick={() => toast.success(t('settings.toast.saved'))}
           style={{
             padding: '10px 28px', borderRadius: 9, border: 'none',
             background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
             color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
             fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)', marginTop: 4,
           }}
-        >Salvar alterações</button>
+        >{t('settings.save_changes')}</button>
 
         {/* Danger zone — contained at max-width 420px */}
         <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid hsl(var(--border))', maxWidth: 420 }}>
@@ -173,8 +173,8 @@ const Settings = () => {
             border: '1px solid rgba(239,68,68,0.25)', borderRadius: 12,
             background: 'rgba(239,68,68,0.03)', padding: '18px 20px',
           }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: '#EF4444', marginBottom: 4 }}>Zona de perigo</h3>
-            <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', marginBottom: 14 }}>Ações irreversíveis para sua conta.</p>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: '#EF4444', marginBottom: 4 }}>{t('settings.danger_zone')}</h3>
+            <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', marginBottom: 14 }}>{t('settings.danger_desc')}</p>
             <button
               onClick={() => setConfirmDeleteAccount(true)}
               style={{
@@ -185,7 +185,7 @@ const Settings = () => {
               }}
               onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.05)'}
               onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
-            >Excluir minha conta</button>
+            >{t('settings.delete_my_account')}</button>
           </div>
         </div>
       </div>
@@ -193,17 +193,17 @@ const Settings = () => {
 
     if (activeTab === 'preferences') return (
       <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>Preferências</h2>
-        <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>Personalize sua experiência no Creatyng.</p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>{t('settings.tab.preferences')}</h2>
+        <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>{t('settings.pref_subtitle')}</p>
 
         {/* Language — wired to useI18n().setLang() */}
         <div style={{ marginBottom: 24 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>Idioma</label>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>{t('settings.pref.language')}</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {([
-              { id: 'pt-BR' as Lang, label: 'Português' },
-              { id: 'en' as Lang, label: 'English' },
-              { id: 'es' as Lang, label: 'Español' },
+              { id: 'pt-BR' as Lang, label: t('settings.lang_pt') },
+              { id: 'en' as Lang, label: t('settings.lang_en') },
+              { id: 'es' as Lang, label: t('settings.lang_es') },
             ] as const).map(l => {
               const active = lang === l.id;
               return (
@@ -224,12 +224,12 @@ const Settings = () => {
 
         {/* Theme — wired to next-themes useTheme() */}
         <div style={{ marginBottom: 24 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>Tema</label>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>{t('settings.theme')}</label>
           <div style={{ display: 'flex', gap: 8 }}>
             {[
-              { id: 'light', label: 'Claro', Icon: Sun },
-              { id: 'dark', label: 'Escuro', Icon: Moon },
-              { id: 'system', label: 'Auto', Icon: Monitor },
+              { id: 'light', label: t('settings.theme_light'), Icon: Sun },
+              { id: 'dark', label: t('settings.theme_dark'), Icon: Moon },
+              { id: 'system', label: t('settings.theme_auto'), Icon: Monitor },
             ].map(th => {
               const active = appTheme === th.id;
               return (
@@ -250,7 +250,7 @@ const Settings = () => {
 
         {/* Default format */}
         <div style={{ marginBottom: 24 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>Formato padrão</label>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>{t('settings.pref.format_default')}</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {['1:1', '9:16', '4:5', '16:9'].map(fmt => (
               <button key={fmt} style={{
@@ -266,7 +266,7 @@ const Settings = () => {
 
         {/* Export quality */}
         <div style={{ marginBottom: 24 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>Qualidade de exportação</label>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>{t('settings.pref.export_quality')}</label>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {['2K (1080p)', '4K (2160p)'].map(q => (
               <button key={q} style={{
@@ -282,30 +282,30 @@ const Settings = () => {
 
         {/* Notifications */}
         <div style={{ marginBottom: 8 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 4, display: 'block' }}>Notificações</label>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 4, display: 'block' }}>{t('settings.pref.notifications')}</label>
           <div style={{ maxWidth: 360 }}>
-            <Toggle label="Notificações por email" on={emailNotif} onToggle={() => setEmailNotif(v => !v)} />
-            <Toggle label="Notificações push" on={pushNotif} onToggle={() => setPushNotif(v => !v)} />
+            <Toggle label={t('settings.pref.email_notif')} on={emailNotif} onToggle={() => setEmailNotif(v => !v)} />
+            <Toggle label={t('settings.pref.push_notif')} on={pushNotif} onToggle={() => setPushNotif(v => !v)} />
           </div>
         </div>
 
-        <button onClick={() => toast.success('Preferências salvas!')} style={{
+        <button onClick={() => toast.success(t('settings.toast.prefs_saved'))} style={{
           padding: '10px 28px', borderRadius: 9, border: 'none',
           background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
           color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
           fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)', marginTop: 12,
-        }}>Salvar preferências</button>
+        }}>{t('settings.save_preferences')}</button>
       </div>
     );
 
     if (activeTab === 'brandkit') return (
       <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>Brand Kit</h2>
-        <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>Configure a identidade visual da sua marca para aplicar nos criativos.</p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>{t('settings.tab.brandkit')}</h2>
+        <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>{t('settings.brand.subtitle')}</p>
 
         {/* Logo upload */}
         <div style={{ marginBottom: 28 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>Logo da marca</label>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>{t('settings.brand.logo')}</label>
           <div
             style={{
               border: '2px dashed hsl(var(--border))', borderRadius: 12,
@@ -318,13 +318,13 @@ const Settings = () => {
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border))'; (e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))'; }}
           >
             <Upload size={20} />
-            <span style={{ fontSize: 10, textAlign: 'center', lineHeight: 1.3 }}>PNG / SVG{'\n'}Max 2MB</span>
+            <span style={{ fontSize: 10, textAlign: 'center', lineHeight: 1.3 }}>{t('settings.brand.logo_formats')}</span>
           </div>
         </div>
 
         {/* Brand colors */}
         <div style={{ marginBottom: 28, position: 'relative' }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 10, display: 'block' }}>Cores da marca</label>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 10, display: 'block' }}>{t('settings.brand.colors')}</label>
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
             {brandColors.map((color, i) => (
               <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
@@ -353,7 +353,7 @@ const Settings = () => {
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border))'; (e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))'; }}
               ><Plus size={15} /></button>
-              <span style={{ fontSize: 9.5, color: 'hsl(var(--muted-foreground))' }}>Add</span>
+              <span style={{ fontSize: 9.5, color: 'hsl(var(--muted-foreground))' }}>{t('settings.brand.add')}</span>
             </div>
           </div>
 
@@ -370,7 +370,7 @@ const Settings = () => {
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Editar cor</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{t('settings.brand.edit_color')}</span>
                 <button
                   onClick={() => { setBrandColors(brandColors.filter((_, idx) => idx !== activeColorIdx)); setActiveColorIdx(null); }}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', display: 'flex', padding: 2 }}
@@ -398,14 +398,14 @@ const Settings = () => {
                   background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
                   fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}
-              >Aplicar</button>
+              >{t('settings.brand.apply')}</button>
             </div>
           )}
         </div>
 
         {/* Brand fonts */}
         <div style={{ marginBottom: 28 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 10, display: 'block' }}>Fontes da marca</label>
+          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 10, display: 'block' }}>{t('settings.brand.fonts')}</label>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             {brandFonts.map((f, i) => (
               <div key={i} style={{
@@ -429,7 +429,7 @@ const Settings = () => {
                   fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, transition: 'all 150ms',
                 }}
               >
-                <Plus size={14} /> Adicionar fonte
+                <Plus size={14} /> {t('settings.brand.add_font')}
                 <ChevronDown size={13} style={{ transition: 'transform 200ms', transform: fontDropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
               </button>
               {fontDropdownOpen && (
@@ -468,33 +468,33 @@ const Settings = () => {
         </div>
 
         <div style={{ marginBottom: 20 }}>
-          <Toggle label="Aplicar Brand Kit automaticamente" on={false} onToggle={() => toast.info('Em breve!')} />
+          <Toggle label={t('settings.brand.auto_apply')} on={false} onToggle={() => toast.info(t('settings.toast.soon'))} />
         </div>
 
-        <button onClick={() => toast.success('Brand Kit atualizado!')} style={{
+        <button onClick={() => toast.success(t('settings.toast.brand_saved'))} style={{
           padding: '10px 28px', borderRadius: 9, border: 'none',
           background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
           color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
           fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)',
-        }}>Salvar Brand Kit</button>
+        }}>{t('settings.save_brand_kit')}</button>
       </div>
     );
 
     if (activeTab === 'apikeys') return (
       <div style={{ animation: ready ? 'fdUp 400ms 80ms ease both' : 'none' }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>API Keys</h2>
-        <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>Gerencie suas chaves de API para integração.</p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4, color: 'hsl(var(--foreground))' }}>{t('settings.apikeys.title')}</h2>
+        <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 28 }}>{t('settings.apikeys.integration_subtitle')}</p>
 
         {/* BYOK section */}
         <div style={{
           padding: '16px 20px', borderRadius: 12, marginBottom: 28,
           border: '1px solid hsl(var(--border))', background: 'hsl(var(--muted) / 0.3)',
         }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Conecte suas próprias chaves de API</h3>
-          <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', marginBottom: 14 }}>Use modelos premium e tenha controle total sobre custos.</p>
+          <h3 style={{ fontSize: 14, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 4 }}>{t('settings.apikeys.byok_title')}</h3>
+          <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', marginBottom: 14 }}>{t('settings.apikeys.byok_desc')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 420, opacity: 0.5, pointerEvents: 'none' }}>
-            <Field label="Gemini API Key" value="" onChange={() => {}} placeholder="AIza..." disabled />
-            <Field label="Replicate API Token" value="" onChange={() => {}} placeholder="r8_..." disabled />
+            <Field label={t('settings.apikeys.gemini')} value="" onChange={() => {}} placeholder="AIza..." disabled />
+            <Field label={t('settings.apikeys.replicate')} value="" onChange={() => {}} placeholder="r8_..." disabled />
           </div>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -502,7 +502,7 @@ const Settings = () => {
             background: '#F59E0B20', color: '#B45309', fontSize: 11.5, fontWeight: 500,
           }}>
             <AlertTriangle size={13} />
-            BYOK não disponível no momento — em breve
+            {t('settings.apikeys.byok_unavailable')}
           </div>
         </div>
 
@@ -519,7 +519,7 @@ const Settings = () => {
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{k.name}</div>
                 <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginTop: 3, fontFamily: 'monospace' }}>{k.key}</div>
-                <div style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 3, opacity: 0.7 }}>Criada em {k.created}</div>
+                <div style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 3, opacity: 0.7 }}>{t('settings.apikeys.created', { date: k.created })}</div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
@@ -529,7 +529,7 @@ const Settings = () => {
                     background: 'hsl(var(--card))', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
                     fontSize: 11.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', fontFamily: 'inherit',
                   }}
-                ><Copy size={14} /> Copiar</button>
+                ><Copy size={14} /> {t('settings.apikeys.copy')}</button>
                 <button
                   onClick={() => deleteKey(k.id)}
                   style={{
@@ -553,13 +553,13 @@ const Settings = () => {
               created: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }),
             };
             setApiKeys(prev => [...prev, newKey]);
-            toast.success('Nova API Key criada!');
+            toast.success(t('settings.toast.key_created'));
           }}
           style={{
             padding: '10px 22px', borderRadius: 9, border: '1.5px solid #ff713d',
             background: 'hsl(var(--primary) / 0.1)', color: '#ff713d', fontSize: 13, fontWeight: 600,
             cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
-          }}><Plus size={15} /> Nova API Key</button>
+          }}><Plus size={15} /> {t('settings.apikeys.new_btn')}</button>
       </div>
     );
 
@@ -604,7 +604,7 @@ const Settings = () => {
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'hsl(var(--foreground) / 0.04)'; }}
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
             >
-              <tab.Icon size={18} />{tab.label}
+              <tab.Icon size={18} />{t(tab.label)}
             </button>
           );
         })}
@@ -618,11 +618,11 @@ const Settings = () => {
 
       <ConfirmModal
         open={confirmDeleteAccount}
-        onConfirm={() => { setConfirmDeleteAccount(false); toast.error('Conta excluída (placeholder)'); }}
+        onConfirm={() => { setConfirmDeleteAccount(false); toast.error(t('settings.toast.account_deleted')); }}
         onCancel={() => setConfirmDeleteAccount(false)}
-        title="Excluir sua conta?"
-        description="Todos os seus dados, projetos e créditos serão removidos permanentemente. Esta ação não pode ser desfeita."
-        confirmLabel="Excluir conta"
+        title={t('settings.delete_confirm.title')}
+        description={t('settings.delete_confirm.desc')}
+        confirmLabel={t('settings.delete_confirm.confirm')}
         variant="danger"
       />
     </div>
