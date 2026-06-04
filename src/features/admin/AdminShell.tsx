@@ -3,19 +3,21 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useI18n } from '@/i18n';
 
-const MODULE_TITLES: Record<string, string> = {
-  '/admin': 'Visão Geral',
-  '/admin/users': 'Usuários',
-  '/admin/finance': 'Financeiro',
-  '/admin/generations': 'Gerações',
-  '/admin/tokens': 'Tokens',
-  '/admin/notifications': 'Notificações',
+const MODULE_TITLE_KEYS: Record<string, string> = {
+  '/admin': 'admin.overview',
+  '/admin/users': 'admin.users',
+  '/admin/finance': 'admin.finance',
+  '/admin/generations': 'admin.generations',
+  '/admin/tokens': 'admin.tokens',
+  '/admin/notifications': 'admin.notifications',
 };
 
 export function AdminShell() {
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useI18n();
 
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   useEffect(() => {
@@ -28,7 +30,8 @@ export function AdminShell() {
   // Close the drawer whenever the route changes (e.g. after picking a nav item)
   useEffect(() => { setDrawerOpen(false); }, [location.pathname]);
 
-  const title = MODULE_TITLES[location.pathname] ?? 'Admin';
+  const titleKey = MODULE_TITLE_KEYS[location.pathname];
+  const title = titleKey ? t(titleKey) : 'Admin';
 
   const initials = user?.email
     ? user.email.slice(0, 2).toUpperCase()
@@ -69,7 +72,7 @@ export function AdminShell() {
             {isMobile && (
               <button
                 onClick={() => setDrawerOpen(true)}
-                aria-label="Menu"
+                aria-label={t('admin.menu')}
                 style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#141417', flexShrink: 0 }}
               >
                 <Menu size={18} />
@@ -80,7 +83,7 @@ export function AdminShell() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
-              <span style={{ fontSize: 11.5, color: '#8e8e96' }}>Online</span>
+              <span style={{ fontSize: 11.5, color: '#8e8e96' }}>{t('admin.online')}</span>
             </div>
             <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#EF4444,#141417)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11.5 }}>
               {initials}

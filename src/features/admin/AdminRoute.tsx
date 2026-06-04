@@ -2,9 +2,11 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/services/supabaseClient';
+import { useI18n } from '@/i18n';
 
 export function AdminRoute({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
+  const { t } = useI18n();
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -36,7 +38,7 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff713d] to-[#FF9B70] flex items-center justify-center animate-pulse">
             <span className="text-white font-extrabold text-lg">C</span>
           </div>
-          <span className="text-white/40 text-sm font-medium">Verificando acesso...</span>
+          <span className="text-white/40 text-sm font-medium">{t('admin.verifying_access')}</span>
         </div>
       </div>
     );

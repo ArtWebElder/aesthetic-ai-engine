@@ -10,6 +10,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useI18n } from '@/i18n';
 
 const adminNavItems = [
   { labelKey: 'admin.overview', icon: LayoutDashboard, path: '/admin' },
@@ -20,19 +21,11 @@ const adminNavItems = [
   { labelKey: 'admin.notifications', icon: Bell, path: '/admin/notifications' },
 ];
 
-const LABELS: Record<string, string> = {
-  'admin.overview': 'Visão Geral',
-  'admin.users': 'Usuários',
-  'admin.finance': 'Financeiro',
-  'admin.generations': 'Gerações',
-  'admin.tokens': 'Tokens',
-  'admin.notifications': 'Notificações',
-};
-
 export function AdminSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
+  const { t } = useI18n();
 
   const isActive = (path: string) => {
     if (path === '/admin') return location.pathname === '/admin';
@@ -48,7 +41,7 @@ export function AdminSidebar() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
           <span style={{ fontWeight: 700, fontSize: 14, color: '#141417' }}>Creatyng</span>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: '#EF4444', textTransform: 'uppercase' }}>Super Admin</span>
+          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', color: '#EF4444', textTransform: 'uppercase' }}>{t('admin.super_admin')}</span>
         </div>
       </div>
 
@@ -77,7 +70,7 @@ export function AdminSidebar() {
                 <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 18, background: '#ff713d', borderRadius: '0 3px 3px 0' }} />
               )}
               <item.icon style={{ width: 15, height: 15, flexShrink: 0 }} />
-              {LABELS[item.labelKey]}
+              {t(item.labelKey)}
             </button>
           );
         })}
@@ -92,7 +85,7 @@ export function AdminSidebar() {
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96'; }}
         >
           <ArrowLeft style={{ width: 14, height: 14, flexShrink: 0 }} />
-          Voltar ao App
+          {t('admin.back_to_app')}
         </button>
         <button
           onClick={() => { signOut(); navigate('/login'); }}
@@ -101,7 +94,7 @@ export function AdminSidebar() {
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; (e.currentTarget as HTMLButtonElement).style.color = '#b5b5bb'; }}
         >
           <LogOut style={{ width: 14, height: 14, flexShrink: 0 }} />
-          Sair
+          {t('admin.sign_out')}
         </button>
       </div>
     </div>

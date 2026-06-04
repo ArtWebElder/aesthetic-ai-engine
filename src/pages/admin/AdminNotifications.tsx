@@ -5,23 +5,24 @@ import {
 } from 'lucide-react';
 import { adminService } from '@/services/adminService';
 import { Skeleton } from '@/components/creatyng';
+import { useI18n } from '@/i18n';
 
 type NotifType = 'info' | 'warning' | 'promo' | 'update' | 'billing';
 type Recipients = 'all' | 'free' | 'paid' | 'specific';
 
 const TYPE_CONFIG: Record<NotifType, { icon: React.ElementType; color: string; label: string }> = {
-  info: { icon: Info, color: '#3B82F6', label: 'Informação' },
-  warning: { icon: AlertTriangle, color: '#F59E0B', label: 'Aviso' },
-  promo: { icon: Sparkles, color: '#8B5CF6', label: 'Promoção' },
-  update: { icon: RefreshCw, color: '#10B981', label: 'Atualização' },
-  billing: { icon: DollarSign, color: '#F97316', label: 'Financeiro' },
+  info: { icon: Info, color: '#3B82F6', label: 'admin.notif.type.info' },
+  warning: { icon: AlertTriangle, color: '#F59E0B', label: 'admin.notif.type.warning' },
+  promo: { icon: Sparkles, color: '#8B5CF6', label: 'admin.notif.type.promo' },
+  update: { icon: RefreshCw, color: '#10B981', label: 'admin.notif.type.update' },
+  billing: { icon: DollarSign, color: '#F97316', label: 'admin.notif.type.billing' },
 };
 
 const RECIPIENT_CONFIG: Record<Recipients, { icon: React.ElementType; label: string }> = {
-  all: { icon: Users, label: 'Todos os usuários' },
-  free: { icon: User, label: 'Plano Free' },
-  paid: { icon: Crown, label: 'Planos pagos' },
-  specific: { icon: User, label: 'Usuário específico' },
+  all: { icon: Users, label: 'admin.notif.rec.all' },
+  free: { icon: User, label: 'admin.notif.rec.free' },
+  paid: { icon: Crown, label: 'admin.notif.rec.paid' },
+  specific: { icon: User, label: 'admin.notif.rec.specific' },
 };
 
 type HistoryItem = { id: string; type: string; recipients: string; title: string; message: string; send_email: boolean; pinned: boolean; sent_by: string | null; created_at: string };
@@ -31,6 +32,7 @@ const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#9
 const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#1A1A1A', borderBottom: '1px solid rgba(0,0,0,0.04)' };
 
 export default function AdminNotifications() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [history, setHistory] = useState<HistoryItem[]>([]);
 
@@ -106,12 +108,12 @@ export default function AdminNotifications() {
         <div style={cardStyle}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Bell style={{ width: 15, height: 15, color: '#F97316' }} />
-            Enviar Notificação
+            {t('admin.notif.send_title')}
           </div>
 
           {/* Type selector */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Tipo</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>{t('admin.notif.field_type')}</label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {(Object.keys(TYPE_CONFIG) as NotifType[]).map((t) => {
                 const conf = TYPE_CONFIG[t];
@@ -126,7 +128,7 @@ export default function AdminNotifications() {
                     color: active ? conf.color : '#9CA3AF',
                   }}>
                     <Icon style={{ width: 13, height: 13 }} />
-                    {conf.label}
+                    {t(conf.label)}
                   </button>
                 );
               })}
@@ -135,7 +137,7 @@ export default function AdminNotifications() {
 
           {/* Recipients selector */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Destinatários</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>{t('admin.notif.field_recipients')}</label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {(Object.keys(RECIPIENT_CONFIG) as Recipients[]).map((r) => {
                 const conf = RECIPIENT_CONFIG[r];
@@ -150,7 +152,7 @@ export default function AdminNotifications() {
                     color: active ? '#F97316' : '#9CA3AF',
                   }}>
                     <Icon style={{ width: 13, height: 13 }} />
-                    {conf.label}
+                    {t(conf.label)}
                   </button>
                 );
               })}
@@ -159,22 +161,22 @@ export default function AdminNotifications() {
 
           {/* Title */}
           <div style={{ marginBottom: 12 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Título</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>{t('admin.notif.field_title')}</label>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Título da notificação..."
+              placeholder={t('admin.notif.title_ph')}
               style={inputStyle}
             />
           </div>
 
           {/* Message */}
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Mensagem</label>
+            <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>{t('admin.notif.field_message')}</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Corpo da mensagem..."
+              placeholder={t('admin.notif.message_ph')}
               rows={3}
               style={{ ...inputStyle, resize: 'vertical', minHeight: 70 }}
             />
@@ -185,7 +187,7 @@ export default function AdminNotifications() {
             <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12, color: '#6B7280' }}>
               <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} style={{ accentColor: '#F97316' }} />
               <Pin style={{ width: 13, height: 13 }} />
-              Fixar no topo
+              {t('admin.notif.pin')}
             </label>
           </div>
 
@@ -205,13 +207,13 @@ export default function AdminNotifications() {
             {sending === 'loading' && <Loader2 style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />}
             {sending === 'success' && <CheckCircle style={{ width: 14, height: 14 }} />}
             {sending === 'idle' && <Send style={{ width: 14, height: 14 }} />}
-            {sending === 'loading' ? 'Enviando...' : sending === 'success' ? 'Enviada!' : 'Enviar notificação'}
+            {sending === 'loading' ? t('admin.notif.sending') : sending === 'success' ? t('admin.notif.sent') : t('admin.notif.send_btn')}
           </button>
         </div>
 
         {/* Preview */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A', marginBottom: 16 }}>Preview do usuário</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A', marginBottom: 16 }}>{t('admin.notif.preview_title')}</div>
           <div style={{
             background: '#FAFAF8', borderRadius: 12, padding: 16, minHeight: 180,
             display: 'flex', flexDirection: 'column', gap: 12,
@@ -233,28 +235,28 @@ export default function AdminNotifications() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>
-                    {title || 'Título da notificação'}
+                    {title || t('admin.notif.preview_title_default')}
                   </span>
                   {pinned && <Pin style={{ width: 11, height: 11, color: '#F97316' }} />}
                 </div>
                 <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.4 }}>
-                  {message || 'Corpo da mensagem aparecerá aqui...'}
+                  {message || t('admin.notif.preview_body_default')}
                 </div>
-                <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 4 }}>agora</div>
+                <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 4 }}>{t('admin.notif.now')}</div>
               </div>
             </div>
 
             {/* Meta info */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: `${typeConf.color}12`, color: typeConf.color }}>
-                {typeConf.label}
+                {t(typeConf.label)}
               </span>
               <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
-                {RECIPIENT_CONFIG[recipients].label}
+                {t(RECIPIENT_CONFIG[recipients].label)}
               </span>
               {pinned && (
                 <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
-                  Fixada
+                  {t('admin.notif.pinned')}
                 </span>
               )}
             </div>
@@ -264,10 +266,10 @@ export default function AdminNotifications() {
 
       {/* History table */}
       <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>Últimas notificações enviadas</div>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>{t('admin.notif.history_title')}</div>
         <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
           <thead><tr>
-            {['Tipo', 'Título', 'Dest.', 'Email', 'Fixada', 'Data'].map((h) => (
+            {[t('admin.notif.field_type'), t('admin.notif.field_title'), t('admin.notif.col.recipients'), t('admin.users.columns.email'), t('admin.notif.pinned'), t('admin.col.date')].map((h) => (
               <th key={h} style={thStyle}>{h}</th>
             ))}
           </tr></thead>
@@ -284,7 +286,7 @@ export default function AdminNotifications() {
                   <td style={tdStyle}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: `${conf.color}12`, color: conf.color }}>
                       <Icon style={{ width: 11, height: 11 }} />
-                      {conf.label}
+                      {t(conf.label)}
                     </span>
                   </td>
                   <td style={tdStyle}>
@@ -294,7 +296,7 @@ export default function AdminNotifications() {
                     </div>
                   </td>
                   <td style={tdStyle}>
-                    <span style={{ fontSize: 11, color: '#6B7280' }}>{recConf.label}</span>
+                    <span style={{ fontSize: 11, color: '#6B7280' }}>{t(recConf.label)}</span>
                   </td>
                   <td style={tdStyle}>
                     {item.send_email ? (
@@ -319,7 +321,7 @@ export default function AdminNotifications() {
             {history.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ ...tdStyle, textAlign: 'center', color: '#9CA3AF', padding: '24px 20px' }}>
-                  Nenhuma notificação enviada ainda.
+                  {t('admin.notif.empty')}
                 </td>
               </tr>
             )}

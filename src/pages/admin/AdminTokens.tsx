@@ -3,6 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { Skeleton } from '@/components/creatyng';
+import { useI18n } from '@/i18n';
 
 type Provider = { name: string; icon: string; tokensToday: number; totalCapacity: number; costEstimate: number };
 type TopUser = { name: string; tokens: number; generations: number; cost: number };
@@ -31,6 +32,7 @@ const thStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: '#8
 const tdStyle: React.CSSProperties = { padding: '9px 16px', fontSize: 12, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
 
 export default function AdminTokens() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [providers, setProviders] = useState<Provider[]>([]);
   const [topUsers, setTopUsers] = useState<TopUser[]>([]);
@@ -77,24 +79,24 @@ export default function AdminTokens() {
                 <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(20,20,23,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{p.icon}</div>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>{p.name}</p>
-                  <p style={{ fontSize: 10.5, color: '#8e8e96' }}>Provider de IA</p>
+                  <p style={{ fontSize: 10.5, color: '#8e8e96' }}>{t('admin.tok.ai_provider')}</p>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 10.5, color: '#8e8e96' }}>Tokens hoje</span>
+                  <span style={{ fontSize: 10.5, color: '#8e8e96' }}>{t('admin.tokens.tokens_today')}</span>
                   <span style={{ fontSize: 12, fontWeight: 500, color: '#141417' }}>{p.tokensToday.toLocaleString()}</span>
                 </div>
                 <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(20,20,23,0.06)', overflow: 'hidden' }}>
                   <div style={{ width: `${usePct}%`, height: '100%', borderRadius: 3, background: '#ff713d', transition: 'width 600ms ease' }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 10, color: '#b5b5bb' }}>{usePct}% do limite</span>
-                  <span style={{ fontSize: 10, color: '#b5b5bb' }}>Max: {p.totalCapacity.toLocaleString()}</span>
+                  <span style={{ fontSize: 10, color: '#b5b5bb' }}>{t('admin.tok.pct_limit', { pct: usePct })}</span>
+                  <span style={{ fontSize: 10, color: '#b5b5bb' }}>{t('admin.tok.max', { n: p.totalCapacity.toLocaleString() })}</span>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(20,20,23,0.06)', paddingTop: 12 }}>
-                <span style={{ fontSize: 10.5, color: '#8e8e96' }}>Custo estimado hoje</span>
+                <span style={{ fontSize: 10.5, color: '#8e8e96' }}>{t('admin.tok.est_cost')}</span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981' }}>${p.costEstimate.toFixed(2)}</span>
               </div>
             </div>
@@ -106,7 +108,7 @@ export default function AdminTokens() {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
         {/* Stacked Bar Chart */}
         <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>Consumo diário por provedor</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>{t('admin.tokens.daily_by_provider')}</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={dailyData}>
               <XAxis dataKey="day" tick={CHART_STYLE} axisLine={false} tickLine={false} />
@@ -122,10 +124,10 @@ export default function AdminTokens() {
 
         {/* Top Users Ranking */}
         <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>Top 10 por consumo</div>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>{t('admin.tokens.top_users')}</div>
           <table style={{ width: '100%', minWidth: 420, borderCollapse: 'collapse' }}>
             <thead><tr>
-              {['#', 'Usuário', 'Tokens', 'Gerações', 'Custo'].map((h) => (
+              {[t('admin.tokens.col.rank'), t('admin.tokens.col.user'), t('admin.tokens.col.tokens'), t('admin.tokens.col.generations'), t('admin.tokens.col.cost')].map((h) => (
                 <th key={h} style={thStyle}>{h}</th>
               ))}
             </tr></thead>

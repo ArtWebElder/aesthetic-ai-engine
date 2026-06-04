@@ -3,6 +3,7 @@ import { adminService, type AdminGeneration } from '@/services/adminService';
 import { CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { Skeleton } from '@/components/creatyng';
 import { useAnimatedCounter } from '@/hooks/useAnimatedCounter';
+import { useI18n } from '@/i18n';
 
 type Log = AdminGeneration & { userName?: string; feature?: string; tokens?: number; duration?: string; time?: string };
 
@@ -22,6 +23,7 @@ const thStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: '#8
 const tdStyle: React.CSSProperties = { padding: '10px 16px', fontSize: 12, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
 
 export default function AdminGenerations() {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<Log[]>([]);
   const [total, setTotal] = useState(0);
@@ -84,7 +86,7 @@ export default function AdminGenerations() {
             <Clock style={{ width: 16, height: 16, color: '#8e8e96' }} />
           </div>
           <div>
-            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Total hoje</p>
+            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.total_today')}</p>
             <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{totalCount.toLocaleString('pt-BR')}</p>
           </div>
         </div>
@@ -93,7 +95,7 @@ export default function AdminGenerations() {
             <CheckCircle2 style={{ width: 16, height: 16, color: '#10B981' }} />
           </div>
           <div>
-            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Sucesso %</p>
+            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.success_pct')}</p>
             <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{successPct}%</p>
           </div>
         </div>
@@ -102,7 +104,7 @@ export default function AdminGenerations() {
             <AlertCircle style={{ width: 16, height: 16, color: '#6366f1' }} />
           </div>
           <div>
-            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Tempo médio</p>
+            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.avg_duration')}</p>
             <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{avgDurationRaw.toFixed(1)}s</p>
           </div>
         </div>
@@ -117,7 +119,7 @@ export default function AdminGenerations() {
             border: statusFilter === f ? '1px solid rgba(255,113,61,0.2)' : '1px solid transparent',
             color: statusFilter === f ? '#ff713d' : '#8e8e96',
           }}>
-            {f === 'all' ? `Todos (${logs.length})` : f === 'success' ? `Sucesso (${successCount})` : `Erro (${errorCount})`}
+            {f === 'all' ? `${t('admin.generations.filter.all')} (${logs.length})` : f === 'success' ? `${t('admin.generations.filter.success')} (${successCount})` : `${t('admin.generations.filter.error')} (${errorCount})`}
           </button>
         ))}
       </div>
@@ -126,7 +128,7 @@ export default function AdminGenerations() {
       <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
         <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse' }}>
           <thead><tr>
-            {['ID', 'Usuário', 'Feature', 'Status', 'Créditos', 'Tokens', 'Provider', 'Duração', 'Hora'].map((h) => (
+            {[t('admin.generations.col.id'), t('admin.generations.col.user'), t('admin.generations.col.feature'), t('admin.generations.col.status'), t('admin.generations.col.credits'), t('admin.generations.col.tokens'), t('admin.generations.col.provider'), t('admin.generations.col.duration'), t('admin.generations.col.time')].map((h) => (
               <th key={h} style={thStyle}>{h}</th>
             ))}
           </tr></thead>
@@ -144,7 +146,7 @@ export default function AdminGenerations() {
                   </div>
                 </td>
                 <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, ...(FEATURE_STYLES[log.feature] ?? { background: 'rgba(20,20,23,0.06)', color: '#8e8e96' }) }}>{log.feature}</span></td>
-                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, background: log.status === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', color: log.status === 'success' ? '#10B981' : '#EF4444' }}>{log.status === 'success' ? 'Sucesso' : 'Erro'}</span></td>
+                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, background: log.status === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', color: log.status === 'success' ? '#10B981' : '#EF4444' }}>{log.status === 'success' ? t('admin.status.success') : t('admin.status.error')}</span></td>
                 <td style={{ ...tdStyle, color: '#8e8e96' }}>{log.credits > 0 ? log.credits : '—'}</td>
                 <td style={{ ...tdStyle, color: '#8e8e96' }}>{log.tokens > 0 ? log.tokens.toLocaleString() : '—'}</td>
                 <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, ...(PROVIDER_STYLES[log.provider] ?? { background: 'rgba(20,20,23,0.06)', color: '#8e8e96' }) }}>{log.provider}</span></td>
