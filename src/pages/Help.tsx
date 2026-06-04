@@ -10,64 +10,29 @@ import { useI18n } from '@/i18n';
 
 interface Article {
   id: string;
-  title: string;
-  content: string;
+  titleKey: string;
+  contentKey: string;
   category: string;
 }
 
 const ARTICLES: Article[] = [
-  {
-    id: 'gs-1',
-    title: 'Como começar no Creatyng',
-    content: 'Após criar sua conta, acesse o painel e clique em "Novo Criativo". Você será guiado por um wizard de 4 passos: envie a foto do seu produto, escolha o estilo visual, preencha os textos e clique em Gerar. Em segundos, a IA entrega um criativo de nível agência.',
-    category: 'getting_started',
-  },
-  {
-    id: 'cr-1',
-    title: 'Passo a passo: criando seu primeiro criativo',
-    content: '1. Na tela "Criar", envie a foto do seu produto (PNG, JPG ou WEBP até 10MB).\n2. Escolha entre Food Pop (visuais vibrantes de comida) ou Pop Design (design gráfico ousado).\n3. Preencha o título, preço e CTA. A IA gera automaticamente a composição.\n4. Na tela de resultado, você pode exportar em 2K ou usar o chat de refinamento para ajustes.',
-    category: 'creating',
-  },
-  {
-    id: 'ps-1',
-    title: 'Entendendo os presets de estilo',
-    content: 'O Creatyng oferece presets de estilo que definem a atmosfera visual do seu criativo:\n- Food Pop: cores vibrantes, fundos energéticos, perfeito para restaurantes e delivery.\n- Pop Design: design gráfico ousado com elementos pop art, ideal para campanhas marcantes.\nCada preset configura automaticamente iluminação, paleta de cores e composição.',
-    category: 'presets',
-  },
-  {
-    id: 'ch-1',
-    title: 'Como usar o chat de refinamento',
-    content: 'Após gerar seu criativo, um chat de IA aparece na tela de resultado. Descreva o que quer ajustar: "mude a cor do fundo para azul", "aumente o texto", "adicione mais contraste". A IA interpretará sua instrução e gerará uma nova versão. Cada ajuste custa 1 crédito.',
-    category: 'chat',
-  },
-  {
-    id: 'cd-1',
-    title: 'Como funcionam os créditos',
-    content: 'Cada ação no Creatyng tem um custo em créditos:\n- Food Pop: 5 créditos por geração\n- Pop Design: 8 créditos\n- Chat de refinamento: 1 crédito por ajuste\n- Exportação: gratuita\nVocê recebe créditos conforme seu plano (Grátis: 100/mês, Pro: 1000/mês). Créditos extras podem ser comprados na página de Cobrança.',
-    category: 'credits',
-  },
-  {
-    id: 'ac-1',
-    title: 'Configurações de conta e perfil',
-    content: 'Acesse Configurações no menu lateral para:\n- Perfil: alterar nome, foto e telefone\n- Preferências: idioma, tema (claro/escuro), formato padrão\n- Brand Kit: configurar cores e fontes da sua marca\n- API Keys: gerenciar chaves de integração\nTodas as alterações são salvas automaticamente.',
-    category: 'account',
-  },
-  {
-    id: 'faq-1',
-    title: 'Perguntas frequentes',
-    content: 'Veja as perguntas mais comuns abaixo. Se não encontrar sua dúvida, entre em contato pelo support@creatyng.com.',
-    category: 'faq',
-  },
+  { id: 'gs-1', titleKey: 'help.article.gs1.title', contentKey: 'help.article.gs1.content', category: 'getting_started' },
+  { id: 'cr-1', titleKey: 'help.article.cr1.title', contentKey: 'help.article.cr1.content', category: 'creating' },
+  { id: 'ps-1', titleKey: 'help.article.ps1.title', contentKey: 'help.article.ps1.content', category: 'presets' },
+  { id: 'ch-1', titleKey: 'help.article.ch1.title', contentKey: 'help.article.ch1.content', category: 'chat' },
+  { id: 'cd-1', titleKey: 'help.article.cd1.title', contentKey: 'help.article.cd1.content', category: 'credits' },
+  { id: 'ac-1', titleKey: 'help.article.ac1.title', contentKey: 'help.article.ac1.content', category: 'account' },
+  { id: 'faq-1', titleKey: 'help.article.faq1.title', contentKey: 'help.article.faq1.content', category: 'faq' },
 ];
 
 const CATEGORIES = [
-  { id: 'all', label: 'Todos', icon: HelpCircle },
-  { id: 'getting_started', label: 'Primeiros passos', icon: Rocket },
-  { id: 'creating', label: 'Criar criativos', icon: Sparkles },
-  { id: 'presets', label: 'Presets e estilos', icon: Paintbrush },
-  { id: 'chat', label: 'Chat de refinamento', icon: MessageSquare },
-  { id: 'credits', label: 'Créditos e planos', icon: CreditCard },
-  { id: 'account', label: 'Conta e perfil', icon: UserCircle },
+  { id: 'all', label: 'help.category.all', icon: HelpCircle },
+  { id: 'getting_started', label: 'help.category.getting_started', icon: Rocket },
+  { id: 'creating', label: 'help.category.creating', icon: Sparkles },
+  { id: 'presets', label: 'help.category.presets', icon: Paintbrush },
+  { id: 'chat', label: 'help.category.chat', icon: MessageSquare },
+  { id: 'credits', label: 'help.category.credits', icon: CreditCard },
+  { id: 'account', label: 'help.category.account', icon: UserCircle },
 ];
 
 const faqItems = [
@@ -92,7 +57,7 @@ const Help = () => {
 
   const filtered = ARTICLES.filter((a) => {
     const matchCat = activeCategory === 'all' || a.category === activeCategory;
-    const matchSearch = !search || a.title.toLowerCase().includes(search.toLowerCase()) || a.content.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || t(a.titleKey).toLowerCase().includes(search.toLowerCase()) || t(a.contentKey).toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
 
@@ -129,7 +94,7 @@ const Help = () => {
               }}
             >
               <Icon size={16} />
-              {cat.label}
+              {t(cat.label)}
             </button>
           );
         })}
@@ -172,13 +137,13 @@ const Help = () => {
               }}
             >
               <h3 style={{ fontSize: 15, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 8 }}>
-                {article.title}
+                {t(article.titleKey)}
               </h3>
               <p style={{
                 fontSize: 13.5, color: 'hsl(var(--muted-foreground))',
                 lineHeight: 1.6, whiteSpace: 'pre-line',
               }}>
-                {article.content}
+                {t(article.contentKey)}
               </p>
             </div>
           ))}
@@ -188,7 +153,7 @@ const Help = () => {
               padding: 32, textAlign: 'center',
               color: 'hsl(var(--muted-foreground))', fontSize: 13.5,
             }}>
-              Nenhum artigo encontrado. Tente outra busca.
+              {t('help.no_articles')}
             </div>
           )}
         </div>
@@ -197,7 +162,7 @@ const Help = () => {
         {(activeCategory === 'all' || activeCategory === 'faq') && (
           <div style={{ marginTop: 40, maxWidth: 640 }}>
             <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16, color: 'hsl(var(--foreground))' }}>
-              Perguntas frequentes
+              {t('help.category.faq')}
             </h2>
             <Accordion type="single" collapsible className="space-y-2">
               {faqItems.map((faq, i) => (

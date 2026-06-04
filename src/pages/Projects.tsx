@@ -20,14 +20,15 @@ const PROJECT_COLORS = ['#7C3AED', '#ff713d', '#EC4899', '#10B981', '#06B6D4', '
 
 /* ─── Action Dropdown ─────────────────────────────────── */
 function ActionMenu({ open, onClose, onAction }: { open: boolean; onClose: () => void; onAction: (a: string) => void }) {
+  const { t } = useI18n();
   if (!open) return null;
   const items = [
-    { id: 'open', label: 'Abrir projeto', Icon: Image },
-    { id: 'rename', label: 'Renomear', Icon: Edit2 },
-    { id: 'duplicate', label: 'Duplicar', Icon: Copy },
-    { id: 'download', label: 'Exportar', Icon: Download },
+    { id: 'open', label: t('projects.action.open_project'), Icon: Image },
+    { id: 'rename', label: t('projects.action.rename'), Icon: Edit2 },
+    { id: 'duplicate', label: t('projects.action.duplicate'), Icon: Copy },
+    { id: 'download', label: t('projects.action.export'), Icon: Download },
     null,
-    { id: 'delete', label: 'Excluir', Icon: Trash2, danger: true },
+    { id: 'delete', label: t('projects.action.delete'), Icon: Trash2, danger: true },
   ];
   return (
     <div style={{
@@ -100,13 +101,13 @@ const Projects = () => {
     deleteProject(id);
     setProjects(listProjects());
     setConfirmDelete(null);
-    toast.success('Projeto excluído');
+    toast.success(t('projects.toast.deleted'));
   };
 
   const handleDuplicate = (p: Project) => {
-    createProject(`${p.name} (cópia)`, p.spec.format);
+    createProject(`${p.name} ${t('projects.copy_suffix')}`, p.spec.format);
     setProjects(listProjects());
-    toast.success('Projeto duplicado!');
+    toast.success(t('projects.toast.duplicated'));
   };
 
   const totalVersions = projects.length * 2; // approximate
@@ -128,8 +129,8 @@ const Projects = () => {
         animation: ready ? 'fdUp 450ms ease both' : 'none',
       }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 2 }}>Meus Projetos</h1>
-          <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>{projects.length} projetos · {totalVersions} versões</p>
+          <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 2 }}>{t('projects.my_title')}</h1>
+          <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>{t('projects.count', { count: projects.length })} · {t('projects.versions_count', { count: totalVersions })}</p>
         </div>
         <button
           onClick={() => navigate('/app/create')}
@@ -140,7 +141,7 @@ const Projects = () => {
             display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 3px 10px rgba(255,113,61,0.27)',
           }}
         >
-          <Plus size={15} />Novo Projeto
+          <Plus size={15} />{t('projects.new_project')}
         </button>
       </div>
 
@@ -159,7 +160,7 @@ const Projects = () => {
             <Search size={14} color="hsl(var(--muted-foreground))" />
             <input
               value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar projeto..."
+              placeholder={t('projects.search_placeholder')}
               style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12.5, fontFamily: 'inherit', color: 'hsl(var(--foreground))' }}
             />
           </div>
@@ -171,7 +172,7 @@ const Projects = () => {
               background: filter === f ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))',
               color: filter === f ? '#ff713d' : 'hsl(var(--muted-foreground))', fontWeight: filter === f ? 600 : 400,
               transition: 'all 150ms',
-            }}>{f === 'all' ? 'Todos' : f}</button>
+            }}>{f === 'all' ? t('projects.all') : f}</button>
           ))}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -184,8 +185,8 @@ const Projects = () => {
               background: 'hsl(var(--card))', fontSize: 12, fontFamily: 'inherit', color: 'hsl(var(--muted-foreground))', cursor: 'pointer',
             }}
           >
-            <option value="recent">Mais recentes</option>
-            <option value="name">Nome A-Z</option>
+            <option value="recent">{t('projects.sort.recent')}</option>
+            <option value="name">{t('projects.sort.name_az')}</option>
           </select>
           {/* View toggle */}
           <div style={{ display: 'flex', background: 'hsl(var(--muted))', borderRadius: 7, padding: 2 }}>
@@ -245,7 +246,7 @@ const Projects = () => {
                     position: 'absolute', top: 8, left: 8, padding: '2px 7px', borderRadius: 5,
                     background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
                     fontSize: 10, fontWeight: 600, color: '#5a5a60',
-                  }}>1 versão</div>
+                  }}>{t('projects.one_version')}</div>
                   {/* More menu */}
                   <div style={{ position: 'absolute', top: 8, right: 8 }} onClick={e => e.stopPropagation()}>
                     <button
@@ -295,7 +296,7 @@ const Projects = () => {
         <div style={{ background: 'hsl(var(--card))', borderRadius: 14, border: '1px solid hsl(var(--border))', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
           {/* Header */}
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 80px' : '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '10px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
-            {(isMobile ? ['Projeto', ''] : ['Projeto', 'Template', 'Versões', 'Data', '']).map((h, i) => (
+            {(isMobile ? [t('projects.col.project'), ''] : [t('projects.col.project'), t('projects.col.template'), t('projects.col.versions'), t('projects.col.date'), '']).map((h, i) => (
               <span key={i} style={{ fontSize: 10.5, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
             ))}
           </div>
@@ -370,10 +371,10 @@ const Projects = () => {
               <FolderOpen size={28} />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, position: 'relative' }}>
-              {search ? 'Nenhum projeto encontrado' : 'Nenhum projeto ainda'}
+              {search ? t('projects.empty') : t('projects.empty_title')}
             </h3>
             <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, marginBottom: 20, position: 'relative' }}>
-              {search ? 'Tente ajustar os filtros ou o termo de busca.' : 'Crie seu primeiro criativo profissional e ele aparecerá aqui.'}
+              {search ? t('projects.empty_search_hint') : t('projects.empty_create_hint')}
             </p>
             {!search && (
               <button
@@ -386,7 +387,7 @@ const Projects = () => {
                   boxShadow: '0 3px 10px rgba(255,113,61,0.20)', position: 'relative',
                 }}
               >
-                <Plus size={14} />Criar primeiro projeto
+                <Plus size={14} />{t('projects.create_first')}
               </button>
             )}
           </div>
@@ -397,9 +398,9 @@ const Projects = () => {
         open={confirmDelete !== null}
         onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
         onCancel={() => setConfirmDelete(null)}
-        title="Excluir projeto?"
-        description="Esta ação não pode ser desfeita. O projeto será removido permanentemente."
-        confirmLabel="Excluir"
+        title={t('projects.delete_confirm.title')}
+        description={t('projects.delete_confirm.desc')}
+        confirmLabel={t('projects.delete_confirm.confirm')}
         variant="danger"
       />
     </div>
