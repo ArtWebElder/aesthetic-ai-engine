@@ -57,15 +57,15 @@ const DEFAULT_FORMAT_ID = "instagram_feed";
 
 // ── Step labels ───────────────────────────────────────────────────────────────
 
-const STEP_LABELS = ["Upload", "Conteúdo", "Configurar", "Resultado"];
+const STEP_LABELS = ["wizard.nav.upload", "wizard.nav.content", "wizard.nav.configure", "wizard.nav.result"];
 
 // ── Generation stages ─────────────────────────────────────────────────────────
 
 const GENERATION_STAGES = [
-  "Preparando composição...",
-  "Aplicando seus textos e cores...",
-  "Gerando criativo com IA...",
-  "Finalizando seu criativo!",
+  "wizard.stage.preparing",
+  "wizard.stage.applying",
+  "wizard.stage.generating",
+  "wizard.stage.finalizing",
 ];
 
 // ── Paleta contextual por tipo de culinária (idêntica ao original) ────────────
@@ -118,6 +118,7 @@ function getFoodPalette(
 // ── StepIndicator ─────────────────────────────────────────────────────────────
 
 function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current: number; maxReached: number; onStepClick?: (step: number) => void; isMobile?: boolean }) {
+  const { t } = useI18n();
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
       {STEP_LABELS.map((label, idx) => {
@@ -163,7 +164,7 @@ function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current
                 fontSize: 10, fontWeight: 500,
                 color: isActive ? '#ff713d' : isDone ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))',
               }}>
-                {label}
+                {t(label)}
               </span>
             </button>
           </div>
@@ -176,6 +177,7 @@ function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current
 // ── Credit tooltip ────────────────────────────────────────────────────────────
 
 function WizCredTooltip({ credits, children }: { credits: number; children: React.ReactNode }) {
+  const { t } = useI18n();
   const [show, setShow] = useState(false);
   return (
     <div style={{ position: 'relative', display: 'inline-flex' }} onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
@@ -193,7 +195,7 @@ function WizCredTooltip({ credits, children }: { credits: number; children: Reac
             <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
               <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
             </svg>
-            {credits} créditos restantes
+            {t('wizard.credits_left_tip', { credits })}
           </span>
         </div>
       )}
@@ -499,7 +501,7 @@ export function WizardPage() {
       }
 
       // ── Generate with Nano Banana Pro ──────────────────────────────────────
-      setPopDesignStep("Gerando criativo com IA...");
+      setPopDesignStep(t('wizard.stage.generating'));
 
       const generateBody: Record<string, unknown> = {
         reference_image: state.referenceBase64 || state.subjectBase64,
@@ -550,13 +552,13 @@ export function WizardPage() {
           : null;
         throw new GenerateError(
           errBody?.error || "generation_failed",
-          errBody?.details || genData?.details || "Falha na geração do criativo.",
+          errBody?.details || genData?.details || t('wizard.gen.failed'),
         );
       }
 
       const imageUrl = genData?.image;
       if (!imageUrl) {
-        throw new GenerateError("no_image", "Nenhuma imagem retornada pelo servidor.");
+        throw new GenerateError("no_image", t('wizard.gen.no_image'));
       }
 
       // Convert URL to base64 for display
@@ -845,10 +847,10 @@ export function WizardPage() {
       incrementGenCount();
       toast.success("Criativo gerado com sucesso!");
     } catch (e) {
-      const msg = e instanceof GenerateError ? e.message : "Erro inesperado. Tente novamente.";
+      const msg = e instanceof GenerateError ? e.message : t('wizard.gen.unexpected');
       setError(msg);
       setGenerationError(msg);
-      toast.error("Erro na geração. Tente novamente.");
+      toast.error(t('wizard.result.error'));
     } finally {
       setGenerating(false);
       setComposing(false);
@@ -1013,7 +1015,7 @@ export function WizardPage() {
           </div>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Creatyng</span>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>/</span>
-          <button onClick={() => { if (uiStep >= 2 || referenceBase64 || currentGeneration) setShowResetConfirm(true); else resetAll(); }} style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>Nova Criação</button>
+          <button onClick={() => { if (uiStep >= 2 || referenceBase64 || currentGeneration) setShowResetConfirm(true); else resetAll(); }} style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>{t('wizard.new_creation')}</button>
         </div>
         {/* Step indicator centered (desktop only — mobile shows it in its own row below) */}
         <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', display: isMobile ? 'none' : 'block' }}>
@@ -1043,7 +1045,7 @@ export function WizardPage() {
                 fontSize: 11, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
               }}
             >
-              Upgrade
+              {t('wizard.upgrade')}
             </button>
           )}
         </div>
@@ -1061,18 +1063,18 @@ export function WizardPage() {
         <div style={{ flexShrink: 0, background: '#FFF7ED', borderBottom: '1px solid #FED7AA', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertTriangle size={14} style={{ color: '#D97706' }} />
-            <span style={{ color: '#92400E' }}>Apenas <strong>{storeCredits}</strong> crédito(s) restante(s).</span>
+            <span style={{ color: '#92400E' }}>{t('wizard.low_credits', { n: storeCredits })}</span>
           </div>
-          <button onClick={() => navigate('/app/billing')} style={{ background: '#ff713d', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Upgrade</button>
+          <button onClick={() => navigate('/app/billing')} style={{ background: '#ff713d', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.upgrade')}</button>
         </div>
       )}
       {storeCredits <= 0 && (
         <div style={{ flexShrink: 0, background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertTriangle size={14} style={{ color: '#DC2626' }} />
-            <span style={{ color: '#991B1B' }}>Créditos esgotados. Recarregue para gerar.</span>
+            <span style={{ color: '#991B1B' }}>{t('wizard.no_credits')}</span>
           </div>
-          <button onClick={() => navigate('/app/billing')} style={{ background: '#DC2626', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>Upgrade agora</button>
+          <button onClick={() => navigate('/app/billing')} style={{ background: '#DC2626', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.upgrade_now')}</button>
         </div>
       )}
 
@@ -1084,37 +1086,37 @@ export function WizardPage() {
           {uiStep === 1 && (
             <div key={`step1-${resetKey}`} style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 28 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 6 }}>Suba suas imagens</h1>
-                <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))' }}>Arte de referência + foto do produto ou pessoa (opcional).</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 6 }}>{t('wizard.s1.title')}</h1>
+                <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))' }}>{t('wizard.s1.subtitle')}</p>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16 }}>
                 {/* --- Standardized upload cards --- */}
                 {([
                   {
-                    title: 'Arte de Referência', badge: 'Obrigatório', badgeOrange: true,
-                    desc: 'Print do post, anúncio ou arte que quer clonar',
-                    tooltip: 'O post, anúncio ou arte que você quer clonar. Pode ser um print de qualquer rede social.',
-                    icon: <Upload size={28} strokeWidth={1.5} />, placeholder: 'Clique ou arraste',
+                    title: t('wizard.s1.ref_title'), badge: t('wizard.required'), badgeOrange: true,
+                    desc: t('wizard.s1.ref_desc'),
+                    tooltip: t('wizard.s1.ref_tip'),
+                    icon: <Upload size={28} strokeWidth={1.5} />, placeholder: t('wizard.click_drag'),
                     image: referenceBase64 && !referenceBase64.startsWith('gallery:') ? referenceBase64 : null,
                     onClear: () => useWizardStore.getState().clearReference(),
                     accept: 'image/*',
                     onFile: (b64: string) => useWizardStore.getState().setReference(b64, 'upload'),
                   },
                   {
-                    title: 'Subject', badge: 'Opcional', badgeOrange: false,
-                    desc: 'Foto do produto ou pessoa pra substituir',
-                    tooltip: 'Foto do seu produto ou pessoa pra substituir o que aparece na referência. Se não enviar, a IA mantém o original.',
-                    icon: <User size={28} strokeWidth={1.5} />, placeholder: 'Clique ou arraste',
+                    title: t('wizard.s1.subject_title'), badge: t('wizard.optional'), badgeOrange: false,
+                    desc: t('wizard.s1.subject_desc'),
+                    tooltip: t('wizard.s1.subject_tip'),
+                    icon: <User size={28} strokeWidth={1.5} />, placeholder: t('wizard.click_drag'),
                     image: subjectBase64 || null,
                     onClear: () => useWizardStore.getState().setSubject('', ''),
                     accept: 'image/*',
                     onFile: (b64: string) => useWizardStore.getState().setSubject(b64, ''),
                   },
                   {
-                    title: 'Logo', badge: 'Opcional', badgeOrange: false,
-                    desc: 'PNG com fundo transparente',
-                    tooltip: 'Sua logo será inserida no criativo, substituindo qualquer placeholder de logo na referência.',
-                    icon: <ImageIcon size={28} strokeWidth={1.5} />, placeholder: 'Upload logo',
+                    title: t('wizard.s1.logo_title'), badge: t('wizard.optional'), badgeOrange: false,
+                    desc: t('wizard.s1.logo_desc'),
+                    tooltip: t('wizard.s1.logo_tip'),
+                    icon: <ImageIcon size={28} strokeWidth={1.5} />, placeholder: t('wizard.s1.logo_ph'),
                     image: logoBase64,
                     onClear: () => setLogoBase64(null),
                     accept: 'image/png,image/svg+xml,image/webp',
@@ -1157,17 +1159,17 @@ export function WizardPage() {
               {analysisLoading && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, color: '#ff713d', fontSize: 13 }}>
                   <div style={{ width: 16, height: 16, border: '2px solid #ff713d', borderTopColor: 'transparent', borderRadius: '50%', animation: 'wizSpin 0.8s linear infinite' }} />
-                  Analisando referência com Gemini...
+                  {t('wizard.s1.analyzing')}
                 </div>
               )}
               {currentGeneration && !analysisLoading && (
                 <button onClick={() => goToStep(4)} style={{ marginTop: 16, width: '100%', padding: '10px 0', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  ← Ver resultado anterior
+                  {t('wizard.see_previous')}
                 </button>
               )}
               {!subjectBase64 && referenceBase64 && !analysisLoading && (
                 <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 8 }}>
-                  Sem subject = a IA mantém o produto/pessoa da referência original
+                  {t('wizard.s1.no_subject_note')}
                 </p>
               )}
             </div>
@@ -1177,12 +1179,12 @@ export function WizardPage() {
           {uiStep === 2 && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Edite os textos e cores</h1>
-                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Os textos foram extraídos automaticamente. Edite como quiser.</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>{t('wizard.s2.title')}</h1>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>{t('wizard.s2.subtitle')}</p>
               </div>
               {/* Texts */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Textos detectados<InfoTooltip text="Textos encontrados automaticamente na referência. Edite, remova ou adicione novos." /></h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>{t('wizard.s2.texts_title')}<InfoTooltip text={t('wizard.s2.texts_tip')} /></h3>
                 {editedTexts.map((txt, idx) => (
                   <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
                     <Select value={txt.type} onValueChange={(val) => { const next = [...editedTexts]; next[idx] = { ...next[idx], type: val }; setEditedTexts(next); }}>
@@ -1203,17 +1205,17 @@ export function WizardPage() {
                     <button onClick={() => setEditedTexts(editedTexts.filter((_, i) => i !== idx))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'transparent', color: '#EF4444', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                   </div>
                 ))}
-                <button onClick={() => setEditedTexts([...editedTexts, { type: 'label', content: '' }])} style={{ fontSize: 12, color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, marginTop: 4 }}>+ Adicionar texto</button>
-                <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 8 }}>Textos curtos funcionam melhor. Evite frases longas.</p>
+                <button onClick={() => setEditedTexts([...editedTexts, { type: 'label', content: '' }])} style={{ fontSize: 12, color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, marginTop: 4 }}>{t('wizard.s2.add_text')}</button>
+                <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 8 }}>{t('wizard.s2.short_texts')}</p>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: '#FFF7ED', borderRadius: 8, marginTop: 12, border: '1px solid #FED7AA' }}>
                   <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
-                  <span style={{ fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>Textos muito pequenos podem apresentar variação na acentuação. Textos curtos e grandes funcionam melhor.</span>
+                  <span style={{ fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>{t('wizard.s2.accent_warning')}</span>
                 </div>
               </div>
               {/* Colors */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center' }}>Paleta de cores<InfoTooltip text="Cores detectadas na referência. Clique numa cor pra trocar. A IA vai aplicar as novas cores no criativo." /></h3>
-                <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>Clique pra alterar as cores do criativo</p>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'flex', alignItems: 'center' }}>{t('wizard.s2.palette_title')}<InfoTooltip text={t('wizard.s2.palette_tip')} /></h3>
+                <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 12 }}>{t('wizard.s2.palette_hint')}</p>
                 <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                   {colorPalette.map((raw, idx) => {
                     const color = typeof raw === 'string' ? raw : (raw as unknown as {hex:string})?.hex || '#000000';
@@ -1233,22 +1235,22 @@ export function WizardPage() {
           {uiStep === 3 && !generating && (
             <div style={{ animation: 'wizFdUp 350ms ease both' }}>
               <div style={{ marginBottom: 24 }}>
-                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>Configure a geração</h1>
-                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Ajuste a variação criativa, formato e instruções extras.</p>
+                <h1 style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>{t('wizard.s3.title')}</h1>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>{t('wizard.s3.subtitle')}</p>
               </div>
               {/* Variation slider */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center' }}>Variação Criativa<InfoTooltip text="0% = cópia fiel da referência. 100% = reinterpretação livre. Recomendado: 0-10% pra manter o layout original." /></h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, display: 'flex', alignItems: 'center' }}>{t('wizard.s3.variation_title')}<InfoTooltip text={t('wizard.s3.variation_tip')} /></h3>
                 <Slider value={[variationSlider]} onValueChange={([val]) => setVariationSlider(val)} min={0} max={100} step={5} className="w-full" />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'hsl(var(--muted-foreground))', marginTop: 10 }}>
-                  <span>Cópia exata</span>
+                  <span>{t('wizard.s3.exact_copy')}</span>
                   <span style={{ color: '#ff713d', fontWeight: 600, fontSize: 14 }}>{variationSlider}%</span>
-                  <span>Reinterpretação</span>
+                  <span>{t('wizard.s3.reinterpret')}</span>
                 </div>
               </div>
               {/* Format */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 16 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Formato<InfoTooltip text="Formato do criativo. 1:1 Feed (quadrado), 4:5 Feed (vertical), 9:16 Story, 16:9 Banner." /></h3>
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>{t('wizard.s3.format_title')}<InfoTooltip text={t('wizard.s3.format_tip')} /></h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {[{ v: '1:1', l: '1:1 Feed' }, { v: '4:5', l: '4:5 Feed' }, { v: '9:16', l: '9:16 Story' }, { v: '16:9', l: '16:9 Banner' }].map(f => (
                     <button key={f.v} onClick={() => setFormatSelect(f.v)} style={{
@@ -1262,8 +1264,8 @@ export function WizardPage() {
               </div>
               {/* Extra instructions */}
               <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: 16, marginBottom: 24 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>Instruções extras<InfoTooltip text="Diga com suas palavras o que quer mudar. Ex: 'adicione batatas flutuando', 'fundo mais escuro'." /></h3>
-                <textarea value={extraInstructions} onChange={(e) => setExtraInstructions(e.target.value)} placeholder="Ex: manter fundo escuro, trocar a roupa por camisa branca..." style={{ width: '100%', minHeight: 70, padding: '8px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }} />
+                <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center' }}>{t('wizard.s3.extra_title')}<InfoTooltip text={t('wizard.s3.extra_tip')} /></h3>
+                <textarea value={extraInstructions} onChange={(e) => setExtraInstructions(e.target.value)} placeholder={t('wizard.s3.extra_ph')} style={{ width: '100%', minHeight: 70, padding: '8px 10px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontSize: 13, fontFamily: 'inherit', resize: 'vertical' }} />
               </div>
               {/* Generation summary */}
               {(() => {
@@ -1273,13 +1275,13 @@ export function WizardPage() {
                 const addedCount = Math.max(0, editedTexts.length - analysisTexts.length);
                 return (
                   <div style={{ background: 'hsl(var(--muted) / 0.3)', borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', gap: 14, flexWrap: 'wrap', fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><FileText size={13} /> {activeCount} textos</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Palette size={13} /> {colorPalette.length} cores</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><FileText size={13} /> {t('wizard.s3.sum_texts', { n: activeCount })}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><Palette size={13} /> {t('wizard.s3.sum_colors', { n: colorPalette.length })}</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><RectangleHorizontal size={13} /> {formatSelect}</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}><SlidersHorizontal size={13} /> {variationSlider}%</span>
-                    {removedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#EF4444' }}><Trash2 size={13} /> {removedCount} removido(s)</span>}
-                    {editedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#3B82F6' }}><Pencil size={13} /> {editedCount} editado(s)</span>}
-                    {addedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#22C55E' }}><Plus size={13} /> {addedCount} adicionado(s)</span>}
+                    {removedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#EF4444' }}><Trash2 size={13} /> {t('wizard.s3.sum_removed', { n: removedCount })}</span>}
+                    {editedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#3B82F6' }}><Pencil size={13} /> {t('wizard.s3.sum_edited', { n: editedCount })}</span>}
+                    {addedCount > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#22C55E' }}><Plus size={13} /> {t('wizard.s3.sum_added', { n: addedCount })}</span>}
                   </div>
                 );
               })()}
@@ -1289,7 +1291,7 @@ export function WizardPage() {
                 background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
                 boxShadow: '0 4px 16px rgba(255,113,61,0.35)', transition: 'all 200ms',
               }}>
-                ✦ {currentGeneration ? 'Gerar novamente' : 'Gerar Criativo'} — 12 créditos
+                ✦ {currentGeneration ? t('wizard.s3.regenerate_btn', { n: 12 }) : t('wizard.s3.generate_btn', { n: 12 })}
               </button>
               {/* Show "Ver resultado" when user came back from Step 4 */}
               {currentGeneration && (
@@ -1298,7 +1300,7 @@ export function WizardPage() {
                   background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13,
                   cursor: 'pointer', fontFamily: 'inherit', marginTop: 8,
                 }}>
-                  ← Ver resultado anterior
+                  {t('wizard.see_previous')}
                 </button>
               )}
             </div>
@@ -1311,12 +1313,12 @@ export function WizardPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, textAlign: 'center', maxWidth: 320 }}>
                   <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#FEF2F2', border: '1px solid #FECACA', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>✕</div>
                   <div>
-                    <p style={{ color: '#EF4444', fontWeight: 600, fontSize: 16 }}>Erro na geração</p>
+                    <p style={{ color: '#EF4444', fontWeight: 600, fontSize: 16 }}>{t('wizard.gen.error_title')}</p>
                     <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: 13, marginTop: 4 }}>{generationError}</p>
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button onClick={() => { setGenerationError(null); setUiStep(4); }} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Voltar</button>
-                    <button onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(5); handleGenerate(); }} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: '#ff713d', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Tentar novamente</button>
+                    <button onClick={() => { setGenerationError(null); setUiStep(4); }} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.back')}</button>
+                    <button onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(5); handleGenerate(); }} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: '#ff713d', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.gen.retry')}</button>
                   </div>
                 </div>
               ) : (
@@ -1329,8 +1331,8 @@ export function WizardPage() {
                   </div>
 
                   <div style={{ textAlign: 'center' }}>
-                    <h2 style={{ fontSize: 18, fontWeight: 700, color: 'hsl(var(--foreground))' }}>Criando seu criativo...</h2>
-                    <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: 13, marginTop: 4 }}>Isso leva alguns segundos</p>
+                    <h2 style={{ fontSize: 18, fontWeight: 700, color: 'hsl(var(--foreground))' }}>{t('wizard.gen.creating')}</h2>
+                    <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: 13, marginTop: 4 }}>{t('wizard.gen.takes_seconds')}</p>
                   </div>
 
                   {/* Stage checklist */}
@@ -1355,13 +1357,13 @@ export function WizardPage() {
                               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite' }} />
                             ) : null}
                           </div>
-                          <span style={{ fontSize: 13, transition: 'color 300ms', color: isDone ? '#10B981' : isActive ? '#ff713d' : 'hsl(var(--muted-foreground))' }}>{stage}</span>
+                          <span style={{ fontSize: 13, transition: 'color 300ms', color: isDone ? '#10B981' : isActive ? '#ff713d' : 'hsl(var(--muted-foreground))' }}>{t(stage)}</span>
                         </div>
                       );
                     })}
                   </div>
 
-                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>−12 créditos desta geração</p>
+                  <p style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>{t('wizard.gen.credits_note', { n: 12 })}</p>
                 </>
               )}
             </div>
@@ -1373,10 +1375,10 @@ export function WizardPage() {
               {/* Info bar */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                 <span style={{ color: '#22C55E', fontWeight: 600, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  {composing ? "Compondo criativo..." : "Criativo gerado!"}
+                  {composing ? t('wizard.result.composing') : t('wizard.result.done')}
                 </span>
                 <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>
-                  via {currentGeneration.meta.provider} · {Math.round(currentGeneration.meta.generationMs / 1000)}s
+                  {t('wizard.s4.via', { provider: currentGeneration.meta.provider, sec: Math.round(currentGeneration.meta.generationMs / 1000) })}
                 </span>
               </div>
 
@@ -1407,7 +1409,7 @@ export function WizardPage() {
                 </div>
               )}
 
-              {composing && <p style={{ fontSize: 11.5, color: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite', fontWeight: 500, textAlign: 'center' }}>{popDesignStep || 'Aplicando tipografia...'}</p>}
+              {composing && <p style={{ fontSize: 11.5, color: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite', fontWeight: 500, textAlign: 'center' }}>{popDesignStep || t('wizard.s4.applying_typo')}</p>}
 
               {/* Zoom controls */}
               {flags.zoomInResult && !isWorking && (
@@ -1438,23 +1440,23 @@ export function WizardPage() {
               {!isWorking && (
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
                   <button onClick={() => setShowExportModal(true)} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    ↓ Download
+                    {t('wizard.s4.download')}
                   </button>
                   <button onClick={handleRegenerateFromResult} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    ↺ Gerar novamente — {flags.creditsPerGeneration} cr
+                    {t('wizard.s4.regenerate', { n: flags.creditsPerGeneration })}
                   </button>
                   <button onClick={() => { setGenerationDone(false); if (editedTexts.length === 0 && v2Analysis) { const texts = (v2Analysis.texts as Array<{ type: string; content: string }>) || []; if (texts.length > 0) { setAnalysisTexts(texts); setEditedTexts(texts.map(t => ({ ...t }))); } } setUiStep(2); }} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    ✎ Editar textos
+                    {t('wizard.s4.edit_texts')}
                   </button>
                   <button onClick={resetForNewReference} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    + Nova referência
+                    {t('wizard.s4.new_reference')}
                   </button>
                 </div>
               )}
 
               {/* Credits */}
               <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', textAlign: 'center' }}>
-                Créditos restantes: <span style={{ color: storeCredits < 12 ? '#EF4444' : '#ff713d', fontWeight: 600 }}>{storeCredits}</span>
+                {t('wizard.s4.credits_left')} <span style={{ color: storeCredits < 12 ? '#EF4444' : '#ff713d', fontWeight: 600 }}>{storeCredits}</span>
               </p>
 
               {/* Chat panel — only when feature flag enabled */}
@@ -1463,7 +1465,7 @@ export function WizardPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                     <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0 }}>✦</div>
                     <p style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Creatyng AI</p>
-                    <span style={{ fontSize: 11, color: '#10B981', marginLeft: 'auto' }}>● Online</span>
+                    <span style={{ fontSize: 11, color: '#10B981', marginLeft: 'auto' }}>● {t('wizard.online')}</span>
                   </div>
                   <RefinementChat
                     overrides={refinementOverrides}
@@ -1472,13 +1474,13 @@ export function WizardPage() {
                     composition={htmlCompositionRef.current}
                     onCompositionChange={async (updated) => { htmlCompositionRef.current = updated; setComposing(true); try { const result = await exportCompositionToPNG(updated); setComposedBase64(result); setComposedImage(result); } finally { setComposing(false); } }}
                     context={{ analysis: v2Analysis, currentTexts: editedTexts, currentColors: colorPalette }}
-                    onTextsUpdate={(texts) => { setEditedTexts(texts); toast.success('Textos atualizados!'); }}
-                    onColorsUpdate={(colors) => { setColorPalette(colors); toast.success('Cores atualizadas!'); }}
+                    onTextsUpdate={(texts) => { setEditedTexts(texts); toast.success(t('wizard.texts_updated')); }}
+                    onColorsUpdate={(colors) => { setColorPalette(colors); toast.success(t('wizard.colors_updated')); }}
                   />
                   {flags.refinePageEnabled && (
                     <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 8 }}>
                       <button onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)} style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, textDecoration: 'underline' }}>
-                        Expandir chat
+                        {t('wizard.s4.expand_chat')}
                       </button>
                     </p>
                   )}
@@ -1506,7 +1508,7 @@ export function WizardPage() {
                 fontFamily: 'inherit', transition: 'all 150ms',
               }}
             >
-              ← Voltar
+              {t('wizard.back')}
             </button>
             <button
               onClick={handleNext}
@@ -1520,7 +1522,7 @@ export function WizardPage() {
                 opacity: canAdvance ? 1 : 0.6, fontFamily: 'inherit', transition: 'all 200ms',
               }}
             >
-              {uiStep === 1 ? (analysisLoading ? "Analisando..." : "Analisar e Continuar →") : "Próximo →"}
+              {uiStep === 1 ? (analysisLoading ? t('wizard.analyzing_btn') : t('wizard.analyze_continue')) : t('wizard.next')}
             </button>
           </div>
         </footer>
@@ -1547,11 +1549,11 @@ export function WizardPage() {
       {showResetConfirm && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => setShowResetConfirm(false)}>
           <div style={{ background: 'hsl(var(--card))', borderRadius: 16, padding: 24, maxWidth: 380, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 8 }}>Começar do zero?</h3>
-            <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, marginBottom: 20 }}>Todas as edições, textos, cores e imagens serão descartados.</p>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 8 }}>{t('wizard.reset.title')}</h3>
+            <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, marginBottom: 20 }}>{t('wizard.reset.desc')}</p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowResetConfirm(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>Cancelar</button>
-              <button onClick={() => { setShowResetConfirm(false); resetAll(); }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#EF4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Descartar e recomeçar</button>
+              <button onClick={() => setShowResetConfirm(false)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.reset.cancel')}</button>
+              <button onClick={() => { setShowResetConfirm(false); resetAll(); }} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#EF4444', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.reset.confirm')}</button>
             </div>
           </div>
         </div>
