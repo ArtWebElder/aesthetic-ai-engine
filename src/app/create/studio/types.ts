@@ -9,6 +9,7 @@ export type NodeTypeId =
   | 'reference_analyzer'
   | 'scene_gen'
   | 'bg_removal'
+  | 'upscale'
   | 'typography'
   | 'color_grade'
   | 'image_gen'
@@ -55,7 +56,7 @@ export type PanelTab = 'nodes' | 'assets' | 'templates' | 'learn';
 // Column assignment for Auto Layout
 export const AUTO_LAYOUT_COLUMNS: Record<number, NodeTypeId[]> = {
   0: ['brand_input', 'image_upload', 'reference_upload', 'text_input'],
-  1: ['bg_removal', 'color_grade', 'prompt_builder', 'reference_analyzer', 'copy_ai'],
+  1: ['bg_removal', 'upscale', 'color_grade', 'prompt_builder', 'reference_analyzer', 'copy_ai'],
   2: ['scene_gen', 'image_gen', 'background_gen'],
   3: ['compositor', 'text_overlay', 'typography', 'composition_ai', 'export'],
 };
@@ -73,6 +74,7 @@ export const NODE_RUN_TIMEOUT: Partial<Record<NodeTypeId, number>> = {
   compositor: 3000,
   text_overlay: 1500,
   bg_removal: 5000,
+  upscale: 40000,
   color_grade: 800,
   typography: 800,
   copy_ai: 8000,
@@ -158,6 +160,17 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     category: 'processing',
     defaultWidth: 260,
     defaultHeight: 168,
+  },
+  upscale: {
+    id: 'upscale',
+    label: 'Upscale',
+    icon: 'Maximize2',
+    color: '#0ea5e9',
+    aiProvider: 'Replicate',
+    category: 'processing',
+    defaultWidth: 260,
+    defaultHeight: 180,
+    creditCost: 1,
   },
   typography: {
     id: 'typography',
@@ -282,6 +295,27 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     nodes: [
       { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
       { id: 'n2', type: 'bg_removal', x: 480, y: 170, data: {} },
+      { id: 'n3', type: 'export', x: 840, y: 170, data: { format: 'png' } },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n2', toPort: 'input' },
+      { id: 'c2', fromNode: 'n2', fromPort: 'output', toNode: 'n3', toPort: 'input' },
+    ],
+  },
+  'upscale': {
+    id: 'upscale',
+    name: 'Upscale HD/4K',
+    nameEn: 'Upscale HD/4K',
+    nameEs: 'Upscale HD/4K',
+    description: 'Aumente a resolução e a nitidez de qualquer imagem — ideal pra impressão e telas grandes.',
+    descriptionEn: 'Increase the resolution and sharpness of any image — great for print and large screens.',
+    descriptionEs: 'Aumenta la resolución y nitidez de cualquier imagen — ideal para impresión y pantallas grandes.',
+    icon: 'Maximize2',
+    color: '#0ea5e9',
+    credits: 1,
+    nodes: [
+      { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
+      { id: 'n2', type: 'upscale', x: 480, y: 170, data: { scale: 4 } },
       { id: 'n3', type: 'export', x: 840, y: 170, data: { format: 'png' } },
     ],
     connections: [

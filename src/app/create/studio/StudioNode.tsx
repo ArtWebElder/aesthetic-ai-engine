@@ -3,7 +3,7 @@ import {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, Play, CheckCircle,
   Loader2, ScanEye, FileText, AlertCircle, Trash2,
-  Image, Layers, LayoutTemplate,
+  Image, Layers, LayoutTemplate, Maximize2,
 } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, NodeTypeId, StudioNode as StudioNodeType } from './types';
 import { useI18n } from '@/i18n';
@@ -12,7 +12,7 @@ import { StudioSelect } from './StudioSelect';
 const ICON_MAP: Record<string, React.ElementType> = {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, ScanEye, FileText,
-  Image, Layers, LayoutTemplate,
+  Image, Layers, LayoutTemplate, Maximize2,
 };
 
 /** Trigger browser download — handles both base64 data URIs and remote URLs */
@@ -47,7 +47,7 @@ async function triggerDownload(src: string, format: string) {
 
 const RUN_NODES: NodeTypeId[] = [
   'prompt_builder', 'scene_gen', 'image_gen',
-  'reference_analyzer', 'bg_removal', 'export',
+  'reference_analyzer', 'bg_removal', 'upscale', 'export',
   'background_gen', 'compositor', 'text_overlay',
   'copy_ai', 'composition_ai', 'color_grade',
 ];
@@ -440,6 +440,23 @@ function NodeContent({
               { value: 'api', label: 'API (cloud)' },
               { value: 'onnx', label: 'ONNX (local)' },
             ]}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          <OutputPreview output={output} />
+          {runBtn}
+        </div>
+      );
+
+    case 'upscale':
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <StudioSelect
+            defaultValue={String((node.data.scale as number) || 4)}
+            options={[
+              { value: '2', label: '2×' },
+              { value: '4', label: '4×' },
+            ]}
+            onChange={(v) => onDataChange(node.id, 'scale', v)}
             onMouseDown={e => e.stopPropagation()}
           />
           <OutputPreview output={output} />

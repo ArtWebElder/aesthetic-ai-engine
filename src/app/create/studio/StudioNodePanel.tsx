@@ -35,7 +35,7 @@ const NODE_GROUPS: NodeCategoryGroup[] = [
   },
   {
     labelKey: 'studio.panel.processing',
-    items: ['bg_removal', 'compositor', 'color_grade'],
+    items: ['bg_removal', 'upscale', 'compositor', 'color_grade'],
   },
   {
     labelKey: 'studio.panel.composition',

@@ -360,7 +360,7 @@ export function StudioPage() {
         return { ...n, data: { ...n.data, fields } };
       }
       // Store numeric strings as numbers for known numeric keys
-      const numericKeys = ['subjectScale', 'shadowBlur', 'shadowOpacity', 'width', 'height'];
+      const numericKeys = ['subjectScale', 'shadowBlur', 'shadowOpacity', 'width', 'height', 'scale'];
       const parsed = numericKeys.includes(key) && value !== '' ? Number(value) : value;
       return { ...n, data: { ...n.data, [key]: parsed } };
     }));

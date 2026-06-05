@@ -554,6 +554,52 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       return { image: result, type: 'subject_cutout' };
     }
 
+    case 'upscale': {
+      // Take any upstream image (uploaded subject, generated, or cutout)
+      const image: string | undefined =
+        findUpstreamByType(inputs, 'subject')?.image
+        || findUpstreamByType(inputs, 'generated')?.image
+        || findUpstreamByType(inputs, 'subject_cutout')?.image
+        || (inputs.image as string)
+        || (inputs.generatedImage as string);
+      if (!image) throw new Error('Imagem não conectada — suba uma imagem');
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      if (!supabaseUrl || !supabaseKey) throw new Error('Supabase não configurado');
+
+      // 2× or 4×; cap input dimension so the request stays under the 6MB Edge limit.
+      const scale = Math.min(4, Math.max(2, (node.data.scale as number) || 4));
+      const safeImage = await resizeImageIfNeeded(image, 1600);
+
+      const resp = await fetch(`${supabaseUrl}/functions/v1/upscale-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        body: JSON.stringify({ image: safeImage, scale }),
+      });
+      if (!resp.ok) {
+        const err = await resp.text();
+        throw new Error(`Upscale falhou (${resp.status}): ${err.slice(0, 200)}`);
+      }
+      const result = await resp.json();
+      const outUrl = result.image as string | undefined;
+      if (!outUrl) throw new Error('Resposta sem imagem do upscaler');
+
+      let upscaled: string;
+      if (outUrl.startsWith('data:')) {
+        upscaled = outUrl;
+      } else {
+        const imgResp = await fetch(outUrl);
+        const blob = await imgResp.blob();
+        upscaled = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+      return { image: upscaled, type: 'upscaled' };
+    }
+
     case 'background_gen': {
       let prompt = (inputs.prompt as string) || '';
       const instruction = (node.data.instruction as string) || '';
@@ -941,12 +987,14 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       // Prefer final (text_overlay) → color_grade → composed → generated → cutout (bg_removal) → any image
       const finalUp = findUpstreamByType(inputs, 'final');
       const colorUp = findUpstreamByType(inputs, 'color_grade');
+      const upscaledUp = findUpstreamByType(inputs, 'upscaled');
       const composedUp = findUpstreamByType(inputs, 'composed');
       const generatedUp = findUpstreamByType(inputs, 'generated');
       const cutoutUp = findUpstreamByType(inputs, 'subject_cutout');
 
       const image = finalUp?.image
         || colorUp?.image
+        || upscaledUp?.image
         || composedUp?.image
         || generatedUp?.image
         || cutoutUp?.image
@@ -1102,7 +1150,7 @@ export function prePopulateInputOutputs(
  * Node types that are critical — if they fail, the flow must stop.
  * Non-critical nodes (like reference_analyzer) can fail and the flow continues.
  */
-const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor', 'copy_ai', 'composition_ai'];
+const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor', 'copy_ai', 'composition_ai', 'upscale'];
 
 /**
  * Execute entire flow sequentially in topological order.
