@@ -10,6 +10,9 @@ import { applyCommandWithAI } from "../engine/chatCompositionAI";
 import type { CreatygnComposition } from "@/types/composition";
 import { supabase } from "@/services/supabaseClient";
 import { useWizardStore } from "@/stores/useWizardStore";
+import { useI18n } from "@/i18n";
+
+type TFn = (k: string, v?: Record<string, string | number>) => string;
 
 // Map emoji prefix to lucide icon + strip emoji from displayed text
 const EMOJI_PREFIX_MAP: Array<{ prefix: string; icon: ReactNode; color: string }> = [
@@ -49,6 +52,7 @@ export interface ChatContext {
 async function callChatCreative(
   message: string,
   ctx: ChatContext,
+  t: TFn,
 ): Promise<{ reply: string; action: ChatAction | null }> {
   const body = {
     message,
@@ -69,16 +73,16 @@ async function callChatCreative(
     console.log("[RefinementChat] chat-creative response:", { data: JSON.stringify(data)?.substring(0, 500), error });
     if (error || !data) {
       console.warn("[RefinementChat] chat-creative error:", error);
-      return { reply: "IA indisponível. Tente novamente.", action: null };
+      return { reply: t('wizard.chat.unavailable'), action: null };
     }
     return { reply: data.reply ?? "OK", action: data.action ?? null };
   } catch (e) {
     const msg = (e as Error)?.message ?? "";
     console.warn("[RefinementChat] invoke error:", msg);
     if (msg === "timeout") {
-      return { reply: "Tempo esgotado. Tente uma mensagem mais curta.", action: null };
+      return { reply: t('wizard.chat.timeout'), action: null };
     }
-    return { reply: "Erro ao contatar IA. Tente novamente.", action: null };
+    return { reply: t('wizard.chat.contact_error'), action: null };
   }
 }
 
@@ -110,10 +114,11 @@ export function RefinementChat({
   onTextsUpdate,
   onColorsUpdate,
 }: RefinementChatProps) {
+  const { t } = useI18n();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "system",
-      text: '✨ Ajuste seu criativo!\n• "muda headline pra SUPER PROMOÇÃO"\n• "cor vermelha"\n• "muda preço pra 39,90"\n• "texto maior"',
+      text: t('wizard.chat.welcome'),
     },
   ]);
   const [input, setInput] = useState("");
@@ -134,7 +139,7 @@ export function RefinementChat({
     if (chatCount >= MAX_CHATS) {
       setMessages(prev => [...prev,
         { role: "user", text: commandText },
-        { role: "system", text: `🤖 Limite de ${MAX_CHATS} refinamentos atingido. Regenere o criativo (12cr) pra continuar refinando.`, confirmRegenerate: true },
+        { role: "system", text: t('wizard.chat.limit', { max: MAX_CHATS }), confirmRegenerate: true },
       ]);
       return;
     }
@@ -146,14 +151,14 @@ export function RefinementChat({
     const parsedCheck = parseChat(commandText);
 
     if (parsedCheck.type === "regenerate_image") {
-      setMessages((prev) => [...prev, userMsg, { role: "system", text: "🔄 Regenerando imagem..." }]);
+      setMessages((prev) => [...prev, userMsg, { role: "system", text: t('wizard.chat.regenerating') }]);
       onRegenerate();
       return;
     }
 
     if (composition && onCompositionChange && parsedCheck.type === "unknown") {
       // 2. Try AI composition edit (frontend Gemini)
-      setMessages((prev) => [...prev, userMsg, { role: "system", text: "✨ Processando..." }]);
+      setMessages((prev) => [...prev, userMsg, { role: "system", text: t('wizard.chat.processing') }]);
       setAiLoading(true);
       try {
         const result = await applyCommandWithAI(composition, commandText);
@@ -175,11 +180,11 @@ export function RefinementChat({
       // userMsg already added — update placeholder and continue to chat-creative
       setMessages((prev) => {
         const msgs = [...prev];
-        msgs[msgs.length - 1] = { role: "system", text: "✨ Consultando IA..." };
+        msgs[msgs.length - 1] = { role: "system", text: t('wizard.chat.consulting') };
         return msgs;
       });
       try {
-        const { reply, action } = await callChatCreative(commandText, context);
+        const { reply, action } = await callChatCreative(commandText, context, t);
         if (action) {
           if (action.type === "update_texts" && onTextsUpdate) {
             const texts = (action.data?.texts as Array<{ type: string; content: string }>) ?? [];
@@ -196,7 +201,7 @@ export function RefinementChat({
         }
         setMessages((prev) => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: "system", text: `🤖 ${reply}` }; return msgs; });
       } catch {
-        setMessages((prev) => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: "system", text: "❌ Erro ao contatar IA." }; return msgs; });
+        setMessages((prev) => { const msgs = [...prev]; msgs[msgs.length - 1] = { role: "system", text: t('wizard.chat.error') }; return msgs; });
       }
       setAiLoading(false);
       return;
@@ -211,10 +216,10 @@ export function RefinementChat({
     }
 
     // 4. Unknown → call chat-creative edge function (server-side Gemini)
-    setMessages((prev) => [...prev, userMsg, { role: "system", text: "✨ Consultando IA..." }]);
+    setMessages((prev) => [...prev, userMsg, { role: "system", text: t('wizard.chat.consulting') }]);
     setAiLoading(true);
     try {
-      const { reply, action } = await callChatCreative(commandText, context);
+      const { reply, action } = await callChatCreative(commandText, context, t);
 
       if (action) {
         if (action.type === "update_texts" && onTextsUpdate) {
@@ -259,7 +264,7 @@ export function RefinementChat({
     } catch {
       setMessages((prev) => {
         const msgs = [...prev];
-        msgs[msgs.length - 1] = { role: "system", text: "❌ Erro ao contatar IA." };
+        msgs[msgs.length - 1] = { role: "system", text: t('wizard.chat.error') };
         return msgs;
       });
     } finally {
@@ -344,7 +349,7 @@ export function RefinementChat({
                       fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                     }}
                   >
-                    Confirmar (12 créditos)
+                    {t('wizard.chat.confirm_regen')}
                   </button>
                   <button
                     onClick={handleCancelRegenerate}
@@ -354,7 +359,7 @@ export function RefinementChat({
                       color: "#8e8e96", fontSize: 12, cursor: "pointer", fontFamily: "inherit",
                     }}
                   >
-                    Cancelar
+                    {t('wizard.reset.cancel')}
                   </button>
                 </div>
               )}
@@ -366,7 +371,7 @@ export function RefinementChat({
 
       {/* Counter + Input */}
       <div style={{ flexShrink: 0, fontSize: 10, color: chatCount >= MAX_CHATS ? '#EF4444' : '#8e8e96', textAlign: 'center', padding: '4px 0 0', background: '#f5f5f3' }}>
-        {chatCount}/{MAX_CHATS} refinamentos
+        {t('wizard.chat.refinements', { n: chatCount, max: MAX_CHATS })}
       </div>
       <div style={{
         flexShrink: 0, display: "flex", gap: 8, padding: "6px 12px 10px",
@@ -378,7 +383,7 @@ export function RefinementChat({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={aiLoading}
-          placeholder="Digite uma mensagem..."
+          placeholder={t('wizard.chat.placeholder')}
           style={{
             flex: 1, background: "#ffffff", border: "1px solid rgba(20,20,23,0.1)",
             borderRadius: 8, padding: "8px 12px", color: "#141417",
@@ -399,7 +404,7 @@ export function RefinementChat({
             transition: "all 150ms",
           }}
         >
-          {aiLoading ? "..." : "Enviar"}
+          {aiLoading ? "..." : t('wizard.chat.send')}
         </button>
       </div>
     </div>

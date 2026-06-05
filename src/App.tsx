@@ -8,6 +8,7 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/features/auth/AuthProvider";
 import { ProtectedRoute } from "@/features/auth/ProtectedRoute";
 import { ToastProvider } from "@/features/toast/ToastProvider";
+import { createTranslator, getInitialLang } from "@/i18n";
 
 // import Index from "./pages/Index"; // Landing page — not used yet
 import Login from "./pages/Login";
@@ -51,9 +52,10 @@ class AppErrorBoundary extends Component<
 
   render() {
     if (this.state.error) {
+      const t = createTranslator(getInitialLang());
       return (
         <div style={{ padding: 40, fontFamily: "monospace", color: "#DC2626", background: "#FAFAF8", minHeight: "100vh" }}>
-          <h1 style={{ fontSize: 20, marginBottom: 16 }}>Erro na aplicação</h1>
+          <h1 style={{ fontSize: 20, marginBottom: 16 }}>{t('common.app_error')}</h1>
           <pre style={{ whiteSpace: "pre-wrap", fontSize: 13, color: "#991B1B" }}>
             {this.state.error.message}
           </pre>
@@ -64,7 +66,7 @@ class AppErrorBoundary extends Component<
             onClick={() => window.location.reload()}
             style={{ marginTop: 24, padding: "8px 16px", background: "#F97316", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}
           >
-            Recarregar
+            {t('common.reload')}
           </button>
         </div>
       );

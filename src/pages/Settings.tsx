@@ -587,7 +587,7 @@ const Settings = () => {
         padding: isMobile ? '14px 12px' : '28px 16px', alignSelf: 'stretch',
         background: 'hsl(var(--card) / 0.7)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
       }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: isMobile ? 12 : 20, padding: '0 8px' }}>Configurações</h2>
+        <h2 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: isMobile ? 12 : 20, padding: '0 8px' }}>{t('settings.title')}</h2>
         <div style={{ display: 'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 6 : 0, overflowX: isMobile ? 'auto' : 'visible' }}>
         {TABS.map(tab => {
           const active = activeTab === tab.id;

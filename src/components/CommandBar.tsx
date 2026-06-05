@@ -22,7 +22,7 @@ import {
 import { useI18n } from '@/i18n';
 
 const createActions = [
-  { label: 'Nova criação', icon: Plus, route: '/app/create', shortcut: 'N' },
+  { labelKey: 'nav.new_creation', icon: Plus, route: '/app/create', shortcut: 'N' },
 ];
 
 const navActions = [
@@ -31,7 +31,7 @@ const navActions = [
   { labelKey: 'nav.templates', icon: LayoutGrid, route: '/app/templates', shortcut: 'T' },
   { labelKey: 'nav.billing', icon: CreditCard, route: '/app/billing', shortcut: 'B' },
   { labelKey: 'nav.settings', icon: Settings, route: '/app/settings', shortcut: ',' },
-  { label: 'Ajuda', icon: HelpCircle, route: '/app/help', shortcut: '?' },
+  { labelKey: 'nav.help', icon: HelpCircle, route: '/app/help', shortcut: '?' },
 ];
 
 const ShortcutBadge = ({ char }: { char: string }) => (
@@ -79,16 +79,16 @@ const CommandBar = () => {
       <CommandList>
         <CommandEmpty>{t('command.no_results')}</CommandEmpty>
 
-        <CommandGroup heading="Criar">
+        <CommandGroup heading={t('command.group_create')}>
           {createActions.map((action) => (
             <CommandItem
-              key={action.labelKey ?? action.label}
+              key={action.labelKey}
               onSelect={() => handleSelect(action.route)}
               className="cursor-pointer"
             >
               <action.icon className="mr-3 h-4 w-4" style={{ color: '#ff713d' }} />
               <span className="flex-1">
-                {action.labelKey ? t(action.labelKey) : action.label}
+                {t(action.labelKey)}
               </span>
               <ShortcutBadge char={action.shortcut} />
             </CommandItem>
@@ -97,16 +97,16 @@ const CommandBar = () => {
 
         <CommandSeparator />
 
-        <CommandGroup heading="Navegar">
+        <CommandGroup heading={t('command.group_navigate')}>
           {navActions.map((action) => (
             <CommandItem
-              key={action.labelKey ?? action.label}
+              key={action.labelKey}
               onSelect={() => handleSelect(action.route)}
               className="cursor-pointer"
             >
               <action.icon className="mr-3 h-4 w-4 text-[#8e8e96]" />
               <span className="flex-1">
-                {action.labelKey ? t(action.labelKey) : action.label}
+                {t(action.labelKey)}
               </span>
               <ShortcutBadge char={action.shortcut} />
             </CommandItem>

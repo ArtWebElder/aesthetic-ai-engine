@@ -16,8 +16,7 @@ interface Message {
 
 // Calls the support-chat edge function (uses the BACKEND GEMINI_API_KEY — the key
 // is never exposed to the browser). The system prompt lives in the function.
-async function callSupport(messages: Message[]): Promise<string> {
-  const fallback = 'Não consegui responder agora. Fale com a gente: support@creatyng.com';
+async function callSupport(messages: Message[], fallback: string): Promise<string> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return fallback;
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/support-chat`, {
@@ -107,7 +106,7 @@ export function SupportChat() {
     setLoading(true);
 
     try {
-      const reply = await callSupport(updated);
+      const reply = await callSupport(updated, t('support.fallback'));
       setMessages((prev) => [
         ...prev,
         { id: `a-${Date.now()}`, role: 'assistant', text: reply },

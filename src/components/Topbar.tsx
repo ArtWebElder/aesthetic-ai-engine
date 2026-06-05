@@ -142,7 +142,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
             <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
           </svg>
           <span style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: '#ff713d' }}>{credits}</span>
-          {!isMobile && <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>créditos</span>}
+          {!isMobile && <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>{t('credits.balance')}</span>}
         </button>
       </CreditTooltip>
 

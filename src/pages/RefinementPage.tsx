@@ -6,6 +6,7 @@ import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { useWizardStore } from "@/stores/useWizardStore";
+import { useI18n } from "@/i18n";
 import { RefinementChat } from "@/features/editor/wizard/RefinementChat";
 import { type RefinementOverrides } from "@/features/editor/engine/chatApply";
 import { exportCompositionToPNG } from "@/features/editor/engine/htmlExport";
@@ -59,6 +60,7 @@ const QUICK_ACTION_COLORS: Record<string, string> = {
 
 export default function RefinementPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const {
     composedImageBase64,
@@ -78,7 +80,7 @@ export default function RefinementPage() {
   const [displayImage, setDisplayImage] = useState<string | null>(initialImage);
   const [versions, setVersions] = useState<Version[]>(
     initialImage
-      ? [{ label: "Original", imageBase64: initialImage, timestamp: Date.now() }]
+      ? [{ label: t('refine.original'), imageBase64: initialImage, timestamp: Date.now() }]
       : []
   );
   const [selectedVersionIdx, setSelectedVersionIdx] = useState(0);
@@ -122,7 +124,7 @@ export default function RefinementPage() {
     setIsRecomposing(true);
     try {
       const result = await exportCompositionToPNG(updated);
-      addVersion(label ?? `Ajuste ${versions.length}`, result);
+      addVersion(label ?? t('refine.adjustment', { n: versions.length }), result);
     } finally {
       setIsRecomposing(false);
     }
@@ -140,7 +142,7 @@ export default function RefinementPage() {
     if (newOverrides.accentColor) updated = applyChatToComposition(updated, { type: 'change_color', value: newOverrides.accentColor });
     if (newOverrides.fontFamily) updated = applyChatToComposition(updated, { type: 'change_font', value: newOverrides.fontFamily });
 
-    await handleCompositionChange(updated, "Ajuste via chat");
+    await handleCompositionChange(updated, t('refine.chat_adjustment'));
   }
 
   const zoomIn = useCallback(() => setScale(s => Math.min(s * 1.25, 3)), []);
@@ -198,16 +200,16 @@ export default function RefinementPage() {
         <div style={{ width: 1, height: 20, background: 'rgba(20,20,23,0.08)' }} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#141417', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headline || "Criativo sem título"}</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: '#141417', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headline || t('refine.untitled')}</p>
         </div>
 
-        <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: '#ff713d', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>Clone Criativo</span>
+        <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: '#ff713d', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{t('dashboard.feature.clone_criativo')}</span>
 
         <button
           onClick={() => setShowExportModal(true)}
           disabled={!hasContent}
           style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : 0.4, fontFamily: 'inherit' }}
-        >↓ Exportar</button>
+        >{t('refine.export')}</button>
       </header>
 
       {/* Main split */}
@@ -222,7 +224,7 @@ export default function RefinementPage() {
             <span style={{ fontSize: 11.5, color: 'hsl(var(--foreground))', width: 48, textAlign: 'center', fontWeight: 500 }}>{Math.round(scale * 100)}%</span>
             <button onClick={zoomIn} style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
             <button onClick={resetZoom} style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Reset</button>
-            {isRecomposing && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#ff713d', animation: 'rfPulse 1s ease-in-out infinite' }}>Atualizando...</span>}
+            {isRecomposing && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#ff713d', animation: 'rfPulse 1s ease-in-out infinite' }}>{t('refine.updating')}</span>}
           </div>
 
           {/* Preview area */}
@@ -237,7 +239,7 @@ export default function RefinementPage() {
             {hasContent && displayImage ? (
               <img
                 src={displayImage}
-                alt="Criativo"
+                alt={t('refine.creative_alt')}
                 draggable={false}
                 style={{
                   borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,0.08)',
@@ -254,8 +256,8 @@ export default function RefinementPage() {
                 <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
                   <Sparkles size={24} style={{ color: '#F97316' }} />
                 </div>
-                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>Nenhum criativo carregado.</p>
-                <button onClick={() => navigate("/app/create")} style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, textDecoration: 'underline' }}>Criar um criativo</button>
+                <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>{t('refine.no_creative')}</p>
+                <button onClick={() => navigate("/app/create")} style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, textDecoration: 'underline' }}>{t('refine.create_one')}</button>
               </div>
             )}
           </div>
@@ -263,7 +265,7 @@ export default function RefinementPage() {
           {/* Version timeline */}
           {versions.length > 1 && (
             <div style={{ flexShrink: 0, borderTop: '1px solid rgba(20,20,23,0.06)', padding: '10px 14px', background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(4px)' }}>
-              <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontWeight: 600 }}>Histórico de versões</p>
+              <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontWeight: 600 }}>{t('refine.version_history')}</p>
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
                 {versions.map((v, idx) => (
                   <button key={idx} onClick={() => selectVersion(idx)} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -287,10 +289,10 @@ export default function RefinementPage() {
               <div style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: '#10B981', border: '1.5px solid #ffffff' }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13.5, fontWeight: 600, color: '#141417' }}>Assistente de Refinamento</p>
-              <p style={{ fontSize: 11, color: '#10B981' }}>● Online</p>
+              <p style={{ fontSize: 13.5, fontWeight: 600, color: '#141417' }}>{t('refine.assistant')}</p>
+              <p style={{ fontSize: 11, color: '#10B981' }}>● {t('wizard.online')}</p>
             </div>
-            <button onClick={() => navigate("/app/create")} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#5a5a60', fontSize: 11.5, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>↺ Regerar tudo</button>
+            <button onClick={() => navigate("/app/create")} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#5a5a60', fontSize: 11.5, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>{t('refine.regen_all')}</button>
           </div>
 
           {/* Quick actions */}
@@ -310,7 +312,7 @@ export default function RefinementPage() {
 
           {/* Chat component */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '12px 14px', gap: 8 }}>
-            <p style={{ fontSize: 11, color: '#b5b5bb', textAlign: 'center' }}>1 crédito por mensagem de ajuste</p>
+            <p style={{ fontSize: 11, color: '#b5b5bb', textAlign: 'center' }}>{t('refine.credit_per_msg')}</p>
             <div style={{ flex: 1, minHeight: 0 }}>
               <RefinementChat
                 overrides={refinementOverrides}
