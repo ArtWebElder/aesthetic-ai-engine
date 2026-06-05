@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   ChevronDown, LayoutDashboard, Plus, Copy, Undo2, Redo2,
-  LayoutGrid, Trash2,
+  LayoutGrid, Trash2, Save, FolderOpen,
 } from 'lucide-react';
 import { Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -12,6 +12,8 @@ interface StudioTopMenuProps {
   onCloneFlow: () => void;
   onAutoLayout: () => void;
   onDeleteFlow: () => void;
+  onSaveProject: () => void;
+  onOpenProjects: () => void;
 }
 
 export function StudioTopMenu({
@@ -19,6 +21,8 @@ export function StudioTopMenu({
   onCloneFlow,
   onAutoLayout,
   onDeleteFlow,
+  onSaveProject,
+  onOpenProjects,
 }: StudioTopMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -133,6 +137,29 @@ export function StudioTopMenu({
           >
             <Copy size={13} style={{ opacity: 0.7 }} />
             <span style={{ flex: 1 }}>{t('studio.menu.clone')}</span>
+          </div>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: 'hsl(var(--border))', margin: '4px 0' }} />
+
+          <div
+            style={itemStyle}
+            onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--muted))')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            onClick={() => handleItem(onSaveProject)}
+          >
+            <Save size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1 }}>{t('studio.menu.save')}</span>
+          </div>
+
+          <div
+            style={itemStyle}
+            onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--muted))')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            onClick={() => handleItem(onOpenProjects)}
+          >
+            <FolderOpen size={13} style={{ opacity: 0.7 }} />
+            <span style={{ flex: 1 }}>{t('studio.menu.projects')}</span>
           </div>
 
           {/* Divider */}

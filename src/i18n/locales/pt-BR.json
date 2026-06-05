@@ -1435,5 +1435,14 @@
   "refine.assistant": "Assistente de Refinamento",
   "refine.regen_all": "↺ Regerar tudo",
   "refine.credit_per_msg": "1 crédito por mensagem de ajuste",
-  "refine.creative_alt": "Criativo"
+  "refine.creative_alt": "Criativo",
+  "studio.menu.save": "Salvar projeto",
+  "studio.menu.projects": "Meus projetos",
+  "studio.projects.title": "Meus projetos",
+  "studio.projects.empty": "Nenhum projeto salvo ainda.",
+  "studio.projects.loading": "Carregando...",
+  "studio.projects.saved": "Projeto salvo!",
+  "studio.projects.save_error": "Não foi possível salvar. Aplique a migration studio_projects no Supabase.",
+  "studio.projects.name_prompt": "Nome do projeto:",
+  "studio.projects.empty_canvas": "Adicione alguns nodes antes de salvar."
 }

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { Sparkles, Play, Download, Plus, Maximize2, ZoomIn, ZoomOut, LayoutGrid, Menu, LayoutDashboard, Undo2, Redo2 } from 'lucide-react';
+import { Sparkles, Play, Download, Plus, Maximize2, ZoomIn, ZoomOut, LayoutGrid, Menu, LayoutDashboard, Undo2, Redo2, Save, FolderOpen } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
@@ -35,6 +35,8 @@ import { StudioChat } from './studio/StudioChat';
 import { StudioNodePanel } from './studio/StudioNodePanel';
 import { StudioProperties } from './studio/StudioProperties';
 import { FlowSelector } from './studio/FlowSelector';
+import { StudioProjectsModal } from './studio/StudioProjectsModal';
+import { saveStudioProject, type StudioProject } from '@/services/studioProjects';
 import { FLOW_STYLES } from './studio/flowStyles';
 import { useI18n } from '@/i18n';
 import { useCreditStore } from '@/stores/useCreditStore';
@@ -131,6 +133,8 @@ export function StudioPage() {
     typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches,
   );
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [showProjects, setShowProjects] = useState(false);
   // Optional ?flow=<id> from a dashboard card. Flows WITH styles open the selector
   // on their styles; flows WITHOUT styles load directly (see effect below).
   const [searchParams] = useSearchParams();
@@ -547,6 +551,67 @@ export function StudioPage() {
     if (isMobile) fitToView(positioned);
   }, [pushSnapshot, isMobile, fitToView, verticalLayout]);
 
+  // ── Memória de projetos: salvar / abrir ──────────────────────────────────────
+  const handleSaveProject = useCallback(async () => {
+    if (nodes.length === 0) { alert(t('studio.projects.empty_canvas')); return; }
+    const defaultName = (activeFlowId && PRESET_FLOWS[activeFlowId]?.name) || 'Meu projeto';
+    const name = window.prompt(t('studio.projects.name_prompt'), defaultName);
+    if (name === null) return;
+
+    // Thumbnail: prefer the export output, else any node output image. Downscale to 320px.
+    let rawThumb: string | null = null;
+    for (const n of nodes) {
+      const o = nodeOutputs[n.id];
+      if (n.type === 'export' && typeof o?.image === 'string') { rawThumb = o.image as string; break; }
+    }
+    if (!rawThumb) {
+      for (const id in nodeOutputs) {
+        const o = nodeOutputs[id];
+        if (typeof o?.image === 'string') { rawThumb = o.image as string; break; }
+      }
+    }
+    let thumbnail: string | null = null;
+    if (rawThumb) {
+      thumbnail = await new Promise<string | null>((resolve) => {
+        const im = new Image();
+        im.onload = () => {
+          const s = Math.min(1, 320 / Math.max(im.width, im.height));
+          const cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(im.width * s));
+          cv.height = Math.max(1, Math.round(im.height * s));
+          cv.getContext('2d')!.drawImage(im, 0, 0, cv.width, cv.height);
+          resolve(cv.toDataURL('image/jpeg', 0.7));
+        };
+        im.onerror = () => resolve(null);
+        im.src = rawThumb as string;
+      });
+    }
+
+    try {
+      const id = await saveStudioProject({ id: currentProjectId, name, flowId: activeFlowId, nodes, connections, thumbnail });
+      setCurrentProjectId(id);
+      alert(t('studio.projects.saved'));
+    } catch (e) {
+      console.error('[Studio] save project failed:', e);
+      alert(t('studio.projects.save_error'));
+    }
+  }, [nodes, connections, activeFlowId, nodeOutputs, currentProjectId, t]);
+
+  const handleOpenProject = useCallback((project: StudioProject) => {
+    pushSnapshot();
+    const nextNodes = JSON.parse(JSON.stringify(project.nodes || [])) as StudioNodeType[];
+    setNodes(nextNodes);
+    setConnections(JSON.parse(JSON.stringify(project.connections || [])));
+    setExecStates({});
+    setNodeOutputs({});
+    setSelectedNodeId(null);
+    setActiveFlowId(project.flow_id || null);
+    setCurrentProjectId(project.id);
+    setShowProjects(false);
+    setShowFlowSelector(false);
+    if (isMobile) fitToView(nextNodes);
+  }, [pushSnapshot, isMobile, fitToView]);
+
   // Dashboard card with ?flow=<no-styles flow> → load it directly (styles flows open
   // the selector on their styles via initialStyleFlow instead).
   const didInitFlowParam = useRef(false);
@@ -662,6 +727,8 @@ export function StudioPage() {
           onCloneFlow={handleCloneFlow}
           onAutoLayout={handleAutoLayout}
           onDeleteFlow={handleDeleteFlow}
+          onSaveProject={handleSaveProject}
+          onOpenProjects={() => setShowProjects(true)}
         />
       )}
 
@@ -691,6 +758,8 @@ export function StudioPage() {
                 {[
                   { icon: <LayoutDashboard size={16} />, label: 'Voltar pra Dashboard', fn: () => navigate('/app/dashboard') },
                   { icon: <LayoutGrid size={16} />, label: 'Novo fluxo', fn: handleNewFlow },
+                  { icon: <Save size={16} />, label: t('studio.menu.save'), fn: handleSaveProject },
+                  { icon: <FolderOpen size={16} />, label: t('studio.menu.projects'), fn: () => setShowProjects(true) },
                   { icon: <Undo2 size={16} />, label: 'Desfazer', fn: undo },
                   { icon: <Redo2 size={16} />, label: 'Refazer', fn: redo },
                   { icon: <Sparkles size={16} />, label: 'Auto Layout', fn: handleAutoLayout },
@@ -919,6 +988,12 @@ export function StudioPage() {
           }}
         />
       )}
+
+      <StudioProjectsModal
+        open={showProjects}
+        onClose={() => setShowProjects(false)}
+        onOpenProject={handleOpenProject}
+      />
     </div>
   );
 }
