@@ -670,8 +670,8 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
       if (!supabaseUrl || !supabaseKey) throw new Error('Supabase não configurado');
 
-      const ratio = (node.data.ratio as string) || '9:16';
-      const [rw, rh] = ratio.split(':').map(Number);
+      const ratios = ((node.data.ratios as string) || (node.data.ratio as string) || '9:16')
+        .split(',').map((s) => s.trim()).filter(Boolean);
 
       // Load + cap the original to 1280px (keeps Bria canvas in a safe range).
       const img = new Image();
@@ -690,51 +690,58 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       c0.getContext('2d')!.drawImage(img, 0, 0, sw, sh);
       const original = c0.toDataURL('image/png');
 
-      const targetAR = rw / rh;
+      const LABELS: Record<string, string> = { '1:1': '1:1 Feed', '4:5': '4:5 Feed', '9:16': '9:16 Story', '16:9': '16:9 Banner' };
       const srcAR = sw / sh;
-      // Same ratio → nothing to expand, return as-is (no charge-worthy work).
-      if (Math.abs(targetAR - srcAR) < 0.01) {
-        return { image: original, type: 'reframed' };
-      }
-      let cw: number, ch: number, ox: number, oy: number;
-      if (targetAR > srcAR) {
-        ch = sh; cw = Math.round(sh * targetAR); ox = Math.round((cw - sw) / 2); oy = 0;
-      } else {
-        cw = sw; ch = Math.round(sw / targetAR); ox = 0; oy = Math.round((ch - sh) / 2);
-      }
+      const results: Array<{ ratio: string; label: string; dataURL: string }> = [];
 
-      const resp = await fetch(`${supabaseUrl}/functions/v1/expand-image`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-        body: JSON.stringify({
-          image: original,
-          canvas_size: [cw, ch],
-          original_image_size: [sw, sh],
-          original_image_location: [ox, oy],
-          ratio,
-        }),
-      });
-      if (!resp.ok) {
-        const err = await resp.text();
-        throw new Error(`Adaptar formato falhou (${resp.status}): ${err.slice(0, 200)}`);
-      }
-      const result = await resp.json();
-      const outUrl = result.image as string | undefined;
-      if (!outUrl) throw new Error('Resposta sem imagem do reframe');
-
-      let reframed: string;
-      if (outUrl.startsWith('data:')) {
-        reframed = outUrl;
-      } else {
-        const imgResp = await fetch(outUrl);
-        const blob = await imgResp.blob();
-        reframed = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
+      for (const ratio of ratios) {
+        const [rw, rh] = ratio.split(':').map(Number);
+        const targetAR = rw / rh;
+        // Same ratio → nothing to expand, keep the original.
+        if (Math.abs(targetAR - srcAR) < 0.01) {
+          results.push({ ratio, label: LABELS[ratio] || ratio, dataURL: original });
+          continue;
+        }
+        let cw: number, ch: number, ox: number, oy: number;
+        if (targetAR > srcAR) {
+          ch = sh; cw = Math.round(sh * targetAR); ox = Math.round((cw - sw) / 2); oy = 0;
+        } else {
+          cw = sw; ch = Math.round(sw / targetAR); ox = 0; oy = Math.round((ch - sh) / 2);
+        }
+        const resp = await fetch(`${supabaseUrl}/functions/v1/expand-image`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+          body: JSON.stringify({
+            image: original,
+            canvas_size: [cw, ch],
+            original_image_size: [sw, sh],
+            original_image_location: [ox, oy],
+            ratio,
+          }),
         });
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`Adaptar formato (${ratio}) falhou (${resp.status}): ${err.slice(0, 160)}`);
+        }
+        const result = await resp.json();
+        const outUrl = result.image as string | undefined;
+        if (!outUrl) throw new Error('Resposta sem imagem do reframe');
+        let reframed: string;
+        if (outUrl.startsWith('data:')) {
+          reframed = outUrl;
+        } else {
+          const imgResp = await fetch(outUrl);
+          const blob = await imgResp.blob();
+          reframed = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        }
+        results.push({ ratio, label: LABELS[ratio] || ratio, dataURL: reframed });
       }
-      return { image: reframed, type: 'reframed' };
+
+      return { images: results, image: results[0]?.dataURL, type: 'reframed' };
     }
 
     case 'background_gen': {

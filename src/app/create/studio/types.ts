@@ -381,7 +381,7 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     credits: 3,
     nodes: [
       { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
-      { id: 'n2', type: 'reframe_ai', x: 480, y: 160, data: { ratio: '9:16' } },
+      { id: 'n2', type: 'reframe_ai', x: 480, y: 160, data: { ratios: '9:16' } },
       { id: 'n3', type: 'export', x: 860, y: 170, data: { format: 'png' } },
     ],
     connections: [

@@ -7,8 +7,9 @@
 ## Fluxo
 `Imagem (image_upload)` → `Adaptar Formato (IA)` (escolhe proporção) → `Export`
 
-- Node `reframe_ai` (`ai`, ícone `Expand`, **3 cr/execução**): seletor de proporção 1:1 / 4:5 / 9:16 / 16:9.
-- 1 formato por execução; pra outro formato, troca a proporção e roda de novo (cobra de novo).
+- Node `reframe_ai` (`ai`, ícone `Expand`): **multi-seleção** de proporções (chips 1:1 / 4:5 / 9:16 / 16:9).
+- **Batch**: gera todos os formatos selecionados num run (loop de chamadas Bria), com download por formato no node.
+- Custo **dinâmico = nº de formatos × 3 cr** (débito calculado no StudioPage a partir de `node.data.ratios`).
 
 ## Como funciona (outpaint, sem corte)
 - Frontend (`engine.ts` case `reframe_ai`): faz cap de 1280px, calcula a **canvas alvo** e a

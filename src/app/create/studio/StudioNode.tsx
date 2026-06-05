@@ -493,24 +493,58 @@ function NodeContent({
       );
     }
 
-    case 'reframe_ai':
+    case 'reframe_ai': {
+      const selected = ((node.data.ratios as string) || (node.data.ratio as string) || '9:16')
+        .split(',').map(s => s.trim()).filter(Boolean);
+      const RATIO_OPTS = [
+        { v: '1:1', l: '1:1' }, { v: '4:5', l: '4:5' }, { v: '9:16', l: '9:16' }, { v: '16:9', l: '16:9' },
+      ];
+      const toggleRatio = (v: string) => {
+        const set = new Set(selected);
+        if (set.has(v)) set.delete(v); else set.add(v);
+        const next = RATIO_OPTS.map(o => o.v).filter(x => set.has(x));
+        onDataChange(node.id, 'ratios', next.length ? next.join(',') : '9:16');
+      };
+      const imgs = (output?.images as Array<{ ratio: string; label: string; dataURL: string }>) || [];
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <StudioSelect
-            defaultValue={(node.data.ratio as string) || '9:16'}
-            options={[
-              { value: '1:1', label: '1:1 Feed' },
-              { value: '4:5', label: '4:5 Feed' },
-              { value: '9:16', label: '9:16 Story' },
-              { value: '16:9', label: '16:9 Banner' },
-            ]}
-            onChange={(v) => onDataChange(node.id, 'ratio', v)}
-            onMouseDown={e => e.stopPropagation()}
-          />
-          <OutputPreview output={output} />
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }} onMouseDown={e => e.stopPropagation()}>
+            {RATIO_OPTS.map(o => {
+              const on = selected.includes(o.v);
+              return (
+                <button key={o.v} onClick={(e) => { e.stopPropagation(); toggleRatio(o.v); }}
+                  style={{
+                    flex: 1, minWidth: 0, padding: '4px 0', borderRadius: 6, fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                    border: on ? '1.5px solid #7C3AED' : '1px solid hsl(var(--border))',
+                    background: on ? 'rgba(124,58,237,0.12)' : 'hsl(var(--card))',
+                    color: on ? '#7C3AED' : 'hsl(var(--muted-foreground))',
+                  }}>{o.l}</button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 9.5, color: 'hsl(var(--muted-foreground))', textAlign: 'center' }}>
+            {selected.length} × 3 = {selected.length * 3} cr
+          </div>
+          {imgs.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              {imgs.map((im) => (
+                <div key={im.ratio} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <img src={im.dataURL} alt={im.label} style={{ width: '100%', height: 54, objectFit: 'contain', background: 'hsl(var(--muted))', borderRadius: 6 }} />
+                  <button onClick={(e) => { e.stopPropagation(); triggerDownload(im.dataURL, 'png'); }}
+                    onMouseDown={e => e.stopPropagation()}
+                    style={{ fontSize: 9.5, padding: '3px 0', borderRadius: 5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    ↓ {im.label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <OutputPreview output={output} />
+          )}
           {runBtn}
         </div>
       );
+    }
 
     case 'typography':
       return (

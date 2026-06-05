@@ -297,7 +297,13 @@ export function StudioPage() {
     const flowCostKey = activeFlowId || 'simple-gen';
     // NB: calculateCost always returns a number; do NOT use `|| 5` here —
     // that would turn a legitimately free flow (0 credits, e.g. remove-bg) into 5.
-    const creditCost = calculateCost(flowCostKey);
+    // reframe_ai (Adaptar Formato IA) charges PER selected format → dynamic cost.
+    const perReframe = calculateCost('reframe-ai') || 3;
+    const reframeFormats = nodes
+      .filter(n => n.type === 'reframe_ai')
+      .reduce((sum, n) => sum + Math.max(1, ((n.data.ratios as string) || (n.data.ratio as string) || '9:16').split(',').filter(Boolean).length), 0);
+    const baseCost = flowCostKey === 'reframe-ai' ? 0 : calculateCost(flowCostKey);
+    const creditCost = baseCost + reframeFormats * perReframe;
     // Free flows (0 credits, e.g. remove-bg Eco) skip the debit call entirely.
     if (creditCost > 0) {
       try {
