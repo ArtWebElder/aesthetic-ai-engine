@@ -652,6 +652,91 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       return { images, image: primary, type: 'multiformat' };
     }
 
+    case 'reframe_ai': {
+      // Premium reframe: outpaint (Bria Expand) extends the scene to a new aspect
+      // ratio — the original stays intact (subject/product never cut).
+      const src: string | undefined =
+        findUpstreamByType(inputs, 'subject')?.image
+        || findUpstreamByType(inputs, 'generated')?.image
+        || findUpstreamByType(inputs, 'upscaled')?.image
+        || findUpstreamByType(inputs, 'subject_cutout')?.image
+        || findUpstreamByType(inputs, 'composed')?.image
+        || findUpstreamByType(inputs, 'final')?.image
+        || (inputs.image as string)
+        || (inputs.generatedImage as string);
+      if (!src) throw new Error('Imagem não conectada — suba uma imagem');
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+      if (!supabaseUrl || !supabaseKey) throw new Error('Supabase não configurado');
+
+      const ratio = (node.data.ratio as string) || '9:16';
+      const [rw, rh] = ratio.split(':').map(Number);
+
+      // Load + cap the original to 1280px (keeps Bria canvas in a safe range).
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Falha ao carregar imagem'));
+        img.src = src;
+      });
+      const cap = 1280;
+      const dscale = Math.min(1, cap / Math.max(img.width, img.height));
+      const sw = Math.round(img.width * dscale);
+      const sh = Math.round(img.height * dscale);
+      const c0 = document.createElement('canvas');
+      c0.width = sw; c0.height = sh;
+      c0.getContext('2d')!.drawImage(img, 0, 0, sw, sh);
+      const original = c0.toDataURL('image/png');
+
+      const targetAR = rw / rh;
+      const srcAR = sw / sh;
+      // Same ratio → nothing to expand, return as-is (no charge-worthy work).
+      if (Math.abs(targetAR - srcAR) < 0.01) {
+        return { image: original, type: 'reframed' };
+      }
+      let cw: number, ch: number, ox: number, oy: number;
+      if (targetAR > srcAR) {
+        ch = sh; cw = Math.round(sh * targetAR); ox = Math.round((cw - sw) / 2); oy = 0;
+      } else {
+        cw = sw; ch = Math.round(sw / targetAR); ox = 0; oy = Math.round((ch - sh) / 2);
+      }
+
+      const resp = await fetch(`${supabaseUrl}/functions/v1/expand-image`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+        body: JSON.stringify({
+          image: original,
+          canvas_size: [cw, ch],
+          original_image_size: [sw, sh],
+          original_image_location: [ox, oy],
+          ratio,
+        }),
+      });
+      if (!resp.ok) {
+        const err = await resp.text();
+        throw new Error(`Adaptar formato falhou (${resp.status}): ${err.slice(0, 200)}`);
+      }
+      const result = await resp.json();
+      const outUrl = result.image as string | undefined;
+      if (!outUrl) throw new Error('Resposta sem imagem do reframe');
+
+      let reframed: string;
+      if (outUrl.startsWith('data:')) {
+        reframed = outUrl;
+      } else {
+        const imgResp = await fetch(outUrl);
+        const blob = await imgResp.blob();
+        reframed = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      }
+      return { image: reframed, type: 'reframed' };
+    }
+
     case 'background_gen': {
       let prompt = (inputs.prompt as string) || '';
       const instruction = (node.data.instruction as string) || '';
@@ -1040,6 +1125,7 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       const finalUp = findUpstreamByType(inputs, 'final');
       const colorUp = findUpstreamByType(inputs, 'color_grade');
       const upscaledUp = findUpstreamByType(inputs, 'upscaled');
+      const reframedUp = findUpstreamByType(inputs, 'reframed');
       const multiUp = findUpstreamByType(inputs, 'multiformat');
       const composedUp = findUpstreamByType(inputs, 'composed');
       const generatedUp = findUpstreamByType(inputs, 'generated');
@@ -1048,6 +1134,7 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       const image = finalUp?.image
         || colorUp?.image
         || upscaledUp?.image
+        || reframedUp?.image
         || multiUp?.image
         || composedUp?.image
         || generatedUp?.image
@@ -1204,7 +1291,7 @@ export function prePopulateInputOutputs(
  * Node types that are critical — if they fail, the flow must stop.
  * Non-critical nodes (like reference_analyzer) can fail and the flow continues.
  */
-const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor', 'copy_ai', 'composition_ai', 'upscale', 'multiformat'];
+const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor', 'copy_ai', 'composition_ai', 'upscale', 'multiformat', 'reframe_ai'];
 
 /**
  * Execute entire flow sequentially in topological order.

@@ -3,7 +3,7 @@ import {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, Play, CheckCircle,
   Loader2, ScanEye, FileText, AlertCircle, Trash2,
-  Image, Layers, LayoutTemplate, Maximize2, LayoutGrid,
+  Image, Layers, LayoutTemplate, Maximize2, LayoutGrid, Expand,
 } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, NodeTypeId, StudioNode as StudioNodeType } from './types';
 import { useI18n } from '@/i18n';
@@ -12,7 +12,7 @@ import { StudioSelect } from './StudioSelect';
 const ICON_MAP: Record<string, React.ElementType> = {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, ScanEye, FileText,
-  Image, Layers, LayoutTemplate, Maximize2, LayoutGrid,
+  Image, Layers, LayoutTemplate, Maximize2, LayoutGrid, Expand,
 };
 
 /** Trigger browser download — handles both base64 data URIs and remote URLs */
@@ -47,7 +47,7 @@ async function triggerDownload(src: string, format: string) {
 
 const RUN_NODES: NodeTypeId[] = [
   'prompt_builder', 'scene_gen', 'image_gen',
-  'reference_analyzer', 'bg_removal', 'upscale', 'multiformat', 'export',
+  'reference_analyzer', 'bg_removal', 'upscale', 'multiformat', 'reframe_ai', 'export',
   'background_gen', 'compositor', 'text_overlay',
   'copy_ai', 'composition_ai', 'color_grade',
 ];
@@ -492,6 +492,25 @@ function NodeContent({
         </div>
       );
     }
+
+    case 'reframe_ai':
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <StudioSelect
+            defaultValue={(node.data.ratio as string) || '9:16'}
+            options={[
+              { value: '1:1', label: '1:1 Feed' },
+              { value: '4:5', label: '4:5 Feed' },
+              { value: '9:16', label: '9:16 Story' },
+              { value: '16:9', label: '16:9 Banner' },
+            ]}
+            onChange={(v) => onDataChange(node.id, 'ratio', v)}
+            onMouseDown={e => e.stopPropagation()}
+          />
+          <OutputPreview output={output} />
+          {runBtn}
+        </div>
+      );
 
     case 'typography':
       return (

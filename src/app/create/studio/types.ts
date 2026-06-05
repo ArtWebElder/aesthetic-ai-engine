@@ -11,6 +11,7 @@ export type NodeTypeId =
   | 'bg_removal'
   | 'upscale'
   | 'multiformat'
+  | 'reframe_ai'
   | 'typography'
   | 'color_grade'
   | 'image_gen'
@@ -58,7 +59,7 @@ export type PanelTab = 'nodes' | 'assets' | 'templates' | 'learn';
 export const AUTO_LAYOUT_COLUMNS: Record<number, NodeTypeId[]> = {
   0: ['brand_input', 'image_upload', 'reference_upload', 'text_input'],
   1: ['bg_removal', 'upscale', 'multiformat', 'color_grade', 'prompt_builder', 'reference_analyzer', 'copy_ai'],
-  2: ['scene_gen', 'image_gen', 'background_gen'],
+  2: ['scene_gen', 'image_gen', 'background_gen', 'reframe_ai'],
   3: ['compositor', 'text_overlay', 'typography', 'composition_ai', 'export'],
 };
 
@@ -77,6 +78,7 @@ export const NODE_RUN_TIMEOUT: Partial<Record<NodeTypeId, number>> = {
   bg_removal: 5000,
   upscale: 40000,
   multiformat: 4000,
+  reframe_ai: 45000,
   color_grade: 800,
   typography: 800,
   copy_ai: 8000,
@@ -182,6 +184,17 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     category: 'processing',
     defaultWidth: 280,
     defaultHeight: 220,
+  },
+  reframe_ai: {
+    id: 'reframe_ai',
+    label: 'Adaptar Formato (IA)',
+    icon: 'Expand',
+    color: '#7C3AED',
+    aiProvider: 'Replicate',
+    category: 'ai',
+    defaultWidth: 280,
+    defaultHeight: 200,
+    creditCost: 3,
   },
   typography: {
     id: 'typography',
@@ -348,6 +361,27 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     nodes: [
       { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
       { id: 'n2', type: 'multiformat', x: 480, y: 150, data: {} },
+      { id: 'n3', type: 'export', x: 860, y: 170, data: { format: 'png' } },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n2', toPort: 'input' },
+      { id: 'c2', fromNode: 'n2', fromPort: 'output', toNode: 'n3', toPort: 'input' },
+    ],
+  },
+  'reframe-ai': {
+    id: 'reframe-ai',
+    name: 'Adaptar Formato (IA)',
+    nameEn: 'AI Reframe',
+    nameEs: 'Reencuadre con IA',
+    description: 'Adapta o MESMO criativo pra outra proporção com IA — estende a cena sem cortar o produto/sujeito. Premium.',
+    descriptionEn: 'Adapt the SAME creative to another aspect ratio with AI — extends the scene without cutting the product/subject. Premium.',
+    descriptionEs: 'Adapta el MISMO creativo a otra proporción con IA — extiende la escena sin cortar el producto/sujeto. Premium.',
+    icon: 'Expand',
+    color: '#7C3AED',
+    credits: 3,
+    nodes: [
+      { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
+      { id: 'n2', type: 'reframe_ai', x: 480, y: 160, data: { ratio: '9:16' } },
       { id: 'n3', type: 'export', x: 860, y: 170, data: { format: 'png' } },
     ],
     connections: [

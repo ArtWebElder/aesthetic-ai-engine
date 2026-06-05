@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
   Palette, Sparkles, Plus,
   LayoutTemplate, Copy, Scissors, MonitorPlay, SlidersHorizontal, Quote, UserRound, Package,
-  Maximize2, LayoutGrid,
+  Maximize2, LayoutGrid, Expand,
   ArrowLeft, X,
 } from 'lucide-react';
 import { PRESET_FLOWS, type PresetFlow } from './types';
@@ -22,6 +22,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Package,
   Maximize2,
   LayoutGrid,
+  Expand,
 };
 
 interface FlowSelectorProps {

@@ -119,6 +119,16 @@ export const FEATURE_TIERS: Record<string, FeatureSpec> = {
       eco: { model: 'browser:canvas', providerCostBRL: 0, credits: 0, minPlan: 'free', anon: { enabled: true, dailyCap: 50 } },
     },
   },
+  reframe: {
+    id: 'reframe',
+    labelKey: 'tools.reframe',
+    tiers: {
+      // Bria Expand — outpaints to a target aspect ratio, keeps the subject intact
+      // (no cutting). Paid: a real generation per format. creditFloor(0.15) = 3.
+      eco:   { model: 'replicate:bria/expand-image', providerCostBRL: 0.15, credits: 3, minPlan: 'free', anon: { enabled: false, dailyCap: 0 } },
+      ultra: { model: 'replicate:bria/expand-image', providerCostBRL: 0.27, credits: 5, minPlan: 'team', anon: { enabled: false, dailyCap: 0 } },
+    },
+  },
 };
 
 export function resolveTier(feature: string, tier: Tier): TierSpec | undefined {
@@ -149,6 +159,8 @@ export const FLOW_TIER_MAP: Record<string, { feature: string; tier: Tier }> = {
   'upscale': { feature: 'upscale', tier: 'eco' },
   // Multi-format reframing is client-side Canvas → free.
   'multi-format': { feature: 'multiformat', tier: 'eco' },
+  // AI reframe (Bria Expand) → paid, 3 credits per run.
+  'reframe-ai': { feature: 'reframe', tier: 'eco' },
   // Generation modes stay on 'pro' until the backend is tier-aware (Phase 2):
   // today every generation runs on Flux (~R$0.22), so 'eco' pricing would lose money.
   'quote-card': { feature: 'generate', tier: 'pro' },

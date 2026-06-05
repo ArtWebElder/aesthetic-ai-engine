@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Copy, Sparkles, ChevronLeft, ChevronRight,
   FolderOpen, Plus, Image,
-  Scissors, SlidersHorizontal, MonitorPlay, Quote, UserRound, Package, Palette, LayoutTemplate, Maximize2, LayoutGrid,
+  Scissors, SlidersHorizontal, MonitorPlay, Quote, UserRound, Package, Palette, LayoutTemplate, Maximize2, LayoutGrid, Expand,
 } from 'lucide-react';
 import { EmptyState } from '@/components/creatyng';
 import { listProjects } from '@/features/projects/store';
@@ -16,13 +16,13 @@ import { FLOW_STYLES } from '@/app/create/studio/flowStyles';
 
 // Lucide icon names used by PRESET_FLOWS → components
 const FLOW_ICONS: Record<string, React.ElementType> = {
-  Scissors, SlidersHorizontal, MonitorPlay, Quote, UserRound, Package, Copy, Palette, LayoutTemplate, Sparkles, Maximize2, LayoutGrid,
+  Scissors, SlidersHorizontal, MonitorPlay, Quote, UserRound, Package, Copy, Palette, LayoutTemplate, Sparkles, Maximize2, LayoutGrid, Expand,
 };
 
 // Flows grouped into categories → each renders as a horizontal carousel on the dashboard.
 const FLOW_CATEGORIES: { key: string; labelKey: string; ids: string[] }[] = [
   { key: 'free',     labelKey: 'dashboard.cat.free',     ids: ['remove-bg', 'recolor', 'upscale', 'multi-format'] },
-  { key: 'social',   labelKey: 'dashboard.cat.social',   ids: ['thumbnail', 'quote-card', 'headshot'] },
+  { key: 'social',   labelKey: 'dashboard.cat.social',   ids: ['thumbnail', 'quote-card', 'headshot', 'reframe-ai'] },
   { key: 'ecom',     labelKey: 'dashboard.cat.ecom',     ids: ['product-scene', 'creative-banner'] },
   { key: 'advanced', labelKey: 'dashboard.cat.advanced', ids: ['clone-criativo', 'styled-photo', 'simple-gen'] },
 ];
