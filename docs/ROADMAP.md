@@ -6,7 +6,8 @@
 > infinitamente conforme as IAs avançam e o mercado pede.
 
 ## ✅ Concluído (em produção)
-- 6 modos no Studio: Remover Fundo, Re-color, Thumbnail (OpenAI), Card de Citação, Headshot, Produto em Cena.
+- 7 modos no Studio: Remover Fundo, Re-color, **Upscale HD/4K** (Real-ESRGAN/Replicate, 1 cr), Thumbnail (OpenAI), Card de Citação, Headshot, Produto em Cena.
+- i18n EN/PT-BR/ES e responsividade mobile 100% em todas as páginas ativas; legado morto removido.
 - Fundação de tiers (`featureTiers.ts`, Eco/Pro/Ultra + piso de margem).
 - Thumbnail OpenAI (texto desenhado na imagem) + provider `openai-image` roteado por `module`.
 - **Fase 0 — Sub-seletor de Estilos** do Thumbnail (categorias → estilos pré-moldados; 7 templates seed em `flowStyles.ts`). *Funciona; falta lapidar visual.*
@@ -28,7 +29,7 @@
 
 ## 🅿️ Parado (decisão consciente)
 - **Híbrido do Thumbnail** (compositor multi-camada + multi-upload de logos/prints + multi-texto): pesado e alto-toque → só com ambiente **local + Chrome** ou decisão de investir dias.
-- **Tiers premium / providers** (Upscale, Bria, InstantID, OpenAI fallback p/ outras features): quando o mercado pedir.
+- **Tiers premium / providers** (Upscale Pro/Ultra c/ Clarity Upscaler, Bria, InstantID, OpenAI fallback): quando o mercado pedir. (Upscale eco já está em produção.)
 
 ## 🔜 Backlog priorizado
 
