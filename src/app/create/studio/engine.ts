@@ -600,6 +600,58 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       return { image: upscaled, type: 'upscaled' };
     }
 
+    case 'multiformat': {
+      // Reframe any image into the standard social formats — client-side, free.
+      const src: string | undefined =
+        findUpstreamByType(inputs, 'subject')?.image
+        || findUpstreamByType(inputs, 'generated')?.image
+        || findUpstreamByType(inputs, 'upscaled')?.image
+        || findUpstreamByType(inputs, 'subject_cutout')?.image
+        || findUpstreamByType(inputs, 'composed')?.image
+        || findUpstreamByType(inputs, 'final')?.image
+        || (inputs.image as string)
+        || (inputs.generatedImage as string);
+      if (!src) throw new Error('Imagem não conectada — suba uma imagem');
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Falha ao carregar imagem'));
+        img.src = src;
+      });
+
+      const FORMATS = [
+        { key: '1x1', label: '1:1 Feed', w: 1080, h: 1080 },
+        { key: '4x5', label: '4:5 Feed', w: 1080, h: 1350 },
+        { key: '9x16', label: '9:16 Story', w: 1080, h: 1920 },
+        { key: '16x9', label: '16:9 Banner', w: 1920, h: 1080 },
+      ];
+
+      const images = FORMATS.map((f) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = f.w;
+        canvas.height = f.h;
+        const ctx = canvas.getContext('2d')!;
+        // 1) Blurred cover-fill so the borders are filled (no distortion, premium look)
+        const cover = Math.max(f.w / img.width, f.h / img.height);
+        const cw = img.width * cover;
+        const ch = img.height * cover;
+        ctx.filter = 'blur(28px) brightness(0.9)';
+        ctx.drawImage(img, (f.w - cw) / 2, (f.h - ch) / 2, cw, ch);
+        ctx.filter = 'none';
+        // 2) The full image, contained and centered on top
+        const contain = Math.min(f.w / img.width, f.h / img.height);
+        const iw = img.width * contain;
+        const ih = img.height * contain;
+        ctx.drawImage(img, (f.w - iw) / 2, (f.h - ih) / 2, iw, ih);
+        return { key: f.key, label: f.label, w: f.w, h: f.h, dataURL: canvas.toDataURL('image/png') };
+      });
+
+      const primary = images.find((i) => i.key === '1x1')?.dataURL || images[0].dataURL;
+      return { images, image: primary, type: 'multiformat' };
+    }
+
     case 'background_gen': {
       let prompt = (inputs.prompt as string) || '';
       const instruction = (node.data.instruction as string) || '';
@@ -988,6 +1040,7 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       const finalUp = findUpstreamByType(inputs, 'final');
       const colorUp = findUpstreamByType(inputs, 'color_grade');
       const upscaledUp = findUpstreamByType(inputs, 'upscaled');
+      const multiUp = findUpstreamByType(inputs, 'multiformat');
       const composedUp = findUpstreamByType(inputs, 'composed');
       const generatedUp = findUpstreamByType(inputs, 'generated');
       const cutoutUp = findUpstreamByType(inputs, 'subject_cutout');
@@ -995,6 +1048,7 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
       const image = finalUp?.image
         || colorUp?.image
         || upscaledUp?.image
+        || multiUp?.image
         || composedUp?.image
         || generatedUp?.image
         || cutoutUp?.image
@@ -1150,7 +1204,7 @@ export function prePopulateInputOutputs(
  * Node types that are critical — if they fail, the flow must stop.
  * Non-critical nodes (like reference_analyzer) can fail and the flow continues.
  */
-const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor', 'copy_ai', 'composition_ai', 'upscale'];
+const CRITICAL_NODE_TYPES: readonly string[] = ['image_gen', 'background_gen', 'compositor', 'copy_ai', 'composition_ai', 'upscale', 'multiformat'];
 
 /**
  * Execute entire flow sequentially in topological order.

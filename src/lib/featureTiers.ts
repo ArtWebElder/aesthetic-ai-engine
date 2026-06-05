@@ -111,6 +111,14 @@ export const FEATURE_TIERS: Record<string, FeatureSpec> = {
       eco: { model: 'browser:canvas', providerCostBRL: 0, credits: 0, minPlan: 'free', anon: { enabled: true, dailyCap: 50 } },
     },
   },
+  multiformat: {
+    id: 'multiformat',
+    labelKey: 'tools.multiformat',
+    tiers: {
+      // Reframe to multiple aspect ratios via Canvas (blurred fill) — client-side, free.
+      eco: { model: 'browser:canvas', providerCostBRL: 0, credits: 0, minPlan: 'free', anon: { enabled: true, dailyCap: 50 } },
+    },
+  },
 };
 
 export function resolveTier(feature: string, tier: Tier): TierSpec | undefined {
@@ -139,6 +147,8 @@ export const FLOW_TIER_MAP: Record<string, { feature: string; tier: Tier }> = {
   'recolor': { feature: 'recolor', tier: 'eco' },
   // Upscale eco = Real-ESRGAN (~R$0.01) → 1 credit, still above the margin floor.
   'upscale': { feature: 'upscale', tier: 'eco' },
+  // Multi-format reframing is client-side Canvas → free.
+  'multi-format': { feature: 'multiformat', tier: 'eco' },
   // Generation modes stay on 'pro' until the backend is tier-aware (Phase 2):
   // today every generation runs on Flux (~R$0.22), so 'eco' pricing would lose money.
   'quote-card': { feature: 'generate', tier: 'pro' },

@@ -10,6 +10,7 @@ export type NodeTypeId =
   | 'scene_gen'
   | 'bg_removal'
   | 'upscale'
+  | 'multiformat'
   | 'typography'
   | 'color_grade'
   | 'image_gen'
@@ -56,7 +57,7 @@ export type PanelTab = 'nodes' | 'assets' | 'templates' | 'learn';
 // Column assignment for Auto Layout
 export const AUTO_LAYOUT_COLUMNS: Record<number, NodeTypeId[]> = {
   0: ['brand_input', 'image_upload', 'reference_upload', 'text_input'],
-  1: ['bg_removal', 'upscale', 'color_grade', 'prompt_builder', 'reference_analyzer', 'copy_ai'],
+  1: ['bg_removal', 'upscale', 'multiformat', 'color_grade', 'prompt_builder', 'reference_analyzer', 'copy_ai'],
   2: ['scene_gen', 'image_gen', 'background_gen'],
   3: ['compositor', 'text_overlay', 'typography', 'composition_ai', 'export'],
 };
@@ -75,6 +76,7 @@ export const NODE_RUN_TIMEOUT: Partial<Record<NodeTypeId, number>> = {
   text_overlay: 1500,
   bg_removal: 5000,
   upscale: 40000,
+  multiformat: 4000,
   color_grade: 800,
   typography: 800,
   copy_ai: 8000,
@@ -171,6 +173,15 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     defaultWidth: 260,
     defaultHeight: 180,
     creditCost: 1,
+  },
+  multiformat: {
+    id: 'multiformat',
+    label: 'Multi-formato',
+    icon: 'LayoutGrid',
+    color: '#0d9488',
+    category: 'processing',
+    defaultWidth: 280,
+    defaultHeight: 220,
   },
   typography: {
     id: 'typography',
@@ -317,6 +328,27 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
       { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
       { id: 'n2', type: 'upscale', x: 480, y: 170, data: { scale: 4 } },
       { id: 'n3', type: 'export', x: 840, y: 170, data: { format: 'png' } },
+    ],
+    connections: [
+      { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n2', toPort: 'input' },
+      { id: 'c2', fromNode: 'n2', fromPort: 'output', toNode: 'n3', toPort: 'input' },
+    ],
+  },
+  'multi-format': {
+    id: 'multi-format',
+    name: 'Variações de Formato',
+    nameEn: 'Format Variations',
+    nameEs: 'Variaciones de Formato',
+    description: 'Uma imagem → todas as redes: feed (1:1, 4:5), story (9:16) e banner (16:9), de uma vez. Grátis.',
+    descriptionEn: 'One image → every network: feed (1:1, 4:5), story (9:16) and banner (16:9), all at once. Free.',
+    descriptionEs: 'Una imagen → todas las redes: feed (1:1, 4:5), story (9:16) y banner (16:9), de una vez. Gratis.',
+    icon: 'LayoutGrid',
+    color: '#0d9488',
+    credits: 0,
+    nodes: [
+      { id: 'n1', type: 'image_upload', x: 120, y: 160, data: { label: 'Imagem' } },
+      { id: 'n2', type: 'multiformat', x: 480, y: 150, data: {} },
+      { id: 'n3', type: 'export', x: 860, y: 170, data: { format: 'png' } },
     ],
     connections: [
       { id: 'c1', fromNode: 'n1', fromPort: 'output', toNode: 'n2', toPort: 'input' },

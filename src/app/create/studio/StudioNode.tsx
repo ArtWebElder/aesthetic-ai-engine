@@ -3,7 +3,7 @@ import {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, Play, CheckCircle,
   Loader2, ScanEye, FileText, AlertCircle, Trash2,
-  Image, Layers, LayoutTemplate, Maximize2,
+  Image, Layers, LayoutTemplate, Maximize2, LayoutGrid,
 } from 'lucide-react';
 import { ExecState, NODE_TYPE_DEFS, NodeTypeId, StudioNode as StudioNodeType } from './types';
 import { useI18n } from '@/i18n';
@@ -12,7 +12,7 @@ import { StudioSelect } from './StudioSelect';
 const ICON_MAP: Record<string, React.ElementType> = {
   Building2, ImagePlus, Type, Wand2, Sparkles, Scissors,
   AlignLeft, Palette, Camera, Download, ScanEye, FileText,
-  Image, Layers, LayoutTemplate, Maximize2,
+  Image, Layers, LayoutTemplate, Maximize2, LayoutGrid,
 };
 
 /** Trigger browser download — handles both base64 data URIs and remote URLs */
@@ -47,7 +47,7 @@ async function triggerDownload(src: string, format: string) {
 
 const RUN_NODES: NodeTypeId[] = [
   'prompt_builder', 'scene_gen', 'image_gen',
-  'reference_analyzer', 'bg_removal', 'upscale', 'export',
+  'reference_analyzer', 'bg_removal', 'upscale', 'multiformat', 'export',
   'background_gen', 'compositor', 'text_overlay',
   'copy_ai', 'composition_ai', 'color_grade',
 ];
@@ -463,6 +463,35 @@ function NodeContent({
           {runBtn}
         </div>
       );
+
+    case 'multiformat': {
+      const imgs = (output?.images as Array<{ key: string; label: string; dataURL: string }>) || [];
+      return (
+        <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {imgs.length > 0 ? (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              {imgs.map((im) => (
+                <div key={im.key} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <img src={im.dataURL} alt={im.label} style={{ width: '100%', height: 54, objectFit: 'contain', background: 'hsl(var(--muted))', borderRadius: 6 }} />
+                  <button
+                    onClick={(e) => { e.stopPropagation(); triggerDownload(im.dataURL, 'png'); }}
+                    onMouseDown={e => e.stopPropagation()}
+                    style={{ fontSize: 9.5, padding: '3px 0', borderRadius: 5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    ↓ {im.label}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{ background: 'hsl(var(--muted))', borderRadius: 6, fontSize: 10, color: 'hsl(var(--muted-foreground))', minHeight: 70, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {t('studio.node.preview_placeholder')}
+            </div>
+          )}
+          {runBtn}
+        </div>
+      );
+    }
 
     case 'typography':
       return (
