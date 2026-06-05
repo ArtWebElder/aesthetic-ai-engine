@@ -115,12 +115,12 @@ export default function AdminNotifications() {
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>{t('admin.notif.field_type')}</label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {(Object.keys(TYPE_CONFIG) as NotifType[]).map((t) => {
-                const conf = TYPE_CONFIG[t];
+              {(Object.keys(TYPE_CONFIG) as NotifType[]).map((nt) => {
+                const conf = TYPE_CONFIG[nt];
                 const Icon = conf.icon;
-                const active = type === t;
+                const active = type === nt;
                 return (
-                  <button key={t} onClick={() => setType(t)} style={{
+                  <button key={nt} onClick={() => setType(nt)} style={{
                     display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8,
                     fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
                     background: active ? `${conf.color}12` : 'transparent',
