@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import type { Lang } from '@/i18n';
@@ -157,15 +158,11 @@ const Settings = () => {
           <Field label={t('settings.phone')} value={phone} onChange={setPhone} placeholder={t('settings.phone_ph')} type="tel" />
         </div>
 
-        <button
+        <Button
+          variant="gradient"
           onClick={() => toast.success(t('settings.toast.saved'))}
-          style={{
-            padding: '10px 28px', borderRadius: 9, border: 'none',
-            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-            color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-            fontFamily: 'inherit', boxShadow: '0 3px 10px hsl(var(--brand) / 0.27)', marginTop: 4,
-          }}
-        >{t('settings.save_changes')}</button>
+          style={{ padding: '10px 28px', fontSize: 13.5, marginTop: 4 }}
+        >{t('settings.save_changes')}</Button>
 
         {/* Danger zone — contained at max-width 420px */}
         <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid hsl(var(--border))', maxWidth: 420 }}>
@@ -289,12 +286,7 @@ const Settings = () => {
           </div>
         </div>
 
-        <button onClick={() => toast.success(t('settings.toast.prefs_saved'))} style={{
-          padding: '10px 28px', borderRadius: 9, border: 'none',
-          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-          color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-          fontFamily: 'inherit', boxShadow: '0 3px 10px hsl(var(--brand) / 0.27)', marginTop: 12,
-        }}>{t('settings.save_preferences')}</button>
+        <Button variant="gradient" onClick={() => toast.success(t('settings.toast.prefs_saved'))} style={{ padding: '10px 28px', fontSize: 13.5, marginTop: 12 }}>{t('settings.save_preferences')}</Button>
       </div>
     );
 
@@ -391,14 +383,12 @@ const Settings = () => {
                   {brandColors[activeColorIdx].toUpperCase()}
                 </span>
               </div>
-              <button
+              <Button
+                variant="gradient"
                 onClick={() => setActiveColorIdx(null)}
-                style={{
-                  marginTop: 10, width: '100%', padding: '8px 0', borderRadius: 8, border: 'none',
-                  background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
-                  fontSize: 12, fontWeight: 600, cursor: 'pointer',
-                }}
-              >{t('settings.brand.apply')}</button>
+                className="w-full"
+                style={{ marginTop: 10, padding: '8px 0', fontSize: 12, height: 'auto' }}
+              >{t('settings.brand.apply')}</Button>
             </div>
           )}
         </div>
@@ -471,12 +461,7 @@ const Settings = () => {
           <Toggle label={t('settings.brand.auto_apply')} on={false} onToggle={() => toast.info(t('settings.toast.soon'))} />
         </div>
 
-        <button onClick={() => toast.success(t('settings.toast.brand_saved'))} style={{
-          padding: '10px 28px', borderRadius: 9, border: 'none',
-          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-          color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-          fontFamily: 'inherit', boxShadow: '0 3px 10px hsl(var(--brand) / 0.27)',
-        }}>{t('settings.save_brand_kit')}</button>
+        <Button variant="gradient" onClick={() => toast.success(t('settings.toast.brand_saved'))} style={{ padding: '10px 28px', fontSize: 13.5 }}>{t('settings.save_brand_kit')}</Button>
       </div>
     );
 

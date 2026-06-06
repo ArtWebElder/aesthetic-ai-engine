@@ -5,6 +5,7 @@ import {
   FolderOpen, Image, ExternalLink, Copy, Trash2, Edit2, Download,
 } from 'lucide-react';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
+import { Button } from '@/components/ui/button';
 import { listProjects, deleteProject, createProject } from '@/features/projects/store';
 import { useI18n } from '@/i18n';
 import { useToast } from '@/features/toast/useToast';
@@ -132,17 +133,13 @@ const Projects = () => {
           <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 2 }}>{t('projects.my_title')}</h1>
           <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>{t('projects.count', { count: projects.length })} · {t('projects.versions_count', { count: totalVersions })}</p>
         </div>
-        <button
+        <Button
+          variant="gradient"
           onClick={() => navigate('/app/create')}
-          style={{
-            padding: '9px 20px', borderRadius: 9, border: 'none',
-            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
-            fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 3px 10px hsl(var(--brand) / 0.27)',
-          }}
+          style={{ padding: '9px 20px', fontSize: 13 }}
         >
           <Plus size={15} />{t('projects.new_project')}
-        </button>
+        </Button>
       </div>
 
       {/* Filters bar */}
@@ -377,18 +374,13 @@ const Projects = () => {
               {search ? t('projects.empty_search_hint') : t('projects.empty_create_hint')}
             </p>
             {!search && (
-              <button
+              <Button
+                variant="gradient"
                 onClick={() => navigate('/app/create')}
-                style={{
-                  padding: '9px 22px', borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
-                  fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'inline-flex', alignItems: 'center', gap: 6,
-                  boxShadow: '0 3px 10px hsl(var(--brand) / 0.20)', position: 'relative',
-                }}
+                style={{ padding: '9px 22px', fontSize: 12.5 }}
               >
                 <Plus size={14} />{t('projects.create_first')}
-              </button>
+              </Button>
             )}
           </div>
         </div>

@@ -4,6 +4,7 @@ import { supabase } from '@/services/supabaseClient';
 import { useCreditStore } from '@/stores/useCreditStore';
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { Button } from '@/components/ui/button';
 
 interface RechargeCreditsModalProps {
   open: boolean;
@@ -259,16 +260,13 @@ const RechargeCreditsModal = ({
           <p style={{ fontSize: 13, color: '#5a5a60', margin: '0 0 20px', lineHeight: 1.5 }}>
             {t('recharge.plan_required_desc')}
           </p>
-          <button
+          <Button
+            variant="gradient"
             onClick={() => { onClose(); window.location.href = '/app/billing'; }}
-            style={{
-              padding: '10px 28px', borderRadius: 10, border: 'none',
-              background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-              color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            }}
+            style={{ padding: '10px 28px', fontSize: 14, fontWeight: 700 }}
           >
             {t('recharge.view_plans')}
-          </button>
+          </Button>
         </div>
       </div>,
       document.body
@@ -363,16 +361,13 @@ const RechargeCreditsModal = ({
           <p style={{ fontSize: 14, color: '#5a5a60', margin: '0 0 20px' }}>
             {pkg.credits} {t('recharge.credits_added')}
           </p>
-          <button
+          <Button
+            variant="gradient"
             onClick={onClose}
-            style={{
-              padding: '10px 32px', borderRadius: 10, border: 'none',
-              background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-              color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-            }}
+            style={{ padding: '10px 32px', fontSize: 14, fontWeight: 700 }}
           >
             {t('recharge.continue')}
-          </button>
+          </Button>
         </div>
       </div>,
       document.body
@@ -571,16 +566,17 @@ const RechargeCreditsModal = ({
           </div>
 
           {/* CTA button */}
-          <button
+          <Button
+            variant="gradient"
             onClick={handlePurchase}
             disabled={loading}
+            className="w-full"
             style={{
-              width: '100%', padding: '13px 0', borderRadius: 11, border: 'none', marginTop: 16,
-              background: loading ? '#d4d4d8' : 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-              color: '#fff', fontSize: 14.5, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
-              fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: loading ? 'none' : '0 4px 16px hsl(var(--brand) / 0.35)', transition: 'all 180ms',
-              opacity: loading ? 0.7 : 1,
+              padding: '13px 0', borderRadius: 11, marginTop: 16,
+              fontSize: 14.5, fontWeight: 700, height: 'auto', gap: 8,
+              background: loading ? '#d4d4d8' : undefined,
+              boxShadow: loading ? 'none' : undefined,
+              opacity: loading ? 0.7 : undefined,
             }}
           >
             {loading ? (
@@ -596,7 +592,7 @@ const RechargeCreditsModal = ({
                 }
               </>
             )}
-          </button>
+          </Button>
 
           {/* Security note */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, marginTop: 12 }}>

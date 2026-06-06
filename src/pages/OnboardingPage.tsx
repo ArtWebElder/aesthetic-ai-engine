@@ -9,6 +9,7 @@ import {
 import { useI18n } from '@/i18n';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/services/supabaseClient';
 
 /* ─── Types ──────────────────────────────────────────── */
@@ -335,17 +336,13 @@ export default function OnboardingPage() {
             </button>
           ) : <div />}
 
-          <button onClick={() => go(1)} style={{
-            padding: '9px 22px', borderRadius: 9, border: 'none',
-            background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))',
-            color: '#fff', fontSize: 13, fontWeight: 600,
+          <Button variant="gradient" onClick={() => go(1)} style={{
+            padding: '9px 22px', fontSize: 13,
             cursor: canNext() ? 'pointer' : 'not-allowed',
-            fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
-            boxShadow: '0 3px 12px hsl(var(--brand) / 0.27)', transition: 'all 180ms',
             opacity: canNext() ? 1 : 0.4,
           }}>
             {t('onboarding.continue')} <ChevronRight size={18} />
-          </button>
+          </Button>
         </div>
       )}
 

@@ -5,6 +5,7 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { supabase } from '@/services/supabaseClient';
 import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/button';
 
 /* ─── Carousel card data ─────────────────────────────── */
 const CARDS = [
@@ -373,20 +374,12 @@ const Login = () => {
                     <p className="text-xs mb-2" style={{ color: '#EF4444' }}>{otpError}</p>
                   )}
 
-                  <button
+                  <Button
+                    variant="gradient"
                     onClick={handleVerifyOtp}
                     disabled={otpLoading || otpCode.length < 8}
-                    className="w-full flex items-center justify-center gap-2 text-white font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      height: 44,
-                      borderRadius: 10,
-                      background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-                      fontSize: 13.5,
-                      fontWeight: 600,
-                      boxShadow: '0 3px 10px hsl(var(--brand) / 0.3)',
-                      marginTop: 8,
-                      marginBottom: 16,
-                    }}
+                    className="w-full"
+                    style={{ height: 44, fontSize: 13.5, marginTop: 8, marginBottom: 16 }}
                   >
                     {otpLoading ? (
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -396,7 +389,7 @@ const Login = () => {
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
-                  </button>
+                  </Button>
 
                   {resendSuccess && (
                     <p className="text-xs mb-2" style={{ color: '#10B981' }}>{t('auth.resend_success')}</p>
@@ -602,19 +595,12 @@ const Login = () => {
                   </p>
                 )}
 
-                <button
+                <Button
                   type="submit"
+                  variant="gradient"
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 text-white font-semibold transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{
-                    height: 44,
-                    borderRadius: 10,
-                    background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-                    fontSize: 13.5,
-                    fontWeight: 600,
-                    boxShadow: '0 3px 10px hsl(var(--brand) / 0.3)',
-                    marginTop: 4,
-                  }}
+                  className="w-full"
+                  style={{ height: 44, fontSize: 13.5, marginTop: 4 }}
                 >
                   {loading ? (
                     <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
@@ -624,7 +610,7 @@ const Login = () => {
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
-                </button>
+                </Button>
               </form>
 
               {/* Social proof */}

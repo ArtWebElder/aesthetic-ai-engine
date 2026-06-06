@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { X, Sparkles, AlertTriangle, Zap, Star, Heart, ArrowRight, CreditCard } from 'lucide-react';
 import { useCreditStore } from '@/stores/useCreditStore';
 import { useI18n } from '@/i18n';
+import { Button } from '@/components/ui/button';
 
 /* ─── Local storage keys ──────────────────────────────── */
 const LS_FIRST_GEN = 'creatyng_first_gen_shown';
@@ -130,17 +131,14 @@ function CriticalCreditsModal({ credits, onClose, onUpgrade }: { credits: number
         <p style={{ fontSize: 13.5, color: '#5a5a60', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>
           {t('upsell.credits_critical.desc').replace('{credits}', String(credits))}
         </p>
-        <button
+        <Button
+          variant="gradient"
           onClick={onUpgrade}
-          style={{
-            width: '100%', padding: '11px 0', borderRadius: 10, border: 'none',
-            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
-            fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            marginBottom: 10,
-          }}
+          className="w-full"
+          style={{ padding: '11px 0', fontSize: 14, marginBottom: 10, height: 'auto' }}
         >
           {t('upsell.credits_critical.upgrade')}
-        </button>
+        </Button>
         <button
           onClick={onClose}
           style={{
@@ -189,18 +187,14 @@ export function PaywallModal({ onClose, plan }: { onClose: () => void; plan: str
 
         {isFree ? (
           <>
-            <button
+            <Button
+              variant="gradient"
               onClick={() => { onClose(); navigate('/app/billing'); }}
-              style={{
-                width: '100%', padding: '12px 0', borderRadius: 10, border: 'none',
-                background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
-                fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                boxShadow: '0 3px 12px hsl(var(--brand) / 0.3)', marginBottom: 10,
-              }}
+              className="w-full"
+              style={{ padding: '12px 0', fontSize: 14, marginBottom: 10, height: 'auto' }}
             >
               <Zap size={16} /> {t('upsell.credits_zero.upgrade_pro')}
-            </button>
+            </Button>
             <button
               onClick={() => { onClose(); navigate('/app/billing'); }}
               style={{
@@ -215,18 +209,14 @@ export function PaywallModal({ onClose, plan }: { onClose: () => void; plan: str
             </button>
           </>
         ) : (
-          <button
+          <Button
+            variant="gradient"
             onClick={() => { onClose(); navigate('/app/billing'); }}
-            style={{
-              width: '100%', padding: '12px 0', borderRadius: 10, border: 'none',
-              background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
-              fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              boxShadow: '0 3px 12px hsl(var(--brand) / 0.3)',
-            }}
+            className="w-full"
+            style={{ padding: '12px 0', fontSize: 14, height: 'auto' }}
           >
             <CreditCard size={16} /> {t('upsell.credits_zero.recharge')}
-          </button>
+          </Button>
         )}
 
         <button
@@ -276,17 +266,14 @@ function SatisfactionPopup({ onClose }: { onClose: () => void }) {
           <X size={16} />
         </button>
       </div>
-      <button
+      <Button
+        variant="gradient"
         onClick={() => { onClose(); navigate('/app/billing'); }}
-        style={{
-          width: '100%', padding: '9px 0', borderRadius: 8, border: 'none',
-          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
-          fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-        }}
+        className="w-full"
+        style={{ padding: '9px 0', fontSize: 13, height: 'auto' }}
       >
         {t('upsell.satisfaction.upgrade')} <ArrowRight size={14} />
-      </button>
+      </Button>
     </div>
   );
 }
