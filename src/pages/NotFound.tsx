@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { useI18n } from "@/i18n";
+import { Button } from "@/components/ui/button";
 
 const NotFound = () => {
   const location = useLocation();
@@ -65,37 +66,12 @@ const NotFound = () => {
 
       {/* Buttons */}
       <div style={{ display: 'flex', gap: 12 }}>
-        <button
-          onClick={() => navigate('/app/dashboard')}
-          style={{
-            padding: '10px 22px',
-            borderRadius: 10,
-            border: 'none',
-            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-            color: '#fff',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: '0 4px 14px hsl(var(--brand) / 0.35)',
-          }}
-        >
+        <Button variant="gradient" size="lg" onClick={() => navigate('/app/dashboard')}>
           {t('not_found.go_dashboard')}
-        </button>
-        <button
-          onClick={() => navigate('/')}
-          style={{
-            padding: '10px 22px',
-            borderRadius: 10,
-            border: '1.5px solid hsl(var(--border))',
-            background: 'hsl(var(--card))',
-            color: 'hsl(var(--foreground))',
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
+        </Button>
+        <Button variant="outline" size="lg" onClick={() => navigate('/')}>
           {t('not_found.back_home')}
-        </button>
+        </Button>
       </div>
     </div>
   );
