@@ -104,6 +104,7 @@ function CreditsBar({ propertiesOpen }: { propertiesOpen: boolean }) {
 
 export function StudioPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   // Core state
   const [nodes, setNodes] = useState<StudioNodeType[]>(() =>
