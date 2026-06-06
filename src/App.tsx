@@ -64,7 +64,7 @@ class AppErrorBoundary extends Component<
           </pre>
           <button
             onClick={() => window.location.reload()}
-            style={{ marginTop: 24, padding: "8px 16px", background: "#F97316", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}
+            style={{ marginTop: 24, padding: "8px 16px", background: "hsl(var(--brand))", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer" }}
           >
             {t('common.reload')}
           </button>

@@ -88,7 +88,7 @@ export default function AdminTokens() {
                   <span style={{ fontSize: 12, fontWeight: 500, color: '#141417' }}>{p.tokensToday.toLocaleString()}</span>
                 </div>
                 <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(20,20,23,0.06)', overflow: 'hidden' }}>
-                  <div style={{ width: `${usePct}%`, height: '100%', borderRadius: 3, background: '#ff713d', transition: 'width 600ms ease' }} />
+                  <div style={{ width: `${usePct}%`, height: '100%', borderRadius: 3, background: 'hsl(var(--brand))', transition: 'width 600ms ease' }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: 10, color: '#b5b5bb' }}>{t('admin.tok.pct_limit', { pct: usePct })}</span>
@@ -137,7 +137,7 @@ export default function AdminTokens() {
                   onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
                   onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
                 >
-                  <td style={{ ...tdStyle, fontWeight: 700, color: i === 0 ? '#ff713d' : '#b5b5bb' }}>{i + 1}</td>
+                  <td style={{ ...tdStyle, fontWeight: 700, color: i === 0 ? 'hsl(var(--brand))' : '#b5b5bb' }}>{i + 1}</td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                       <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(20,20,23,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: '#5a5a60', flexShrink: 0 }}>{u.name.charAt(0)}</div>

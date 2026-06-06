@@ -52,7 +52,7 @@ const NODE_GROUPS: NodeCategoryGroup[] = [
 ];
 
 const TEMPLATES = [
-  { id: 'food-pop', name: 'Food/Pop Basic', desc: 'Upload → BG Remove → Scene Gen', color: '#ff713d' },
+  { id: 'food-pop', name: 'Food/Pop Basic', desc: 'Upload → BG Remove → Scene Gen', color: 'hsl(var(--brand))' },
   { id: 'pop-full', name: 'Pop Design Complete', desc: 'Full brand flow with typography', color: '#8b5cf6' },
   { id: 'product', name: 'Product Photoshoot', desc: 'Professional product images', color: '#06b6d4' },
   { id: 'social', name: 'Social Post', desc: 'Instagram-ready creatives', color: '#10b981' },
@@ -209,7 +209,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                           textAlign: 'left',
                           transition: 'background 0.1s',
                         }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,113,61,0.1)')}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--brand) / 0.1)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
                         <div style={{
@@ -233,7 +233,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                           )}
                         </div>
                         {def.creditCost && (
-                          <div style={{ marginLeft: 'auto', fontSize: isMobile ? 13 : 9, color: '#ff713d', fontWeight: 700 }}>
+                          <div style={{ marginLeft: 'auto', fontSize: isMobile ? 13 : 9, color: 'hsl(var(--brand))', fontWeight: 700 }}>
                             {def.creditCost}cr
                           </div>
                         )}
@@ -332,7 +332,7 @@ export function StudioNodePanel({ tab, onClose, onAddNode }: StudioNodePanelProp
                   cursor: 'pointer',
                   transition: 'border-color 0.1s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(255,113,61,0.4)')}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = 'hsl(var(--brand) / 0.4)')}
                 onMouseLeave={e => (e.currentTarget.style.borderColor = 'hsl(var(--border))')}
               >
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 3 }}>{item.title}</div>

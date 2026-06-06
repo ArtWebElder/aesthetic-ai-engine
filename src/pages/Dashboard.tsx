@@ -29,7 +29,7 @@ const FLOW_CATEGORIES: { key: string; labelKey: string; ids: string[] }[] = [
 
 /* ── Discover mosaic data ─────────────────────────────── */
 const DISCOVER = [
-  { gradient: 'linear-gradient(135deg, #f97316, #e11d48)', h: 176 },
+  { gradient: 'linear-gradient(135deg, hsl(var(--brand)), #e11d48)', h: 176 },
   { gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)', h: 224 },
   { gradient: 'linear-gradient(135deg, #0891b2, #0d9488)', h: 144 },
   { gradient: 'linear-gradient(135deg, #d97706, #ea580c)', h: 192 },
@@ -44,7 +44,7 @@ function formatDate(iso: string) {
 }
 
 const PROJECT_GRADIENTS = [
-  'linear-gradient(135deg, #f97316, #e11d48)',
+  'linear-gradient(135deg, hsl(var(--brand)), #e11d48)',
   'linear-gradient(135deg, #7c3aed, #4f46e5)',
   'linear-gradient(135deg, #0891b2, #0d9488)',
   'linear-gradient(135deg, #d97706, #ea580c)',
@@ -93,7 +93,7 @@ function SectionHeader({
             onClick={onViewAll}
             className="transition-colors"
             style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))' }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#ff713d'; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--brand))'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--muted-foreground))'; }}
           >
             {t('common.view_all')}
@@ -173,9 +173,9 @@ function ProjectCard({
       style={{
         width: 180,
         borderRadius: 10,
-        border: hovered ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+        border: hovered ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
         background: hovered ? 'hsl(var(--primary) / 0.06)' : 'hsl(var(--card))',
-        boxShadow: hovered ? '0 4px 16px rgba(255,113,61,0.12)' : 'none',
+        boxShadow: hovered ? '0 4px 16px hsl(var(--brand) / 0.12)' : 'none',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -187,7 +187,7 @@ function ProjectCard({
         </div>
         <div
           className="absolute top-2 left-2 rounded-full"
-          style={{ width: 8, height: 8, background: '#ff713d' }}
+          style={{ width: 8, height: 8, background: 'hsl(var(--brand))' }}
         />
       </div>
       <div style={{ padding: '10px 12px' }}>
@@ -215,7 +215,7 @@ function DiscoverItem({ gradient, height }: { gradient: string; height: number }
         background: gradient,
         height,
         position: 'relative',
-        border: hovered ? '1.5px solid #ff713d' : '1.5px solid transparent',
+        border: hovered ? '1.5px solid hsl(var(--brand))' : '1.5px solid transparent',
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -340,8 +340,8 @@ const Dashboard = () => {
                 background: 'transparent',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.borderColor = '#ff713d';
-                (e.currentTarget as HTMLButtonElement).style.color = '#ff713d';
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'hsl(var(--brand))';
+                (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--brand))';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.borderColor = 'hsl(var(--border))';
@@ -417,7 +417,7 @@ const Dashboard = () => {
               fontWeight: 500,
               color: 'hsl(var(--muted-foreground))',
             }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLButtonElement).style.color = '#ff713d'; }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'hsl(var(--brand))'; (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--brand))'; }}
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'hsl(var(--border))'; (e.currentTarget as HTMLButtonElement).style.color = 'hsl(var(--muted-foreground))'; }}
           >
             {t('dashboard.view_more')}

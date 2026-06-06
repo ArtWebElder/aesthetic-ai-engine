@@ -134,8 +134,8 @@ export function StudioSelect({
                   gap: 7,
                   padding: '6px 8px',
                   fontSize: 11,
-                  color: isSelected ? '#ff713d' : 'hsl(var(--foreground))',
-                  background: isSelected ? 'rgba(255,113,61,0.1)' : 'transparent',
+                  color: isSelected ? 'hsl(var(--brand))' : 'hsl(var(--foreground))',
+                  background: isSelected ? 'hsl(var(--brand) / 0.1)' : 'transparent',
                   border: 'none',
                   borderRadius: 5,
                   cursor: 'pointer',
@@ -149,13 +149,13 @@ export function StudioSelect({
                 }}
                 onMouseLeave={e => {
                   (e.currentTarget as HTMLElement).style.background = isSelected
-                    ? 'rgba(255,113,61,0.1)'
+                    ? 'hsl(var(--brand) / 0.1)'
                     : 'transparent';
                 }}
               >
                 <span style={{ flex: 1 }}>{option.label}</span>
                 {isSelected && (
-                  <Check size={9} style={{ color: '#ff713d', flexShrink: 0 }} />
+                  <Check size={9} style={{ color: 'hsl(var(--brand))', flexShrink: 0 }} />
                 )}
               </button>
             );

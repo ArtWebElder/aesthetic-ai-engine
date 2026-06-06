@@ -36,7 +36,7 @@ export function AdminSidebar() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: 210, background: '#ffffff', borderRight: '1px solid rgba(20,20,23,0.06)', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
       {/* Brand */}
       <div style={{ padding: '16px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ width: 28, height: 28, borderRadius: 7, background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <span style={{ color: '#fff', fontWeight: 800, fontSize: 14 }}>C</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }}>
@@ -59,15 +59,15 @@ export function AdminSidebar() {
                 display: 'flex', alignItems: 'center', gap: 10, width: '100%',
                 padding: '9px 12px', borderRadius: 8, cursor: 'pointer',
                 background: active ? '#FFF0EA' : 'transparent',
-                border: active ? '1px solid rgba(255,113,61,0.2)' : '1px solid transparent',
-                color: active ? '#ff713d' : '#5a5a60', fontWeight: active ? 600 : 400,
+                border: active ? '1px solid hsl(var(--brand) / 0.2)' : '1px solid transparent',
+                color: active ? 'hsl(var(--brand))' : '#5a5a60', fontWeight: active ? 600 : 400,
                 fontSize: 13, fontFamily: 'inherit', transition: 'all 150ms', position: 'relative', textAlign: 'left',
               }}
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'rgba(20,20,23,0.03)'; }}
               onMouseLeave={e => { if (!active) (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
             >
               {active && (
-                <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 18, background: '#ff713d', borderRadius: '0 3px 3px 0' }} />
+                <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 18, background: 'hsl(var(--brand))', borderRadius: '0 3px 3px 0' }} />
               )}
               <item.icon style={{ width: 15, height: 15, flexShrink: 0 }} />
               {t(item.labelKey)}

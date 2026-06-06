@@ -124,7 +124,7 @@ export default function OnboardingPage() {
     { title: t('onboarding.done.title'), sub: t('onboarding.done.subtitle') },
   ];
 
-  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
+  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='hsl(var(--brand) / 0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
   const subs = profile ? SUBCATEGORIES[profile] || [] : [];
 
@@ -132,7 +132,7 @@ export default function OnboardingPage() {
     <div style={{
       fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
       minHeight: '100vh',
-      background: `radial-gradient(ellipse 700px 500px at 50% 8%, rgba(255,113,61,0.07) 0%, transparent 60%), ${gridSvg}, #f5f5f3`,
+      background: `radial-gradient(ellipse 700px 500px at 50% 8%, hsl(var(--brand) / 0.07) 0%, transparent 60%), ${gridSvg}, #f5f5f3`,
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
@@ -142,7 +142,7 @@ export default function OnboardingPage() {
         @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         @keyframes scIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
         .ob-btn{transition:all 150ms}
-        .ob-card:hover{border-color:#ff713d !important;box-shadow:0 4px 20px rgba(255,113,61,0.10) !important}
+        .ob-card:hover{border-color:hsl(var(--brand)) !important;box-shadow:0 4px 20px hsl(var(--brand) / 0.10) !important}
       `}</style>
 
       {/* Header */}
@@ -153,7 +153,7 @@ export default function OnboardingPage() {
         </div>
         {/* Progress bar */}
         <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'rgba(20,20,23,0.06)', marginBottom: 32 }}>
-          <div style={{ width: `${progress}%`, height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, #ff713d, #FF9B70)', transition: 'width 400ms ease' }} />
+          <div style={{ width: `${progress}%`, height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, hsl(var(--brand)), hsl(var(--brand-2)))', transition: 'width 400ms ease' }} />
         </div>
       </div>
 
@@ -232,10 +232,10 @@ export default function OnboardingPage() {
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
               <div style={{
                 width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
-                background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
+                background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <PartyPopper size={28} style={{ color: '#ff713d' }} />
+                <PartyPopper size={28} style={{ color: 'hsl(var(--brand))' }} />
               </div>
             </div>
 
@@ -253,8 +253,8 @@ export default function OnboardingPage() {
               >
                 <div style={{
                   width: 44, height: 44, borderRadius: 12, marginBottom: 14,
-                  background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ff713d',
+                  background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--brand))',
                 }}>
                   <Wand2 size={22} />
                 </div>
@@ -265,7 +265,7 @@ export default function OnboardingPage() {
                   {t('onboarding.done.wizard_desc')}
                 </div>
                 <div style={{
-                  display: 'flex', alignItems: 'center', gap: 5, color: '#ff713d',
+                  display: 'flex', alignItems: 'center', gap: 5, color: 'hsl(var(--brand))',
                   fontSize: 13, fontWeight: 600, marginTop: 'auto',
                 }}>
                   {t('onboarding.done.try_wizard')} <ArrowRight size={14} />
@@ -337,11 +337,11 @@ export default function OnboardingPage() {
 
           <button onClick={() => go(1)} style={{
             padding: '9px 22px', borderRadius: 9, border: 'none',
-            background: 'linear-gradient(135deg,#ff713d,#FF9B70)',
+            background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))',
             color: '#fff', fontSize: 13, fontWeight: 600,
             cursor: canNext() ? 'pointer' : 'not-allowed',
             fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
-            boxShadow: '0 3px 12px rgba(255,113,61,0.27)', transition: 'all 180ms',
+            boxShadow: '0 3px 12px hsl(var(--brand) / 0.27)', transition: 'all 180ms',
             opacity: canNext() ? 1 : 0.4,
           }}>
             {t('onboarding.continue')} <ChevronRight size={18} />

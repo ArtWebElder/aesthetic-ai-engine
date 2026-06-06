@@ -88,7 +88,7 @@ const Help = () => {
                 padding: '9px 12px', borderRadius: 8, marginBottom: isMobile ? 0 : 2, cursor: 'pointer',
                 background: active ? 'hsl(var(--primary) / 0.1)' : 'transparent',
                 border: active ? '1px solid hsl(var(--primary) / 0.2)' : '1px solid transparent',
-                color: active ? '#F97316' : 'hsl(var(--muted-foreground))',
+                color: active ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))',
                 fontWeight: active ? 600 : 400, fontSize: 13.5, fontFamily: 'inherit',
                 transition: 'all 150ms',
               }}

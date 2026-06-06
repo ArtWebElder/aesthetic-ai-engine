@@ -124,14 +124,14 @@ export default function AdminDashboard() {
             <AreaChart data={revenueData.length > 0 ? revenueData : [{ month: '—', mrr: 0 }]}>
               <defs>
                 <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#ff713d" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#ff713d" stopOpacity={0} />
+                  <stop offset="5%" stopColor="hsl(var(--brand))" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="hsl(var(--brand))" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="month" tick={CHART_STYLE} axisLine={false} tickLine={false} />
               <YAxis tick={CHART_STYLE} axisLine={false} tickLine={false} width={45} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, 'MRR']} />
-              <Area type="monotone" dataKey="mrr" stroke="#ff713d" fill="url(#mrrGrad)" strokeWidth={2.5} />
+              <Area type="monotone" dataKey="mrr" stroke="hsl(var(--brand))" fill="url(#mrrGrad)" strokeWidth={2.5} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -143,11 +143,11 @@ export default function AdminDashboard() {
             <PieChart>
               <Pie data={[
                 { name: 'Free', value: kpis.totalFree || 1, color: '#8e8e96' },
-                { name: 'Pro', value: kpis.totalPro || 0, color: '#ff713d' },
+                { name: 'Pro', value: kpis.totalPro || 0, color: 'hsl(var(--brand))' },
                 { name: 'Team', value: kpis.totalTeam || 0, color: '#7c3aed' },
               ]} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" paddingAngle={3} strokeWidth={0}>
                 <Cell fill="#8e8e96" />
-                <Cell fill="#ff713d" />
+                <Cell fill="hsl(var(--brand))" />
                 <Cell fill="#7c3aed" />
               </Pie>
               <Tooltip contentStyle={tooltipStyle} />
@@ -156,7 +156,7 @@ export default function AdminDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
             {[
               { name: 'Free', value: kpis.totalFree, color: '#8e8e96' },
-              { name: 'Pro', value: kpis.totalPro, color: '#ff713d' },
+              { name: 'Pro', value: kpis.totalPro, color: 'hsl(var(--brand))' },
               { name: 'Team', value: kpis.totalTeam, color: '#7c3aed' },
             ].map((f) => (
               <div key={f.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
         <div style={cardStyle}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>{t('admin.dash.credits_consumed')}</div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160 }}>
-            <span style={{ fontSize: 32, fontWeight: 700, color: '#ff713d' }}>{kpis.totalCreditsConsumed.toLocaleString('pt-BR')}</span>
+            <span style={{ fontSize: 32, fontWeight: 700, color: 'hsl(var(--brand))' }}>{kpis.totalCreditsConsumed.toLocaleString('pt-BR')}</span>
             <span style={{ fontSize: 11, color: '#8e8e96', marginTop: 4 }}>{t('admin.dash.credits_used')}</span>
             <span style={{ fontSize: 11, color: '#10B981', marginTop: 8 }}>{t('admin.dash.total_revenue', { v: kpis.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) })}</span>
           </div>

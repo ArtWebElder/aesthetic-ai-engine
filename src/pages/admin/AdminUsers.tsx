@@ -7,7 +7,7 @@ import { useI18n } from '@/i18n';
 const PLAN_STYLES: Record<string, React.CSSProperties> = {
   free: { background: 'rgba(20,20,23,0.06)', color: '#8e8e96' },
   pro: { background: 'rgba(99,102,241,0.08)', color: '#6366f1' },
-  team: { background: 'rgba(255,113,61,0.08)', color: '#ff713d' },
+  team: { background: 'hsl(var(--brand) / 0.08)', color: 'hsl(var(--brand))' },
 };
 
 const ROLE_STYLES: Record<string, React.CSSProperties> = {
@@ -105,8 +105,8 @@ export default function AdminUsers() {
             <button key={f} onClick={() => { setPlanFilter(f); setPage(1); }} style={{
               padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
               background: planFilter === f ? '#FFF0EA' : 'transparent',
-              border: planFilter === f ? '1px solid rgba(255,113,61,0.2)' : '1px solid transparent',
-              color: planFilter === f ? '#ff713d' : '#8e8e96',
+              border: planFilter === f ? '1px solid hsl(var(--brand) / 0.2)' : '1px solid transparent',
+              color: planFilter === f ? 'hsl(var(--brand))' : '#8e8e96',
             }}>{f === 'all' ? t('admin.users.filter.all') : f.charAt(0).toUpperCase() + f.slice(1)}</button>
           ))}
         </div>
@@ -146,7 +146,7 @@ export default function AdminUsers() {
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <div style={{ width: 60, height: 4, borderRadius: 2, background: 'rgba(20,20,23,0.06)', overflow: 'hidden' }}>
-                        <div style={{ width: `${creditPct}%`, height: '100%', borderRadius: 2, background: '#ff713d' }} />
+                        <div style={{ width: `${creditPct}%`, height: '100%', borderRadius: 2, background: 'hsl(var(--brand))' }} />
                       </div>
                       <span style={{ fontSize: 10.5, color: '#8e8e96' }}>{user.credits ?? 0}/{totalCredits}</span>
                     </div>
@@ -180,7 +180,7 @@ export default function AdminUsers() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11.5, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#8e8e96', cursor: page === 1 ? 'default' : 'pointer', opacity: page === 1 ? 0.3 : 1, fontFamily: 'inherit' }}>{t('admin.users.prev')}</button>
           {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => i + 1).map((p) => (
-            <button key={p} onClick={() => setPage(p)} style={{ width: 28, height: 28, borderRadius: 7, fontSize: 11.5, border: 'none', background: p === page ? '#FFF0EA' : 'transparent', color: p === page ? '#ff713d' : '#8e8e96', cursor: 'pointer', fontFamily: 'inherit', fontWeight: p === page ? 600 : 400 }}>{p}</button>
+            <button key={p} onClick={() => setPage(p)} style={{ width: 28, height: 28, borderRadius: 7, fontSize: 11.5, border: 'none', background: p === page ? '#FFF0EA' : 'transparent', color: p === page ? 'hsl(var(--brand))' : '#8e8e96', cursor: 'pointer', fontFamily: 'inherit', fontWeight: p === page ? 600 : 400 }}>{p}</button>
           ))}
           <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11.5, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#8e8e96', cursor: page === pageCount ? 'default' : 'pointer', opacity: page === pageCount ? 0.3 : 1, fontFamily: 'inherit' }}>{t('admin.users.next')}</button>
         </div>
@@ -201,7 +201,7 @@ export default function AdminUsers() {
             </div>
             <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
               {[10, 50, 100, 500].map(n => (
-                <button key={n} onClick={() => setCreditAmount(n)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: creditAmount === n ? '1px solid #ff713d' : '1px solid rgba(20,20,23,0.08)', background: creditAmount === n ? '#FFF0EA' : 'transparent', color: creditAmount === n ? '#ff713d' : '#8e8e96', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{n}</button>
+                <button key={n} onClick={() => setCreditAmount(n)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: creditAmount === n ? '1px solid hsl(var(--brand))' : '1px solid rgba(20,20,23,0.08)', background: creditAmount === n ? '#FFF0EA' : 'transparent', color: creditAmount === n ? 'hsl(var(--brand))' : '#8e8e96', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{n}</button>
               ))}
             </div>
             <input type="number" value={creditAmount} onChange={e => setCreditAmount(Number(e.target.value))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#141417', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }} />
@@ -224,14 +224,14 @@ export default function AdminUsers() {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16, fontSize: 12 }}>
               <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.email')}</span> <span style={{ color: '#141417' }}>{detailModal.email}</span></div>
               <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.name')}</span> <span style={{ color: '#141417' }}>{detailModal.name || '—'}</span></div>
-              <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.plan')}</span> <span style={{ color: '#ff713d', fontWeight: 600 }}>{(detailModal.plan || 'free').toUpperCase()}</span></div>
+              <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.plan')}</span> <span style={{ color: 'hsl(var(--brand))', fontWeight: 600 }}>{(detailModal.plan || 'free').toUpperCase()}</span></div>
               <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.credits')}</span> <span style={{ color: '#141417' }}>{detailModal.credits} (plan: {detailModal.plan_credits}, bonus: {detailModal.bonus_credits})</span></div>
             </div>
             <div style={{ marginBottom: 16 }}>
               <p style={{ fontSize: 12, color: '#8e8e96', marginBottom: 6 }}>{t('admin.users.modal.change_plan')}</p>
               <div style={{ display: 'flex', gap: 6 }}>
                 {['free', 'pro', 'team'].map(p => (
-                  <button key={p} onClick={() => handleChangePlan(detailModal.id, p)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: detailModal.plan === p ? '1px solid #ff713d' : '1px solid rgba(20,20,23,0.08)', background: detailModal.plan === p ? '#FFF0EA' : 'transparent', color: detailModal.plan === p ? '#ff713d' : '#8e8e96' }}>{p.toUpperCase()}</button>
+                  <button key={p} onClick={() => handleChangePlan(detailModal.id, p)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: detailModal.plan === p ? '1px solid hsl(var(--brand))' : '1px solid rgba(20,20,23,0.08)', background: detailModal.plan === p ? '#FFF0EA' : 'transparent', color: detailModal.plan === p ? 'hsl(var(--brand))' : '#8e8e96' }}>{p.toUpperCase()}</button>
                 ))}
               </div>
             </div>

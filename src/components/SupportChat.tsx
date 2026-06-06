@@ -128,10 +128,10 @@ export function SupportChat() {
           style={{
             position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999,
             width: 52, height: 52, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #F97316, #EA580C)',
+            background: 'linear-gradient(135deg, hsl(var(--brand)), #EA580C)',
             border: 'none', cursor: 'grab', touchAction: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 16px rgba(249,115,22,0.35)',
+            boxShadow: '0 4px 16px hsl(var(--brand) / 0.35)',
           }}
         >
           <MessageCircle size={24} color="#fff" />
@@ -154,7 +154,7 @@ export function SupportChat() {
           <div style={{
             padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10,
             borderBottom: '1px solid hsl(var(--border))',
-            background: 'linear-gradient(135deg, #F97316, #EA580C)',
+            background: 'linear-gradient(135deg, hsl(var(--brand)), #EA580C)',
           }}>
             <Sparkles size={18} color="#fff" />
             <div style={{ flex: 1 }}>
@@ -181,7 +181,7 @@ export function SupportChat() {
           }}>
             {messages.length === 0 && (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <Sparkles size={28} style={{ color: '#F97316', margin: '0 auto 8px' }} />
+                <Sparkles size={28} style={{ color: 'hsl(var(--brand))', margin: '0 auto 8px' }} />
                 <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 16 }}>
                   {t('support.placeholder')}
                 </p>
@@ -214,7 +214,7 @@ export function SupportChat() {
                   maxWidth: '85%',
                   padding: '10px 14px', borderRadius: 12,
                   fontSize: 13, lineHeight: 1.5,
-                  background: msg.role === 'user' ? '#F97316' : 'hsl(var(--muted))',
+                  background: msg.role === 'user' ? 'hsl(var(--brand))' : 'hsl(var(--muted))',
                   color: msg.role === 'user' ? '#fff' : 'hsl(var(--foreground))',
                 }}
               >
@@ -260,7 +260,7 @@ export function SupportChat() {
               disabled={!input.trim() || loading}
               style={{
                 width: 36, height: 36, borderRadius: 8,
-                background: input.trim() ? '#F97316' : 'hsl(var(--muted))',
+                background: input.trim() ? 'hsl(var(--brand))' : 'hsl(var(--muted))',
                 border: 'none', cursor: input.trim() ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'background 150ms',

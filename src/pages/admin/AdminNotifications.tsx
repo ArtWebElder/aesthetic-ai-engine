@@ -15,7 +15,7 @@ const TYPE_CONFIG: Record<NotifType, { icon: React.ElementType; color: string; l
   warning: { icon: AlertTriangle, color: '#F59E0B', label: 'admin.notif.type.warning' },
   promo: { icon: Sparkles, color: '#8B5CF6', label: 'admin.notif.type.promo' },
   update: { icon: RefreshCw, color: '#10B981', label: 'admin.notif.type.update' },
-  billing: { icon: DollarSign, color: '#F97316', label: 'admin.notif.type.billing' },
+  billing: { icon: DollarSign, color: '#ff713d', label: 'admin.notif.type.billing' },
 };
 
 const RECIPIENT_CONFIG: Record<Recipients, { icon: React.ElementType; label: string }> = {
@@ -107,7 +107,7 @@ export default function AdminNotifications() {
         {/* Compose Form */}
         <div style={cardStyle}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Bell style={{ width: 15, height: 15, color: '#F97316' }} />
+            <Bell style={{ width: 15, height: 15, color: 'hsl(var(--brand))' }} />
             {t('admin.notif.send_title')}
           </div>
 
@@ -148,8 +148,8 @@ export default function AdminNotifications() {
                     display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8,
                     fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
                     background: active ? '#FFF0EA' : 'transparent',
-                    border: active ? '1px solid rgba(249,115,22,0.2)' : '1px solid transparent',
-                    color: active ? '#F97316' : '#9CA3AF',
+                    border: active ? '1px solid hsl(var(--brand) / 0.2)' : '1px solid transparent',
+                    color: active ? 'hsl(var(--brand))' : '#9CA3AF',
                   }}>
                     <Icon style={{ width: 13, height: 13 }} />
                     {t(conf.label)}
@@ -185,7 +185,7 @@ export default function AdminNotifications() {
           {/* Pin toggle */}
           <div style={{ marginBottom: 16 }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: 7, cursor: 'pointer', fontSize: 12, color: '#6B7280' }}>
-              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} style={{ accentColor: '#F97316' }} />
+              <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} style={{ accentColor: 'hsl(var(--brand))' }} />
               <Pin style={{ width: 13, height: 13 }} />
               {t('admin.notif.pin')}
             </label>
@@ -197,7 +197,7 @@ export default function AdminNotifications() {
             disabled={sending !== 'idle' || !title.trim() || !message.trim()}
             style={{
               width: '100%', padding: '10px 0', borderRadius: 9, border: 'none',
-              background: sending === 'success' ? '#10B981' : (!title.trim() || !message.trim()) ? 'rgba(0,0,0,0.08)' : 'linear-gradient(135deg, #F97316, #FB923C)',
+              background: sending === 'success' ? '#10B981' : (!title.trim() || !message.trim()) ? 'rgba(0,0,0,0.08)' : 'linear-gradient(135deg, hsl(var(--brand)), #FB923C)',
               color: sending === 'success' ? '#fff' : (!title.trim() || !message.trim()) ? '#9CA3AF' : '#fff',
               fontSize: 13, fontWeight: 600, cursor: sending !== 'idle' || !title.trim() || !message.trim() ? 'default' : 'pointer',
               fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
@@ -237,7 +237,7 @@ export default function AdminNotifications() {
                   <span style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>
                     {title || t('admin.notif.preview_title_default')}
                   </span>
-                  {pinned && <Pin style={{ width: 11, height: 11, color: '#F97316' }} />}
+                  {pinned && <Pin style={{ width: 11, height: 11, color: 'hsl(var(--brand))' }} />}
                 </div>
                 <div style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.4 }}>
                   {message || t('admin.notif.preview_body_default')}
@@ -251,11 +251,11 @@ export default function AdminNotifications() {
               <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: `${typeConf.color}12`, color: typeConf.color }}>
                 {t(typeConf.label)}
               </span>
-              <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
+              <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'hsl(var(--brand) / 0.08)', color: 'hsl(var(--brand))' }}>
                 {t(RECIPIENT_CONFIG[recipients].label)}
               </span>
               {pinned && (
-                <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'rgba(249,115,22,0.08)', color: '#F97316' }}>
+                <span style={{ padding: '3px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: 'hsl(var(--brand) / 0.08)', color: 'hsl(var(--brand))' }}>
                   {t('admin.notif.pinned')}
                 </span>
               )}
@@ -307,7 +307,7 @@ export default function AdminNotifications() {
                   </td>
                   <td style={tdStyle}>
                     {item.pinned ? (
-                      <Pin style={{ width: 13, height: 13, color: '#F97316' }} />
+                      <Pin style={{ width: 13, height: 13, color: 'hsl(var(--brand))' }} />
                     ) : (
                       <span style={{ fontSize: 11, color: '#9CA3AF' }}>—</span>
                     )}

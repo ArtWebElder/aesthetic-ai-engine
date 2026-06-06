@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 const COLORS = [
-  '#ff713d', '#FF9B70', '#7C3AED', '#06B6D4',
+  'hsl(var(--brand))', 'hsl(var(--brand-2))', '#7C3AED', '#06B6D4',
   '#10B981', '#F472B6', '#FFF0EA', '#fbbf24',
 ];
 

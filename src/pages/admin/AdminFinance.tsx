@@ -112,7 +112,7 @@ export default function AdminFinance() {
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('admin.fin.conversion_label')}</span>
-            <Users style={{ width: 16, height: 16, color: '#ff713d' }} />
+            <Users style={{ width: 16, height: 16, color: 'hsl(var(--brand))' }} />
           </div>
           <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>{(convCount / 10).toFixed(1)}%</span>
           <span style={{ fontSize: 11.5, color: '#8e8e96', fontWeight: 500 }}>{t('admin.fin.conversion_sub', { payers: stats.payers, total: stats.totalUsers })}</span>
@@ -126,14 +126,14 @@ export default function AdminFinance() {
           <AreaChart data={revenue}>
             <defs>
               <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ff713d" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#ff713d" stopOpacity={0} />
+                <stop offset="5%" stopColor="hsl(var(--brand))" stopOpacity={0.15} />
+                <stop offset="95%" stopColor="hsl(var(--brand))" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis dataKey="month" tick={CHART_STYLE} axisLine={false} tickLine={false} />
             <YAxis tick={CHART_STYLE} axisLine={false} tickLine={false} width={50} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
             <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, 'Receita']} />
-            <Area type="monotone" dataKey="revenue" stroke="#ff713d" fill="url(#revGrad)" strokeWidth={2.5} />
+            <Area type="monotone" dataKey="revenue" stroke="hsl(var(--brand))" fill="url(#revGrad)" strokeWidth={2.5} />
           </AreaChart>
         </ResponsiveContainer>
       </div>

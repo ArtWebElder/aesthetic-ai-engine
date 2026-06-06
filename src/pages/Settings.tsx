@@ -27,7 +27,7 @@ const MOCK_KEYS = [
   { id: 'k2', name: 'Desenvolvimento', key: 'ck_test_••••••••••••b8e2', created: '28 Fev 2026' },
 ];
 
-const DEFAULT_COLORS = ['#ff713d', '#141417', '#f5f5f3', '#7C3AED'];
+const DEFAULT_COLORS = ['hsl(var(--brand))', '#141417', '#f5f5f3', '#7C3AED'];
 
 /* ── Toggle Switch ───────────────────────────────────── */
 function Toggle({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
@@ -36,7 +36,7 @@ function Toggle({ on, onToggle, label }: { on: boolean; onToggle: () => void; la
       <span style={{ fontSize: 13.5, color: 'hsl(var(--foreground))' }}>{label}</span>
       <button onClick={onToggle} style={{
         width: 42, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer', position: 'relative',
-        background: on ? '#ff713d' : 'hsl(var(--muted))', transition: 'background 200ms',
+        background: on ? 'hsl(var(--brand))' : 'hsl(var(--muted))', transition: 'background 200ms',
       }}>
         <div style={{
           width: 18, height: 18, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3,
@@ -134,7 +134,7 @@ const Settings = () => {
           <div style={{ position: 'relative' }}>
             <div style={{
               width: 72, height: 72, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #ff713d, #141417)',
+              background: 'linear-gradient(135deg, hsl(var(--brand)), #141417)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontWeight: 700, fontSize: 26,
             }}>{avatarLetter}</div>
@@ -161,9 +161,9 @@ const Settings = () => {
           onClick={() => toast.success(t('settings.toast.saved'))}
           style={{
             padding: '10px 28px', borderRadius: 9, border: 'none',
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
             color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-            fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)', marginTop: 4,
+            fontFamily: 'inherit', boxShadow: '0 3px 10px hsl(var(--brand) / 0.27)', marginTop: 4,
           }}
         >{t('settings.save_changes')}</button>
 
@@ -209,9 +209,9 @@ const Settings = () => {
               return (
                 <button key={l.id} onClick={() => setLang(l.id)} style={{
                   padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                  border: active ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+                  border: active ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
                   background: active ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))',
-                  color: active ? '#ff713d' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
+                  color: active ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
                   fontSize: 13, transition: 'all 150ms',
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
@@ -235,9 +235,9 @@ const Settings = () => {
               return (
                 <button key={th.id} onClick={() => setAppTheme(th.id)} style={{
                   padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                  border: active ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+                  border: active ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
                   background: active ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))',
-                  color: active ? '#ff713d' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
+                  color: active ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
                   fontSize: 13, transition: 'all 150ms',
                   display: 'flex', alignItems: 'center', gap: 6,
                 }}>
@@ -291,9 +291,9 @@ const Settings = () => {
 
         <button onClick={() => toast.success(t('settings.toast.prefs_saved'))} style={{
           padding: '10px 28px', borderRadius: 9, border: 'none',
-          background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
           color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-          fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)', marginTop: 12,
+          fontFamily: 'inherit', boxShadow: '0 3px 10px hsl(var(--brand) / 0.27)', marginTop: 12,
         }}>{t('settings.save_preferences')}</button>
       </div>
     );
@@ -314,7 +314,7 @@ const Settings = () => {
               cursor: 'pointer', background: 'hsl(var(--card))', transition: 'all 150ms',
               color: 'hsl(var(--muted-foreground))', gap: 6,
             }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--brand))'; (e.currentTarget as HTMLElement).style.color = 'hsl(var(--brand))'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border))'; (e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))'; }}
           >
             <Upload size={20} />
@@ -334,7 +334,7 @@ const Settings = () => {
                     width: 40, height: 40, borderRadius: '50%', background: color,
                     border: activeColorIdx === i ? '3px solid hsl(var(--foreground))' : '3px solid hsl(var(--card))',
                     boxShadow: activeColorIdx === i
-                      ? '0 0 0 2px #ff713d, 0 4px 12px rgba(0,0,0,0.2)'
+                      ? '0 0 0 2px hsl(var(--brand)), 0 4px 12px rgba(0,0,0,0.2)'
                       : '0 2px 8px rgba(0,0,0,0.15)',
                     cursor: 'pointer', transition: 'all 200ms',
                   }}
@@ -350,7 +350,7 @@ const Settings = () => {
                   background: 'hsl(var(--card))', cursor: 'pointer', display: 'flex', alignItems: 'center',
                   justifyContent: 'center', color: 'hsl(var(--muted-foreground))', transition: 'all 150ms',
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; (e.currentTarget as HTMLElement).style.color = '#ff713d'; }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--brand))'; (e.currentTarget as HTMLElement).style.color = 'hsl(var(--brand))'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border))'; (e.currentTarget as HTMLElement).style.color = 'hsl(var(--muted-foreground))'; }}
               ><Plus size={15} /></button>
               <span style={{ fontSize: 9.5, color: 'hsl(var(--muted-foreground))' }}>{t('settings.brand.add')}</span>
@@ -395,7 +395,7 @@ const Settings = () => {
                 onClick={() => setActiveColorIdx(null)}
                 style={{
                   marginTop: 10, width: '100%', padding: '8px 0', borderRadius: 8, border: 'none',
-                  background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+                  background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
                   fontSize: 12, fontWeight: 600, cursor: 'pointer',
                 }}
               >{t('settings.brand.apply')}</button>
@@ -423,9 +423,9 @@ const Settings = () => {
                 onClick={() => setFontDropdownOpen(v => !v)}
                 style={{
                   padding: '6px 14px', borderRadius: 6,
-                  border: fontDropdownOpen ? '1.5px solid #ff713d' : '2px dashed hsl(var(--border))',
+                  border: fontDropdownOpen ? '1.5px solid hsl(var(--brand))' : '2px dashed hsl(var(--border))',
                   background: fontDropdownOpen ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))', cursor: 'pointer',
-                  color: fontDropdownOpen ? '#ff713d' : 'hsl(var(--muted-foreground))', fontSize: 12.5, fontWeight: 500,
+                  color: fontDropdownOpen ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontSize: 12.5, fontWeight: 500,
                   fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5, transition: 'all 150ms',
                 }}
               >
@@ -473,9 +473,9 @@ const Settings = () => {
 
         <button onClick={() => toast.success(t('settings.toast.brand_saved'))} style={{
           padding: '10px 28px', borderRadius: 9, border: 'none',
-          background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
           color: '#fff', fontSize: 13.5, fontWeight: 600, cursor: 'pointer',
-          fontFamily: 'inherit', boxShadow: '0 3px 10px rgba(255,113,61,0.27)',
+          fontFamily: 'inherit', boxShadow: '0 3px 10px hsl(var(--brand) / 0.27)',
         }}>{t('settings.save_brand_kit')}</button>
       </div>
     );
@@ -556,8 +556,8 @@ const Settings = () => {
             toast.success(t('settings.toast.key_created'));
           }}
           style={{
-            padding: '10px 22px', borderRadius: 9, border: '1.5px solid #ff713d',
-            background: 'hsl(var(--primary) / 0.1)', color: '#ff713d', fontSize: 13, fontWeight: 600,
+            padding: '10px 22px', borderRadius: 9, border: '1.5px solid hsl(var(--brand))',
+            background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--brand))', fontSize: 13, fontWeight: 600,
             cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
           }}><Plus size={15} /> {t('settings.apikeys.new_btn')}</button>
       </div>
@@ -574,7 +574,7 @@ const Settings = () => {
     }}>
       <style>{`
         @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-        input:focus{border-color:#ff713d !important;box-shadow:0 0 0 2px rgba(255,113,61,0.15)}
+        input:focus{border-color:hsl(var(--brand)) !important;box-shadow:0 0 0 2px hsl(var(--brand) / 0.15)}
         input::placeholder{color:hsl(var(--muted-foreground))}
         select:focus{outline:none}
       `}</style>
@@ -598,7 +598,7 @@ const Settings = () => {
               padding: '9px 12px', borderRadius: 8, marginBottom: isMobile ? 0 : 2, cursor: 'pointer',
               background: active ? 'hsl(var(--primary) / 0.1)' : 'transparent',
               border: active ? '1px solid hsl(var(--primary) / 0.2)' : '1px solid transparent',
-              color: active ? '#ff713d' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
+              color: active ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
               fontSize: 13.5, fontFamily: 'inherit', transition: 'all 150ms',
             }}
               onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'hsl(var(--foreground) / 0.04)'; }}

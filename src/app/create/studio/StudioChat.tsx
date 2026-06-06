@@ -70,7 +70,7 @@ export function StudioChat({ open, onClose }: StudioChatProps) {
     >
       {/* Header */}
       <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border">
-        <div className="flex-shrink-0 flex items-center justify-center w-[26px] h-[26px] rounded-[7px] bg-gradient-to-br from-[#ff713d] to-[#FF9B70]">
+        <div className="flex-shrink-0 flex items-center justify-center w-[26px] h-[26px] rounded-[7px] bg-gradient-to-br from-[hsl(var(--brand))] to-[hsl(var(--brand-2))]">
           <Sparkles size={13} className="text-white" />
         </div>
         <div className="flex-1">
@@ -98,7 +98,7 @@ export function StudioChat({ open, onClose }: StudioChatProps) {
             <div
               className={`max-w-[80%] px-3 py-[7px] text-xs leading-relaxed ${
                 msg.role === 'user'
-                  ? 'rounded-[12px_12px_2px_12px] bg-gradient-to-br from-[#ff713d] to-[#FF9B70] text-white'
+                  ? 'rounded-[12px_12px_2px_12px] bg-gradient-to-br from-[hsl(var(--brand))] to-[hsl(var(--brand-2))] text-white'
                   : 'rounded-[12px_12px_12px_2px] bg-muted text-foreground'
               }`}
             >

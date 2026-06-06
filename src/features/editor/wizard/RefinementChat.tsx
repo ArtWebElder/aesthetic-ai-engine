@@ -16,7 +16,7 @@ type TFn = (k: string, v?: Record<string, string | number>) => string;
 
 // Map emoji prefix to lucide icon + strip emoji from displayed text
 const EMOJI_PREFIX_MAP: Array<{ prefix: string; icon: ReactNode; color: string }> = [
-  { prefix: "✨", icon: <Sparkles style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#ff713d" },
+  { prefix: "✨", icon: <Sparkles style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "hsl(var(--brand))" },
   { prefix: "🔄", icon: <RefreshCw style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#8e8e96" },
   { prefix: "🤖", icon: <Bot style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#7C3AED" },
   { prefix: "✅", icon: <CheckCircle2 style={{ width: 12, height: 12, flexShrink: 0 }} />, color: "#10B981" },
@@ -317,7 +317,7 @@ export function RefinementChat({
               <div key={i} style={{ display: "flex", justifyContent: "flex-end" }}>
                 <div style={{
                   maxWidth: "85%", padding: "8px 12px", borderRadius: "12px 12px 2px 12px",
-                  background: "linear-gradient(135deg, #ff713d, #FF9B70)",
+                  background: "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))",
                   color: "#ffffff", fontSize: 13, lineHeight: 1.45, fontFamily: "inherit",
                 }}>
                   {msg.text}
@@ -345,7 +345,7 @@ export function RefinementChat({
                     onClick={handleConfirmRegenerate}
                     style={{
                       padding: "6px 14px", borderRadius: 8, border: "none",
-                      background: "linear-gradient(135deg, #ff713d, #FF9B70)", color: "#fff",
+                      background: "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))", color: "#fff",
                       fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                     }}
                   >
@@ -390,7 +390,7 @@ export function RefinementChat({
             fontSize: 13, outline: "none", fontFamily: "inherit",
             opacity: aiLoading ? 0.5 : 1,
           }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = "#ff713d"; }}
+          onFocus={(e) => { e.currentTarget.style.borderColor = "hsl(var(--brand))"; }}
           onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(20,20,23,0.1)"; }}
         />
         <button
@@ -398,7 +398,7 @@ export function RefinementChat({
           disabled={aiLoading}
           style={{
             padding: "8px 14px", borderRadius: 8, border: "none",
-            background: aiLoading ? "rgba(20,20,23,0.08)" : "linear-gradient(135deg, #ff713d, #FF9B70)",
+            background: aiLoading ? "rgba(20,20,23,0.08)" : "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))",
             color: aiLoading ? "#8e8e96" : "#ffffff", fontSize: 13, fontWeight: 600,
             cursor: aiLoading ? "default" : "pointer", fontFamily: "inherit",
             transition: "all 150ms",

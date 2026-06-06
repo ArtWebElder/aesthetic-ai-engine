@@ -43,10 +43,10 @@ function FirstGenToast({ onClose }: { onClose: () => void }) {
     }}>
       <div style={{
         width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-        background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
+        background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}>
-        <Sparkles size={18} style={{ color: '#ff713d' }} />
+        <Sparkles size={18} style={{ color: 'hsl(var(--brand))' }} />
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13.5, fontWeight: 600, color: '#141417', marginBottom: 3 }}>
@@ -134,7 +134,7 @@ function CriticalCreditsModal({ credits, onClose, onUpgrade }: { credits: number
           onClick={onUpgrade}
           style={{
             width: '100%', padding: '11px 0', borderRadius: 10, border: 'none',
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
             fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
             marginBottom: 10,
           }}
@@ -193,10 +193,10 @@ export function PaywallModal({ onClose, plan }: { onClose: () => void; plan: str
               onClick={() => { onClose(); navigate('/app/billing'); }}
               style={{
                 width: '100%', padding: '12px 0', borderRadius: 10, border: 'none',
-                background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+                background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
                 fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                boxShadow: '0 3px 12px rgba(255,113,61,0.3)', marginBottom: 10,
+                boxShadow: '0 3px 12px hsl(var(--brand) / 0.3)', marginBottom: 10,
               }}
             >
               <Zap size={16} /> {t('upsell.credits_zero.upgrade_pro')}
@@ -219,10 +219,10 @@ export function PaywallModal({ onClose, plan }: { onClose: () => void; plan: str
             onClick={() => { onClose(); navigate('/app/billing'); }}
             style={{
               width: '100%', padding: '12px 0', borderRadius: 10, border: 'none',
-              background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+              background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
               fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              boxShadow: '0 3px 12px rgba(255,113,61,0.3)',
+              boxShadow: '0 3px 12px hsl(var(--brand) / 0.3)',
             }}
           >
             <CreditCard size={16} /> {t('upsell.credits_zero.recharge')}
@@ -280,7 +280,7 @@ function SatisfactionPopup({ onClose }: { onClose: () => void }) {
         onClick={() => { onClose(); navigate('/app/billing'); }}
         style={{
           width: '100%', padding: '9px 0', borderRadius: 8, border: 'none',
-          background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
           fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
         }}

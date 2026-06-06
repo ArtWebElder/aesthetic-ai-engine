@@ -65,7 +65,7 @@ export function StudioProjectsModal({ open, onClose, onOpenProject }: StudioProj
                   key={p.id}
                   onClick={() => onOpenProject(p)}
                   style={{ position: 'relative', cursor: 'pointer', borderRadius: 12, overflow: 'hidden', border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', transition: 'border-color 150ms' }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = '#ff713d')}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--brand))')}
                   onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border))')}
                 >
                   <div style={{ height: 96, background: 'hsl(var(--muted))', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>

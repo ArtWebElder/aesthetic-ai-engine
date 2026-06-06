@@ -136,9 +136,9 @@ const Projects = () => {
           onClick={() => navigate('/app/create')}
           style={{
             padding: '9px 20px', borderRadius: 9, border: 'none',
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
             fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-            display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 3px 10px rgba(255,113,61,0.27)',
+            display: 'flex', alignItems: 'center', gap: 6, boxShadow: '0 3px 10px hsl(var(--brand) / 0.27)',
           }}
         >
           <Plus size={15} />{t('projects.new_project')}
@@ -168,9 +168,9 @@ const Projects = () => {
           {(['all', 'Food/Pop', 'Pop Design'] as FilterType[]).map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{
               padding: '6px 13px', borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12,
-              border: filter === f ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+              border: filter === f ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
               background: filter === f ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))',
-              color: filter === f ? '#ff713d' : 'hsl(var(--muted-foreground))', fontWeight: filter === f ? 600 : 400,
+              color: filter === f ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontWeight: filter === f ? 600 : 400,
               transition: 'all 150ms',
             }}>{f === 'all' ? t('projects.all') : f}</button>
           ))}
@@ -219,7 +219,7 @@ const Projects = () => {
               <div key={p.id} style={{
                 background: isHov ? `linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, hsl(var(--card)) 40%)` : 'hsl(var(--card))',
                 borderRadius: 12, overflow: 'hidden',
-                border: isHov ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+                border: isHov ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 180ms', position: 'relative',
                 animation: ready ? `scIn 320ms ${40 + i * 35}ms ease both` : 'none',
               }}
@@ -362,11 +362,11 @@ const Projects = () => {
             background: 'hsl(var(--card))', borderRadius: 18, border: '1px solid hsl(var(--border))',
             padding: '44px 32px', textAlign: 'center', width: 340, position: 'relative', overflow: 'hidden',
           }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(180deg, rgba(255,113,61,0.06), transparent)' }} />
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(180deg, hsl(var(--brand) / 0.06), transparent)' }} />
             <div style={{
-              width: 60, height: 60, borderRadius: 16, background: 'rgba(255,113,61,0.08)',
-              border: '1px solid rgba(255,113,61,0.12)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', margin: '0 auto 16px', color: '#ff713d', position: 'relative',
+              width: 60, height: 60, borderRadius: 16, background: 'hsl(var(--brand) / 0.08)',
+              border: '1px solid hsl(var(--brand) / 0.12)', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', margin: '0 auto 16px', color: 'hsl(var(--brand))', position: 'relative',
             }}>
               <FolderOpen size={28} />
             </div>
@@ -381,10 +381,10 @@ const Projects = () => {
                 onClick={() => navigate('/app/create')}
                 style={{
                   padding: '9px 22px', borderRadius: 10, border: 'none',
-                  background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
+                  background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
                   fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
                   display: 'inline-flex', alignItems: 'center', gap: 6,
-                  boxShadow: '0 3px 10px rgba(255,113,61,0.20)', position: 'relative',
+                  boxShadow: '0 3px 10px hsl(var(--brand) / 0.20)', position: 'relative',
                 }}
               >
                 <Plus size={14} />{t('projects.create_first')}

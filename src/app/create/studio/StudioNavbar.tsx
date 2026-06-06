@@ -76,24 +76,24 @@ export function StudioNavbar({ openPanel, chatOpen, onPanelChange, onChatToggle 
                 border: '1px solid hsl(var(--border))',
                 background: active
                   ? item.accent
-                    ? '#ff713d'
-                    : 'rgba(255,113,61,0.12)'
+                    ? 'hsl(var(--brand))'
+                    : 'hsl(var(--brand) / 0.12)'
                   : item.accent
-                  ? '#ff713d'
+                  ? 'hsl(var(--brand))'
                   : 'hsl(var(--card))',
                 color: active && !item.accent
-                  ? '#ff713d'
+                  ? 'hsl(var(--brand))'
                   : item.accent
                   ? '#fff'
                   : active
-                  ? '#ff713d'
+                  ? 'hsl(var(--brand))'
                   : 'hsl(var(--muted-foreground))',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: active
-                  ? '0 4px 12px rgba(255,113,61,0.3)'
+                  ? '0 4px 12px hsl(var(--brand) / 0.3)'
                   : '0 2px 6px rgba(0,0,0,0.08)',
                 transition: 'all 0.15s',
                 flexShrink: 0,

@@ -21,7 +21,7 @@ const bottomNavItems = [
 ];
 
 const RECENT_PROJECTS = [
-  { name: 'Summer Campaign', color: '#ff713d' },
+  { name: 'Summer Campaign', color: 'hsl(var(--brand))' },
   { name: 'Brand Kit v2', color: '#7C3AED' },
   { name: 'Product Photoshoot', color: '#06B6D4' },
 ];
@@ -57,7 +57,7 @@ const NavItem = ({
         gap: collapsed ? 0 : 12,
         fontSize: 13.5,
         fontWeight: isActive ? 600 : 400,
-        color: color || (isActive ? '#ff713d' : 'hsl(var(--sidebar-foreground))'),
+        color: color || (isActive ? 'hsl(var(--brand))' : 'hsl(var(--sidebar-foreground))'),
         background: isActive
           ? 'hsl(var(--sidebar-primary) / 0.08)'
           : hovered
@@ -65,7 +65,7 @@ const NavItem = ({
           : 'transparent',
       }}
     >
-      <Icon style={{ width: 19, height: 19, flexShrink: 0, color: color || (isActive ? '#ff713d' : 'hsl(var(--sidebar-foreground))') }} />
+      <Icon style={{ width: 19, height: 19, flexShrink: 0, color: color || (isActive ? 'hsl(var(--brand))' : 'hsl(var(--sidebar-foreground))') }} />
       {!collapsed && <span>{label}</span>}
     </button>
   );
@@ -163,8 +163,8 @@ const SidebarNav = ({ onClose, forceExpanded }: SidebarNavProps) => {
             padding: '10px 0',
             fontSize: 13.5,
             fontWeight: 600,
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
-            boxShadow: '0 3px 10px rgba(255,113,61,0.3)',
+            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
+            boxShadow: '0 3px 10px hsl(var(--brand) / 0.3)',
           }}
         >
           <Plus style={{ width: 17, height: 17 }} />

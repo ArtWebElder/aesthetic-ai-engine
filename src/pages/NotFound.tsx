@@ -28,7 +28,7 @@ const NotFound = () => {
           width: 36,
           height: 36,
           borderRadius: 10,
-          background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -43,7 +43,7 @@ const NotFound = () => {
         <p style={{
           fontSize: 80,
           fontWeight: 800,
-          color: '#ff713d',
+          color: 'hsl(var(--brand))',
           letterSpacing: '-0.04em',
           lineHeight: 1,
           margin: 0,
@@ -71,12 +71,12 @@ const NotFound = () => {
             padding: '10px 22px',
             borderRadius: 10,
             border: 'none',
-            background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
             color: '#fff',
             fontSize: 14,
             fontWeight: 600,
             cursor: 'pointer',
-            boxShadow: '0 4px 14px rgba(255,113,61,0.35)',
+            boxShadow: '0 4px 14px hsl(var(--brand) / 0.35)',
           }}
         >
           {t('not_found.go_dashboard')}

@@ -8,14 +8,14 @@ import { Logo } from '@/components/Logo';
 
 /* ─── Carousel card data ─────────────────────────────── */
 const CARDS = [
-  { label: 'Ecom Banner', gradient: 'linear-gradient(135deg, #f97316, #e11d48)', price: 'R$ 497' },
+  { label: 'Ecom Banner', gradient: 'linear-gradient(135deg, hsl(var(--brand)), #e11d48)', price: 'R$ 497' },
   { label: 'Social Post', gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)', price: 'R$ 299' },
   { label: 'Photoshoot', gradient: 'linear-gradient(135deg, #0891b2, #0d9488)', price: 'R$ 899' },
   { label: 'Product Ad', gradient: 'linear-gradient(135deg, #d97706, #ea580c)', price: 'R$ 199' },
   { label: 'Story Ad', gradient: 'linear-gradient(135deg, #ec4899, #f43f5e)', price: 'R$ 149' },
   { label: 'Brand Kit', gradient: 'linear-gradient(135deg, #10b981, #22c55e)', price: 'R$ 599' },
   { label: 'Hero Banner', gradient: 'linear-gradient(135deg, #3b82f6, #6366f1)', price: 'R$ 349' },
-  { label: 'Thumbnail', gradient: 'linear-gradient(135deg, #eab308, #f97316)', price: 'R$ 99' },
+  { label: 'Thumbnail', gradient: 'linear-gradient(135deg, #eab308, hsl(var(--brand)))', price: 'R$ 99' },
   { label: 'Campaign', gradient: 'linear-gradient(135deg, #a855f7, #ec4899)', price: 'R$ 799' },
 ];
 
@@ -284,7 +284,7 @@ const Login = () => {
               border: '1px solid rgba(255,255,255,0.1)',
             }}
           >
-            <Sparkles className="w-3.5 h-3.5" style={{ color: '#ff713d' }} />
+            <Sparkles className="w-3.5 h-3.5" style={{ color: 'hsl(var(--brand))' }} />
             <span className="text-white font-semibold" style={{ fontSize: 13 }}>{t('auth.generated_badge')}</span>
           </div>
         </div>
@@ -321,9 +321,9 @@ const Login = () => {
                 <>
                   <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
-                    style={{ background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))' }}
+                    style={{ background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))' }}
                   >
-                    <ShieldCheck className="w-7 h-7" style={{ color: '#ff713d' }} />
+                    <ShieldCheck className="w-7 h-7" style={{ color: 'hsl(var(--brand))' }} />
                   </div>
 
                   <h1 style={{ fontSize: 24, fontWeight: 700, color: '#141417', letterSpacing: '-0.03em', lineHeight: 1.2, marginBottom: 6 }}>
@@ -335,7 +335,7 @@ const Login = () => {
                   <button
                     onClick={handleChangeEmail}
                     style={{
-                      background: 'none', border: 'none', color: '#ff713d',
+                      background: 'none', border: 'none', color: 'hsl(var(--brand))',
                       fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: 0,
                       marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4,
                     }}
@@ -364,7 +364,7 @@ const Login = () => {
                       color: '#141417',
                       marginBottom: 8,
                     }}
-                    onFocus={(e) => { if (!otpError) e.currentTarget.style.borderColor = '#ff713d'; }}
+                    onFocus={(e) => { if (!otpError) e.currentTarget.style.borderColor = 'hsl(var(--brand))'; }}
                     onBlur={(e) => { if (!otpError) e.currentTarget.style.borderColor = 'rgba(20,20,23,0.12)'; }}
                     autoFocus
                   />
@@ -380,10 +380,10 @@ const Login = () => {
                     style={{
                       height: 44,
                       borderRadius: 10,
-                      background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+                      background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
                       fontSize: 13.5,
                       fontWeight: 600,
-                      boxShadow: '0 3px 10px rgba(255,113,61,0.3)',
+                      boxShadow: '0 3px 10px hsl(var(--brand) / 0.3)',
                       marginTop: 8,
                       marginBottom: 16,
                     }}
@@ -410,7 +410,7 @@ const Login = () => {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#ff713d',
+                        color: 'hsl(var(--brand))',
                         fontSize: 13,
                         fontWeight: 500,
                         cursor: resending || resendCooldown > 0 ? 'default' : 'pointer',
@@ -523,7 +523,7 @@ const Login = () => {
                         color: '#141417',
                         fontSize: 13.5,
                       }}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                      onFocus={(e) => { e.currentTarget.style.borderColor = 'hsl(var(--brand))'; }}
                       onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
                     />
                   </div>
@@ -545,7 +545,7 @@ const Login = () => {
                       color: '#141417',
                       fontSize: 13.5,
                     }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'hsl(var(--brand))'; }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
                   />
                 </div>
@@ -566,7 +566,7 @@ const Login = () => {
                       color: '#141417',
                       fontSize: 13.5,
                     }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = '#ff713d'; }}
+                    onFocus={(e) => { e.currentTarget.style.borderColor = 'hsl(var(--brand))'; }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
                   />
                   <button
@@ -609,10 +609,10 @@ const Login = () => {
                   style={{
                     height: 44,
                     borderRadius: 10,
-                    background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+                    background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
                     fontSize: 13.5,
                     fontWeight: 600,
-                    boxShadow: '0 3px 10px rgba(255,113,61,0.3)',
+                    boxShadow: '0 3px 10px hsl(var(--brand) / 0.3)',
                     marginTop: 4,
                   }}
                 >
@@ -635,7 +635,7 @@ const Login = () => {
                 <div className="flex items-start gap-3">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
-                    style={{ background: 'linear-gradient(135deg, #f97316, #e11d48)' }}
+                    style={{ background: 'linear-gradient(135deg, hsl(var(--brand)), #e11d48)' }}
                   >
                     M
                   </div>

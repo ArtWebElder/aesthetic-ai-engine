@@ -25,9 +25,14 @@ export default {
         mono: ["'JetBrains Mono'", "monospace"],
       },
       colors: {
+        brand: {
+          DEFAULT: "hsl(var(--brand))",
+          2: "hsl(var(--brand-2))",
+          foreground: "hsl(var(--brand-foreground))",
+        },
         creatyng: {
-          accent: "#ff713d",
-          "accent-light": "#FF9B70",
+          accent: "hsl(var(--brand))",
+          "accent-light": "hsl(var(--brand-2))",
           "accent-pale": "#FFF0EA",
           bg: "#f5f5f3",
           dark: "#141417",
@@ -88,6 +93,15 @@ export default {
         sm: "calc(var(--radius) - 4px)",
         creatyng: "12px",
       },
+      boxShadow: {
+        brand: "var(--shadow-brand)",
+        "soft-sm": "var(--shadow-sm)",
+        "soft-md": "var(--shadow-md)",
+        "soft-lg": "var(--shadow-lg)",
+      },
+      backgroundImage: {
+        "brand-gradient": "var(--brand-gradient)",
+      },
       keyframes: {
         fadeUp: {
           from: { opacity: "0", transform: "translateY(12px)" },
@@ -110,8 +124,8 @@ export default {
           "100%": { transform: "translateX(100%)" },
         },
         glow: {
-          "0%,100%": { boxShadow: "0 0 20px rgba(255,113,61,0.15)" },
-          "50%": { boxShadow: "0 0 40px rgba(255,113,61,0.3)" },
+          "0%,100%": { boxShadow: "0 0 20px hsl(var(--brand) / 0.15)" },
+          "50%": { boxShadow: "0 0 40px hsl(var(--brand) / 0.3)" },
         },
         "accordion-down": {
           from: { height: "0" },

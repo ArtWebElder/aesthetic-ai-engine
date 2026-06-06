@@ -127,7 +127,7 @@ function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current
             {idx > 0 && (
               <div style={{
                 height: 1, width: isMobile ? 18 : 32,
-                background: isDone || isActive ? '#ff713d' : 'hsl(var(--border))',
+                background: isDone || isActive ? 'hsl(var(--brand))' : 'hsl(var(--border))',
                 transition: 'background 500ms',
               }} />
             )}
@@ -146,8 +146,8 @@ function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current
                 width: 24, height: 24, borderRadius: '50%', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontSize: 10, fontWeight: 700,
                 transition: 'all 300ms',
-                background: isDone ? '#ff713d' : isActive ? '#ff713d' : 'hsl(var(--muted))',
-                border: `1.5px solid ${isDone || isActive ? '#ff713d' : 'hsl(var(--border))'}`,
+                background: isDone ? 'hsl(var(--brand))' : isActive ? 'hsl(var(--brand))' : 'hsl(var(--muted))',
+                border: `1.5px solid ${isDone || isActive ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
                 color: isDone || isActive ? '#fff' : 'hsl(var(--muted-foreground))',
               }}>
                 {isDone ? (
@@ -158,7 +158,7 @@ function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current
               </div>
               <span style={{
                 fontSize: 10, fontWeight: 500,
-                color: isActive ? '#ff713d' : isDone ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))',
+                color: isActive ? 'hsl(var(--brand))' : isDone ? 'hsl(var(--muted-foreground))' : 'hsl(var(--muted-foreground))',
               }}>
                 {t(label)}
               </span>
@@ -188,7 +188,7 @@ function WizCredTooltip({ credits, children }: { credits: number; children: Reac
         }}>
           <div style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderBottom: '5px solid hsl(var(--popover))' }} />
           <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: 'hsl(var(--brand))', flexShrink: 0 }}>
               <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
             </svg>
             {t('wizard.credits_left_tip', { credits })}
@@ -932,7 +932,7 @@ export function WizardPage() {
     setV2Analysis(null);
     setAnalysisTexts([]);
     setEditedTexts([]);
-    setColorPalette(['#ff713d', '#1a1a2e', '#ffffff', '#333333', '#666666']);
+    setColorPalette(['hsl(var(--brand))', '#1a1a2e', '#ffffff', '#333333', '#666666']);
     setVariationSlider(10);
     setFormatSelect('1:1');
     setExtraInstructions('');
@@ -958,7 +958,7 @@ export function WizardPage() {
     setV2Analysis(null);
     setAnalysisTexts([]);
     setEditedTexts([]);
-    setColorPalette(['#ff713d', '#1a1a2e', '#ffffff', '#333333', '#666666']);
+    setColorPalette(['hsl(var(--brand))', '#1a1a2e', '#ffffff', '#333333', '#666666']);
     setExtraInstructions('');
     setGenerationError(null);
     setError(null);
@@ -986,7 +986,7 @@ export function WizardPage() {
   const displayBase64 = composedBase64 ?? currentGeneration?.imageBase64;
   const isWorking = generating || composing;
 
-  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
+  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='hsl(var(--brand) / 0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
   return (
     <div style={{ height: isMobile ? '100dvh' : '100vh', display: 'flex', flexDirection: 'column', background: `${gridSvg}, hsl(var(--background))`, color: 'hsl(var(--foreground))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
@@ -1006,7 +1006,7 @@ export function WizardPage() {
       }}>
         {/* Logo + breadcrumb */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 6, background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 26, height: 26, borderRadius: 6, background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ color: '#fff', fontWeight: 800, fontSize: 11 }}>C</span>
           </div>
           <span style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>Creatyng</span>
@@ -1024,7 +1024,7 @@ export function WizardPage() {
               display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8,
               background: 'hsl(var(--card))', fontSize: 12, fontWeight: 600, cursor: 'default',
               border: `1px solid ${storeCredits < 12 ? '#EF4444' : 'hsl(var(--border))'}`,
-              color: storeCredits < 12 ? '#EF4444' : '#ff713d',
+              color: storeCredits < 12 ? '#EF4444' : 'hsl(var(--brand))',
             }}>
               <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
                 <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
@@ -1061,7 +1061,7 @@ export function WizardPage() {
             <AlertTriangle size={14} style={{ color: '#D97706' }} />
             <span style={{ color: '#92400E' }}>{t('wizard.low_credits', { n: storeCredits })}</span>
           </div>
-          <button onClick={() => navigate('/app/billing')} style={{ background: '#ff713d', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.upgrade')}</button>
+          <button onClick={() => navigate('/app/billing')} style={{ background: 'hsl(var(--brand))', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.upgrade')}</button>
         </div>
       )}
       {storeCredits <= 0 && (
@@ -1124,7 +1124,7 @@ export function WizardPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                       <span style={{ fontSize: 14, fontWeight: 500 }}>{card.title}</span>
                       <InfoTooltip text={card.tooltip} />
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 500, background: card.badgeOrange ? '#FFF0E6' : 'hsl(var(--muted))', color: card.badgeOrange ? '#ff713d' : 'hsl(var(--muted-foreground))' }}>{card.badge}</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 500, background: card.badgeOrange ? '#FFF0E6' : 'hsl(var(--muted))', color: card.badgeOrange ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))' }}>{card.badge}</span>
                     </div>
                     <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 12, lineHeight: 1.4 }}>{card.desc}</p>
                     {card.image ? (
@@ -1134,7 +1134,7 @@ export function WizardPage() {
                       </div>
                     ) : (
                       <label style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed hsl(var(--border))', borderRadius: 8, cursor: 'pointer', minHeight: 140, transition: 'border-color 150ms' }}
-                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#ff713d'; }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--brand))'; }}
                         onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--border))'; }}
                       >
                         <input type="file" accept={card.accept} style={{ display: 'none' }} onChange={(e) => {
@@ -1153,8 +1153,8 @@ export function WizardPage() {
                 ))}
               </div>
               {analysisLoading && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, color: '#ff713d', fontSize: 13 }}>
-                  <div style={{ width: 16, height: 16, border: '2px solid #ff713d', borderTopColor: 'transparent', borderRadius: '50%', animation: 'wizSpin 0.8s linear infinite' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 16, color: 'hsl(var(--brand))', fontSize: 13 }}>
+                  <div style={{ width: 16, height: 16, border: '2px solid hsl(var(--brand))', borderTopColor: 'transparent', borderRadius: '50%', animation: 'wizSpin 0.8s linear infinite' }} />
                   {t('wizard.s1.analyzing')}
                 </div>
               )}
@@ -1201,7 +1201,7 @@ export function WizardPage() {
                     <button onClick={() => setEditedTexts(editedTexts.filter((_, i) => i !== idx))} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'transparent', color: '#EF4444', cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                   </div>
                 ))}
-                <button onClick={() => setEditedTexts([...editedTexts, { type: 'label', content: '' }])} style={{ fontSize: 12, color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, marginTop: 4 }}>{t('wizard.s2.add_text')}</button>
+                <button onClick={() => setEditedTexts([...editedTexts, { type: 'label', content: '' }])} style={{ fontSize: 12, color: 'hsl(var(--brand))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, marginTop: 4 }}>{t('wizard.s2.add_text')}</button>
                 <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 8 }}>{t('wizard.s2.short_texts')}</p>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: '#FFF7ED', borderRadius: 8, marginTop: 12, border: '1px solid #FED7AA' }}>
                   <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
@@ -1240,7 +1240,7 @@ export function WizardPage() {
                 <Slider value={[variationSlider]} onValueChange={([val]) => setVariationSlider(val)} min={0} max={100} step={5} className="w-full" />
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'hsl(var(--muted-foreground))', marginTop: 10 }}>
                   <span>{t('wizard.s3.exact_copy')}</span>
-                  <span style={{ color: '#ff713d', fontWeight: 600, fontSize: 14 }}>{variationSlider}%</span>
+                  <span style={{ color: 'hsl(var(--brand))', fontWeight: 600, fontSize: 14 }}>{variationSlider}%</span>
                   <span>{t('wizard.s3.reinterpret')}</span>
                 </div>
               </div>
@@ -1251,9 +1251,9 @@ export function WizardPage() {
                   {[{ v: '1:1', l: '1:1 Feed' }, { v: '4:5', l: '4:5 Feed' }, { v: '9:16', l: '9:16 Story' }, { v: '16:9', l: '16:9 Banner' }].map(f => (
                     <button key={f.v} onClick={() => setFormatSelect(f.v)} style={{
                       padding: '8px 16px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
-                      border: formatSelect === f.v ? '1.5px solid #ff713d' : '1px solid hsl(var(--border))',
+                      border: formatSelect === f.v ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
                       background: formatSelect === f.v ? 'hsl(var(--primary) / 0.1)' : 'transparent',
-                      color: formatSelect === f.v ? '#ff713d' : 'hsl(var(--muted-foreground))',
+                      color: formatSelect === f.v ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))',
                     }}>{f.l}</button>
                   ))}
                 </div>
@@ -1284,8 +1284,8 @@ export function WizardPage() {
               {/* Generate button */}
               <button onClick={() => handleGenerate()} disabled={generating} style={{
                 width: '100%', padding: '16px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                background: 'linear-gradient(135deg, #ff713d, #FF9B70)', color: '#fff',
-                boxShadow: '0 4px 16px rgba(255,113,61,0.35)', transition: 'all 200ms',
+                background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
+                boxShadow: '0 4px 16px hsl(var(--brand) / 0.35)', transition: 'all 200ms',
               }}>
                 ✦ {currentGeneration ? t('wizard.s3.regenerate_btn', { n: 12 }) : t('wizard.s3.generate_btn', { n: 12 })}
               </button>
@@ -1314,15 +1314,15 @@ export function WizardPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={() => { setGenerationError(null); setUiStep(4); }} style={{ padding: '8px 18px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.back')}</button>
-                    <button onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(5); handleGenerate(); }} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: '#ff713d', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.gen.retry')}</button>
+                    <button onClick={() => { setGenerationError(null); setGenerationDone(false); setUiStep(5); handleGenerate(); }} style={{ padding: '8px 18px', borderRadius: 10, border: 'none', background: 'hsl(var(--brand))', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.gen.retry')}</button>
                   </div>
                 </div>
               ) : (
                 <>
                   {/* Animated orb */}
                   <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ position: 'absolute', width: 180, height: 180, borderRadius: '50%', filter: 'blur(32px)', opacity: 0.25, background: 'conic-gradient(from 0deg, #ff713d, #a855f7, #3b82f6, #ff713d)', animation: 'wizPulse 2s ease-in-out infinite' }} />
-                    <div style={{ position: 'relative', width: 120, height: 120, borderRadius: '50%', background: 'conic-gradient(from 0deg, #ff713d, #FF9B70, #ff713d)', animation: 'wizSpin 3s linear infinite' }} />
+                    <div style={{ position: 'absolute', width: 180, height: 180, borderRadius: '50%', filter: 'blur(32px)', opacity: 0.25, background: 'conic-gradient(from 0deg, hsl(var(--brand)), #a855f7, #3b82f6, hsl(var(--brand)))', animation: 'wizPulse 2s ease-in-out infinite' }} />
+                    <div style={{ position: 'relative', width: 120, height: 120, borderRadius: '50%', background: 'conic-gradient(from 0deg, hsl(var(--brand)), hsl(var(--brand-2)), hsl(var(--brand)))', animation: 'wizSpin 3s linear infinite' }} />
                     <div style={{ position: 'absolute', width: 90, height: 90, borderRadius: '50%', background: 'hsl(var(--background))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>✦</div>
                   </div>
 
@@ -1342,18 +1342,18 @@ export function WizardPage() {
                             width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             transition: 'all 300ms',
-                            background: isDone ? '#10B981' : isActive ? '#ff713d' : 'hsl(var(--muted))',
-                            border: `1.5px solid ${isDone ? '#10B981' : isActive ? '#ff713d' : 'hsl(var(--border))'}`,
+                            background: isDone ? '#10B981' : isActive ? 'hsl(var(--brand))' : 'hsl(var(--muted))',
+                            border: `1.5px solid ${isDone ? '#10B981' : isActive ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
                           }}>
                             {isDone ? (
                               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                                 <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                             ) : isActive ? (
-                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite' }} />
+                              <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(var(--brand))', animation: 'wizPulse 1s ease-in-out infinite' }} />
                             ) : null}
                           </div>
-                          <span style={{ fontSize: 13, transition: 'color 300ms', color: isDone ? '#10B981' : isActive ? '#ff713d' : 'hsl(var(--muted-foreground))' }}>{t(stage)}</span>
+                          <span style={{ fontSize: 13, transition: 'color 300ms', color: isDone ? '#10B981' : isActive ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))' }}>{t(stage)}</span>
                         </div>
                       );
                     })}
@@ -1405,7 +1405,7 @@ export function WizardPage() {
                 </div>
               )}
 
-              {composing && <p style={{ fontSize: 11.5, color: '#ff713d', animation: 'wizPulse 1s ease-in-out infinite', fontWeight: 500, textAlign: 'center' }}>{popDesignStep || t('wizard.s4.applying_typo')}</p>}
+              {composing && <p style={{ fontSize: 11.5, color: 'hsl(var(--brand))', animation: 'wizPulse 1s ease-in-out infinite', fontWeight: 500, textAlign: 'center' }}>{popDesignStep || t('wizard.s4.applying_typo')}</p>}
 
               {/* Zoom controls */}
               {flags.zoomInResult && !isWorking && (
@@ -1425,7 +1425,7 @@ export function WizardPage() {
                     return (
                       <img key={gen.timestamp} src={gen.image} alt={`Geração ${idx + 1}`}
                         onClick={() => { setActiveSessionIdx(idx); setComposedBase64(gen.image); }}
-                        style={{ width: 56, height: 56, borderRadius: 6, objectFit: 'cover', cursor: 'pointer', flexShrink: 0, border: isActive ? '2px solid #ff713d' : '2px solid hsl(var(--border))', opacity: isActive ? 1 : 0.7, transition: 'all 150ms' }}
+                        style={{ width: 56, height: 56, borderRadius: 6, objectFit: 'cover', cursor: 'pointer', flexShrink: 0, border: isActive ? '2px solid hsl(var(--brand))' : '2px solid hsl(var(--border))', opacity: isActive ? 1 : 0.7, transition: 'all 150ms' }}
                       />
                     );
                   })}
@@ -1435,7 +1435,7 @@ export function WizardPage() {
               {/* Action buttons */}
               {!isWorking && (
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-                  <button onClick={() => setShowExportModal(true)} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <button onClick={() => setShowExportModal(true)} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                     {t('wizard.s4.download')}
                   </button>
                   <button onClick={handleRegenerateFromResult} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -1452,14 +1452,14 @@ export function WizardPage() {
 
               {/* Credits */}
               <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', textAlign: 'center' }}>
-                {t('wizard.s4.credits_left')} <span style={{ color: storeCredits < 12 ? '#EF4444' : '#ff713d', fontWeight: 600 }}>{storeCredits}</span>
+                {t('wizard.s4.credits_left')} <span style={{ color: storeCredits < 12 ? '#EF4444' : 'hsl(var(--brand))', fontWeight: 600 }}>{storeCredits}</span>
               </p>
 
               {/* Chat panel — only when feature flag enabled */}
               {flags.chatEnabled && !isWorking && (
                 <div style={{ marginTop: 24, padding: 16, border: '1px solid hsl(var(--border))', borderRadius: 12, background: 'hsl(var(--card))' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0 }}>✦</div>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0 }}>✦</div>
                     <p style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Creatyng AI</p>
                     <span style={{ fontSize: 11, color: '#10B981', marginLeft: 'auto' }}>● {t('wizard.online')}</span>
                   </div>
@@ -1475,7 +1475,7 @@ export function WizardPage() {
                   />
                   {flags.refinePageEnabled && (
                     <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginTop: 8 }}>
-                      <button onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)} style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, textDecoration: 'underline' }}>
+                      <button onClick={() => navigate(`/app/refine/${currentGeneration.generationId}`)} style={{ color: 'hsl(var(--brand))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 11, textDecoration: 'underline' }}>
                         {t('wizard.s4.expand_chat')}
                       </button>
                     </p>
@@ -1512,9 +1512,9 @@ export function WizardPage() {
               style={{
                 padding: '9px 24px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 600,
                 cursor: canAdvance ? 'pointer' : 'default',
-                background: canAdvance ? 'linear-gradient(135deg,#ff713d,#FF9B70)' : 'hsl(var(--muted))',
+                background: canAdvance ? 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))' : 'hsl(var(--muted))',
                 color: canAdvance ? '#fff' : 'hsl(var(--muted-foreground))',
-                boxShadow: canAdvance ? '0 4px 16px rgba(255,113,61,0.3)' : 'none',
+                boxShadow: canAdvance ? '0 4px 16px hsl(var(--brand) / 0.3)' : 'none',
                 opacity: canAdvance ? 1 : 0.6, fontFamily: 'inherit', transition: 'all 200ms',
               }}
             >

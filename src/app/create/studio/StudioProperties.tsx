@@ -267,12 +267,12 @@ export function StudioProperties({ node, execState, onClose, onDataChange }: Stu
                 gap: 6,
                 padding: '7px 10px',
                 borderRadius: 7,
-                background: 'rgba(255,113,61,0.1)',
-                border: '1px solid rgba(255,113,61,0.2)',
+                background: 'hsl(var(--brand) / 0.1)',
+                border: '1px solid hsl(var(--brand) / 0.2)',
               }}>
-                <Sparkles style={{ width: 14, height: 14, color: '#ff713d' }} />
+                <Sparkles style={{ width: 14, height: 14, color: 'hsl(var(--brand))' }} />
                 <div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: '#ff713d' }}>{def.creditCost} {t('studio.props.credits')}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'hsl(var(--brand))' }}>{def.creditCost} {t('studio.props.credits')}</div>
                   <div style={{ fontSize: 9, color: 'hsl(var(--muted-foreground))' }}>{t('studio.props.per_run')}</div>
                 </div>
               </div>

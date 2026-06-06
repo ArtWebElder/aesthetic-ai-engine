@@ -14,7 +14,7 @@ interface RechargeCreditsModalProps {
 
 const PACKAGES = [
   { id: '100', credits: 100, price: 'R$ 9,90', per: 'R$ 0,099', save: null, color: '#141417', accent: false, purple: false },
-  { id: '300', credits: 300, price: 'R$ 24,90', per: 'R$ 0,083', save: '17%', color: '#ff713d', accent: true, purple: false },
+  { id: '300', credits: 300, price: 'R$ 24,90', per: 'R$ 0,083', save: '17%', color: 'hsl(var(--brand))', accent: true, purple: false },
   { id: '500', credits: 500, price: 'R$ 39,90', per: 'R$ 0,079', save: '20%', color: '#7C3AED', accent: false, purple: true },
 ];
 
@@ -263,7 +263,7 @@ const RechargeCreditsModal = ({
             onClick={() => { onClose(); window.location.href = '/app/billing'; }}
             style={{
               padding: '10px 28px', borderRadius: 10, border: 'none',
-              background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+              background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
               color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
@@ -367,7 +367,7 @@ const RechargeCreditsModal = ({
             onClick={onClose}
             style={{
               padding: '10px 32px', borderRadius: 10, border: 'none',
-              background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+              background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
               color: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
             }}
           >
@@ -406,7 +406,7 @@ const RechargeCreditsModal = ({
       >
         {/* ── Header gradient ── */}
         <div style={{
-          background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
           padding: '24px 28px 20px', position: 'relative', overflow: 'hidden',
         }}>
           <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
@@ -463,9 +463,9 @@ const RechargeCreditsModal = ({
                   style={{
                     flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
                     fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                    border: method === m ? '2px solid #ff713d' : '1px solid rgba(20,20,23,0.1)',
+                    border: method === m ? '2px solid hsl(var(--brand))' : '1px solid rgba(20,20,23,0.1)',
                     background: method === m ? '#FFF0EA' : '#fff',
-                    color: method === m ? '#ff713d' : '#8e8e96',
+                    color: method === m ? 'hsl(var(--brand))' : '#8e8e96',
                     transition: 'all 150ms',
                   }}
                 >
@@ -494,7 +494,7 @@ const RechargeCreditsModal = ({
                   background: '#fff', color: '#141417', outline: 'none',
                   transition: 'border-color 150ms',
                 }}
-                onFocus={(e) => { e.target.style.borderColor = cpfError ? '#ef4444' : '#ff713d'; }}
+                onFocus={(e) => { e.target.style.borderColor = cpfError ? '#ef4444' : 'hsl(var(--brand))'; }}
                 onBlur={(e) => { e.target.style.borderColor = cpfError ? '#ef4444' : 'rgba(20,20,23,0.12)'; }}
               />
               <p style={{ fontSize: 10.5, color: cpfError ? '#ef4444' : '#b5b5bb', margin: '4px 0 0' }}>
@@ -528,7 +528,7 @@ const RechargeCreditsModal = ({
                 {o.save && (
                   <div style={{
                     position: 'absolute', top: -10, padding: '2px 8px', borderRadius: 5,
-                    background: o.accent ? '#ff713d' : '#7C3AED',
+                    background: o.accent ? 'hsl(var(--brand))' : '#7C3AED',
                     color: '#fff', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.02em',
                     whiteSpace: 'nowrap',
                   }}>
@@ -565,7 +565,7 @@ const RechargeCreditsModal = ({
             </svg>
             <span style={{ fontSize: 11.5, color: '#5a5a60' }}>
               {t('recharge.need_more')}{' '}
-              <span style={{ color: '#ff713d', fontWeight: 600, cursor: 'pointer' }}>{t('recharge.contact_us')}</span>
+              <span style={{ color: 'hsl(var(--brand))', fontWeight: 600, cursor: 'pointer' }}>{t('recharge.contact_us')}</span>
               {' '}{t('recharge.corporate_packages')}
             </span>
           </div>
@@ -576,10 +576,10 @@ const RechargeCreditsModal = ({
             disabled={loading}
             style={{
               width: '100%', padding: '13px 0', borderRadius: 11, border: 'none', marginTop: 16,
-              background: loading ? '#d4d4d8' : 'linear-gradient(135deg, #ff713d, #FF9B70)',
+              background: loading ? '#d4d4d8' : 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
               color: '#fff', fontSize: 14.5, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
               fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-              boxShadow: loading ? 'none' : '0 4px 16px rgba(255,113,61,0.35)', transition: 'all 180ms',
+              boxShadow: loading ? 'none' : '0 4px 16px hsl(var(--brand) / 0.35)', transition: 'all 180ms',
               opacity: loading ? 0.7 : 1,
             }}
           >

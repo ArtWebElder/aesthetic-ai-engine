@@ -33,7 +33,7 @@ const PLANS = [
   },
   {
     id: 'pro', name: 'Pro', price: 'R$ 49,90', period: '/mês', credits: '500',
-    desc: 'Para criadores individuais', popular: true, accent: '#ff713d',
+    desc: 'Para criadores individuais', popular: true, accent: 'hsl(var(--brand))',
     Icon: Zap,
     features: ['500 créditos / mês', 'Recarga avulsa', 'Todos os templates', 'Export PNG, JPG, WebP', "Sem marca d'água", 'Chat AI ilimitado', 'Brand Kit básico'],
     missing: ['Multi-formato', 'Suporte prioritário'],
@@ -310,7 +310,7 @@ const Billing = () => {
               <div>
                 <div style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', fontWeight: 500, marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('billing.summary.current_plan')}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 20, fontWeight: 700, color: currentPlan === 'team' ? '#7C3AED' : currentPlan === 'pro' ? '#ff713d' : '#8e8e96' }}>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: currentPlan === 'team' ? '#7C3AED' : currentPlan === 'pro' ? 'hsl(var(--brand))' : '#8e8e96' }}>
                     {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)}
                   </span>
                   {currentPlan !== 'free' && (
@@ -330,7 +330,7 @@ const Billing = () => {
                   </span>
                 </div>
                 <div style={{ width: isMobile ? '100%' : 180, height: 6, borderRadius: 3, background: 'hsl(var(--muted))', marginTop: 6 }}>
-                  <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, #ff713d, #FF9B70)', transition: 'width 600ms ease' }} />
+                  <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', borderRadius: 3, background: 'linear-gradient(90deg, hsl(var(--brand)), hsl(var(--brand-2)))', transition: 'width 600ms ease' }} />
                 </div>
               </div>
               {daysUntilRenewal !== null && (
@@ -349,8 +349,8 @@ const Billing = () => {
                   onClick={() => setShowReloadModal(true)}
                   style={{
                     flex: isMobile ? 1 : 'none', justifyContent: 'center',
-                    padding: '9px 20px', borderRadius: 9, border: '1.5px solid #ff713d',
-                    background: 'hsl(var(--primary) / 0.1)', color: '#ff713d', fontSize: 13, fontWeight: 600,
+                    padding: '9px 20px', borderRadius: 9, border: '1.5px solid hsl(var(--brand))',
+                    background: 'hsl(var(--primary) / 0.1)', color: 'hsl(var(--brand))', fontSize: 13, fontWeight: 600,
                     cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6,
                   }}
                 >
@@ -443,15 +443,15 @@ const Billing = () => {
               return (
                 <div key={p.id} style={{
                   background: 'hsl(var(--card))', borderRadius: 14, overflow: 'hidden',
-                  border: isCurrent ? '2px solid #ff713d' : '1px solid hsl(var(--border))',
-                  boxShadow: isCurrent ? '0 4px 20px rgba(255,113,61,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
+                  border: isCurrent ? '2px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
+                  boxShadow: isCurrent ? '0 4px 20px hsl(var(--brand) / 0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
                   position: 'relative', display: 'flex', flexDirection: 'column',
                   animation: ready ? `scIn 340ms ${140 + i * 50}ms ease both` : 'none',
                 }}>
                   {isCurrent && (
                     <div style={{
                       position: 'absolute', top: 12, right: 12, padding: '3px 10px', borderRadius: 6,
-                      background: '#ff713d', color: '#fff', fontSize: 10, fontWeight: 600,
+                      background: 'hsl(var(--brand))', color: '#fff', fontSize: 10, fontWeight: 600,
                     }}>{t('billing.current_plan_badge')}</div>
                   )}
                   <div style={{ padding: '22px 20px 0' }}>
@@ -523,7 +523,7 @@ const Billing = () => {
           {/* KPI cards */}
           <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 14, marginBottom: 28 }}>
             {[
-              { label: t('billing.kpi.remaining'), value: String(currentCredits), sub: `${t('billing.summary.plan_label')}: ${planCredits} + ${t('billing.summary.bonus_label')}: ${bonusCredits}`, color: '#ff713d' },
+              { label: t('billing.kpi.remaining'), value: String(currentCredits), sub: `${t('billing.summary.plan_label')}: ${planCredits} + ${t('billing.summary.bonus_label')}: ${bonusCredits}`, color: 'hsl(var(--brand))' },
               { label: t('billing.kpi.generations'), value: '—', sub: '', color: '#7C3AED', trend: false },
               { label: t('billing.kpi.avg_daily'), value: '—', sub: '', color: '#10B981' },
             ].map((s, i) => (
@@ -566,8 +566,8 @@ const Billing = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{
                       width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: h.credits > 0 ? 'rgba(16,185,129,0.12)' : 'rgba(255,113,61,0.12)',
-                      color: h.credits > 0 ? '#10B981' : '#ff713d',
+                      background: h.credits > 0 ? 'rgba(16,185,129,0.12)' : 'hsl(var(--brand) / 0.12)',
+                      color: h.credits > 0 ? '#10B981' : 'hsl(var(--brand))',
                     }}>
                       {h.credits > 0 ? <Plus size={15} /> : <Sparkles size={15} />}
                     </div>

@@ -203,12 +203,12 @@ export default function RefinementPage() {
           <p style={{ fontSize: 14, fontWeight: 600, color: '#141417', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headline || t('refine.untitled')}</p>
         </div>
 
-        <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: '#ff713d', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{t('dashboard.feature.clone_criativo')}</span>
+        <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: 'hsl(var(--brand))', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{t('dashboard.feature.clone_criativo')}</span>
 
         <button
           onClick={() => setShowExportModal(true)}
           disabled={!hasContent}
-          style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : 0.4, fontFamily: 'inherit' }}
+          style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', color: '#fff', fontSize: 13, fontWeight: 600, cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : 0.4, fontFamily: 'inherit' }}
         >{t('refine.export')}</button>
       </header>
 
@@ -224,7 +224,7 @@ export default function RefinementPage() {
             <span style={{ fontSize: 11.5, color: 'hsl(var(--foreground))', width: 48, textAlign: 'center', fontWeight: 500 }}>{Math.round(scale * 100)}%</span>
             <button onClick={zoomIn} style={{ width: 24, height: 24, borderRadius: 5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 14, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
             <button onClick={resetZoom} style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>Reset</button>
-            {isRecomposing && <span style={{ marginLeft: 'auto', fontSize: 11, color: '#ff713d', animation: 'rfPulse 1s ease-in-out infinite' }}>{t('refine.updating')}</span>}
+            {isRecomposing && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'hsl(var(--brand))', animation: 'rfPulse 1s ease-in-out infinite' }}>{t('refine.updating')}</span>}
           </div>
 
           {/* Preview area */}
@@ -254,10 +254,10 @@ export default function RefinementPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
                 <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
-                  <Sparkles size={24} style={{ color: '#F97316' }} />
+                  <Sparkles size={24} style={{ color: 'hsl(var(--brand))' }} />
                 </div>
                 <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))' }}>{t('refine.no_creative')}</p>
-                <button onClick={() => navigate("/app/create")} style={{ color: '#ff713d', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, textDecoration: 'underline' }}>{t('refine.create_one')}</button>
+                <button onClick={() => navigate("/app/create")} style={{ color: 'hsl(var(--brand))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, textDecoration: 'underline' }}>{t('refine.create_one')}</button>
               </div>
             )}
           </div>
@@ -269,10 +269,10 @@ export default function RefinementPage() {
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
                 {versions.map((v, idx) => (
                   <button key={idx} onClick={() => selectVersion(idx)} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${selectedVersionIdx === idx ? '#ff713d' : 'rgba(20,20,23,0.1)'}`, background: selectedVersionIdx === idx ? '#FFF0EA' : '#ffffff' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${selectedVersionIdx === idx ? 'hsl(var(--brand))' : 'rgba(20,20,23,0.1)'}`, background: selectedVersionIdx === idx ? '#FFF0EA' : '#ffffff' }}>
                       <img src={v.imageBase64} alt={v.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                    <span style={{ fontSize: 9.5, fontWeight: 500, maxWidth: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selectedVersionIdx === idx ? '#ff713d' : '#8e8e96' }}>{v.label}</span>
+                    <span style={{ fontSize: 9.5, fontWeight: 500, maxWidth: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selectedVersionIdx === idx ? 'hsl(var(--brand))' : '#8e8e96' }}>{v.label}</span>
                   </button>
                 ))}
               </div>
@@ -284,7 +284,7 @@ export default function RefinementPage() {
         <div style={{ display: 'flex', flexDirection: 'column', width: 380, flexShrink: 0, background: '#ffffff' }}>
           {/* Chat header */}
           <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,#ff713d,#FF9B70)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0, position: 'relative' }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0, position: 'relative' }}>
               ✦
               <div style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: '#10B981', border: '1.5px solid #ffffff' }} />
             </div>

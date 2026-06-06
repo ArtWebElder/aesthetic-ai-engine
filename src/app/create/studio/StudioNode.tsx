@@ -889,7 +889,7 @@ export function StudioNode({
         )}
         {def.creditCost && (
           <span style={{
-            fontSize: 9, fontWeight: 600, color: '#ff713d',
+            fontSize: 9, fontWeight: 600, color: 'hsl(var(--brand))',
             background: '#ff713d15', padding: '1px 5px', borderRadius: 4,
           }}>
             {def.creditCost}cr

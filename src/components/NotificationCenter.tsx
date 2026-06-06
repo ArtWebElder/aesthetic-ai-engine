@@ -24,10 +24,10 @@ const COLOR_MAP: Record<NotificationType, string> = {
   info: '#3B82F6',
   warning: '#F59E0B',
   error: '#EF4444',
-  credit: '#F97316',
+  credit: '#ff713d',
   promo: '#8B5CF6',
   update: '#10B981',
-  billing: '#F97316',
+  billing: '#ff713d',
 };
 
 function timeAgo(dateStr: string): string {
@@ -123,7 +123,7 @@ export function NotificationCenter() {
                   display: 'flex', alignItems: 'center', gap: 4,
                 }}>
                   {notif.title}
-                  {notif.pinned && <Pin style={{ width: 10, height: 10, color: '#F97316', flexShrink: 0 }} />}
+                  {notif.pinned && <Pin style={{ width: 10, height: 10, color: 'hsl(var(--brand))', flexShrink: 0 }} />}
                 </div>
                 <div style={{
                   fontSize: 12, color: 'hsl(var(--muted-foreground))',
@@ -164,7 +164,7 @@ export function NotificationCenter() {
             onClick={() => markAllAsRead()}
             style={{
               display: 'flex', alignItems: 'center', gap: 4,
-              fontSize: 12, color: '#F97316', background: 'none',
+              fontSize: 12, color: 'hsl(var(--brand))', background: 'none',
               border: 'none', cursor: 'pointer', fontWeight: 500,
             }}
           >

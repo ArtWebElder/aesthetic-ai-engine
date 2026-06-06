@@ -137,11 +137,11 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
               return (
                 <button key={f.fmt} onClick={() => setSelectedFormat(f.fmt)} style={{
                   flex: 1, padding: "12px 10px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
-                  border: sel ? "1.5px solid #ff713d" : "1px solid rgba(20,20,23,0.08)",
+                  border: sel ? "1.5px solid hsl(var(--brand))" : "1px solid rgba(20,20,23,0.08)",
                   background: sel ? "#FFF0EA" : "#ffffff",
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: sel ? "#ff713d" : "#141417" }}>{f.label}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: sel ? "hsl(var(--brand))" : "#141417" }}>{f.label}</div>
                   <div style={{ fontSize: 11, color: "#8e8e96" }}>{f.desc}</div>
                 </button>
               );
@@ -153,10 +153,10 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
             <div style={{ marginBottom: 18 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                 <span style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em" }}>Qualidade</span>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#ff713d" }}>{quality}%</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--brand))" }}>{quality}%</span>
               </div>
               <input type="range" min={60} max={100} value={quality} onChange={(e) => setQuality(Number(e.target.value))}
-                style={{ width: "100%", accentColor: "#ff713d" }} />
+                style={{ width: "100%", accentColor: "hsl(var(--brand))" }} />
             </div>
           )}
 
@@ -168,9 +168,9 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
               return (
                 <button key={s.id} onClick={() => setSelectedSize(s.id)} style={{
                   padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
-                  border: sel ? "1.5px solid #ff713d" : "1px solid rgba(20,20,23,0.08)",
+                  border: sel ? "1.5px solid hsl(var(--brand))" : "1px solid rgba(20,20,23,0.08)",
                   background: sel ? "#FFF0EA" : "#ffffff",
-                  fontSize: 12, fontWeight: sel ? 600 : 400, color: sel ? "#ff713d" : "#5a5a60",
+                  fontSize: 12, fontWeight: sel ? 600 : 400, color: sel ? "hsl(var(--brand))" : "#5a5a60",
                 }}>
                   {s.label}{s.w > 0 ? ` (${s.w}×${s.h})` : ""}
                 </button>
@@ -192,10 +192,10 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
           {/* Export button */}
           <button onClick={handleExport} disabled={exporting} style={{
             width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
-            background: "linear-gradient(135deg, #ff713d, #FF9B70)", color: "#fff",
+            background: "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))", color: "#fff",
             fontSize: 14, fontWeight: 600, cursor: exporting ? "default" : "pointer",
             fontFamily: "inherit", opacity: exporting ? 0.7 : 1,
-            boxShadow: "0 3px 12px rgba(255,113,61,0.3)",
+            boxShadow: "0 3px 12px hsl(var(--brand) / 0.3)",
           }}>
             {exporting ? "Exportando..." : `Baixar ${selectedFormat.toUpperCase()}`}
           </button>

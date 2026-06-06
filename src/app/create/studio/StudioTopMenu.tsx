@@ -84,7 +84,7 @@ export function StudioTopMenu({
           width: 22,
           height: 22,
           borderRadius: 6,
-          background: 'linear-gradient(135deg, #ff713d, #FF9B70)',
+          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

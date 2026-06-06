@@ -222,7 +222,7 @@ export function FlowSelector({ onSelectFlow, onEmptyFlow, initialStyleFlow, onCl
                 onClick={onEmptyFlow}
                 style={{ ...cardBase, border: '1.5px dashed hsl(var(--border))', background: 'transparent' }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLElement).style.borderColor = '#ff713d';
+                  (e.currentTarget as HTMLElement).style.borderColor = 'hsl(var(--brand))';
                   (e.currentTarget as HTMLElement).style.background = '#ff713d08';
                 }}
                 onMouseLeave={e => {

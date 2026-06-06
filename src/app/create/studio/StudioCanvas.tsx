@@ -429,7 +429,7 @@ export function StudioCanvas({
             <path
               d={tempConnectionPath}
               fill="none"
-              stroke="#ff713d"
+              stroke="hsl(var(--brand))"
               strokeWidth={2}
               strokeLinecap="round"
               strokeDasharray="6 4"

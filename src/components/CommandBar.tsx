@@ -43,9 +43,9 @@ const ShortcutBadge = ({ char }: { char: string }) => (
       borderRadius: 5,
       fontFamily: 'monospace',
       fontWeight: 600,
-      background: 'rgba(255,113,61,0.10)',
-      color: '#ff713d',
-      border: '1px solid rgba(255,113,61,0.18)',
+      background: 'hsl(var(--brand) / 0.10)',
+      color: 'hsl(var(--brand))',
+      border: '1px solid hsl(var(--brand) / 0.18)',
     }}
   >
     {char}
@@ -86,7 +86,7 @@ const CommandBar = () => {
               onSelect={() => handleSelect(action.route)}
               className="cursor-pointer"
             >
-              <action.icon className="mr-3 h-4 w-4" style={{ color: '#ff713d' }} />
+              <action.icon className="mr-3 h-4 w-4" style={{ color: 'hsl(var(--brand))' }} />
               <span className="flex-1">
                 {t(action.labelKey)}
               </span>

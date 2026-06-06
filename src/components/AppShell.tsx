@@ -90,7 +90,7 @@ const AppShell = () => {
   // if (loading) {
   //   return (
   //     <div className="min-h-screen bg-[#141417] flex items-center justify-center">
-  //       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff713d] to-[#FF9B70] flex items-center justify-center animate-pulse">
+  //       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[hsl(var(--brand))] to-[hsl(var(--brand-2))] flex items-center justify-center animate-pulse">
   //         <span className="text-white font-extrabold text-lg">C</span>
   //       </div>
   //     </div>
@@ -204,7 +204,7 @@ const AppShell = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                     <div style={{
                       width: 40, height: 40, borderRadius: 10,
-                      background: 'linear-gradient(135deg, rgba(255,113,61,0.12), rgba(255,155,112,0.08))',
+                      background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EA580C',
                     }}>
                       <Mail style={{ width: 20, height: 20 }} />
@@ -244,7 +244,7 @@ const AppShell = () => {
                     disabled={otpLoading || !otpCode.trim()}
                     style={{
                       width: '100%', padding: '11px 0', borderRadius: 10, border: 'none',
-                      background: 'linear-gradient(135deg,#ff713d,#FF9B70)', color: '#fff',
+                      background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', color: '#fff',
                       fontSize: 14, fontWeight: 600, cursor: otpLoading || !otpCode.trim() ? 'default' : 'pointer',
                       fontFamily: 'inherit', opacity: otpLoading || !otpCode.trim() ? 0.5 : 1,
                       marginBottom: 12, transition: 'opacity 150ms',
@@ -286,7 +286,7 @@ const AppShell = () => {
           (pathname.startsWith('/app/create') || pathname.startsWith('/app/refine')) ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
             backgroundColor: '#FAFAFA',
             backgroundImage: [
-              'linear-gradient(180deg, rgba(255,113,61,0.04) 0%, transparent 30%)',
+              'linear-gradient(180deg, hsl(var(--brand) / 0.04) 0%, transparent 30%)',
               'linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px)',
               'linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
             ].join(','),

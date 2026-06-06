@@ -34,7 +34,7 @@ function CreditTooltip({ credits, children }: { credits: number; children: React
           border: '1px solid hsl(var(--border))',
         }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill="currentColor" style={{ color: 'hsl(var(--brand))', flexShrink: 0 }}>
               <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
             </svg>
             {credits} créditos restantes
@@ -138,10 +138,10 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
             fontFamily: 'inherit',
           }}
         >
-          <svg width={isMobile ? 14 : 15} height={isMobile ? 14 : 15} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#ff713d', flexShrink: 0 }}>
+          <svg width={isMobile ? 14 : 15} height={isMobile ? 14 : 15} viewBox="0 0 24 24" fill="currentColor" style={{ color: 'hsl(var(--brand))', flexShrink: 0 }}>
             <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
           </svg>
-          <span style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: '#ff713d' }}>{credits}</span>
+          <span style={{ fontSize: isMobile ? 13 : 14, fontWeight: 700, color: 'hsl(var(--brand))' }}>{credits}</span>
           {!isMobile && <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>{t('credits.balance')}</span>}
         </button>
       </CreditTooltip>
@@ -153,11 +153,11 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
         style={{
           padding: '5px 14px',
           borderRadius: 8,
-          border: '1.5px solid #ff713d',
+          border: '1.5px solid hsl(var(--brand))',
           background: 'hsl(var(--primary) / 0.1)',
           fontSize: 12.5,
           fontWeight: 600,
-          color: '#ff713d',
+          color: 'hsl(var(--brand))',
         }}
       >
         <Zap style={{ width: 13, height: 13 }} />
@@ -173,7 +173,7 @@ const Topbar = ({ onMenuToggle }: TopbarProps) => {
         style={{
           width: isMobile ? 28 : 30,
           height: isMobile ? 28 : 30,
-          background: 'linear-gradient(135deg, #ff713d, #141417)',
+          background: 'linear-gradient(135deg, hsl(var(--brand)), #141417)',
           fontSize: isMobile ? 10.5 : 11.5,
           fontWeight: 700,
           flexShrink: 0,

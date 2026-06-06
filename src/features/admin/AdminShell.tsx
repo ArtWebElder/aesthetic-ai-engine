@@ -37,7 +37,7 @@ export function AdminShell() {
     ? user.email.slice(0, 2).toUpperCase()
     : 'AD';
 
-  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='rgba(255,113,61,0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
+  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='hsl(var(--brand) / 0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', width: '100%', background: '#f5f5f3', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>

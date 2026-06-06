@@ -34,6 +34,18 @@
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 24 95% 53%;
+
+    /* ── Brand tokens (single source of truth for the orange identity) ──
+       Edit these to re-skin the brand across the whole app at once.
+       --brand = #ff713d, --brand-2 = #FF9B70 (HSL triplets so `hsl(var(--brand) / a)` works). */
+    --brand: 16 100% 62%;
+    --brand-2: 18 100% 72%;
+    --brand-foreground: 0 0% 100%;
+    --brand-gradient: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)));
+    --shadow-brand: 0 4px 16px hsl(var(--brand) / 0.3);
+    --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.06);
+    --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.08);
+    --shadow-lg: 0 12px 40px hsl(0 0% 0% / 0.12);
   }
 
   .dark {
@@ -64,6 +76,16 @@
     --sidebar-accent-foreground: 40 4% 90%;
     --sidebar-border: 220 6% 18%;
     --sidebar-ring: 16 100% 62%;
+
+    /* Brand stays the same vivid orange in dark mode (it was theme-agnostic inline). */
+    --brand: 16 100% 62%;
+    --brand-2: 18 100% 72%;
+    --brand-foreground: 0 0% 100%;
+    --brand-gradient: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)));
+    --shadow-brand: 0 4px 16px hsl(var(--brand) / 0.35);
+    --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.3);
+    --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.4);
+    --shadow-lg: 0 12px 40px hsl(0 0% 0% / 0.5);
   }
 }
 

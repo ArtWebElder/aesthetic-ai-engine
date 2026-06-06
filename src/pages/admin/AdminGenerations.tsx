@@ -8,7 +8,7 @@ import { useI18n } from '@/i18n';
 type Log = AdminGeneration & { userName?: string; feature?: string; tokens?: number; duration?: string; time?: string };
 
 const FEATURE_STYLES: Record<string, React.CSSProperties> = {
-  'Ecom Banner': { background: 'rgba(255,113,61,0.08)', color: '#ff713d' },
+  'Ecom Banner': { background: 'hsl(var(--brand) / 0.08)', color: 'hsl(var(--brand))' },
   'Social Post': { background: 'rgba(99,102,241,0.08)', color: '#6366f1' },
   'Photoshoot': { background: 'rgba(245,158,11,0.08)', color: '#F59E0B' },
 };
@@ -116,8 +116,8 @@ export default function AdminGenerations() {
           <button key={f} onClick={() => setStatusFilter(f)} style={{
             padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
             background: statusFilter === f ? '#FFF0EA' : 'transparent',
-            border: statusFilter === f ? '1px solid rgba(255,113,61,0.2)' : '1px solid transparent',
-            color: statusFilter === f ? '#ff713d' : '#8e8e96',
+            border: statusFilter === f ? '1px solid hsl(var(--brand) / 0.2)' : '1px solid transparent',
+            color: statusFilter === f ? 'hsl(var(--brand))' : '#8e8e96',
           }}>
             {f === 'all' ? `${t('admin.generations.filter.all')} (${logs.length})` : f === 'success' ? `${t('admin.generations.filter.success')} (${successCount})` : `${t('admin.generations.filter.error')} (${errorCount})`}
           </button>
