@@ -9,6 +9,7 @@ import CommandBar from './CommandBar';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Mail, X, RefreshCw, CheckCircle, ShieldCheck } from 'lucide-react';
 import CreditUpsell from '@/components/creatyng/CreditUpsell';
+import { Button } from '@/components/ui/button';
 
 const AppShell = () => {
   const { user, loading, emailVerified } = useAuth();
@@ -239,19 +240,15 @@ const AppShell = () => {
                     <p style={{ fontSize: 12, color: '#EF4444', marginBottom: 8 }}>{otpError}</p>
                   )}
 
-                  <button
+                  <Button
+                    variant="gradient"
                     onClick={handleVerifyOtp}
                     disabled={otpLoading || !otpCode.trim()}
-                    style={{
-                      width: '100%', padding: '11px 0', borderRadius: 10, border: 'none',
-                      background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', color: '#fff',
-                      fontSize: 14, fontWeight: 600, cursor: otpLoading || !otpCode.trim() ? 'default' : 'pointer',
-                      fontFamily: 'inherit', opacity: otpLoading || !otpCode.trim() ? 0.5 : 1,
-                      marginBottom: 12, transition: 'opacity 150ms',
-                    }}
+                    className="w-full"
+                    style={{ padding: '11px 0', fontSize: 14, marginBottom: 12, height: 'auto' }}
                   >
                     {otpLoading ? t('verify_email.verifying') : t('verify_email.verify_btn')}
-                  </button>
+                  </Button>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <button

@@ -12,6 +12,7 @@ import { type RefinementOverrides } from "@/features/editor/engine/chatApply";
 import { exportCompositionToPNG } from "@/features/editor/engine/htmlExport";
 import { applyChatToComposition } from "@/features/editor/engine/chatApplyComposition";
 import { ExportModal } from "@/features/editor/wizard/ExportModal";
+import { Button } from "@/components/ui/button";
 import type { CreatygnComposition } from "@/types/composition";
 import type { TextPresetConfig, ColorConfig, CompositionConfig } from "@/types/preset";
 
@@ -205,11 +206,12 @@ export default function RefinementPage() {
 
         <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: 'hsl(var(--brand))', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{t('dashboard.feature.clone_criativo')}</span>
 
-        <button
+        <Button
+          variant="gradient"
           onClick={() => setShowExportModal(true)}
           disabled={!hasContent}
-          style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', color: '#fff', fontSize: 13, fontWeight: 600, cursor: hasContent ? 'pointer' : 'default', opacity: hasContent ? 1 : 0.4, fontFamily: 'inherit' }}
-        >{t('refine.export')}</button>
+          style={{ padding: '7px 16px', fontSize: 13, height: 'auto' }}
+        >{t('refine.export')}</Button>
       </header>
 
       {/* Main split */}

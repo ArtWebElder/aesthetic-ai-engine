@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/services/supabaseClient';
 import { Logo } from '@/components/Logo';
+import { Button } from '@/components/ui/button';
 
 const primaryNavItems = [
   { labelKey: 'nav.dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
@@ -156,20 +157,15 @@ const SidebarNav = ({ onClose, forceExpanded }: SidebarNavProps) => {
 
       {/* New Creation CTA */}
       <div style={{ margin: 14 }}>
-        <button
+        <Button
+          variant="gradient"
           onClick={() => handleNav('/app/create')}
-          className="w-full flex items-center justify-center gap-[8px] text-white rounded-[10px] transition-opacity hover:opacity-90"
-          style={{
-            padding: '10px 0',
-            fontSize: 13.5,
-            fontWeight: 600,
-            background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-            boxShadow: '0 3px 10px hsl(var(--brand) / 0.3)',
-          }}
+          className="w-full"
+          style={{ padding: '10px 0', fontSize: 13.5, height: 'auto' }}
         >
           <Plus style={{ width: 17, height: 17 }} />
           {!isCollapsed && <span>{t('nav.new_creation')}</span>}
-        </button>
+        </Button>
       </div>
 
       {/* Studio button (secondary) */}
