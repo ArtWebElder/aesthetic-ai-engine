@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, LayoutGrid, List, MoreHorizontal,
-  FolderOpen, Image, ExternalLink, Copy, Trash2, Edit2, Download,
+  FolderOpen, Image, ExternalLink, Copy, Trash2, Edit2, Download, Workflow,
 } from 'lucide-react';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
 import { Button } from '@/components/ui/button';
 import { listProjects, deleteProject, createProject } from '@/features/projects/store';
+import { listStudioProjects, deleteStudioProject, type StudioProject } from '@/services/studioProjects';
 import { useI18n } from '@/i18n';
 import { useToast } from '@/features/toast/useToast';
 import type { Project } from '@/types/spec';
@@ -72,6 +73,8 @@ const Projects = () => {
   const [hovId, setHovId] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [studioFlows, setStudioFlows] = useState<StudioProject[]>([]);
+  const [confirmDeleteFlow, setConfirmDeleteFlow] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches);
   useEffect(() => {
@@ -83,6 +86,18 @@ const Projects = () => {
 
   useEffect(() => { setReady(true); }, []);
   useEffect(() => { setProjects(listProjects()); }, []);
+  useEffect(() => { listStudioProjects().then(setStudioFlows); }, []);
+
+  const handleDeleteFlow = async (id: string) => {
+    try {
+      await deleteStudioProject(id);
+      setStudioFlows(prev => prev.filter(f => f.id !== id));
+      toast.success(t('projects.toast.deleted'));
+    } catch {
+      toast.error(t('projects.toast.delete_failed'));
+    }
+    setConfirmDeleteFlow(null);
+  };
   useEffect(() => {
     const h = () => setMenuOpen(null);
     document.addEventListener('click', h);
@@ -386,10 +401,65 @@ const Projects = () => {
         </div>
       )}
 
+      {/* Studio flows — saved node-editor projects (Supabase) */}
+      {studioFlows.length > 0 && (
+        <div style={{ marginTop: 36, animation: ready ? 'fdUp 450ms 120ms ease both' : 'none' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+            <Workflow size={16} color="hsl(var(--brand))" />
+            <h2 style={{ fontSize: 16, fontWeight: 700 }}>{t('projects.studio_flows_title')}</h2>
+            <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{studioFlows.length}</span>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: 14,
+          }}>
+            {studioFlows.map(f => (
+              <div
+                key={f.id}
+                onClick={() => navigate(`/app/create/studio?project=${f.id}`)}
+                style={{
+                  cursor: 'pointer', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
+                  borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                }}
+              >
+                <div style={{
+                  aspectRatio: '16 / 10',
+                  background: f.thumbnail ? `center/cover no-repeat url(${f.thumbnail})` : 'hsl(var(--muted))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {!f.thumbnail && <Workflow size={26} color="hsl(var(--muted-foreground))" />}
+                </div>
+                <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteFlow(f.id); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--muted-foreground))', display: 'flex', padding: 2, flexShrink: 0 }}
+                    title={t('projects.delete_confirm.confirm')}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <ConfirmModal
         open={confirmDelete !== null}
         onConfirm={() => confirmDelete && handleDelete(confirmDelete)}
         onCancel={() => setConfirmDelete(null)}
+        title={t('projects.delete_confirm.title')}
+        description={t('projects.delete_confirm.desc')}
+        confirmLabel={t('projects.delete_confirm.confirm')}
+        variant="danger"
+      />
+
+      <ConfirmModal
+        open={confirmDeleteFlow !== null}
+        onConfirm={() => confirmDeleteFlow && handleDeleteFlow(confirmDeleteFlow)}
+        onCancel={() => setConfirmDeleteFlow(null)}
         title={t('projects.delete_confirm.title')}
         description={t('projects.delete_confirm.desc')}
         confirmLabel={t('projects.delete_confirm.confirm')}

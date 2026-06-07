@@ -37,6 +37,20 @@ export async function listStudioProjects(): Promise<StudioProject[]> {
   return (data ?? []) as StudioProject[];
 }
 
+/** Fetch a single saved Studio project by id (e.g. to open it from /projects). */
+export async function getStudioProject(id: string): Promise<StudioProject | null> {
+  const { data, error } = await supabase
+    .from('studio_projects')
+    .select('id, name, flow_id, nodes, connections, thumbnail, updated_at')
+    .eq('id', id)
+    .single();
+  if (error) {
+    console.warn('[studioProjects] get failed:', error.message);
+    return null;
+  }
+  return data as StudioProject;
+}
+
 /** Insert a new project or update an existing one (by id). Returns the project id. */
 export async function saveStudioProject(input: SaveStudioProjectInput): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();

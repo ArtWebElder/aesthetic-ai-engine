@@ -1458,5 +1458,7 @@
   "export.download": "Download {fmt}",
   "studio.node.quality_eco": "Fast (HD)",
   "studio.node.quality_pro": "Pro · Clarity",
-  "studio.node.quality_ultra": "Ultra · Clarity"
+  "studio.node.quality_ultra": "Ultra · Clarity",
+  "projects.studio_flows_title": "Studio flows",
+  "projects.toast.delete_failed": "Could not delete"
 }

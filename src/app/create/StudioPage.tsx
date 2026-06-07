@@ -36,7 +36,7 @@ import { StudioNodePanel } from './studio/StudioNodePanel';
 import { StudioProperties } from './studio/StudioProperties';
 import { FlowSelector } from './studio/FlowSelector';
 import { StudioProjectsModal } from './studio/StudioProjectsModal';
-import { saveStudioProject, type StudioProject } from '@/services/studioProjects';
+import { saveStudioProject, getStudioProject, type StudioProject } from '@/services/studioProjects';
 import { FLOW_STYLES } from './studio/flowStyles';
 import { useI18n } from '@/i18n';
 import { useCreditStore } from '@/stores/useCreditStore';
@@ -140,9 +140,12 @@ export function StudioPage() {
   // on their styles; flows WITHOUT styles load directly (see effect below).
   const [searchParams] = useSearchParams();
   const flowParam = searchParams.get('flow');
+  const projectParam = searchParams.get('project');
   const flowParamHasStyles = !!flowParam && !!PRESET_FLOWS[flowParam] && (FLOW_STYLES[flowParam]?.length ?? 0) > 0;
   const [initialStyleFlow] = useState<string | null>(() => (flowParamHasStyles ? flowParam : null));
   const [showFlowSelector, setShowFlowSelector] = useState(() => {
+    // Opening a saved project (?project=) loads directly — no selector.
+    if (projectParam) return false;
     // Don't flash the full selector for a no-styles flow param — it loads directly.
     if (flowParam && PRESET_FLOWS[flowParam] && (FLOW_STYLES[flowParam]?.length ?? 0) === 0) return false;
     return true;
@@ -620,6 +623,17 @@ export function StudioPage() {
     setShowFlowSelector(false);
     if (isMobile) fitToView(nextNodes);
   }, [pushSnapshot, isMobile, fitToView]);
+
+  // Opening a saved project from /projects (?project=<id>) → fetch and load it.
+  const didInitProjectParam = useRef(false);
+  useEffect(() => {
+    if (didInitProjectParam.current || !projectParam) return;
+    didInitProjectParam.current = true;
+    (async () => {
+      const proj = await getStudioProject(projectParam);
+      if (proj) handleOpenProject(proj);
+    })();
+  }, [projectParam, handleOpenProject]);
 
   // Dashboard card with ?flow=<no-styles flow> → load it directly (styles flows open
   // the selector on their styles via initialStyleFlow instead).
