@@ -570,12 +570,15 @@ ${(node.data.customPrompt as string) ? `ADDITIONAL INSTRUCTIONS: ${node.data.cus
 
       // 2× or 4×; cap input dimension so the request stays under the 6MB Edge limit.
       const scale = Math.min(4, Math.max(2, (node.data.scale as number) || 4));
+      // Quality tier: eco = Real-ESRGAN (fast), pro/ultra = Clarity Upscaler (premium).
+      const tier = ['eco', 'pro', 'ultra'].includes(String(node.data.quality))
+        ? String(node.data.quality) : 'eco';
       const safeImage = await resizeImageIfNeeded(image, 1600);
 
       const resp = await fetch(`${supabaseUrl}/functions/v1/upscale-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-        body: JSON.stringify({ image: safeImage, scale }),
+        body: JSON.stringify({ image: safeImage, scale, tier }),
       });
       if (!resp.ok) {
         const err = await resp.text();

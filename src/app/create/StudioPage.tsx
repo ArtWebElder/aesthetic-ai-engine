@@ -308,7 +308,15 @@ export function StudioPage() {
       .filter(n => n.type === 'reframe_ai')
       .reduce((sum, n) => sum + Math.max(1, ((n.data.ratios as string) || (n.data.ratio as string) || '9:16').split(',').filter(Boolean).length), 0);
     const baseCost = flowCostKey === 'reframe-ai' ? 0 : calculateCost(flowCostKey);
-    const creditCost = baseCost + reframeFormats * perReframe;
+    // upscale Pro/Ultra (Clarity) cost more than the eco base already in baseCost.
+    // Charge the upgrade delta over eco (eco=1, pro=2 → +1, ultra=5 → +4) per node.
+    const upscaleExtra = nodes
+      .filter(n => n.type === 'upscale')
+      .reduce((sum, n) => {
+        const q = String(n.data.quality || 'eco');
+        return sum + (q === 'ultra' ? 4 : q === 'pro' ? 1 : 0);
+      }, 0);
+    const creditCost = baseCost + reframeFormats * perReframe + upscaleExtra;
     // Free flows (0 credits, e.g. remove-bg Eco) skip the debit call entirely.
     if (creditCost > 0) {
       try {

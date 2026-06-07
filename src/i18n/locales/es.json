@@ -1457,5 +1457,8 @@
   "export.resize_warning": "⚠️ Redimensionar a un formato diferente puede recortar partes del creativo. Para mejor resultado, genera un nuevo creativo directamente en el formato deseado ({credits} créditos).",
   "export.free_note": "✓ Exportación gratis — sin usar créditos",
   "export.exporting": "Exportando...",
-  "export.download": "Descargar {fmt}"
+  "export.download": "Descargar {fmt}",
+  "studio.node.quality_eco": "Rápido (HD)",
+  "studio.node.quality_pro": "Pro · Clarity",
+  "studio.node.quality_ultra": "Ultra · Clarity"
 }

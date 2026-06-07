@@ -1455,5 +1455,8 @@
   "export.resize_warning": "⚠️ Resizing to a different format may crop parts of the creative. For best results, generate a new creative directly in the target format ({credits} credits).",
   "export.free_note": "✓ Free export — no credits used",
   "export.exporting": "Exporting...",
-  "export.download": "Download {fmt}"
+  "export.download": "Download {fmt}",
+  "studio.node.quality_eco": "Fast (HD)",
+  "studio.node.quality_pro": "Pro · Clarity",
+  "studio.node.quality_ultra": "Ultra · Clarity"
 }

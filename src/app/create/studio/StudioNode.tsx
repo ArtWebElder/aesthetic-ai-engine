@@ -459,6 +459,16 @@ function NodeContent({
             onChange={(v) => onDataChange(node.id, 'scale', v)}
             onMouseDown={e => e.stopPropagation()}
           />
+          <StudioSelect
+            defaultValue={String((node.data.quality as string) || 'eco')}
+            options={[
+              { value: 'eco', label: t('studio.node.quality_eco') },
+              { value: 'pro', label: t('studio.node.quality_pro') },
+              { value: 'ultra', label: t('studio.node.quality_ultra') },
+            ]}
+            onChange={(v) => onDataChange(node.id, 'quality', v)}
+            onMouseDown={e => e.stopPropagation()}
+          />
           <OutputPreview output={output} />
           {runBtn}
         </div>
