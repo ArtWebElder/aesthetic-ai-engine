@@ -98,5 +98,93 @@ export const FLOW_STYLES: Record<string, StyleTemplate[]> = {
         assets: 'YouTube icons, analytics paper, green growth arrow, shocked portrait',
       },
     },
+    {
+      id: 'gaming-epico-neon',
+      name: 'Gaming Épico',
+      vibe: 'Gameplay intenso com energia e ação explosiva',
+      color: '#8b5cf6',
+      fields: {
+        style: 'epic gaming YouTube thumbnail, dynamic character cutout, vibrant game scene background; huge bold title, white and neon fill, thick black outline, 3D depth',
+        lighting: 'electric blue and purple neon glow, high contrast',
+        assets: 'game character, explosion effects, controller, neon particles, energy bolts',
+      },
+    },
+    {
+      id: 'reacao-choque-setas',
+      name: 'Reação Chocada',
+      vibe: 'Reação exagerada com expressão de choque e setas',
+      color: '#f59e0b',
+      fields: {
+        style: 'high CTR reaction thumbnail, shocked face cutout with open mouth, bright contrasting background; huge bold title, yellow fill, red outline, arrows and circles',
+        lighting: 'bright punchy studio lighting, strong face highlights',
+        assets: 'shocked portrait, red arrows, circle highlight, emoji, bold question mark',
+      },
+    },
+    {
+      id: 'tech-review-clean',
+      name: 'Tech Review',
+      vibe: 'Análise de tecnologia limpa e moderna',
+      color: '#3b82f6',
+      fields: {
+        style: 'clean modern tech review thumbnail, product floating center, minimal gradient background; bold condensed title, white fill, subtle accent',
+        lighting: 'soft studio softbox lighting, gentle reflections',
+        assets: 'gadget product, spec icons, clean grid, accent glow',
+      },
+    },
+    {
+      id: 'vlog-lifestyle-quente',
+      name: 'Vlog Lifestyle',
+      vibe: 'Rotina e lifestyle com clima quente e pessoal',
+      color: '#fb923c',
+      fields: {
+        style: 'warm lifestyle vlog thumbnail, candid portrait, cozy real-life background; friendly bold title, white fill, soft shadow',
+        lighting: 'warm golden hour natural light',
+        assets: 'candid portrait, lifestyle scene, handwritten accent, soft bokeh',
+      },
+    },
+    {
+      id: 'fitness-transformacao',
+      name: 'Transformação Fitness',
+      vibe: 'Antes e depois com energia e foco no corpo',
+      color: '#16a34a',
+      fields: {
+        style: 'high energy fitness transformation thumbnail, before and after split, gym background; huge bold title, white and green fill, heavy outline',
+        lighting: 'dramatic gym spotlight, strong rim light on muscles',
+        assets: 'before after bodies, dumbbells, green arrow, progress numbers',
+      },
+    },
+    {
+      id: 'beleza-glow-pastel',
+      name: 'Beleza Glow',
+      vibe: 'Beleza e maquiagem com brilho suave e elegante',
+      color: '#ec4899',
+      fields: {
+        style: 'elegant beauty makeup thumbnail, glowing portrait close-up, soft pastel background; clean bold title, white fill, gold accent',
+        lighting: 'soft glamour ring light, dewy glow highlights',
+        assets: 'beauty portrait, makeup products, sparkle accents, pastel gradient',
+      },
+    },
+    {
+      id: 'podcast-corte-estudio',
+      name: 'Corte de Podcast',
+      vibe: 'Corte viral de podcast com clima de estúdio',
+      color: '#a855f7',
+      fields: {
+        style: 'viral podcast clip thumbnail, speaker cutout, studio mic background; bold title with quote, white and yellow fill, dark outline',
+        lighting: 'moody studio rim lighting, warm key light',
+        assets: 'podcast microphone, headphones, speaker portrait, quote marks',
+      },
+    },
+    {
+      id: 'curiosidades-top10',
+      name: 'Top 10 Curiosidades',
+      vibe: 'Lista de curiosidades com clima de descoberta',
+      color: '#f97316',
+      fields: {
+        style: 'intriguing top 10 facts thumbnail, central curious image, collage background; huge bold number, white and orange fill, 3D blocks',
+        lighting: 'mysterious cinematic glow, spotlight on subject',
+        assets: 'big number, question marks, curious objects, collage cutouts, arrows',
+      },
+    },
   ],
 };
