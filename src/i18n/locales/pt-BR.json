@@ -1444,5 +1444,18 @@
   "studio.projects.saved": "Projeto salvo!",
   "studio.projects.save_error": "Não foi possível salvar. Aplique a migration studio_projects no Supabase.",
   "studio.projects.name_prompt": "Nome do projeto:",
-  "studio.projects.empty_canvas": "Adicione alguns nodes antes de salvar."
+  "studio.projects.empty_canvas": "Adicione alguns nodes antes de salvar.",
+  "export.title": "Exportar criativo",
+  "export.subtitle": "Escolha formato e tamanho",
+  "export.fmt_desc.png": "Alta qualidade",
+  "export.fmt_desc.jpg": "Menor tamanho",
+  "export.fmt_desc.webp": "Moderno",
+  "export.format_label": "Formato",
+  "export.quality_label": "Qualidade",
+  "export.size_label": "Tamanho",
+  "export.size_original": "Original",
+  "export.resize_warning": "⚠️ Redimensionar para um formato diferente pode cortar partes do criativo. Para melhor resultado, gere um novo criativo diretamente no formato desejado ({credits} créditos).",
+  "export.free_note": "✓ Export gratuito — sem uso de créditos",
+  "export.exporting": "Exportando...",
+  "export.download": "Baixar {fmt}"
 }

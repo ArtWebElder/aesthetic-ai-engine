@@ -2,6 +2,7 @@
 // CREATYNG — Export Modal with resize presets + format conversion (canvas-based, no AI, no credits)
 
 import { useState } from "react";
+import { useI18n } from "@/i18n";
 
 interface ExportModalProps {
   open: boolean;
@@ -11,10 +12,10 @@ interface ExportModalProps {
 
 type OutputFormat = "png" | "jpg" | "webp";
 
-const FORMAT_CARDS: Array<{ fmt: OutputFormat; label: string; desc: string }> = [
-  { fmt: "png", label: "PNG", desc: "Alta qualidade" },
-  { fmt: "jpg", label: "JPG", desc: "Menor tamanho" },
-  { fmt: "webp", label: "WebP", desc: "Moderno" },
+const FORMAT_CARDS: Array<{ fmt: OutputFormat; label: string; descKey: string }> = [
+  { fmt: "png", label: "PNG", descKey: "export.fmt_desc.png" },
+  { fmt: "jpg", label: "JPG", descKey: "export.fmt_desc.jpg" },
+  { fmt: "webp", label: "WebP", descKey: "export.fmt_desc.webp" },
 ];
 
 const SIZE_PRESETS = [
@@ -71,6 +72,7 @@ function resizeAndDownload(imgSrc: string, targetW: number, targetH: number, for
 }
 
 export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
+  const { t } = useI18n();
   const [selectedFormat, setSelectedFormat] = useState<OutputFormat>("png");
   const [selectedSize, setSelectedSize] = useState("original");
   const [quality, setQuality] = useState(90);
@@ -116,8 +118,8 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
             <img src={imageBase64} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>Exportar criativo</h3>
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>Escolha formato e tamanho</p>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff" }}>{t('export.title')}</h3>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 2 }}>{t('export.subtitle')}</p>
           </div>
           <button onClick={onClose} style={{
             position: "absolute", top: 14, right: 14,
@@ -130,7 +132,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
         {/* Body */}
         <div style={{ padding: "20px 24px 24px" }}>
           {/* Format */}
-          <div style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Formato</div>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>{t('export.format_label')}</div>
           <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
             {FORMAT_CARDS.map((f) => {
               const sel = selectedFormat === f.fmt;
@@ -142,7 +144,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: sel ? "hsl(var(--brand))" : "#141417" }}>{f.label}</div>
-                  <div style={{ fontSize: 11, color: "#8e8e96" }}>{f.desc}</div>
+                  <div style={{ fontSize: 11, color: "#8e8e96" }}>{t(f.descKey)}</div>
                 </button>
               );
             })}
@@ -152,7 +154,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
           {selectedFormat !== "png" && (
             <div style={{ marginBottom: 18 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em" }}>Qualidade</span>
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em" }}>{t('export.quality_label')}</span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: "hsl(var(--brand))" }}>{quality}%</span>
               </div>
               <input type="range" min={60} max={100} value={quality} onChange={(e) => setQuality(Number(e.target.value))}
@@ -161,7 +163,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
           )}
 
           {/* Size presets */}
-          <div style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Tamanho</div>
+          <div style={{ fontSize: 11.5, fontWeight: 600, color: "#8e8e96", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>{t('export.size_label')}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
             {SIZE_PRESETS.map((s) => {
               const sel = selectedSize === s.id;
@@ -172,7 +174,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
                   background: sel ? "#FFF0EA" : "#ffffff",
                   fontSize: 12, fontWeight: sel ? 600 : 400, color: sel ? "hsl(var(--brand))" : "#5a5a60",
                 }}>
-                  {s.label}{s.w > 0 ? ` (${s.w}×${s.h})` : ""}
+                  {s.id === "original" ? t('export.size_original') : s.label}{s.w > 0 ? ` (${s.w}×${s.h})` : ""}
                 </button>
               );
             })}
@@ -181,11 +183,11 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
           {/* Warning when changing size */}
           {selectedSize !== "original" ? (
             <div style={{ padding: "10px 14px", borderRadius: 10, background: "#FFFBEB", border: "1px solid #FDE68A", marginBottom: 18, fontSize: 11.5, color: "#92400E", lineHeight: 1.5 }}>
-              ⚠️ Redimensionar para um formato diferente pode cortar partes do criativo. Para melhor resultado, gere um novo criativo diretamente no formato desejado (12 créditos).
+              {t('export.resize_warning', { credits: 12 })}
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 6, justifyContent: "center", color: "#10B981", fontSize: 11, marginBottom: 18, fontWeight: 500 }}>
-              ✓ Export gratuito — sem uso de créditos
+              {t('export.free_note')}
             </div>
           )}
 
@@ -197,7 +199,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
             fontFamily: "inherit", opacity: exporting ? 0.7 : 1,
             boxShadow: "0 3px 12px hsl(var(--brand) / 0.3)",
           }}>
-            {exporting ? "Exportando..." : `Baixar ${selectedFormat.toUpperCase()}`}
+            {exporting ? t('export.exporting') : t('export.download', { fmt: selectedFormat.toUpperCase() })}
           </button>
         </div>
       </div>

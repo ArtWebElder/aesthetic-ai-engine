@@ -1444,5 +1444,18 @@
   "studio.projects.saved": "¡Proyecto guardado!",
   "studio.projects.save_error": "No se pudo guardar. Aplica la migración studio_projects en Supabase.",
   "studio.projects.name_prompt": "Nombre del proyecto:",
-  "studio.projects.empty_canvas": "Agrega algunos nodes antes de guardar."
+  "studio.projects.empty_canvas": "Agrega algunos nodes antes de guardar.",
+  "export.title": "Exportar creativo",
+  "export.subtitle": "Elige formato y tamaño",
+  "export.fmt_desc.png": "Alta calidad",
+  "export.fmt_desc.jpg": "Menor tamaño",
+  "export.fmt_desc.webp": "Moderno",
+  "export.format_label": "Formato",
+  "export.quality_label": "Calidad",
+  "export.size_label": "Tamaño",
+  "export.size_original": "Original",
+  "export.resize_warning": "⚠️ Redimensionar a un formato diferente puede recortar partes del creativo. Para mejor resultado, genera un nuevo creativo directamente en el formato deseado ({credits} créditos).",
+  "export.free_note": "✓ Exportación gratis — sin usar créditos",
+  "export.exporting": "Exportando...",
+  "export.download": "Descargar {fmt}"
 }
