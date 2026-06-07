@@ -28,6 +28,7 @@ interface StudioCanvasProps {
   onNodeMove: (id: string, x: number, y: number) => void;
   onNodeDragStart?: () => void;
   onNodeRun: (id: string) => void;
+  onNodeSelectVariation?: (id: string, img: string) => void;
   onNodeDataChange: (id: string, key: string, value: string) => void;
   onAddConnection: (fromNode: string, toNode: string) => void;
   onDeleteNode?: (id: string) => void;
@@ -48,6 +49,7 @@ export function StudioCanvas({
   onNodeMove,
   onNodeDragStart,
   onNodeRun,
+  onNodeSelectVariation,
   onNodeDataChange,
   onAddConnection,
   onDeleteNode,
@@ -451,6 +453,7 @@ export function StudioCanvas({
             onTouchStart={handleNodeTouchStart}
             onSelect={onSelectNode}
             onRun={onNodeRun}
+            onSelectVariation={onNodeSelectVariation}
             onDataChange={onNodeDataChange}
             onDelete={onDeleteNode}
             onOutputPortDown={handleOutputPortDown}

@@ -64,6 +64,7 @@ interface StudioNodeProps {
   onMouseDown: (e: React.MouseEvent, nodeId: string) => void;
   onSelect: (nodeId: string) => void;
   onRun: (nodeId: string) => void;
+  onSelectVariation?: (nodeId: string, img: string) => void;
   onDataChange: (nodeId: string, key: string, value: string) => void;
   onDelete?: (nodeId: string) => void;
   onOutputPortDown: (e: React.MouseEvent, nodeId: string) => void;
@@ -247,12 +248,13 @@ function ImageUploadZone({
 // ── Node Content ────────────────────────────────────────────────────────────
 
 function NodeContent({
-  node, execState, output, onRun, onDataChange,
+  node, execState, output, onRun, onSelectVariation, onDataChange,
 }: {
   node: StudioNodeType;
   execState: ExecState;
   output?: NodeOutput;
   onRun: (id: string) => void;
+  onSelectVariation?: (id: string, img: string) => void;
   onDataChange: (id: string, key: string, value: string) => void;
 }) {
   const { t } = useI18n();
@@ -398,6 +400,7 @@ function NodeContent({
     case 'scene_gen':
     case 'image_gen': {
       const previewImg = output?.image || output?.generatedImage;
+      const variations: string[] = output?.variations || (output?.image ? [output.image] : []);
       return (
         <div style={{ padding: '6px 10px', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{
@@ -424,6 +427,33 @@ function NodeContent({
           {output?.provider && (
             <div style={{ fontSize: 9, color: 'hsl(var(--muted-foreground))', textAlign: 'right' }}>
               via {output.provider}
+            </div>
+          )}
+          {variations.length > 1 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              <span style={{ fontSize: 9, color: 'hsl(var(--muted-foreground))' }}>
+                {t('studio.node.variations')} · {variations.length}
+              </span>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {variations.map((v, i) => {
+                  const active = v === output?.image;
+                  return (
+                    <button
+                      key={i}
+                      onClick={e => { e.stopPropagation(); onSelectVariation?.(node.id, v); }}
+                      onMouseDown={e => e.stopPropagation()}
+                      title={`#${i + 1}`}
+                      style={{
+                        width: 34, height: 34, borderRadius: 5, overflow: 'hidden', cursor: 'pointer',
+                        padding: 0, flexShrink: 0, background: 'none',
+                        border: active ? `2px solid ${def.color}` : '1px solid hsl(var(--border))',
+                      }}
+                    >
+                      <img src={v} alt={`v${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
           {runBtn}
@@ -791,7 +821,7 @@ function NodeContent({
 
 export function StudioNode({
   node, isSelected, execState, output, isConnecting,
-  onMouseDown, onSelect, onRun, onDataChange, onDelete,
+  onMouseDown, onSelect, onRun, onSelectVariation, onDataChange, onDelete,
   onOutputPortDown, onInputPortUp, onTouchStart, onOutputPortTouchStart,
 }: StudioNodeProps) {
   const def = NODE_TYPE_DEFS[node.type];
@@ -936,6 +966,7 @@ export function StudioNode({
         execState={execState}
         output={output}
         onRun={onRun}
+        onSelectVariation={onSelectVariation}
         onDataChange={onDataChange}
       />
     </div>

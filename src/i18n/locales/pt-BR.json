@@ -1462,5 +1462,6 @@
   "studio.node.quality_pro": "Pro · Clarity",
   "studio.node.quality_ultra": "Ultra · Clarity",
   "projects.studio_flows_title": "Fluxos do Studio",
-  "projects.toast.delete_failed": "Não foi possível excluir"
+  "projects.toast.delete_failed": "Não foi possível excluir",
+  "studio.node.variations": "Variações"
 }

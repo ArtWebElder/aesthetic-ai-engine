@@ -274,6 +274,22 @@ export function StudioPage() {
     const node = nodes.find(n => n.id === nodeId);
     if (!node) return;
 
+    // Generative single-node runs are "gerar mais" — each new variation costs
+    // credits (other node types stay free to re-run). On insufficient → paywall.
+    const isGenerative = node.type === 'image_gen' || node.type === 'scene_gen';
+    if (isGenerative) {
+      const cost = calculateCost(activeFlowId || 'simple-gen');
+      if (cost > 0) {
+        try {
+          await useCreditStore.getState().debitCredits(cost, 'Studio — gerar mais');
+        } catch (debitErr: unknown) {
+          const msg = debitErr instanceof Error ? debitErr.message : String(debitErr);
+          if (msg === 'insufficient_credits') { setShowPaywall(true); return; }
+          console.warn('[Studio] debit failed, proceeding anyway:', msg);
+        }
+      }
+    }
+
     setExecStates(prev => ({ ...prev, [nodeId]: 'running' }));
 
     try {
@@ -286,8 +302,16 @@ export function StudioPage() {
       console.log(`[Studio:handleNodeRun] Node ${nodeId} (${node.type}) inputs:`, Object.keys(inputs).filter(k => k !== '_allUpstream'));
       const output = await executeNode(node, inputs);
       setNodeOutputs(prev => {
-        const next = { ...prev, ...enrichedOutputs, [nodeId]: output };
-        return next;
+        let merged = output;
+        // Accumulate generated images so the user can pick among variations.
+        if (isGenerative && output && output.image) {
+          const existing = prev[nodeId] || {};
+          const prevVars: string[] = Array.isArray(existing.variations)
+            ? existing.variations
+            : (existing.image ? [existing.image] : []);
+          merged = { ...output, variations: [...prevVars, output.image] };
+        }
+        return { ...prev, ...enrichedOutputs, [nodeId]: merged };
       });
       setExecStates(prev => ({ ...prev, [nodeId]: 'done' }));
     } catch (error: unknown) {
@@ -296,7 +320,16 @@ export function StudioPage() {
       setExecStates(prev => ({ ...prev, [nodeId]: 'error' }));
       alert(`Erro no node: ${msg}`);
     }
-  }, [nodes, connections, nodeOutputs]);
+  }, [nodes, connections, nodeOutputs, activeFlowId]);
+
+  // Pick which generated variation is the active output (used downstream).
+  const handleSelectVariation = useCallback((nodeId: string, img: string) => {
+    setNodeOutputs(prev => {
+      const existing = prev[nodeId];
+      if (!existing) return prev;
+      return { ...prev, [nodeId]: { ...existing, image: img } };
+    });
+  }, []);
 
   const handleRunAll = useCallback(async () => {
     if (flowRunning) return;
@@ -738,6 +771,7 @@ export function StudioPage() {
         onNodeMove={handleNodeMove}
         onNodeDragStart={handleNodeDragStart}
         onNodeRun={handleNodeRun}
+        onNodeSelectVariation={handleSelectVariation}
         onNodeDataChange={handleNodeDataChange}
         onAddConnection={handleAddConnection}
         onDeleteNode={handleDeleteNode}
