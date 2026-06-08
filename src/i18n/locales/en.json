@@ -1476,5 +1476,8 @@
   "auth.reset.too_short": "Password must be at least 6 characters.",
   "auth.reset.success": "Password changed! Redirecting…",
   "auth.reset.invalid_link": "Invalid or expired link. Request a new one from the login screen.",
-  "auth.reset.back_to_login": "Back to login"
+  "auth.reset.back_to_login": "Back to login",
+  "auth.reset.title_request": "Reset your password",
+  "auth.reset.request_subtitle": "Enter your email and we will send you a reset link.",
+  "auth.reset.send": "Send reset link"
 }

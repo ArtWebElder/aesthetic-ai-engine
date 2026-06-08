@@ -1478,5 +1478,8 @@
   "auth.reset.too_short": "La contraseña debe tener al menos 6 caracteres.",
   "auth.reset.success": "¡Contraseña cambiada! Redirigiendo…",
   "auth.reset.invalid_link": "Enlace inválido o expirado. Solicita uno nuevo en la pantalla de inicio.",
-  "auth.reset.back_to_login": "Volver al inicio de sesión"
+  "auth.reset.back_to_login": "Volver al inicio de sesión",
+  "auth.reset.title_request": "Recuperar contraseña",
+  "auth.reset.request_subtitle": "Ingresa tu correo y te enviaremos un enlace para restablecer.",
+  "auth.reset.send": "Enviar enlace"
 }

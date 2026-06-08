@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, RefreshCw, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Eye, EyeOff, CheckCircle2, Sparkles, RefreshCw, ShieldCheck, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useI18n } from '@/i18n';
 import { supabase } from '@/services/supabaseClient';
@@ -100,7 +100,7 @@ function GoogleIcon() {
 /* ─── Main component ─────────────────────────────────── */
 const Login = () => {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
-  const [view, setView] = useState<'form' | 'verify'>('form');
+  const [view, setView] = useState<'form' | 'verify' | 'reset'>('form');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -460,6 +460,52 @@ const Login = () => {
                 </>
               )}
             </div>
+          ) : view === 'reset' ? (
+            /* ── Forgot password (request reset link) ──────── */
+            <>
+              <button
+                type="button"
+                onClick={() => { setView('form'); setError(''); setResetMsg(''); }}
+                className="flex items-center gap-1 mb-5"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8e8e96', fontSize: 13, fontFamily: 'inherit' }}
+              >
+                <ChevronLeft className="w-4 h-4" /> {t('auth.reset.back_to_login')}
+              </button>
+
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417' }}>{t('auth.reset.title_request')}</h1>
+              <p style={{ fontSize: 14, color: '#5a5a60', marginTop: 4, marginBottom: 22 }}>{t('auth.reset.request_subtitle')}</p>
+
+              <form onSubmit={(e) => { e.preventDefault(); handleForgotPassword(); }} className="space-y-3">
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
+                  <input
+                    type="email"
+                    placeholder={t('auth.email_placeholder')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoFocus
+                    className="w-full pl-10 pr-3 bg-white text-sm outline-none"
+                    style={{ height: 44, borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)', color: '#141417', fontSize: 13.5 }}
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600">{error}</p>
+                )}
+                {resetMsg && (
+                  <p className="text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700">{resetMsg}</p>
+                )}
+
+                <Button type="submit" variant="gradient" disabled={resetSending} className="w-full" style={{ height: 44, fontSize: 13.5, marginTop: 4 }}>
+                  {resetSending ? (
+                    <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  ) : (
+                    <>{t('auth.reset.send')}<ArrowRight className="w-4 h-4" /></>
+                  )}
+                </Button>
+              </form>
+            </>
           ) : (
             /* ── Login / Signup Form ───────────────────────── */
             <>
@@ -596,28 +642,20 @@ const Login = () => {
                   </button>
                 </div>
 
-                {/* Forgot password (login only) */}
+                {/* Forgot password (login only) → dedicated reset view */}
                 {mode === 'login' && (
                   <div style={{ textAlign: 'right', marginTop: -2 }}>
                     <button
                       type="button"
-                      onClick={handleForgotPassword}
-                      disabled={resetSending}
+                      onClick={() => { setView('reset'); setError(''); setResetMsg(''); }}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                         fontSize: 12, fontWeight: 500, color: 'hsl(var(--brand))', fontFamily: 'inherit',
-                        opacity: resetSending ? 0.6 : 1,
                       }}
                     >
-                      {resetSending ? t('auth.reset.sending') : t('auth.reset.link')}
+                      {t('auth.reset.link')}
                     </button>
                   </div>
-                )}
-
-                {resetMsg && (
-                  <p className="text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700">
-                    {resetMsg}
-                  </p>
                 )}
 
                 {/* Password strength (signup only) */}

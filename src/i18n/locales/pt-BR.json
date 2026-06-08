@@ -1478,5 +1478,8 @@
   "auth.reset.too_short": "A senha precisa ter ao menos 6 caracteres.",
   "auth.reset.success": "Senha alterada! Redirecionando…",
   "auth.reset.invalid_link": "Link inválido ou expirado. Peça um novo na tela de login.",
-  "auth.reset.back_to_login": "Voltar ao login"
+  "auth.reset.back_to_login": "Voltar ao login",
+  "auth.reset.title_request": "Recuperar senha",
+  "auth.reset.request_subtitle": "Digite seu e-mail e enviaremos um link para redefinir.",
+  "auth.reset.send": "Enviar link de redefinição"
 }

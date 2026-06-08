@@ -94,6 +94,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null);
       setLoading(false);
 
+      // Recovery link processed → always send the user to set a new password,
+      // regardless of which URL the email link landed on.
+      if (event === 'PASSWORD_RECOVERY' && !window.location.pathname.startsWith('/reset-password')) {
+        window.location.replace('/reset-password');
+        return;
+      }
+
       // Create profile on sign-in if it doesn't exist
       if (event === 'SIGNED_IN' && session?.user && profileCheckedRef.current !== session.user.id) {
         profileCheckedRef.current = session.user.id;
