@@ -114,8 +114,10 @@ const Login = () => {
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [resetMsg, setResetMsg] = useState('');
+  const [resetSending, setResetSending] = useState(false);
 
-  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const { user, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPasswordForEmail } = useAuth();
   const navigate = useNavigate();
   const { t } = useI18n();
 
@@ -131,6 +133,28 @@ const Login = () => {
   }, [resendCooldown]);
 
   const pwStrength = mode === 'signup' ? getPasswordStrength(password) : null;
+
+  const handleForgotPassword = async () => {
+    setError('');
+    setResetMsg('');
+    if (!email.trim()) {
+      setError(t('auth.reset.need_email'));
+      return;
+    }
+    setResetSending(true);
+    try {
+      const { error } = await resetPasswordForEmail(email.trim());
+      if (error) {
+        setError(error.message || t('auth.reset.failed'));
+      } else {
+        setResetMsg(t('auth.reset.sent'));
+      }
+    } catch {
+      setError(t('auth.reset.failed'));
+    } finally {
+      setResetSending(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -571,6 +595,30 @@ const Login = () => {
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+
+                {/* Forgot password (login only) */}
+                {mode === 'login' && (
+                  <div style={{ textAlign: 'right', marginTop: -2 }}>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={resetSending}
+                      style={{
+                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                        fontSize: 12, fontWeight: 500, color: 'hsl(var(--brand))', fontFamily: 'inherit',
+                        opacity: resetSending ? 0.6 : 1,
+                      }}
+                    >
+                      {resetSending ? t('auth.reset.sending') : t('auth.reset.link')}
+                    </button>
+                  </div>
+                )}
+
+                {resetMsg && (
+                  <p className="text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700">
+                    {resetMsg}
+                  </p>
+                )}
 
                 {/* Password strength (signup only) */}
                 {mode === 'signup' && pwStrength && password.length > 0 && (

@@ -11,6 +11,8 @@ interface AuthContext {
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<{ error: Error | null }>;
+  resetPasswordForEmail: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   markOnboarded: () => void;
 }
@@ -123,6 +125,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
+  const resetPasswordForEmail = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    return { error };
+  };
+
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error };
+  };
+
   const signOut = async () => {
     profileCheckedRef.current = null;
     setOnboarded(null);
@@ -136,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const emailVerified = !user || isGoogleUser || !!user.email_confirmed_at;
 
   return (
-    <AuthCtx.Provider value={{ user, session, loading, onboarded, emailVerified, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, markOnboarded }}>
+    <AuthCtx.Provider value={{ user, session, loading, onboarded, emailVerified, signInWithGoogle, signInWithEmail, signUpWithEmail, resetPasswordForEmail, updatePassword, signOut, markOnboarded }}>
       {children}
     </AuthCtx.Provider>
   );

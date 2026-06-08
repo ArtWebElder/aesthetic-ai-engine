@@ -12,6 +12,7 @@ import { createTranslator, getInitialLang } from "@/i18n";
 
 // import Index from "./pages/Index"; // Landing page — not used yet
 import Login from "./pages/Login";
+import ResetPassword from "./pages/ResetPassword";
 import OnboardingPage from "./pages/OnboardingPage";
 import Dashboard from "./pages/Dashboard";
 import Projects from "./pages/Projects";
@@ -91,6 +92,7 @@ const App = () => (
                 {/* Root → login (if not authenticated, ProtectedRoute redirects) */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
 
                 {/* All /app/* routes are protected — require active Supabase session */}

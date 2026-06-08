@@ -1463,5 +1463,20 @@
   "studio.node.quality_ultra": "Ultra · Clarity",
   "projects.studio_flows_title": "Flujos del Studio",
   "projects.toast.delete_failed": "No se pudo eliminar",
-  "studio.node.variations": "Variaciones"
+  "studio.node.variations": "Variaciones",
+  "auth.reset.link": "¿Olvidaste la contraseña?",
+  "auth.reset.need_email": "Ingresa tu correo arriba primero.",
+  "auth.reset.sent": "Enviamos un enlace de restablecimiento a tu correo.",
+  "auth.reset.sending": "Enviando…",
+  "auth.reset.failed": "No se pudo enviar el enlace. Inténtalo de nuevo.",
+  "auth.reset.title": "Define una nueva contraseña",
+  "auth.reset.subtitle": "Elige una nueva contraseña para tu cuenta.",
+  "auth.reset.new_password_placeholder": "Nueva contraseña",
+  "auth.reset.confirm_placeholder": "Confirmar contraseña",
+  "auth.reset.save": "Guardar nueva contraseña",
+  "auth.reset.mismatch": "Las contraseñas no coinciden.",
+  "auth.reset.too_short": "La contraseña debe tener al menos 6 caracteres.",
+  "auth.reset.success": "¡Contraseña cambiada! Redirigiendo…",
+  "auth.reset.invalid_link": "Enlace inválido o expirado. Solicita uno nuevo en la pantalla de inicio.",
+  "auth.reset.back_to_login": "Volver al inicio de sesión"
 }

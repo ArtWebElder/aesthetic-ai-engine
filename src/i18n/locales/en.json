@@ -1461,5 +1461,20 @@
   "studio.node.quality_ultra": "Ultra · Clarity",
   "projects.studio_flows_title": "Studio flows",
   "projects.toast.delete_failed": "Could not delete",
-  "studio.node.variations": "Variations"
+  "studio.node.variations": "Variations",
+  "auth.reset.link": "Forgot password?",
+  "auth.reset.need_email": "Enter your email above first.",
+  "auth.reset.sent": "We sent a password reset link to your email.",
+  "auth.reset.sending": "Sending…",
+  "auth.reset.failed": "Could not send the link. Please try again.",
+  "auth.reset.title": "Set a new password",
+  "auth.reset.subtitle": "Choose a new password for your account.",
+  "auth.reset.new_password_placeholder": "New password",
+  "auth.reset.confirm_placeholder": "Confirm password",
+  "auth.reset.save": "Save new password",
+  "auth.reset.mismatch": "Passwords do not match.",
+  "auth.reset.too_short": "Password must be at least 6 characters.",
+  "auth.reset.success": "Password changed! Redirecting…",
+  "auth.reset.invalid_link": "Invalid or expired link. Request a new one from the login screen.",
+  "auth.reset.back_to_login": "Back to login"
 }
