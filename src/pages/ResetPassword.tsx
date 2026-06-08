@@ -22,11 +22,18 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
-  // Give supabase-js a moment to parse the recovery token from the URL hash.
+  // Give supabase-js a moment to parse the recovery token from the URL.
   const [checked, setChecked] = useState(false);
+  // Surface any error Supabase appended to the URL (expired/invalid link, etc.)
+  const [urlError, setUrlError] = useState('');
 
   useEffect(() => {
-    const tmr = setTimeout(() => setChecked(true), 1200);
+    const parse = (s: string) => new URLSearchParams(s.startsWith('#') || s.startsWith('?') ? s.slice(1) : s);
+    const h = parse(window.location.hash);
+    const q = parse(window.location.search);
+    const desc = h.get('error_description') || q.get('error_description') || h.get('error') || q.get('error');
+    if (desc) setUrlError(decodeURIComponent(desc.replace(/\+/g, ' ')));
+    const tmr = setTimeout(() => setChecked(true), 2000);
     return () => clearTimeout(tmr);
   }, []);
 
@@ -71,9 +78,14 @@ const ResetPassword = () => {
           </div>
         ) : !hasSession && checked ? (
           <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: 14, color: 'hsl(var(--foreground))', marginBottom: 16, lineHeight: 1.5 }}>
+            <p style={{ fontSize: 14, color: 'hsl(var(--foreground))', marginBottom: 8, lineHeight: 1.5 }}>
               {t('auth.reset.invalid_link')}
             </p>
+            {urlError && (
+              <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 16, lineHeight: 1.4 }}>
+                {urlError}
+              </p>
+            )}
             <Button variant="gradient" onClick={() => navigate('/login')} className="w-full" style={{ height: 44 }}>
               {t('auth.reset.back_to_login')}
             </Button>
