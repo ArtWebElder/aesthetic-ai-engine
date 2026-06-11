@@ -20,6 +20,7 @@ const NotFound = () => {
         .cy404 {
           position: relative;
           min-height: 100vh;
+          min-height: 100svh;
           display: grid;
           place-items: center;
           padding: 24px;
@@ -113,6 +114,8 @@ const NotFound = () => {
         .cy404-actions {
           display: flex;
           align-items: center;
+          justify-content: center;
+          flex-wrap: wrap;
           gap: 12px;
           margin-top: 30px;
         }
@@ -120,6 +123,15 @@ const NotFound = () => {
           .cy404-code { animation: cy404-float 4s ease-in-out infinite; }
         }
         @keyframes cy404-float { 50% { transform: translateY(-6px); } }
+        /* mobile: encolhe pra caber sem scroll e centraliza */
+        @media (max-width: 480px) {
+          .cy404 { padding: 20px; }
+          .cy404-brand { margin-bottom: 20px; }
+          .cy404-code { font-size: 88px; }
+          .cy404-title { font-size: 22px; }
+          .cy404-sub { font-size: 14px; }
+          .cy404-actions { margin-top: 24px; }
+        }
       `}</style>
 
       <div className="cy404-inner">
