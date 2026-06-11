@@ -104,7 +104,7 @@ function SectionHeader({
   );
 }
 
-/* ── Flow card (real Studio flows) ───────────────────── */
+/* ── Flow card (real Studio flows) — Spotlight cover-card ─ */
 function FlowCard({ flow, label, desc, chip, onClick }: {
   flow: PresetFlow;
   label: string;
@@ -114,44 +114,19 @@ function FlowCard({ flow, label, desc, chip, onClick }: {
 }) {
   const Icon = FLOW_ICONS[flow.icon] || Sparkles;
   return (
-    <div
-      className="relative shrink-0 overflow-hidden transition-transform duration-200 snap-start w-[86vw] max-w-[340px] sm:w-[230px]"
-      style={{
-        borderRadius: 12,
-        background: `linear-gradient(135deg, ${flow.color} 0%, rgba(20,20,23,0.55) 135%)`,
-        cursor: 'pointer',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
-      onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
-      onClick={onClick}
-    >
-      <div className="relative z-10 p-[14px] flex flex-col" style={{ minHeight: 170 }}>
-        <div className="flex items-start justify-between">
-          <div
-            className="flex items-center justify-center"
-            style={{ width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.2)' }}
-          >
-            <Icon style={{ width: 18, height: 18, color: '#ffffff' }} />
-          </div>
-          <span
-            className="text-white"
-            style={{
-              fontSize: 10.5, fontWeight: 600, padding: '3px 8px', borderRadius: 20,
-              background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)',
-              border: '1px solid rgba(255,255,255,0.12)',
-            }}
-          >
-            {chip}
-          </span>
+    <div className="cydf shrink-0 snap-start w-[86vw] max-w-[340px] sm:w-[230px]" onClick={onClick}>
+      {/* Capa (hue gradient) + glass tile + cost pill */}
+      <div className="cydf-cap" style={{ background: `linear-gradient(140deg, ${flow.color}, rgba(20,20,23,0.55))` }}>
+        <div className="cydf-overlay" />
+        <div className="cydf-tile">
+          <Icon style={{ width: 18, height: 18, color: '#ffffff' }} />
         </div>
-        <div className="mt-auto">
-          <p style={{ fontSize: 14, fontWeight: 700, color: '#ffffff', marginBottom: 4 }} className="line-clamp-1">
-            {label}
-          </p>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.75)', lineHeight: 1.4 }} className="line-clamp-2">
-            {desc}
-          </p>
-        </div>
+        <span className="cydf-cost">{chip}</span>
+      </div>
+      {/* Body on card surface */}
+      <div className="cydf-body">
+        <p className="cydf-title line-clamp-1">{label}</p>
+        <p className="cydf-desc line-clamp-2">{desc}</p>
       </div>
     </div>
   );
@@ -261,6 +236,26 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-full px-4 sm:px-8 py-6 sm:py-7 space-y-8 sm:space-y-10">
+      {/* Scoped Spotlight styles — cover-card (no global tokens touched) */}
+      <style>{`
+        .cydf {
+          position: relative; display: flex; flex-direction: column; overflow: hidden; cursor: pointer;
+          border-radius: 16px; background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+          box-shadow: 0 1px 2px rgba(20,16,12,.05);
+          transition: transform .18s ease, box-shadow .2s ease, border-color .2s ease;
+        }
+        .cydf:hover { transform: translateY(-4px); border-color: hsl(var(--brand) / .5); box-shadow: 0 24px 50px -24px rgba(20,16,12,.30); }
+        .cydf-cap { position: relative; height: 128px; display: flex; align-items: flex-start; justify-content: space-between; padding: 14px; }
+        .cydf-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(0,0,0,.30), rgba(0,0,0,.10) 42%, rgba(0,0,0,.48)); }
+        .cydf-tile {
+          position: relative; z-index: 2; display: grid; place-items: center; width: 40px; height: 40px;
+          border-radius: 11px; background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.28); backdrop-filter: blur(4px);
+        }
+        .cydf-cost { position: relative; z-index: 2; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(0,0,0,.34); color: #fff; backdrop-filter: blur(4px); }
+        .cydf-body { padding: 14px; }
+        .cydf-title { font-size: 15px; font-weight: 700; color: hsl(var(--foreground)); }
+        .cydf-desc { font-size: 12px; line-height: 1.45; color: hsl(var(--muted-foreground)); margin-top: 5px; }
+      `}</style>
 
       {/* ── 1. Greeting ─────────────────────────────── */}
       <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
