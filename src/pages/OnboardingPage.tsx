@@ -24,7 +24,7 @@ const PROFILES: { id: ProfileId; labelKey: string; subKey: string; Icon: React.F
   { id: 'creator', labelKey: 'onboarding.profile.youtuber', subKey: 'onboarding.sub.creative', Icon: Play, color: '#EF4444' },
   { id: 'social', labelKey: 'onboarding.profile.social', subKey: 'onboarding.sub.social_media', Icon: Megaphone, color: '#10B981' },
   { id: 'photographer', labelKey: 'onboarding.profile.photographer', subKey: 'onboarding.sub.product', Icon: Camera, color: '#8B5CF6' },
-  { id: 'other', labelKey: 'onboarding.profile.other', subKey: 'onboarding.sub.other', Icon: Sparkles, color: '#8e8e96' },
+  { id: 'other', labelKey: 'onboarding.profile.other', subKey: 'onboarding.sub.other', Icon: Sparkles, color: '#9b8f86' },
 ];
 
 const SUBCATEGORIES: Record<ProfileId, { id: string; labelKey: string; Icon: React.FC<{ size?: number; stroke?: string }> }[]> = {
@@ -125,234 +125,254 @@ export default function OnboardingPage() {
     { title: t('onboarding.done.title'), sub: t('onboarding.done.subtitle') },
   ];
 
-  const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='hsl(var(--brand) / 0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
-
   const subs = profile ? SUBCATEGORIES[profile] || [] : [];
 
+  /* tile style: resting = category hue · selected = brand gradient */
+  const tileStyle = (color: string, selected: boolean): React.CSSProperties =>
+    selected
+      ? { background: 'linear-gradient(145deg, hsl(var(--brand-2)), hsl(var(--brand)))', color: '#fff', border: '1px solid transparent', boxShadow: '0 8px 18px -8px hsl(var(--brand) / .6)' }
+      : { background: `${color}1A`, color, border: `1px solid ${color}33` };
+
   return (
-    <div style={{
-      fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
-      minHeight: '100vh',
-      background: `radial-gradient(ellipse 700px 500px at 50% 8%, hsl(var(--brand) / 0.07) 0%, transparent 60%), ${gridSvg}, #f5f5f3`,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      color: '#141417',
-    }}>
+    <div className="cyob">
+      {/* Scoped Spotlight styles — isolated to this screen (no global tokens touched) */}
       <style>{`
-        @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes scIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
-        .ob-btn{transition:all 150ms}
-        .ob-card:hover{border-color:hsl(var(--brand)) !important;box-shadow:0 4px 20px hsl(var(--brand) / 0.10) !important}
+        .cyob {
+          position: relative;
+          min-height: 100vh;
+          min-height: 100svh;
+          overflow-x: hidden;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          color: hsl(var(--foreground));
+          background: radial-gradient(110% 55% at 50% -8%, #FFF3EA, #F4EDE4 55%), #F4EDE4;
+        }
+        .dark .cyob {
+          background: radial-gradient(110% 55% at 50% -8%, #2a201a, #100d0b 55%), #100d0b;
+        }
+        .cyob::before {
+          content: ''; position: absolute; inset: 0 0 auto 0; height: 380px; pointer-events: none; z-index: 0; opacity: .55;
+          background-image: linear-gradient(rgba(28,22,16,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(28,22,16,.045) 1px, transparent 1px);
+          background-size: 44px 44px;
+          -webkit-mask-image: linear-gradient(180deg, #000, transparent);
+          mask-image: linear-gradient(180deg, #000, transparent);
+        }
+        .dark .cyob::before {
+          background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+        }
+        .cyob-col {
+          position: relative; z-index: 1; width: 100%; max-width: 660px; margin: 0 auto;
+          min-height: 100svh; display: flex; flex-direction: column; padding: 30px 24px 26px;
+        }
+        .cyob-top { display: flex; align-items: center; justify-content: space-between; }
+        .cyob-step { font-size: 13px; font-weight: 500; color: hsl(var(--muted-foreground)); }
+        .cyob-progress { height: 5px; border-radius: 999px; background: hsl(var(--border)); margin: 18px 0 34px; overflow: hidden; }
+        .cyob-progress span {
+          display: block; height: 100%; border-radius: 999px;
+          background: linear-gradient(90deg, hsl(var(--brand)), hsl(var(--brand-2)));
+          box-shadow: 0 0 14px -2px hsl(var(--brand)); transition: width .45s cubic-bezier(.3,.9,.3,1);
+        }
+        .cyob-title { font-size: 26px; font-weight: 700; color: hsl(var(--foreground)); letter-spacing: -.025em; }
+        .cyob-sub { color: hsl(var(--muted-foreground)); font-size: 15px; margin-top: 6px; }
+
+        /* options */
+        .cyob-opt {
+          position: relative; display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+          background: hsl(var(--card)); border: 1.5px solid hsl(var(--border)); border-radius: 16px; cursor: pointer;
+          font-family: inherit; color: hsl(var(--foreground));
+          transition: border-color .18s, transform .18s, box-shadow .18s, background .18s;
+        }
+        .cyob-opt:hover { transform: translateY(-2px); box-shadow: 0 14px 30px -18px rgba(0,0,0,.5); }
+        .cyob-opt.sel {
+          border-color: hsl(var(--brand)); background: hsl(var(--brand) / .08);
+          box-shadow: 0 0 0 3px hsl(var(--brand) / .15), 0 16px 34px -18px hsl(var(--brand) / .6);
+        }
+        .cyob-check {
+          position: absolute; display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%;
+          background: hsl(var(--brand)); color: hsl(var(--brand-foreground));
+          opacity: 0; transform: scale(.5); transition: all .2s cubic-bezier(.3,1.4,.5,1);
+        }
+        .cyob-opt.sel .cyob-check { opacity: 1; transform: scale(1); }
+        .cyob-tile { width: 44px; height: 44px; border-radius: 12px; flex: none; display: grid; place-items: center; transition: all .2s; }
+
+        .cyob-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .cyob-list { display: flex; flex-direction: column; gap: 10px; }
+
+        /* ready cards */
+        .cyob-readycard {
+          display: flex; flex-direction: column; align-items: flex-start; text-align: left;
+          background: hsl(var(--card)); border: 1.5px solid hsl(var(--border)); border-radius: 16px;
+          padding: 22px 20px; cursor: pointer; font-family: inherit; transition: all .18s;
+        }
+        .cyob-readycard:hover { transform: translateY(-3px); box-shadow: 0 20px 40px -22px rgba(0,0,0,.55); }
+        .cyob-readycard.primary { border-color: hsl(var(--brand) / .4); background: hsl(var(--brand) / .06); }
+
+        @keyframes cyob-scin { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+        @keyframes cyob-fdup { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @media (prefers-reduced-motion: reduce) { .cyob-anim { animation: none !important; } }
+
+        @media (max-width: 600px) {
+          .cyob-col { padding: 24px 18px 22px; }
+          .cyob-title { font-size: 22px; }
+          .cyob-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
 
-      {/* Header */}
-      <div style={{ width: '100%', maxWidth: 680, padding: '28px 24px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+      <div className="cyob-col">
+        {/* Header */}
+        <div className="cyob-top">
           <Logo height={26} />
-          <span style={{ fontSize: 12, color: '#8e8e96', fontWeight: 500 }}>{t('onboarding.step_counter').replace('{step}', String(step + 1)).replace('{total}', String(TOTAL_STEPS))}</span>
+          <span className="cyob-step">{t('onboarding.step_counter').replace('{step}', String(step + 1)).replace('{total}', String(TOTAL_STEPS))}</span>
         </div>
+
         {/* Progress bar */}
-        <div style={{ width: '100%', height: 4, borderRadius: 2, background: 'rgba(20,20,23,0.06)', marginBottom: 32 }}>
-          <div style={{ width: `${progress}%`, height: '100%', borderRadius: 2, background: 'linear-gradient(90deg, hsl(var(--brand)), hsl(var(--brand-2)))', transition: 'width 400ms ease' }} />
-        </div>
-      </div>
+        <div className="cyob-progress"><span style={{ width: `${progress}%` }} /></div>
 
-      {/* Content */}
-      <div style={{
-        width: '100%', maxWidth: 680, padding: '0 24px', flex: 1,
-        opacity: trans ? 0 : 1, transform: trans ? 'translateY(6px)' : '', transition: 'all 180ms ease',
-      }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>{STEP_INFO[step].title}</h1>
-        <p style={{ fontSize: 14, color: '#5a5a60', marginBottom: 24 }}>{STEP_INFO[step].sub}</p>
+        {/* Content */}
+        <div style={{ flex: 1, opacity: trans ? 0 : 1, transform: trans ? 'translateY(6px)' : '', transition: 'all 180ms ease' }}>
+          <h1 className="cyob-title">{STEP_INFO[step].title}</h1>
+          <p className="cyob-sub" style={{ marginBottom: 24 }}>{STEP_INFO[step].sub}</p>
 
-        {/* STEP 0: Profile */}
-        {step === 0 && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {PROFILES.map((p, i) => {
-              const selected = profile === p.id;
-              return (
-                <button key={p.id} className="ob-btn" onClick={() => { setProfile(p.id); setSubcat(null); }} style={{
-                  padding: '14px 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
-                  border: selected ? `2px solid ${p.color}` : '1px solid rgba(20,20,23,0.06)',
-                  background: selected ? `${p.color}0A` : '#ffffff', color: '#141417',
-                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', width: '100%',
-                  animation: ready ? `scIn 280ms ${i * 35}ms ease both` : 'none',
-                }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                    background: selected ? `${p.color}14` : 'rgba(20,20,23,0.03)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: selected ? p.color : '#8e8e96',
-                  }}>
-                    <p.Icon size={18} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: selected ? 600 : 500 }}>{t(p.labelKey)}</div>
-                    <div style={{ fontSize: 11.5, color: '#8e8e96', marginTop: 1 }}>{t(p.subKey)}</div>
-                  </div>
-                  {selected && <Check size={16} color={p.color} />}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* STEP 1: Subcategory */}
-        {step === 1 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {subs.map((s, i) => {
-              const selected = subcat === s.id;
-              return (
-                <button key={s.id} className="ob-btn" onClick={() => setSubcat(s.id)} style={{
-                  padding: '13px 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit',
-                  border: selected ? `2px solid ${profileColor}` : '1px solid rgba(20,20,23,0.06)',
-                  background: selected ? `${profileColor}0A` : '#ffffff', color: '#141417',
-                  display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left', width: '100%',
-                  animation: ready ? `scIn 280ms ${i * 35}ms ease both` : 'none',
-                }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                    background: selected ? `${profileColor}14` : 'rgba(20,20,23,0.03)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: selected ? profileColor : '#8e8e96',
-                  }}>
-                    <s.Icon size={18} />
-                  </div>
-                  <div style={{ fontSize: 13.5, fontWeight: selected ? 600 : 500 }}>{t(s.labelKey)}</div>
-                  {selected && <Check size={16} color={profileColor} style={{ marginLeft: 'auto', flexShrink: 0 }} />}
-                </button>
-              );
-            })}
-          </div>
-        )}
-
-        {/* STEP 2: All set! — Wizard/Studio cards */}
-        {step === 2 && (
-          <div style={{ animation: 'fdUp 400ms ease both' }}>
-            <div style={{ textAlign: 'center', marginBottom: 28 }}>
-              <div style={{
-                width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
-                background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <PartyPopper size={28} style={{ color: 'hsl(var(--brand))' }} />
-              </div>
+          {/* STEP 0: Profile */}
+          {step === 0 && (
+            <div className="cyob-grid">
+              {PROFILES.map((p, i) => {
+                const selected = profile === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    className={`cyob-opt cyob-anim ${selected ? 'sel' : ''}`}
+                    onClick={() => { setProfile(p.id); setSubcat(null); }}
+                    style={{ padding: '14px 16px', animation: ready ? `cyob-scin 280ms ${i * 35}ms ease both` : 'none' }}
+                  >
+                    <div className="cyob-tile" style={tileStyle(p.color, selected)}>
+                      <p.Icon size={18} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: selected ? 600 : 500, color: 'hsl(var(--foreground))' }}>{t(p.labelKey)}</div>
+                      <div style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))', marginTop: 1 }}>{t(p.subKey)}</div>
+                    </div>
+                    <div className="cyob-check" style={{ position: 'absolute', top: 14, right: 14 }}><Check size={14} /></div>
+                  </button>
+                );
+              })}
             </div>
+          )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
-              {/* Wizard card */}
-              <button
-                onClick={() => markAndNavigate('/app/create')}
-                className="ob-card ob-btn"
-                style={{
-                  background: '#ffffff', borderRadius: 14, padding: '24px 20px',
-                  border: '1px solid rgba(20,20,23,0.06)', cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left',
-                  animation: ready ? 'scIn 300ms ease both' : 'none',
-                }}
-              >
+          {/* STEP 1: Subcategory */}
+          {step === 1 && (
+            <div className="cyob-list">
+              {subs.map((s, i) => {
+                const selected = subcat === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    className={`cyob-opt cyob-anim ${selected ? 'sel' : ''}`}
+                    onClick={() => setSubcat(s.id)}
+                    style={{ padding: '14px 16px', animation: ready ? `cyob-scin 280ms ${i * 35}ms ease both` : 'none' }}
+                  >
+                    <div className="cyob-tile" style={tileStyle(profileColor, selected)}>
+                      <s.Icon size={18} />
+                    </div>
+                    <div style={{ fontSize: 14, fontWeight: selected ? 600 : 500, color: 'hsl(var(--foreground))' }}>{t(s.labelKey)}</div>
+                    <div className="cyob-check" style={{ position: 'absolute', right: 16 }}><Check size={14} /></div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* STEP 2: All set! — Wizard/Studio cards */}
+          {step === 2 && (
+            <div className="cyob-anim" style={{ animation: 'cyob-fdup 400ms ease both' }}>
+              <div style={{ textAlign: 'center', marginBottom: 28 }}>
                 <div style={{
-                  width: 44, height: 44, borderRadius: 12, marginBottom: 14,
-                  background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))',
+                  width: 56, height: 56, borderRadius: 16, margin: '0 auto 16px',
+                  background: 'hsl(var(--brand) / .12)', border: '1px solid hsl(var(--brand) / .24)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--brand))',
                 }}>
-                  <Wand2 size={22} />
+                  <PartyPopper size={28} />
                 </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#141417', marginBottom: 4 }}>
-                  {t('onboarding.done.wizard_title')}
-                </div>
-                <div style={{ fontSize: 12.5, color: '#8e8e96', lineHeight: 1.5, marginBottom: 14 }}>
-                  {t('onboarding.done.wizard_desc')}
-                </div>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 5, color: 'hsl(var(--brand))',
-                  fontSize: 13, fontWeight: 600, marginTop: 'auto',
-                }}>
-                  {t('onboarding.done.try_wizard')} <ArrowRight size={14} />
-                </div>
-              </button>
+              </div>
 
-              {/* Studio card */}
-              <button
-                onClick={() => markAndNavigate('/app/create/studio')}
-                className="ob-card ob-btn"
-                style={{
-                  background: '#ffffff', borderRadius: 14, padding: '24px 20px',
-                  border: '1px solid rgba(20,20,23,0.06)', cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left',
-                  animation: ready ? 'scIn 300ms 60ms ease both' : 'none',
-                }}
-              >
-                <div style={{
-                  width: 44, height: 44, borderRadius: 12, marginBottom: 14,
-                  background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(139,92,246,0.08))',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7C3AED',
-                }}>
-                  <LayoutGrid size={22} />
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: '#141417', marginBottom: 4 }}>
-                  {t('onboarding.done.studio_title')}
-                </div>
-                <div style={{ fontSize: 12.5, color: '#8e8e96', lineHeight: 1.5, marginBottom: 14 }}>
-                  {t('onboarding.done.studio_desc')}
-                </div>
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 5, color: '#7C3AED',
-                  fontSize: 13, fontWeight: 600, marginTop: 'auto',
-                }}>
-                  {t('onboarding.done.try_studio')} <ArrowRight size={14} />
-                </div>
-              </button>
-            </div>
+              <div className="cyob-grid" style={{ marginBottom: 24 }}>
+                {/* Wizard card */}
+                <button onClick={() => markAndNavigate('/app/create')} className="cyob-readycard primary cyob-anim" style={{ animation: ready ? 'cyob-scin 300ms ease both' : 'none' }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 12, marginBottom: 14,
+                    background: 'linear-gradient(145deg, hsl(var(--brand-2)), hsl(var(--brand)))', color: '#fff',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 18px -8px hsl(var(--brand) / .6)',
+                  }}>
+                    <Wand2 size={22} />
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>{t('onboarding.done.wizard_title')}</div>
+                  <div style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, marginBottom: 14 }}>{t('onboarding.done.wizard_desc')}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'hsl(var(--brand))', fontSize: 13, fontWeight: 600, marginTop: 'auto' }}>
+                    {t('onboarding.done.try_wizard')} <ArrowRight size={14} />
+                  </div>
+                </button>
 
-            {/* Explore dashboard link */}
-            <div style={{ textAlign: 'center' }}>
-              <button
-                onClick={() => markAndNavigate('/app/dashboard')}
-                style={{
-                  background: 'none', border: 'none', color: '#8e8e96', fontSize: 13,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                }}
-              >
-                {t('onboarding.done.explore_dashboard')} <ArrowRight size={13} />
-              </button>
+                {/* Studio card */}
+                <button onClick={() => markAndNavigate('/app/create/studio')} className="cyob-readycard cyob-anim" style={{ animation: ready ? 'cyob-scin 300ms 60ms ease both' : 'none' }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 12, marginBottom: 14,
+                    background: 'linear-gradient(135deg, rgba(124,58,237,0.16), rgba(139,92,246,0.10))', color: '#7C3AED',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(124,58,237,0.22)',
+                  }}>
+                    <LayoutGrid size={22} />
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'hsl(var(--foreground))', marginBottom: 4 }}>{t('onboarding.done.studio_title')}</div>
+                  <div style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, marginBottom: 14 }}>{t('onboarding.done.studio_desc')}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#7C3AED', fontSize: 13, fontWeight: 600, marginTop: 'auto' }}>
+                    {t('onboarding.done.try_studio')} <ArrowRight size={14} />
+                  </div>
+                </button>
+              </div>
+
+              {/* Explore dashboard link */}
+              <div style={{ textAlign: 'center' }}>
+                <button onClick={() => markAndNavigate('/app/dashboard')} style={{
+                  background: 'none', border: 'none', color: 'hsl(var(--muted-foreground))', fontSize: 13,
+                  cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 5,
+                }}>
+                  {t('onboarding.done.explore_dashboard')} <ArrowRight size={13} />
+                </button>
+              </div>
             </div>
+          )}
+        </div>
+
+        {/* Navigation — only for steps 0-1 */}
+        {step < 2 && (
+          <div style={{ paddingTop: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {step > 0 ? (
+              <button onClick={() => go(-1)} style={{
+                padding: '0 20px', height: 48, borderRadius: 12, border: '1px solid hsl(var(--border))',
+                background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: 14, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
+              }}>
+                <ChevronLeft size={18} /> {t('onboarding.back')}
+              </button>
+            ) : <div />}
+
+            <Button variant="gradient" onClick={() => go(1)} style={{
+              height: 48, padding: '0 24px', borderRadius: 12, fontSize: 14,
+              cursor: canNext() ? 'pointer' : 'not-allowed', opacity: canNext() ? 1 : 0.45,
+            }}>
+              {t('onboarding.continue')} <ChevronRight size={18} />
+            </Button>
           </div>
         )}
+
+        {/* Skip link — only for steps 0-1 */}
+        {step < 2 && (
+          <button onClick={() => { setStep(2); }} style={{
+            display: 'block', margin: '16px auto 0', background: 'none', border: 'none',
+            color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', padding: 6,
+          }}>{t('onboarding.skip')}</button>
+        )}
       </div>
-
-      {/* Navigation — only for steps 0-1 */}
-      {step < 2 && (
-        <div style={{ width: '100%', maxWidth: 680, padding: '20px 24px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          {step > 0 ? (
-            <button onClick={() => go(-1)} style={{
-              padding: '9px 18px', borderRadius: 9, border: '1px solid rgba(20,20,23,0.1)',
-              background: '#ffffff', color: '#5a5a60', fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 5,
-            }}>
-              <ChevronLeft size={18} /> {t('onboarding.back')}
-            </button>
-          ) : <div />}
-
-          <Button variant="gradient" onClick={() => go(1)} style={{
-            padding: '9px 22px', fontSize: 13,
-            cursor: canNext() ? 'pointer' : 'not-allowed',
-            opacity: canNext() ? 1 : 0.4,
-          }}>
-            {t('onboarding.continue')} <ChevronRight size={18} />
-          </Button>
-        </div>
-      )}
-
-      {/* Skip link — only for steps 0-1 */}
-      {step < 2 && (
-        <button onClick={() => { setStep(2); }} style={{
-          background: 'none', border: 'none', color: '#b5b5bb', fontSize: 12,
-          cursor: 'pointer', fontFamily: 'inherit', paddingBottom: 20,
-        }}>{t('onboarding.skip')}</button>
-      )}
     </div>
   );
 }
