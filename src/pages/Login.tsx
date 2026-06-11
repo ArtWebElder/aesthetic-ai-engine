@@ -42,7 +42,7 @@ function CreativeCard({ label, gradient, price }: { label: string; gradient: str
         <span className="text-white text-[11px] font-semibold">{label}</span>
         <span
           className="text-white text-[10px] font-medium px-2 py-0.5 rounded-full"
-          style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)' }}
+          style={{ background: 'rgba(0,0,0,0.30)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.18)' }}
         >
           {price}
         </span>
@@ -277,22 +277,146 @@ const Login = () => {
   };
 
   return (
-    <div className="h-[100dvh] overflow-hidden flex" style={{ background: '#f5f5f3' }}>
-      {/* ── Left panel (dark carousel) — 70% ────────────── */}
-      <div className="hidden lg:flex flex-1 relative overflow-hidden" style={{ background: '#141417' }}>
-        {/* Top fade */}
-        <div
-          className="absolute inset-x-0 top-0 z-10 pointer-events-none"
-          style={{ height: '18%', background: 'linear-gradient(to bottom, #141417, transparent)' }}
-        />
-        {/* Bottom fade */}
-        <div
-          className="absolute inset-x-0 bottom-0 z-10 pointer-events-none"
-          style={{ height: '18%', background: 'linear-gradient(to top, #141417, transparent)' }}
-        />
+    <div className="cyau">
+      {/* Scoped Spotlight styles — isolated to this screen (no global tokens touched) */}
+      <style>{`
+        .cyau {
+          display: flex;
+          height: 100dvh;
+          overflow: hidden;
+          background: hsl(var(--background));
+        }
+        /* ── left showcase (desktop only) ── */
+        .cyau-show {
+          display: none;
+          position: relative;
+          flex: 1;
+          overflow: hidden;
+          background: radial-gradient(120% 70% at 15% 0%, #2a201a, #100d0b 60%), #100d0b;
+        }
+        .cyau-show::before {
+          content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+          background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+          background-size: 44px 44px;
+        }
+        @media (min-width: 1024px) { .cyau-show { display: flex; } }
+
+        /* ── right panel ── */
+        .cyau-panel {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          height: 100%;
+          overflow-y: auto;
+          padding: 36px 22px;
+          background: hsl(var(--background));
+        }
+        @media (min-width: 1024px) {
+          .cyau-panel { width: 32%; min-width: 392px; flex-shrink: 0; padding: 48px 40px; }
+        }
+        .cyau-panel::before {
+          content: ''; position: absolute; inset: 0 0 auto 0; height: 320px; pointer-events: none; z-index: 0;
+          background: radial-gradient(70% 60% at 50% 0%, hsl(var(--brand) / .10), transparent 70%);
+        }
+        .cyau-inner { position: relative; z-index: 1; width: 100%; max-width: 412px; }
+        .cyau-logo { margin-bottom: 30px; }
+
+        /* segmented tabs */
+        .cyau-seg {
+          position: relative; display: flex; background: hsl(var(--muted));
+          border-radius: 12px; padding: 4px; margin-bottom: 24px;
+        }
+        .cyau-seg-thumb {
+          position: absolute; top: 4px; left: 4px; width: calc(50% - 4px); height: calc(100% - 8px);
+          border-radius: 9px; background: var(--brand-gradient);
+          box-shadow: 0 8px 18px -8px hsl(var(--brand) / .55);
+          transition: transform .25s cubic-bezier(.3,1.4,.5,1);
+        }
+        .cyau-seg[data-mode="signup"] .cyau-seg-thumb { transform: translateX(100%); }
+        .cyau-seg button {
+          position: relative; z-index: 1; flex: 1; padding: 9px 0; font-size: 14px;
+          background: none; border: none; cursor: pointer; border-radius: 9px;
+          transition: color .2s; color: hsl(var(--muted-foreground)); font-weight: 500;
+        }
+        .cyau-seg button.on { color: hsl(var(--brand-foreground)); font-weight: 600; }
+
+        /* headings */
+        .cyau-h1 { font-size: 26px; font-weight: 700; color: hsl(var(--foreground)); letter-spacing: -.03em; line-height: 1.2; }
+        .cyau-sub { font-size: 14px; color: hsl(var(--muted-foreground)); margin-top: 4px; }
+
+        /* google + divider */
+        .cyau-google {
+          width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px;
+          height: 46px; border-radius: 11px; border: 1px solid hsl(var(--border));
+          background: hsl(var(--card)); color: hsl(var(--foreground));
+          font-size: 14px; font-weight: 500; cursor: pointer; transition: background .15s, border-color .15s;
+        }
+        .cyau-google:hover { background: hsl(var(--muted)); border-color: hsl(var(--border-strong, var(--border))); }
+        .cyau-divider { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+        .cyau-divider .ln { flex: 1; height: 1px; background: hsl(var(--border)); }
+        .cyau-divider span { font-size: 12px; color: hsl(var(--muted-foreground)); }
+
+        /* fields */
+        .cyau-field { position: relative; display: flex; align-items: center; }
+        .cyau-stack > .cyau-field + .cyau-field { margin-top: 12px; }
+        .cyau-ic { position: absolute; left: 14px; color: hsl(var(--muted-foreground)); display: grid; pointer-events: none; }
+        .cyau-input {
+          width: 100%; height: 46px; border: 1px solid hsl(var(--border)); background: hsl(var(--card));
+          color: hsl(var(--foreground)); border-radius: 11px; padding: 0 14px 0 42px; font-size: 16px;
+          transition: border-color .15s, box-shadow .15s;
+        }
+        .cyau-input.has-eye { padding-right: 42px; }
+        .cyau-input::placeholder { color: hsl(var(--muted-foreground)); opacity: .7; }
+        .cyau-input:focus { outline: none; border-color: hsl(var(--brand)); box-shadow: 0 0 0 3px hsl(var(--brand) / .15); }
+        .cyau-eye {
+          position: absolute; right: 10px; width: 32px; height: 32px; border: none; background: transparent;
+          color: hsl(var(--muted-foreground)); display: grid; place-items: center; cursor: pointer; border-radius: 8px;
+        }
+        .cyau-eye:hover { color: hsl(var(--foreground)); }
+
+        /* alerts */
+        .cyau-alert { font-size: 12.5px; line-height: 1.4; border-radius: 10px; padding: 9px 12px; }
+        .cyau-alert.err { background: rgba(229,86,78,.12); border: 1px solid rgba(229,86,78,.32); color: #E5564E; }
+        .cyau-alert.ok  { background: rgba(61,187,107,.12); border: 1px solid rgba(61,187,107,.30); color: #3DBB6B; }
+
+        /* links / small buttons */
+        .cyau-link { background: none; border: none; cursor: pointer; padding: 0; font-size: 12.5px; font-weight: 500; color: hsl(var(--brand)); font-family: inherit; }
+        .cyau-textbtn { background: none; border: none; cursor: pointer; padding: 0; font-size: 13px; font-family: inherit; display: flex; align-items: center; gap: 4px; }
+
+        /* verify tile + otp */
+        .cyau-tile { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; margin-bottom: 20px; background: hsl(var(--brand) / .12); color: hsl(var(--brand)); }
+        .cyau-tile.ok { background: rgba(61,187,107,.12); color: #3DBB6B; }
+        .cyau-otp {
+          width: 100%; height: 52px; border-radius: 12px; border: 1px solid hsl(var(--border));
+          background: hsl(var(--card)); color: hsl(var(--foreground)); font-size: 22px;
+          font-family: ui-monospace, 'SF Mono', monospace; letter-spacing: 6px; text-align: center; outline: none;
+          transition: border-color .15s, box-shadow .15s;
+        }
+        .cyau-otp:focus { border-color: hsl(var(--brand)); box-shadow: 0 0 0 3px hsl(var(--brand) / .15); }
+        .cyau-otp.bad { border-color: #E5564E; box-shadow: 0 0 0 3px rgba(229,86,78,.16); }
+
+        /* testimonial */
+        .cyau-quote { margin-top: 28px; padding: 16px; border-radius: 14px; background: hsl(var(--muted)); border: 1px solid hsl(var(--border)); }
+
+        /* carousel */
+        @keyframes scrollUp { 0% { transform: translateY(0); } 100% { transform: translateY(-50%); } }
+        @keyframes scrollDown { 0% { transform: translateY(-50%); } 100% { transform: translateY(0); } }
+        .animate-scroll-up { animation: scrollUp 22s linear infinite; }
+        .animate-scroll-down { animation: scrollDown 22s linear infinite; }
+        @media (prefers-reduced-motion: reduce) { .animate-scroll-up, .animate-scroll-down { animation: none; } }
+      `}</style>
+
+      {/* ── Left panel (dark showcase) — desktop only ── */}
+      <div className="cyau-show">
+        {/* Top / bottom fades */}
+        <div className="absolute inset-x-0 top-0 z-10 pointer-events-none" style={{ height: '18%', background: 'linear-gradient(to bottom, #100d0b, transparent)' }} />
+        <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none" style={{ height: '18%', background: 'linear-gradient(to top, #100d0b, transparent)' }} />
 
         {/* Carousel columns */}
-        <div className="flex gap-3 px-6 pt-4 w-full h-full overflow-hidden">
+        <div className="flex gap-3 px-6 pt-4 w-full h-full overflow-hidden" style={{ position: 'relative', zIndex: 1 }}>
           <CarouselColumn cards={CARDS.slice(0, 3)} />
           <CarouselColumn cards={CARDS.slice(3, 6)} reverse />
           <CarouselColumn cards={CARDS.slice(6, 9)} />
@@ -302,12 +426,7 @@ const Login = () => {
         <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20">
           <div
             className="flex items-center gap-2 rounded-full"
-            style={{
-              padding: '8px 18px',
-              background: 'rgba(255,255,255,0.08)',
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
+            style={{ padding: '8px 18px', background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
             <Sparkles className="w-3.5 h-3.5" style={{ color: 'hsl(var(--brand))' }} />
             <span className="text-white font-semibold" style={{ fontSize: 13 }}>{t('auth.generated_badge')}</span>
@@ -315,56 +434,36 @@ const Login = () => {
         </div>
       </div>
 
-      {/* ── Right panel (login form) — 30% ───────────────── */}
-      <div
-        className="flex flex-col items-center justify-center relative z-10 overflow-y-auto w-full lg:w-[30%] lg:min-w-[360px] lg:shrink-0 px-6 py-10 lg:px-10 lg:py-12"
-        style={{ background: '#f5f5f3', height: '100%' }}
-      >
-        {/* Logo */}
-        <div className="mb-8 self-start">
-          <Logo height={30} />
-        </div>
+      {/* ── Right panel (auth) ── */}
+      <div className="cyau-panel">
+        <div className="cyau-inner animate-fade-up">
+          {/* Logo */}
+          <div className="cyau-logo">
+            <Logo height={30} />
+          </div>
 
-        <div className="w-full max-w-sm animate-fade-up">
           {view === 'verify' ? (
             /* ── OTP Verification View ─────────────────────── */
             <div>
               {otpSuccess ? (
                 <div className="text-center py-8">
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5"
-                    style={{ background: 'rgba(16,185,129,0.1)' }}
-                  >
-                    <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                  <div className="cyau-tile ok" style={{ margin: '0 auto 20px' }}>
+                    <CheckCircle2 className="w-8 h-8" />
                   </div>
-                  <h2 style={{ fontSize: 22, fontWeight: 700, color: '#141417', marginBottom: 6 }}>
-                    {t('auth.verify_success')}
-                  </h2>
-                  <p style={{ fontSize: 14, color: '#8e8e96' }}>{t('auth.verify_redirecting')}</p>
+                  <h2 className="cyau-h1" style={{ fontSize: 22, marginBottom: 6 }}>{t('auth.verify_success')}</h2>
+                  <p className="cyau-sub">{t('auth.verify_redirecting')}</p>
                 </div>
               ) : (
                 <>
-                  <div
-                    className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
-                    style={{ background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))' }}
-                  >
-                    <ShieldCheck className="w-7 h-7" style={{ color: 'hsl(var(--brand))' }} />
+                  <div className="cyau-tile">
+                    <ShieldCheck className="w-7 h-7" />
                   </div>
 
-                  <h1 style={{ fontSize: 24, fontWeight: 700, color: '#141417', letterSpacing: '-0.03em', lineHeight: 1.2, marginBottom: 6 }}>
-                    {t('auth.verify_title')}
-                  </h1>
-                  <p style={{ fontSize: 14, color: '#5a5a60', marginBottom: 8 }}>
-                    {t('auth.verify_subtitle')} <strong style={{ color: '#141417' }}>{email}</strong>
+                  <h1 className="cyau-h1" style={{ fontSize: 24, marginBottom: 6 }}>{t('auth.verify_title')}</h1>
+                  <p className="cyau-sub" style={{ marginBottom: 8 }}>
+                    {t('auth.verify_subtitle')} <strong style={{ color: 'hsl(var(--foreground))' }}>{email}</strong>
                   </p>
-                  <button
-                    onClick={handleChangeEmail}
-                    style={{
-                      background: 'none', border: 'none', color: 'hsl(var(--brand))',
-                      fontSize: 13, fontWeight: 500, cursor: 'pointer', padding: 0,
-                      marginBottom: 16, display: 'flex', alignItems: 'center', gap: 4,
-                    }}
-                  >
+                  <button onClick={handleChangeEmail} className="cyau-textbtn" style={{ color: 'hsl(var(--brand))', fontWeight: 500, marginBottom: 16 }}>
                     {t('auth.change_email')} <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
@@ -377,84 +476,42 @@ const Login = () => {
                     value={otpCode}
                     onChange={(e) => { setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 8)); setOtpError(''); }}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleVerifyOtp(); }}
-                    className="w-full bg-white outline-none transition-all duration-150"
-                    style={{
-                      height: 52,
-                      borderRadius: 12,
-                      border: otpError ? '2px solid #EF4444' : '1px solid rgba(20,20,23,0.12)',
-                      fontSize: 22,
-                      fontFamily: 'monospace',
-                      letterSpacing: 6,
-                      textAlign: 'center',
-                      color: '#141417',
-                      marginBottom: 8,
-                    }}
-                    onFocus={(e) => { if (!otpError) e.currentTarget.style.borderColor = 'hsl(var(--brand))'; }}
-                    onBlur={(e) => { if (!otpError) e.currentTarget.style.borderColor = 'rgba(20,20,23,0.12)'; }}
+                    className={`cyau-otp ${otpError ? 'bad' : ''}`}
+                    style={{ marginBottom: 8 }}
                     autoFocus
                   />
 
-                  {otpError && (
-                    <p className="text-xs mb-2" style={{ color: '#EF4444' }}>{otpError}</p>
-                  )}
+                  {otpError && <p className="text-xs mb-2" style={{ color: '#E5564E' }}>{otpError}</p>}
 
                   <Button
                     variant="gradient"
                     onClick={handleVerifyOtp}
                     disabled={otpLoading || otpCode.length < 8}
                     className="w-full"
-                    style={{ height: 44, fontSize: 13.5, marginTop: 8, marginBottom: 16 }}
+                    style={{ height: 46, borderRadius: 11, fontSize: 14, marginTop: 8, marginBottom: 16 }}
                   >
                     {otpLoading ? (
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                     ) : (
-                      <>
-                        {t('auth.verify_btn')}
-                        <ArrowRight className="w-4 h-4" />
-                      </>
+                      <>{t('auth.verify_btn')}<ArrowRight className="w-4 h-4" /></>
                     )}
                   </Button>
 
-                  {resendSuccess && (
-                    <p className="text-xs mb-2" style={{ color: '#10B981' }}>{t('auth.resend_success')}</p>
-                  )}
+                  {resendSuccess && <p className="text-xs mb-2" style={{ color: '#3DBB6B' }}>{t('auth.resend_success')}</p>}
 
                   <div className="flex items-center justify-between">
                     <button
                       onClick={handleResendCode}
                       disabled={resending || resendCooldown > 0}
-                      className="flex items-center gap-1.5 transition-opacity"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: 'hsl(var(--brand))',
-                        fontSize: 13,
-                        fontWeight: 500,
-                        cursor: resending || resendCooldown > 0 ? 'default' : 'pointer',
-                        opacity: resending || resendCooldown > 0 ? 0.5 : 1,
-                      }}
+                      className="flex items-center gap-1.5"
+                      style={{ background: 'none', border: 'none', color: 'hsl(var(--brand))', fontSize: 13, fontWeight: 500, cursor: resending || resendCooldown > 0 ? 'default' : 'pointer', opacity: resending || resendCooldown > 0 ? 0.5 : 1 }}
                     >
                       <RefreshCw className="w-3.5 h-3.5" style={{ animation: resending ? 'spin 1s linear infinite' : 'none' }} />
-                      {resendCooldown > 0
-                        ? `${t('auth.resend_code')} (${resendCooldown}s)`
-                        : t('auth.resend_code')}
+                      {resendCooldown > 0 ? `${t('auth.resend_code')} (${resendCooldown}s)` : t('auth.resend_code')}
                     </button>
 
-                    <button
-                      onClick={handleSkipVerification}
-                      className="flex items-center gap-1 transition-colors"
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#8e8e96',
-                        fontSize: 13,
-                        cursor: 'pointer',
-                      }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#5a5a60'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#8e8e96'; }}
-                    >
-                      {t('auth.verify_later')}
-                      <ChevronRight className="w-3.5 h-3.5" />
+                    <button onClick={handleSkipVerification} className="cyau-textbtn" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      {t('auth.verify_later')}<ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </>
@@ -466,18 +523,18 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => { setView('form'); setError(''); setResetMsg(''); }}
-                className="flex items-center gap-1 mb-5"
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8e8e96', fontSize: 13, fontFamily: 'inherit' }}
+                className="cyau-textbtn"
+                style={{ color: 'hsl(var(--muted-foreground))', marginBottom: 20 }}
               >
                 <ChevronLeft className="w-4 h-4" /> {t('auth.reset.back_to_login')}
               </button>
 
-              <h1 style={{ fontSize: 22, fontWeight: 700, color: '#141417' }}>{t('auth.reset.title_request')}</h1>
-              <p style={{ fontSize: 14, color: '#5a5a60', marginTop: 4, marginBottom: 22 }}>{t('auth.reset.request_subtitle')}</p>
+              <h1 className="cyau-h1" style={{ fontSize: 24 }}>{t('auth.reset.title_request')}</h1>
+              <p className="cyau-sub" style={{ marginBottom: 22 }}>{t('auth.reset.request_subtitle')}</p>
 
-              <form onSubmit={(e) => { e.preventDefault(); handleForgotPassword(); }} className="space-y-3">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
+              <form onSubmit={(e) => { e.preventDefault(); handleForgotPassword(); }} className="cyau-stack" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div className="cyau-field">
+                  <span className="cyau-ic"><Mail className="w-4 h-4" /></span>
                   <input
                     type="email"
                     placeholder={t('auth.email_placeholder')}
@@ -485,19 +542,14 @@ const Login = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoFocus
-                    className="w-full pl-10 pr-3 bg-white text-sm outline-none"
-                    style={{ height: 44, borderRadius: 10, border: '1px solid rgba(20,20,23,0.1)', color: '#141417', fontSize: 13.5 }}
+                    className="cyau-input"
                   />
                 </div>
 
-                {error && (
-                  <p className="text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600">{error}</p>
-                )}
-                {resetMsg && (
-                  <p className="text-xs bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-green-700">{resetMsg}</p>
-                )}
+                {error && <p className="cyau-alert err">{error}</p>}
+                {resetMsg && <p className="cyau-alert ok">{resetMsg}</p>}
 
-                <Button type="submit" variant="gradient" disabled={resetSending} className="w-full" style={{ height: 44, fontSize: 13.5, marginTop: 4 }}>
+                <Button type="submit" variant="gradient" disabled={resetSending} className="w-full" style={{ height: 46, borderRadius: 11, fontSize: 14, marginTop: 4 }}>
                   {resetSending ? (
                     <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                   ) : (
@@ -510,22 +562,10 @@ const Login = () => {
             /* ── Login / Signup Form ───────────────────────── */
             <>
               {/* Toggle login/signup */}
-              <div
-                className="flex mb-6"
-                style={{ background: 'rgba(20,20,23,0.04)', borderRadius: 9, padding: 3 }}
-              >
+              <div className="cyau-seg" data-mode={mode}>
+                <span className="cyau-seg-thumb" />
                 {(['login', 'signup'] as const).map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => { setMode(m); setError(''); }}
-                    className="flex-1 py-2 text-sm rounded-[7px] transition-all duration-200"
-                    style={{
-                      fontWeight: mode === m ? 600 : 400,
-                      color: mode === m ? '#141417' : '#8e8e96',
-                      background: mode === m ? '#ffffff' : 'transparent',
-                      boxShadow: mode === m ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-                    }}
-                  >
+                  <button key={m} onClick={() => { setMode(m); setError(''); }} className={mode === m ? 'on' : ''}>
                     {m === 'login' ? t('auth.tab_login') : t('auth.tab_signup')}
                   </button>
                 ))}
@@ -533,111 +573,62 @@ const Login = () => {
 
               {/* Heading */}
               <div className="mb-6">
-                <h1 style={{ fontSize: 26, fontWeight: 700, color: '#141417', letterSpacing: '-0.03em', lineHeight: 1.2 }}>
-                  {mode === 'login' ? t('auth.login.heading') : t('auth.signup.heading')}
-                </h1>
-                <p style={{ fontSize: 14, color: '#5a5a60', marginTop: 4 }}>{t('auth.subtitle')}</p>
+                <h1 className="cyau-h1">{mode === 'login' ? t('auth.login.heading') : t('auth.signup.heading')}</h1>
+                <p className="cyau-sub">{t('auth.subtitle')}</p>
               </div>
 
               {/* Google */}
-              <button
-                onClick={handleGoogle}
-                className="w-full flex items-center justify-center gap-3 transition-colors"
-                style={{
-                  padding: '11px 16px',
-                  borderRadius: 10,
-                  border: '1px solid rgba(20,20,23,0.1)',
-                  background: '#ffffff',
-                  fontSize: 13.5,
-                  fontWeight: 500,
-                  color: '#141417',
-                  marginBottom: 16,
-                }}
-                onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#f5f5f3'; }}
-                onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#ffffff'; }}
-              >
+              <button onClick={handleGoogle} className="cyau-google" style={{ marginBottom: 16 }}>
                 <GoogleIcon />
                 {t('auth.continue_google')}
               </button>
 
               {/* Divider */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px" style={{ background: 'rgba(20,20,23,0.1)' }} />
-                <span style={{ fontSize: 12, color: '#b5b5bb' }}>{t('auth.or_email')}</span>
-                <div className="flex-1 h-px" style={{ background: 'rgba(20,20,23,0.1)' }} />
+              <div className="cyau-divider">
+                <div className="ln" />
+                <span>{t('auth.or_email')}</span>
+                <div className="ln" />
               </div>
 
               {/* Form */}
-              <form onSubmit={handleSubmit} className="space-y-3">
+              <form onSubmit={handleSubmit} className="cyau-stack" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {mode === 'signup' && (
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
+                  <div className="cyau-field">
+                    <span className="cyau-ic"><User className="w-4 h-4" /></span>
                     <input
                       type="text"
                       placeholder={t('auth.name_placeholder')}
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       required
-                      className="w-full pl-10 pr-4 bg-white text-sm outline-none transition-all duration-150"
-                      style={{
-                        height: 44,
-                        borderRadius: 10,
-                        border: '1px solid rgba(20,20,23,0.1)',
-                        color: '#141417',
-                        fontSize: 13.5,
-                      }}
-                      onFocus={(e) => { e.currentTarget.style.borderColor = 'hsl(var(--brand))'; }}
-                      onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
+                      className="cyau-input"
                     />
                   </div>
                 )}
 
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
+                <div className="cyau-field">
+                  <span className="cyau-ic"><Mail className="w-4 h-4" /></span>
                   <input
                     type="email"
                     placeholder={t('auth.email_placeholder')}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full pl-10 pr-4 bg-white text-sm outline-none transition-all duration-150"
-                    style={{
-                      height: 44,
-                      borderRadius: 10,
-                      border: '1px solid rgba(20,20,23,0.1)',
-                      color: '#141417',
-                      fontSize: 13.5,
-                    }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = 'hsl(var(--brand))'; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
+                    className="cyau-input"
                   />
                 </div>
 
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#b5b5bb' }} />
+                <div className="cyau-field">
+                  <span className="cyau-ic"><Lock className="w-4 h-4" /></span>
                   <input
                     type={showPw ? 'text' : 'password'}
                     placeholder={t('auth.password_placeholder')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full pl-10 pr-10 bg-white text-sm outline-none transition-all duration-150"
-                    style={{
-                      height: 44,
-                      borderRadius: 10,
-                      border: '1px solid rgba(20,20,23,0.1)',
-                      color: '#141417',
-                      fontSize: 13.5,
-                    }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = 'hsl(var(--brand))'; }}
-                    onBlur={(e) => { e.currentTarget.style.borderColor = 'rgba(20,20,23,0.1)'; }}
+                    className="cyau-input has-eye"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                    style={{ color: '#b5b5bb' }}
-                  >
+                  <button type="button" onClick={() => setShowPw((v) => !v)} className="cyau-eye" aria-label="toggle password">
                     {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
@@ -645,14 +636,7 @@ const Login = () => {
                 {/* Forgot password (login only) → dedicated reset view */}
                 {mode === 'login' && (
                   <div style={{ textAlign: 'right', marginTop: -2 }}>
-                    <button
-                      type="button"
-                      onClick={() => { setView('reset'); setError(''); setResetMsg(''); }}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                        fontSize: 12, fontWeight: 500, color: 'hsl(var(--brand))', fontFamily: 'inherit',
-                      }}
-                    >
+                    <button type="button" onClick={() => { setView('reset'); setError(''); setResetMsg(''); }} className="cyau-link">
                       {t('auth.reset.link')}
                     </button>
                   </div>
@@ -665,45 +649,28 @@ const Login = () => {
                       {[0, 1, 2, 3].map((i) => (
                         <div
                           key={i}
-                          className={`flex-1 h-1 rounded-full transition-all duration-300 ${
-                            i < pwStrength.score ? pwStrength.color : 'bg-[rgba(20,20,23,0.08)]'
-                          }`}
+                          className={`flex-1 h-1 rounded-full transition-all duration-300 ${i < pwStrength.score ? pwStrength.color : ''}`}
+                          style={i < pwStrength.score ? undefined : { background: 'hsl(var(--border))' }}
                         />
                       ))}
                     </div>
-                    <p className="text-xs" style={{ color: '#8e8e96' }}>{pwStrength.label}</p>
+                    <p className="text-xs" style={{ color: 'hsl(var(--muted-foreground))' }}>{pwStrength.label}</p>
                   </div>
                 )}
 
-                {error && (
-                  <p className="text-xs bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-600">
-                    {error}
-                  </p>
-                )}
+                {error && <p className="cyau-alert err">{error}</p>}
 
-                <Button
-                  type="submit"
-                  variant="gradient"
-                  disabled={loading}
-                  className="w-full"
-                  style={{ height: 44, fontSize: 13.5, marginTop: 4 }}
-                >
+                <Button type="submit" variant="gradient" disabled={loading} className="w-full" style={{ height: 46, borderRadius: 11, fontSize: 14, marginTop: 4 }}>
                   {loading ? (
                     <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                   ) : (
-                    <>
-                      {mode === 'login' ? t('auth.sign_in') : t('auth.create_account')}
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                    <>{mode === 'login' ? t('auth.sign_in') : t('auth.create_account')}<ArrowRight className="w-4 h-4" /></>
                   )}
                 </Button>
               </form>
 
               {/* Social proof */}
-              <div
-                className="mt-8 p-4 rounded-xl"
-                style={{ background: 'rgba(20,20,23,0.03)', border: '1px solid rgba(20,20,23,0.06)' }}
-              >
+              <div className="cyau-quote">
                 <div className="flex items-start gap-3">
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-white text-xs font-bold"
@@ -712,11 +679,9 @@ const Login = () => {
                     M
                   </div>
                   <div>
-                    <p className="text-xs leading-relaxed" style={{ color: '#5a5a60' }}>
-                      {t('auth.testimonial')}
-                    </p>
-                    <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: '#8e8e96' }}>
-                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                    <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--muted-foreground))' }}>{t('auth.testimonial')}</p>
+                    <p className="text-xs mt-1.5 flex items-center gap-1" style={{ color: 'hsl(var(--muted-foreground))' }}>
+                      <CheckCircle2 className="w-3 h-3" style={{ color: '#3DBB6B' }} />
                       {t('auth.testimonial_author')}
                     </p>
                   </div>
@@ -726,25 +691,6 @@ const Login = () => {
           )}
         </div>
       </div>
-
-
-      {/* Carousel CSS animations */}
-      <style>{`
-        @keyframes scrollUp {
-          0% { transform: translateY(0); }
-          100% { transform: translateY(-50%); }
-        }
-        @keyframes scrollDown {
-          0% { transform: translateY(-50%); }
-          100% { transform: translateY(0); }
-        }
-        .animate-scroll-up {
-          animation: scrollUp 22s linear infinite;
-        }
-        .animate-scroll-down {
-          animation: scrollDown 22s linear infinite;
-        }
-      `}</style>
     </div>
   );
 };
