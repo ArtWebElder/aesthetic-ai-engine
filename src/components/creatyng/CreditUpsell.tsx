@@ -70,7 +70,7 @@ function LowCreditsBanner({ credits, onDismiss, onUpgrade }: { credits: number; 
 
   return (
     <div style={{
-      background: 'linear-gradient(90deg, #FFF7ED, #FFEDD5)',
+      background: 'hsl(var(--brand) / 0.08)',
       borderBottom: '1px solid #FDBA74',
       padding: '10px 20px',
       display: 'flex', alignItems: 'center', gap: 10,

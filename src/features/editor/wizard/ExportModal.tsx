@@ -104,7 +104,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff", borderRadius: 20, width: 440,
+          background: "hsl(var(--card))", borderRadius: 20, width: 440,
           boxShadow: "0 24px 80px rgba(0,0,0,.18)", overflow: "hidden",
           fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
         }}
@@ -140,7 +140,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
                 <button key={f.fmt} onClick={() => setSelectedFormat(f.fmt)} style={{
                   flex: 1, padding: "12px 10px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit",
                   border: sel ? "1.5px solid hsl(var(--brand))" : "1px solid rgba(20,20,23,0.08)",
-                  background: sel ? "#FFF0EA" : "#ffffff",
+                  background: sel ? "hsl(var(--brand) / 0.16)" : "hsl(var(--card))",
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                 }}>
                   <div style={{ fontSize: 16, fontWeight: 700, color: sel ? "hsl(var(--brand))" : "#141417" }}>{f.label}</div>
@@ -171,7 +171,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
                 <button key={s.id} onClick={() => setSelectedSize(s.id)} style={{
                   padding: "8px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
                   border: sel ? "1.5px solid hsl(var(--brand))" : "1px solid rgba(20,20,23,0.08)",
-                  background: sel ? "#FFF0EA" : "#ffffff",
+                  background: sel ? "hsl(var(--brand) / 0.16)" : "hsl(var(--card))",
                   fontSize: 12, fontWeight: sel ? 600 : 400, color: sel ? "hsl(var(--brand))" : "#5a5a60",
                 }}>
                   {s.id === "original" ? t('export.size_original') : s.label}{s.w > 0 ? ` (${s.w}×${s.h})` : ""}
@@ -182,7 +182,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
 
           {/* Warning when changing size */}
           {selectedSize !== "original" ? (
-            <div style={{ padding: "10px 14px", borderRadius: 10, background: "#FFFBEB", border: "1px solid #FDE68A", marginBottom: 18, fontSize: 11.5, color: "#92400E", lineHeight: 1.5 }}>
+            <div style={{ padding: "10px 14px", borderRadius: 10, background: "hsl(38 92% 50% / 0.13)", border: "1px solid hsl(38 92% 50% / 0.30)", marginBottom: 18, fontSize: 11.5, color: "#FBBF24", lineHeight: 1.5 }}>
               {t('export.resize_warning', { credits: 12 })}
             </div>
           ) : (

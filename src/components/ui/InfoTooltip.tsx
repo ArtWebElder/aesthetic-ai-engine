@@ -8,8 +8,8 @@ export function InfoTooltip({ text }: { text: string }) {
           <span style={{
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 16, height: 16, borderRadius: '50%',
-            border: '1px solid hsl(var(--border))', color: 'hsl(var(--muted-foreground))',
-            fontSize: 10, cursor: 'help', marginLeft: 6, flexShrink: 0,
+            border: '1px solid hsl(var(--border))', background: 'hsl(var(--muted))', color: 'hsl(var(--foreground) / 0.7)',
+            fontSize: 10, fontWeight: 600, cursor: 'help', marginLeft: 6, flexShrink: 0,
           }}>?</span>
         </TooltipTrigger>
         <TooltipContent side="top" className="font-normal" style={{ maxWidth: 260, fontSize: 12.5, lineHeight: 1.5, fontWeight: 400 }}>

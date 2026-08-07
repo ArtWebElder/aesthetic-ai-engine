@@ -104,9 +104,9 @@ export default function AdminUsers() {
           {['all', 'free', 'pro', 'team'].map((f) => (
             <button key={f} onClick={() => { setPlanFilter(f); setPage(1); }} style={{
               padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
-              background: planFilter === f ? '#FFF0EA' : 'transparent',
+              background: planFilter === f ? 'hsl(var(--brand) / 0.16)' : 'transparent',
               border: planFilter === f ? '1px solid hsl(var(--brand) / 0.2)' : '1px solid transparent',
-              color: planFilter === f ? 'hsl(var(--brand))' : '#8e8e96',
+              color: planFilter === f ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))',
             }}>{f === 'all' ? t('admin.users.filter.all') : f.charAt(0).toUpperCase() + f.slice(1)}</button>
           ))}
         </div>
@@ -180,7 +180,7 @@ export default function AdminUsers() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11.5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', cursor: page === 1 ? 'default' : 'pointer', opacity: page === 1 ? 0.3 : 1, fontFamily: 'inherit' }}>{t('admin.users.prev')}</button>
           {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => i + 1).map((p) => (
-            <button key={p} onClick={() => setPage(p)} style={{ width: 28, height: 28, borderRadius: 7, fontSize: 11.5, border: 'none', background: p === page ? '#FFF0EA' : 'transparent', color: p === page ? 'hsl(var(--brand))' : '#8e8e96', cursor: 'pointer', fontFamily: 'inherit', fontWeight: p === page ? 600 : 400 }}>{p}</button>
+            <button key={p} onClick={() => setPage(p)} style={{ width: 28, height: 28, borderRadius: 7, fontSize: 11.5, border: 'none', background: p === page ? 'hsl(var(--brand) / 0.16)' : 'transparent', color: p === page ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', cursor: 'pointer', fontFamily: 'inherit', fontWeight: p === page ? 600 : 400 }}>{p}</button>
           ))}
           <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11.5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', cursor: page === pageCount ? 'default' : 'pointer', opacity: page === pageCount ? 0.3 : 1, fontFamily: 'inherit' }}>{t('admin.users.next')}</button>
         </div>
@@ -196,12 +196,12 @@ export default function AdminUsers() {
             </div>
             <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 16 }}>{creditModal.name || creditModal.email} — Saldo: {creditModal.credits}</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <button onClick={() => setCreditMode('add')} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: creditMode === 'add' ? '1px solid #10b981' : '1px solid hsl(var(--border))', background: creditMode === 'add' ? 'rgba(16,185,129,0.06)' : 'transparent', color: creditMode === 'add' ? '#10b981' : '#8e8e96', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}><Plus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('admin.users.modal.add')}</button>
-              <button onClick={() => setCreditMode('remove')} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: creditMode === 'remove' ? '1px solid #ef4444' : '1px solid hsl(var(--border))', background: creditMode === 'remove' ? 'rgba(239,68,68,0.06)' : 'transparent', color: creditMode === 'remove' ? '#ef4444' : '#8e8e96', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}><Minus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('admin.users.modal.remove')}</button>
+              <button onClick={() => setCreditMode('add')} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: creditMode === 'add' ? '1px solid #10b981' : '1px solid hsl(var(--border))', background: creditMode === 'add' ? 'rgba(16,185,129,0.06)' : 'transparent', color: creditMode === 'add' ? '#10b981' : 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}><Plus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('admin.users.modal.add')}</button>
+              <button onClick={() => setCreditMode('remove')} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: creditMode === 'remove' ? '1px solid #ef4444' : '1px solid hsl(var(--border))', background: creditMode === 'remove' ? 'rgba(239,68,68,0.06)' : 'transparent', color: creditMode === 'remove' ? '#ef4444' : 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}><Minus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('admin.users.modal.remove')}</button>
             </div>
             <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
               {[10, 50, 100, 500].map(n => (
-                <button key={n} onClick={() => setCreditAmount(n)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: creditAmount === n ? '1px solid hsl(var(--brand))' : '1px solid hsl(var(--border))', background: creditAmount === n ? '#FFF0EA' : 'transparent', color: creditAmount === n ? 'hsl(var(--brand))' : '#8e8e96', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{n}</button>
+                <button key={n} onClick={() => setCreditAmount(n)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: creditAmount === n ? '1px solid hsl(var(--brand))' : '1px solid hsl(var(--border))', background: creditAmount === n ? 'hsl(var(--brand) / 0.16)' : 'transparent', color: creditAmount === n ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{n}</button>
               ))}
             </div>
             <input type="number" value={creditAmount} onChange={e => setCreditAmount(Number(e.target.value))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }} />
@@ -231,11 +231,11 @@ export default function AdminUsers() {
               <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 6 }}>{t('admin.users.modal.change_plan')}</p>
               <div style={{ display: 'flex', gap: 6 }}>
                 {['free', 'pro', 'team'].map(p => (
-                  <button key={p} onClick={() => handleChangePlan(detailModal.id, p)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: detailModal.plan === p ? '1px solid hsl(var(--brand))' : '1px solid hsl(var(--border))', background: detailModal.plan === p ? '#FFF0EA' : 'transparent', color: detailModal.plan === p ? 'hsl(var(--brand))' : '#8e8e96' }}>{p.toUpperCase()}</button>
+                  <button key={p} onClick={() => handleChangePlan(detailModal.id, p)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: detailModal.plan === p ? '1px solid hsl(var(--brand))' : '1px solid hsl(var(--border))', background: detailModal.plan === p ? 'hsl(var(--brand) / 0.16)' : 'transparent', color: detailModal.plan === p ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))' }}>{p.toUpperCase()}</button>
                 ))}
               </div>
             </div>
-            <button onClick={() => handleToggleRole(detailModal.id, detailModal.role)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, marginBottom: 16, border: '1px solid hsl(var(--border))', background: detailModal.role === 'superadmin' ? 'rgba(239,68,68,0.06)' : 'transparent', color: detailModal.role === 'superadmin' ? '#ef4444' : '#8e8e96', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={() => handleToggleRole(detailModal.id, detailModal.role)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, marginBottom: 16, border: '1px solid hsl(var(--border))', background: detailModal.role === 'superadmin' ? 'rgba(239,68,68,0.06)' : 'transparent', color: detailModal.role === 'superadmin' ? '#ef4444' : 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
               <Shield size={14} /> {detailModal.role === 'superadmin' ? t('admin.users.modal.remove_superadmin') : t('admin.users.modal.make_superadmin')}
             </button>
             <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 6 }}>{t('admin.users.modal.credit_history')}</p>

@@ -2,10 +2,10 @@ export const tokens = {
   colors: {
     accent: "#C0FF3E",
     accentLight: "#D4FF2E",
-    accentPale: "#FFF0EA",
+    accentPale: "hsl(var(--brand) / 0.16)",
     bg: "#f5f5f3",
     dark: "#141417",
-    white: "#ffffff",
+    white: "hsl(var(--card))",
     border: "rgba(20,20,23,0.06)",
     borderStrong: "rgba(20,20,23,0.10)",
     text1: "#141417",

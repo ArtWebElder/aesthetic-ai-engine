@@ -115,9 +115,9 @@ export default function AdminGenerations() {
         {(['all', 'success', 'error'] as const).map((f) => (
           <button key={f} onClick={() => setStatusFilter(f)} style={{
             padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
-            background: statusFilter === f ? '#FFF0EA' : 'transparent',
+            background: statusFilter === f ? 'hsl(var(--brand) / 0.16)' : 'transparent',
             border: statusFilter === f ? '1px solid hsl(var(--brand) / 0.2)' : '1px solid transparent',
-            color: statusFilter === f ? 'hsl(var(--brand))' : '#8e8e96',
+            color: statusFilter === f ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))',
           }}>
             {f === 'all' ? `${t('admin.generations.filter.all')} (${logs.length})` : f === 'success' ? `${t('admin.generations.filter.success')} (${successCount})` : `${t('admin.generations.filter.error')} (${errorCount})`}
           </button>

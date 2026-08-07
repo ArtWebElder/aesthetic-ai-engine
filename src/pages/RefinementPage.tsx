@@ -204,7 +204,7 @@ export default function RefinementPage() {
           <p style={{ fontSize: 14, fontWeight: 600, color: 'hsl(var(--foreground))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headline || t('refine.untitled')}</p>
         </div>
 
-        <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: 'hsl(var(--brand))', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{t('dashboard.feature.clone_criativo')}</span>
+        <span style={{ padding: '3px 9px', borderRadius: 6, background: 'hsl(var(--brand) / 0.16)', color: 'hsl(var(--brand))', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{t('dashboard.feature.clone_criativo')}</span>
 
         <Button
           variant="gradient"
@@ -271,7 +271,7 @@ export default function RefinementPage() {
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
                 {versions.map((v, idx) => (
                   <button key={idx} onClick={() => selectVersion(idx)} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${selectedVersionIdx === idx ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`, background: selectedVersionIdx === idx ? '#FFF0EA' : '#ffffff' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${selectedVersionIdx === idx ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`, background: selectedVersionIdx === idx ? 'hsl(var(--brand) / 0.16)' : '#ffffff' }}>
                       <img src={v.imageBase64} alt={v.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                     <span style={{ fontSize: 9.5, fontWeight: 500, maxWidth: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selectedVersionIdx === idx ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))' }}>{v.label}</span>

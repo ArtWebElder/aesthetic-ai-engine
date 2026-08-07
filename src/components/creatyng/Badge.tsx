@@ -7,13 +7,15 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
 }
 
+// Tints sobre superfície escura: fundo em alpha da própria cor, texto na versão clara dela.
+// (Valores arbitrários do Tailwind não aceitam espaço — use `_` no lugar.)
 const variantClasses: Record<BadgeVariant, string> = {
-  default:  "bg-[rgba(20,20,23,0.06)] text-[#5a5a60]",
-  accent:   "bg-creatyng-accent-pale text-creatyng-accent",
-  success:  "bg-[#D1FAE5] text-[#065F46]",
-  error:    "bg-[#FEE2E2] text-[#991B1B]",
-  warning:  "bg-[#FEF3C7] text-[#92400E]",
-  purple:   "bg-[#EDE9FE] text-creatyng-purple",
+  default:  "bg-muted text-muted-foreground",
+  accent:   "bg-[hsl(var(--brand)/0.16)] text-[hsl(var(--brand))]",
+  success:  "bg-[hsl(152_60%_45%/0.14)] text-[#6EE7A8]",
+  error:    "bg-[hsl(0_72%_51%/0.14)] text-[#FCA5A5]",
+  warning:  "bg-[hsl(38_92%_50%/0.14)] text-[#FBBF24]",
+  purple:   "bg-[hsl(258_90%_66%/0.16)] text-[#C4B5FD]",
 };
 
 const Badge = ({ variant = "default", className, children, ...props }: BadgeProps) => (

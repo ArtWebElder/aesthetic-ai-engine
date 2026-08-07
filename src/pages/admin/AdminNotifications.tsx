@@ -147,7 +147,7 @@ export default function AdminNotifications() {
                   <button key={r} onClick={() => setRecipients(r)} style={{
                     display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 8,
                     fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 150ms',
-                    background: active ? '#FFF0EA' : 'transparent',
+                    background: active ? 'hsl(var(--brand) / 0.16)' : 'transparent',
                     border: active ? '1px solid hsl(var(--brand) / 0.2)' : '1px solid transparent',
                     color: active ? 'hsl(var(--brand))' : '#9CA3AF',
                   }}>

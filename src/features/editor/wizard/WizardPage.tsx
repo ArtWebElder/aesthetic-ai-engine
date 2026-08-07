@@ -138,7 +138,7 @@ function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
                 background: 'none', border: 'none', padding: 0, fontFamily: 'inherit',
                 cursor: canClick ? 'pointer' : 'default',
-                opacity: step > maxReached ? 0.4 : 1,
+                opacity: step > maxReached ? 0.68 : 1,
                 transition: 'opacity 150ms',
               }}
             >
@@ -148,11 +148,11 @@ function StepIndicator({ current, maxReached, onStepClick, isMobile }: { current
                 transition: 'all 300ms',
                 background: isDone ? 'hsl(var(--brand))' : isActive ? 'hsl(var(--brand))' : 'hsl(var(--muted))',
                 border: `1.5px solid ${isDone || isActive ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
-                color: isDone || isActive ? '#fff' : 'hsl(var(--muted-foreground))',
+                color: isDone || isActive ? 'hsl(var(--brand-foreground))' : 'hsl(var(--foreground) / 0.62)',
               }}>
                 {isDone ? (
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                    <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M2 5L4 7L8 3" stroke="hsl(var(--brand-foreground))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 ) : step}
               </div>
@@ -1056,10 +1056,10 @@ export function WizardPage() {
 
       {/* Credit banner — persistent, non-disruptive */}
       {storeCredits < 12 && storeCredits > 0 && (
-        <div style={{ flexShrink: 0, background: '#FFF7ED', borderBottom: '1px solid #FED7AA', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
+        <div style={{ flexShrink: 0, background: 'hsl(var(--brand) / 0.08)', borderBottom: '1px solid hsl(var(--brand) / 0.22)', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertTriangle size={14} style={{ color: '#D97706' }} />
-            <span style={{ color: '#92400E' }}>{t('wizard.low_credits', { n: storeCredits })}</span>
+            <span style={{ color: '#FBBF24' }}>{t('wizard.low_credits', { n: storeCredits })}</span>
           </div>
           <button onClick={() => navigate('/app/billing')} style={{ background: 'hsl(var(--brand))', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.upgrade')}</button>
         </div>
@@ -1068,7 +1068,7 @@ export function WizardPage() {
         <div style={{ flexShrink: 0, background: '#FEF2F2', borderBottom: '1px solid #FECACA', padding: '6px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 13 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <AlertTriangle size={14} style={{ color: '#DC2626' }} />
-            <span style={{ color: '#991B1B' }}>{t('wizard.no_credits')}</span>
+            <span style={{ color: '#FCA5A5' }}>{t('wizard.no_credits')}</span>
           </div>
           <button onClick={() => navigate('/app/billing')} style={{ background: '#DC2626', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>{t('wizard.upgrade_now')}</button>
         </div>
@@ -1124,7 +1124,7 @@ export function WizardPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                       <span style={{ fontSize: 14, fontWeight: 500 }}>{card.title}</span>
                       <InfoTooltip text={card.tooltip} />
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 500, background: card.badgeOrange ? '#FFF0E6' : 'hsl(var(--muted))', color: card.badgeOrange ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))' }}>{card.badge}</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, fontWeight: 500, background: card.badgeOrange ? 'hsl(var(--brand) / 0.16)' : 'hsl(var(--muted))', color: card.badgeOrange ? 'hsl(var(--brand))' : 'hsl(var(--foreground) / 0.72)' }}>{card.badge}</span>
                     </div>
                     <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 12, lineHeight: 1.4 }}>{card.desc}</p>
                     {card.image ? (
@@ -1203,9 +1203,9 @@ export function WizardPage() {
                 ))}
                 <button onClick={() => setEditedTexts([...editedTexts, { type: 'label', content: '' }])} style={{ fontSize: 12, color: 'hsl(var(--brand))', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500, marginTop: 4 }}>{t('wizard.s2.add_text')}</button>
                 <p style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 8 }}>{t('wizard.s2.short_texts')}</p>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: '#FFF7ED', borderRadius: 8, marginTop: 12, border: '1px solid #FED7AA' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 14px', background: 'hsl(var(--brand) / 0.08)', borderRadius: 8, marginTop: 12, border: '1px solid hsl(var(--brand) / 0.22)' }}>
                   <AlertTriangle size={16} style={{ color: '#D97706', flexShrink: 0, marginTop: 1 }} />
-                  <span style={{ fontSize: 12, color: '#92400E', lineHeight: 1.5 }}>{t('wizard.s2.accent_warning')}</span>
+                  <span style={{ fontSize: 12, color: '#FBBF24', lineHeight: 1.5 }}>{t('wizard.s2.accent_warning')}</span>
                 </div>
               </div>
               {/* Colors */}
@@ -1347,7 +1347,7 @@ export function WizardPage() {
                           }}>
                             {isDone ? (
                               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                                <path d="M2 5L4 7L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                                <path d="M2 5L4 7L8 3" stroke="hsl(var(--brand-foreground))" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                               </svg>
                             ) : isActive ? (
                               <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'hsl(var(--brand))', animation: 'wizPulse 1s ease-in-out infinite' }} />
@@ -1500,7 +1500,7 @@ export function WizardPage() {
               style={{
                 padding: '9px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))',
                 background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, fontWeight: 500,
-                cursor: uiStep === 1 ? 'default' : 'pointer', opacity: uiStep === 1 ? 0.3 : 1,
+                cursor: uiStep === 1 ? 'default' : 'pointer', opacity: uiStep === 1 ? 0.5 : 1,
                 fontFamily: 'inherit', transition: 'all 150ms',
               }}
             >
@@ -1513,9 +1513,9 @@ export function WizardPage() {
                 padding: '9px 24px', borderRadius: 10, border: 'none', fontSize: 13, fontWeight: 600,
                 cursor: canAdvance ? 'pointer' : 'default',
                 background: canAdvance ? 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))' : 'hsl(var(--muted))',
-                color: canAdvance ? '#fff' : 'hsl(var(--muted-foreground))',
+                color: canAdvance ? 'hsl(var(--brand-foreground))' : 'hsl(var(--foreground) / 0.55)',
                 boxShadow: canAdvance ? '0 4px 16px hsl(var(--brand) / 0.3)' : 'none',
-                opacity: canAdvance ? 1 : 0.6, fontFamily: 'inherit', transition: 'all 200ms',
+                fontFamily: 'inherit', transition: 'all 200ms',
               }}
             >
               {uiStep === 1 ? (analysisLoading ? t('wizard.analyzing_btn') : t('wizard.analyze_continue')) : t('wizard.next')}

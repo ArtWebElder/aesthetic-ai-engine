@@ -11,11 +11,13 @@ interface ToastProps {
   onDismiss?: () => void;
 }
 
+// O toast assenta no card escuro e recebe só um véu da cor do tipo.
+// (Valores arbitrários do Tailwind não aceitam espaço — use `_` no lugar.)
 const typeConfig: Record<ToastType, { icon: typeof CheckCircle; classes: string }> = {
-  success: { icon: CheckCircle, classes: "border-creatyng-success/30 bg-[#F0FDF4]" },
-  error:   { icon: XCircle,     classes: "border-creatyng-error/30 bg-[#FFF1F1]" },
-  warning: { icon: AlertTriangle, classes: "border-creatyng-warning/30 bg-[#FFFBEB]" },
-  info:    { icon: Info,         classes: "border-creatyng-info/30 bg-[#F0FDFF]" },
+  success: { icon: CheckCircle,   classes: "border-creatyng-success/30 bg-card bg-[linear-gradient(hsl(152_60%_45%/0.12),hsl(152_60%_45%/0.12))]" },
+  error:   { icon: XCircle,       classes: "border-creatyng-error/30 bg-card bg-[linear-gradient(hsl(0_72%_51%/0.12),hsl(0_72%_51%/0.12))]" },
+  warning: { icon: AlertTriangle, classes: "border-creatyng-warning/30 bg-card bg-[linear-gradient(hsl(38_92%_50%/0.12),hsl(38_92%_50%/0.12))]" },
+  info:    { icon: Info,          classes: "border-creatyng-info/30 bg-card bg-[linear-gradient(hsl(190_90%_50%/0.12),hsl(190_90%_50%/0.12))]" },
 };
 
 const iconColorMap: Record<ToastType, string> = {
@@ -48,13 +50,13 @@ const Toast = ({ message, type = "info", duration = 3500, onDismiss }: ToastProp
       )}
     >
       <Icon className={cn("h-4 w-4 mt-0.5 shrink-0", iconColorMap[type])} />
-      <p className="text-sm text-[#141417] flex-1">{message}</p>
+      <p className="text-sm text-foreground flex-1">{message}</p>
       <button
         onClick={() => {
           setVisible(false);
           setTimeout(() => onDismiss?.(), 300);
         }}
-        className="shrink-0 text-[#8e8e96] hover:text-[#141417] transition-colors"
+        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
       >
         <X className="h-3.5 w-3.5" />
       </button>

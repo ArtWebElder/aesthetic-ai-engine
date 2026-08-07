@@ -58,7 +58,7 @@ export function AdminSidebar() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 10, width: '100%',
                 padding: '9px 12px', borderRadius: 8, cursor: 'pointer',
-                background: active ? '#FFF0EA' : 'transparent',
+                background: active ? 'hsl(var(--brand) / 0.16)' : 'transparent',
                 border: active ? '1px solid hsl(var(--brand) / 0.2)' : '1px solid transparent',
                 color: active ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
                 fontSize: 13, fontFamily: 'inherit', transition: 'all 150ms', position: 'relative', textAlign: 'left',
