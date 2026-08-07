@@ -128,13 +128,13 @@ export function SupportChat() {
           style={{
             position: 'fixed', left: pos.x, top: pos.y, zIndex: 9999,
             width: 52, height: 52, borderRadius: '50%',
-            background: 'linear-gradient(135deg, hsl(var(--brand)), #EA580C)',
+            background: 'var(--brand-gradient)',
             border: 'none', cursor: 'grab', touchAction: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 16px hsl(var(--brand) / 0.35)',
           }}
         >
-          <MessageCircle size={24} color="#fff" />
+          <MessageCircle size={24} color="hsl(var(--brand-foreground))" />
         </button>
       )}
 
@@ -154,22 +154,22 @@ export function SupportChat() {
           <div style={{
             padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 10,
             borderBottom: '1px solid hsl(var(--border))',
-            background: 'linear-gradient(135deg, hsl(var(--brand)), #EA580C)',
+            background: 'var(--brand-gradient)',
           }}>
-            <Sparkles size={18} color="#fff" />
+            <Sparkles size={18} color="hsl(var(--brand-foreground))" />
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{t('support.title')}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)' }}>Creatyng AI</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'hsl(var(--brand-foreground))' }}>{t('support.title')}</div>
+              <div style={{ fontSize: 11, color: 'hsl(var(--brand-foreground) / 0.72)' }}>Creatyng AI</div>
             </div>
             <button
               onClick={() => setOpen(false)}
               style={{
-                background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: 8,
+                background: 'hsl(var(--brand-foreground) / 0.14)', border: 'none', borderRadius: 8,
                 width: 28, height: 28, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <X size={14} color="#fff" />
+              <X size={14} color="hsl(var(--brand-foreground))" />
             </button>
           </div>
 
@@ -215,7 +215,7 @@ export function SupportChat() {
                   padding: '10px 14px', borderRadius: 12,
                   fontSize: 13, lineHeight: 1.5,
                   background: msg.role === 'user' ? 'hsl(var(--brand))' : 'hsl(var(--muted))',
-                  color: msg.role === 'user' ? '#fff' : 'hsl(var(--foreground))',
+                  color: msg.role === 'user' ? 'hsl(var(--brand-foreground))' : 'hsl(var(--foreground))',
                 }}
               >
                 {msg.text}
@@ -266,7 +266,7 @@ export function SupportChat() {
                 transition: 'background 150ms',
               }}
             >
-              <Send size={14} color={input.trim() ? '#fff' : 'hsl(var(--muted-foreground))'} />
+              <Send size={14} color={input.trim() ? 'hsl(var(--brand-foreground))' : 'hsl(var(--muted-foreground))'} />
             </button>
           </div>
         </div>

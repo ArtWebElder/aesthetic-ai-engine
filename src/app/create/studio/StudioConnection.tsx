@@ -37,7 +37,7 @@ export function StudioConnection({ connection, nodes, execStates }: StudioConnec
       <path
         d={d}
         fill="none"
-        stroke={isDone ? '#10b98140' : isRunning ? '#ff713d30' : 'transparent'}
+        stroke={isDone ? '#10b98140' : isRunning ? '#C0FF3E30' : 'transparent'}
         strokeWidth={6}
         strokeLinecap="round"
       />

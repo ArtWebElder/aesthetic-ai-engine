@@ -194,7 +194,7 @@ export function ExportModal({ open, onClose, imageBase64 }: ExportModalProps) {
           {/* Export button */}
           <button onClick={handleExport} disabled={exporting} style={{
             width: "100%", padding: "12px 0", borderRadius: 10, border: "none",
-            background: "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))", color: "#fff",
+            background: "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))", color: "hsl(var(--brand-foreground))",
             fontSize: 14, fontWeight: 600, cursor: exporting ? "default" : "pointer",
             fontFamily: "inherit", opacity: exporting ? 0.7 : 1,
             boxShadow: "0 3px 12px hsl(var(--brand) / 0.3)",

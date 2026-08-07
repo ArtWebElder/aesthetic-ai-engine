@@ -17,7 +17,7 @@ type SortMode = 'recent' | 'name' | 'credits';
 type FilterType = 'all' | 'Food/Pop' | 'Pop Design';
 
 /* ─── Project hue/color map (deterministic by index) ─── */
-const PROJECT_COLORS = ['#7C3AED', '#ff713d', '#EC4899', '#10B981', '#06B6D4', '#F59E0B', '#EC4899', '#1E293B', '#10B981'];
+const PROJECT_COLORS = ['#7C3AED', '#C0FF3E', '#EC4899', '#10B981', '#06B6D4', '#F59E0B', '#EC4899', '#1E293B', '#10B981'];
 
 /* ─── Action Dropdown ─────────────────────────────────── */
 function ActionMenu({ open, onClose, onAction }: { open: boolean; onClose: () => void; onAction: (a: string) => void }) {

@@ -98,7 +98,7 @@ export function StudioChat({ open, onClose }: StudioChatProps) {
             <div
               className={`max-w-[80%] px-3 py-[7px] text-xs leading-relaxed ${
                 msg.role === 'user'
-                  ? 'rounded-[12px_12px_2px_12px] bg-gradient-to-br from-[hsl(var(--brand))] to-[hsl(var(--brand-2))] text-white'
+                  ? 'rounded-[12px_12px_2px_12px] bg-gradient-to-br from-[hsl(var(--brand))] to-[hsl(var(--brand-2))] text-[hsl(var(--brand-foreground))]'
                   : 'rounded-[12px_12px_12px_2px] bg-muted text-foreground'
               }`}
             >
@@ -139,7 +139,7 @@ export function StudioChat({ open, onClose }: StudioChatProps) {
           disabled={!input.trim() || isTyping}
           className={`w-8 h-8 rounded-lg border-none flex items-center justify-center flex-shrink-0 transition-all ${
             input.trim() && !isTyping
-              ? 'bg-primary text-white cursor-pointer hover:opacity-90'
+              ? 'bg-primary text-[hsl(var(--primary-foreground))] cursor-pointer hover:opacity-90'
               : 'bg-muted text-muted-foreground cursor-not-allowed'
           }`}
         >

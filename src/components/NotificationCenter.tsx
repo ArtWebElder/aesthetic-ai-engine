@@ -24,10 +24,10 @@ const COLOR_MAP: Record<NotificationType, string> = {
   info: '#3B82F6',
   warning: '#F59E0B',
   error: '#EF4444',
-  credit: '#ff713d',
+  credit: '#C0FF3E',
   promo: '#8B5CF6',
   update: '#10B981',
-  billing: '#ff713d',
+  billing: '#C0FF3E',
 };
 
 function timeAgo(dateStr: string): string {

@@ -179,7 +179,7 @@ export const FLOW_STYLES: Record<string, StyleTemplate[]> = {
       id: 'curiosidades-top10',
       name: 'Top 10 Curiosidades',
       vibe: 'Lista de curiosidades com clima de descoberta',
-      color: '#f97316',
+      color: '#C0FF3E',
       fields: {
         style: 'intriguing top 10 facts thumbnail, central curious image, collage background; huge bold number, white and orange fill, 3D blocks',
         lighting: 'mysterious cinematic glow, spotlight on subject',

@@ -20,7 +20,7 @@ const PROFILES: { id: ProfileId; labelKey: string; subKey: string; Icon: React.F
   { id: 'designer', labelKey: 'onboarding.profile.designer', subKey: 'onboarding.sub.branding', Icon: Palette, color: '#7C3AED' },
   { id: 'webdev', labelKey: 'onboarding.profile.webdev', subKey: 'onboarding.sub.ui_ux', Icon: Code2, color: '#06B6D4' },
   { id: 'traffic', labelKey: 'onboarding.profile.traffic', subKey: 'onboarding.sub.marketing', Icon: Target, color: '#F59E0B' },
-  { id: 'business', labelKey: 'onboarding.profile.business', subKey: 'onboarding.sub.local_biz', Icon: Briefcase, color: '#ff713d' },
+  { id: 'business', labelKey: 'onboarding.profile.business', subKey: 'onboarding.sub.local_biz', Icon: Briefcase, color: '#C0FF3E' },
   { id: 'creator', labelKey: 'onboarding.profile.youtuber', subKey: 'onboarding.sub.creative', Icon: Play, color: '#EF4444' },
   { id: 'social', labelKey: 'onboarding.profile.social', subKey: 'onboarding.sub.social_media', Icon: Megaphone, color: '#10B981' },
   { id: 'photographer', labelKey: 'onboarding.profile.photographer', subKey: 'onboarding.sub.product', Icon: Camera, color: '#8B5CF6' },
@@ -96,7 +96,7 @@ export default function OnboardingPage() {
 
   const TOTAL_STEPS = 3;
   const progress = ((step + 1) / TOTAL_STEPS) * 100;
-  const profileColor = PROFILES.find(p => p.id === profile)?.color || '#ff713d';
+  const profileColor = PROFILES.find(p => p.id === profile)?.color || '#C0FF3E';
 
   const canNext = () => {
     if (step === 0) return !!profile;
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
   /* tile style: resting = category hue · selected = brand gradient */
   const tileStyle = (color: string, selected: boolean): React.CSSProperties =>
     selected
-      ? { background: 'linear-gradient(145deg, hsl(var(--brand-2)), hsl(var(--brand)))', color: '#fff', border: '1px solid transparent', boxShadow: '0 8px 18px -8px hsl(var(--brand) / .6)' }
+      ? { background: 'linear-gradient(145deg, hsl(var(--brand-2)), hsl(var(--brand)))', color: 'hsl(var(--brand-foreground))', border: '1px solid transparent', boxShadow: '0 8px 18px -8px hsl(var(--brand) / .6)' }
       : { background: `${color}1A`, color, border: `1px solid ${color}33` };
 
   return (
@@ -301,7 +301,7 @@ export default function OnboardingPage() {
                 <button onClick={() => markAndNavigate('/app/create')} className="cyob-readycard primary cyob-anim" style={{ animation: ready ? 'cyob-scin 300ms ease both' : 'none' }}>
                   <div style={{
                     width: 44, height: 44, borderRadius: 12, marginBottom: 14,
-                    background: 'linear-gradient(145deg, hsl(var(--brand-2)), hsl(var(--brand)))', color: '#fff',
+                    background: 'linear-gradient(145deg, hsl(var(--brand-2)), hsl(var(--brand)))', color: 'hsl(var(--brand-foreground))',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 18px -8px hsl(var(--brand) / .6)',
                   }}>
                     <Wand2 size={22} />

@@ -15,7 +15,7 @@ const TYPE_CONFIG: Record<NotifType, { icon: React.ElementType; color: string; l
   warning: { icon: AlertTriangle, color: '#F59E0B', label: 'admin.notif.type.warning' },
   promo: { icon: Sparkles, color: '#8B5CF6', label: 'admin.notif.type.promo' },
   update: { icon: RefreshCw, color: '#10B981', label: 'admin.notif.type.update' },
-  billing: { icon: DollarSign, color: '#ff713d', label: 'admin.notif.type.billing' },
+  billing: { icon: DollarSign, color: '#C0FF3E', label: 'admin.notif.type.billing' },
 };
 
 const RECIPIENT_CONFIG: Record<Recipients, { icon: React.ElementType; label: string }> = {

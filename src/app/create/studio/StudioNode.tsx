@@ -921,7 +921,7 @@ export function StudioNode({
           <span style={{
             fontSize: 9, fontWeight: 700,
             color: def.aiProvider.includes('Gemini') ? '#7c3aed' : '#ea6e0b',
-            background: def.aiProvider.includes('Gemini') ? '#7c3aed18' : '#f9731618',
+            background: def.aiProvider.includes('Gemini') ? '#7c3aed18' : '#C0FF3E18',
             padding: '1px 5px', borderRadius: 4, letterSpacing: 0.3,
           }}>
             {def.aiProvider}
@@ -930,7 +930,7 @@ export function StudioNode({
         {def.creditCost && (
           <span style={{
             fontSize: 9, fontWeight: 600, color: 'hsl(var(--brand))',
-            background: '#ff713d15', padding: '1px 5px', borderRadius: 4,
+            background: '#C0FF3E15', padding: '1px 5px', borderRadius: 4,
           }}>
             {def.creditCost}cr
           </span>

@@ -53,7 +53,7 @@ const QUICK_ACTIONS = [
 ];
 
 const QUICK_ACTION_COLORS: Record<string, string> = {
-  "Trocar cor": "#ff713d", "Editar headline": "#7C3AED", "Mudar fonte": "#06B6D4",
+  "Trocar cor": "#C0FF3E", "Editar headline": "#7C3AED", "Mudar fonte": "#06B6D4",
   "Ajustar preço": "#10B981", "Trocar fundo": "#F59E0B", "Auto-melhorar": "#EF4444",
 };
 
@@ -286,7 +286,7 @@ export default function RefinementPage() {
         <div style={{ display: 'flex', flexDirection: 'column', width: 380, flexShrink: 0, background: '#ffffff' }}>
           {/* Chat header */}
           <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
-            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0, position: 'relative' }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'hsl(var(--brand-foreground))', flexShrink: 0, position: 'relative' }}>
               ✦
               <div style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: '#10B981', border: '1.5px solid #ffffff' }} />
             </div>

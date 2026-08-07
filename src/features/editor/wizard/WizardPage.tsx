@@ -1284,7 +1284,7 @@ export function WizardPage() {
               {/* Generate button */}
               <button onClick={() => handleGenerate()} disabled={generating} style={{
                 width: '100%', padding: '16px 0', borderRadius: 12, border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: '#fff',
+                background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))', color: 'hsl(var(--brand-foreground))',
                 boxShadow: '0 4px 16px hsl(var(--brand) / 0.35)', transition: 'all 200ms',
               }}>
                 ✦ {currentGeneration ? t('wizard.s3.regenerate_btn', { n: 12 }) : t('wizard.s3.generate_btn', { n: 12 })}
@@ -1435,7 +1435,7 @@ export function WizardPage() {
               {/* Action buttons */}
               {!isWorking && (
                 <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-                  <button onClick={() => setShowExportModal(true)} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <button onClick={() => setShowExportModal(true)} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', color: 'hsl(var(--brand-foreground))', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                     {t('wizard.s4.download')}
                   </button>
                   <button onClick={handleRegenerateFromResult} style={{ padding: '10px 20px', borderRadius: 10, border: '1px solid hsl(var(--border))', background: 'transparent', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -1459,7 +1459,7 @@ export function WizardPage() {
               {flags.chatEnabled && !isWorking && (
                 <div style={{ marginTop: 24, padding: 16, border: '1px solid hsl(var(--border))', borderRadius: 12, background: 'hsl(var(--card))' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff', flexShrink: 0 }}>✦</div>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: 'hsl(var(--brand-foreground))', flexShrink: 0 }}>✦</div>
                     <p style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>Creatyng AI</p>
                     <span style={{ fontSize: 11, color: '#10B981', marginLeft: 'auto' }}>● {t('wizard.online')}</span>
                   </div>

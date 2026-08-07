@@ -345,7 +345,7 @@ export function RefinementChat({
                     onClick={handleConfirmRegenerate}
                     style={{
                       padding: "6px 14px", borderRadius: 8, border: "none",
-                      background: "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))", color: "#fff",
+                      background: "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))", color: "hsl(var(--brand-foreground))",
                       fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
                     }}
                   >

@@ -149,7 +149,7 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     id: 'scene_gen',
     label: 'Scene Gen',
     icon: 'Sparkles',
-    color: '#ff713d',
+    color: '#C0FF3E',
     aiProvider: 'Gemini',
     category: 'ai',
     defaultWidth: 280,
@@ -218,7 +218,7 @@ export const NODE_TYPE_DEFS: Record<NodeTypeId, NodeTypeDef> = {
     id: 'image_gen',
     label: 'Image Gen',
     icon: 'Camera',
-    color: '#ff713d',
+    color: '#C0FF3E',
     aiProvider: 'Replicate',
     category: 'ai',
     defaultWidth: 280,
@@ -517,7 +517,7 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     descriptionEn: 'Clone any ad with AI. Swap texts, colors and subject.',
     descriptionEs: 'Clona cualquier anuncio con IA. Cambia textos, colores y sujeto.',
     icon: 'Copy',
-    color: '#ff713d',
+    color: '#C0FF3E',
     credits: 12,
     nodes: [
       { id: 'ref', type: 'reference_upload', x: 60, y: 60, data: { label: 'Referência (anúncio a clonar)' } },
@@ -574,7 +574,7 @@ export const PRESET_FLOWS: Record<string, PresetFlow> = {
     descriptionEn: 'Your real product + professional background + AI copy & composition',
     descriptionEs: 'Tu producto real + fondo profesional + copy y composición IA',
     icon: 'LayoutTemplate',
-    color: '#ff713d',
+    color: '#C0FF3E',
     credits: 8,
     nodes: [
       // Row 1: Reference → Analyze → Copy IA → Image Gen → Composition IA → Overlay → Export

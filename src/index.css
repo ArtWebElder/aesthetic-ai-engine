@@ -37,11 +37,11 @@
 
     /* ── Brand tokens (single source of truth for the neon identity) ──
        Edit these to re-skin the brand across the whole app at once.
-       --brand = #C0FF3E, --brand-2 = #DBFF8A (HSL triplets so `hsl(var(--brand) / a)` works).
+       --brand = #C0FF3E, --brand-2 = #D4FF2E (HSL triplets so `hsl(var(--brand) / a)` works).
        The app is dark-only (App.tsx forces the `dark` class), so `.dark` below is what ships;
        these :root values exist only so nothing flashes orange before hydration. */
     --brand: 79 100% 62%;
-    --brand-2: 78 100% 77%;
+    --brand-2: 72 100% 59%;
     --brand-foreground: 100 27% 6%;
     --brand-gradient: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)));
     --shadow-brand: 0 4px 18px hsl(var(--brand) / 0.28);
@@ -83,7 +83,7 @@
 
     /* Neon brand — glow is stronger here because there is a dark surface to bloom on. */
     --brand: 79 100% 62%;
-    --brand-2: 78 100% 77%;
+    --brand-2: 72 100% 59%;
     --brand-foreground: 100 27% 6%;
     --brand-gradient: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)));
     --shadow-brand: 0 0 0 1px hsl(var(--brand) / 0.18), 0 6px 26px hsl(var(--brand) / 0.32);
