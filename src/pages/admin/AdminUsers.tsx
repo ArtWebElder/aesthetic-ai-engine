@@ -5,20 +5,20 @@ import { Skeleton } from '@/components/creatyng';
 import { useI18n } from '@/i18n';
 
 const PLAN_STYLES: Record<string, React.CSSProperties> = {
-  free: { background: 'rgba(20,20,23,0.06)', color: '#8e8e96' },
+  free: { background: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' },
   pro: { background: 'rgba(99,102,241,0.08)', color: '#6366f1' },
   team: { background: 'hsl(var(--brand) / 0.08)', color: 'hsl(var(--brand))' },
 };
 
 const ROLE_STYLES: Record<string, React.CSSProperties> = {
-  user: { background: 'rgba(20,20,23,0.04)', color: '#b5b5bb' },
+  user: { background: 'hsl(var(--muted))', color: '#b5b5bb' },
   admin: { background: 'rgba(245,158,11,0.08)', color: '#F59E0B' },
   superadmin: { background: 'rgba(239,68,68,0.08)', color: '#EF4444' },
 };
 
 const PAGE_SIZE = 10;
-const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
-const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid hsl(var(--border))' };
+const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: 'hsl(var(--foreground))', borderBottom: '1px solid hsl(var(--muted))' };
 
 export default function AdminUsers() {
   const { t } = useI18n();
@@ -97,7 +97,7 @@ export default function AdminUsers() {
         <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 200 }}>
           <Search style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: '#b5b5bb' }} />
           <input value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} placeholder={t('admin.users.search_placeholder')}
-            style={{ width: '100%', background: '#ffffff', border: '1px solid rgba(20,20,23,0.1)', borderRadius: 8, paddingLeft: 34, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13, color: '#141417', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
+            style={{ width: '100%', background: 'hsl(var(--card))', border: '1px solid rgba(20,20,23,0.1)', borderRadius: 8, paddingLeft: 34, paddingRight: 12, paddingTop: 8, paddingBottom: 8, fontSize: 13, color: 'hsl(var(--foreground))', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}
           />
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -110,13 +110,13 @@ export default function AdminUsers() {
             }}>{f === 'all' ? t('admin.users.filter.all') : f.charAt(0).toUpperCase() + f.slice(1)}</button>
           ))}
         </div>
-        <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#8e8e96', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' }}>
+        <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' }}>
           <Download style={{ width: 14, height: 14 }} /> {t('admin.users.export_csv')}
         </button>
       </div>
 
       {/* Table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+      <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' }}>
         <table style={{ width: '100%', minWidth: 720, borderCollapse: 'collapse' }}>
           <thead><tr>
             {[t('admin.users.columns.name'), t('admin.users.columns.email'), t('admin.users.columns.plan'), t('admin.users.columns.credits'), t('admin.users.columns.role'), t('admin.users.columns.createdAt'), t('admin.users.columns.actions')].map((h) => (
@@ -125,30 +125,30 @@ export default function AdminUsers() {
           </tr></thead>
           <tbody>
             {users.length === 0 ? (
-              <tr><td colSpan={7} style={{ ...tdStyle, textAlign: 'center', color: '#8e8e96', padding: 32 }}>{t('admin.users.empty')}</td></tr>
+              <tr><td colSpan={7} style={{ ...tdStyle, textAlign: 'center', color: 'hsl(var(--muted-foreground))', padding: 32 }}>{t('admin.users.empty')}</td></tr>
             ) : users.map((user) => {
               const totalCredits = (user.plan_credits ?? 0) + (user.bonus_credits ?? 0) || 1;
               const creditPct = Math.min(100, Math.round(((user.credits ?? 0) / totalCredits) * 100));
               const planKey = (user.plan || 'free').toLowerCase();
               return (
                 <tr key={user.id} style={{ transition: 'background 100ms' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'hsl(var(--muted))'}
                   onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
                 >
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(20,20,23,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#5a5a60', flexShrink: 0 }}>{(user.name || user.email || '?').charAt(0).toUpperCase()}</div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>{user.name || '—'}</span>
+                      <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 600, color: '#5a5a60', flexShrink: 0 }}>{(user.name || user.email || '?').charAt(0).toUpperCase()}</div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{user.name || '—'}</span>
                     </div>
                   </td>
-                  <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 12 }}>{user.email}</td>
+                  <td style={{ ...tdStyle, color: 'hsl(var(--muted-foreground))', fontSize: 12 }}>{user.email}</td>
                   <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, ...(PLAN_STYLES[planKey] ?? PLAN_STYLES.free) }}>{(user.plan || 'free').charAt(0).toUpperCase() + (user.plan || 'free').slice(1)}</span></td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div style={{ width: 60, height: 4, borderRadius: 2, background: 'rgba(20,20,23,0.06)', overflow: 'hidden' }}>
+                      <div style={{ width: 60, height: 4, borderRadius: 2, background: 'hsl(var(--border))', overflow: 'hidden' }}>
                         <div style={{ width: `${creditPct}%`, height: '100%', borderRadius: 2, background: 'hsl(var(--brand))' }} />
                       </div>
-                      <span style={{ fontSize: 10.5, color: '#8e8e96' }}>{user.credits ?? 0}/{totalCredits}</span>
+                      <span style={{ fontSize: 10.5, color: 'hsl(var(--muted-foreground))' }}>{user.credits ?? 0}/{totalCredits}</span>
                     </div>
                   </td>
                   <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, ...(ROLE_STYLES[user.role] ?? ROLE_STYLES.user) }}>{user.role}</span></td>
@@ -160,7 +160,7 @@ export default function AdminUsers() {
                         { Icon: Ban, title: t('admin.users.actions.details'), hoverColor: '#F59E0B', onClick: () => openDetail(user) },
                         { Icon: Trash2, title: t('admin.users.actions.delete'), hoverColor: '#EF4444', onClick: () => {} },
                       ].map(({ Icon, title, hoverColor, onClick }) => (
-                        <button key={title} title={title} onClick={onClick} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid rgba(20,20,23,0.06)', background: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b5b5bb', transition: 'all 120ms' }}
+                        <button key={title} title={title} onClick={onClick} style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#b5b5bb', transition: 'all 120ms' }}
                           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = hoverColor; (e.currentTarget as HTMLButtonElement).style.background = `${hoverColor}0A`; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#b5b5bb'; (e.currentTarget as HTMLButtonElement).style.background = '#ffffff'; }}
                         ><Icon style={{ width: 13, height: 13 }} /></button>
@@ -176,36 +176,36 @@ export default function AdminUsers() {
 
       {/* Pagination */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 11.5, color: '#8e8e96' }}>{t('admin.users.showing', { from: Math.min((page - 1) * PAGE_SIZE + 1, total), to: Math.min(page * PAGE_SIZE, total), total })}</span>
+        <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>{t('admin.users.showing', { from: Math.min((page - 1) * PAGE_SIZE + 1, total), to: Math.min(page * PAGE_SIZE, total), total })}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11.5, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#8e8e96', cursor: page === 1 ? 'default' : 'pointer', opacity: page === 1 ? 0.3 : 1, fontFamily: 'inherit' }}>{t('admin.users.prev')}</button>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11.5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', cursor: page === 1 ? 'default' : 'pointer', opacity: page === 1 ? 0.3 : 1, fontFamily: 'inherit' }}>{t('admin.users.prev')}</button>
           {Array.from({ length: Math.min(pageCount, 5) }, (_, i) => i + 1).map((p) => (
             <button key={p} onClick={() => setPage(p)} style={{ width: 28, height: 28, borderRadius: 7, fontSize: 11.5, border: 'none', background: p === page ? '#FFF0EA' : 'transparent', color: p === page ? 'hsl(var(--brand))' : '#8e8e96', cursor: 'pointer', fontFamily: 'inherit', fontWeight: p === page ? 600 : 400 }}>{p}</button>
           ))}
-          <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11.5, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#8e8e96', cursor: page === pageCount ? 'default' : 'pointer', opacity: page === pageCount ? 0.3 : 1, fontFamily: 'inherit' }}>{t('admin.users.next')}</button>
+          <button onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount} style={{ padding: '5px 12px', borderRadius: 7, fontSize: 11.5, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', cursor: page === pageCount ? 'default' : 'pointer', opacity: page === pageCount ? 0.3 : 1, fontFamily: 'inherit' }}>{t('admin.users.next')}</button>
         </div>
       </div>
 
       {/* Credit Modal */}
       {creditModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }} onClick={() => setCreditModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.1)', borderRadius: 16, padding: 24, width: 380, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'hsl(var(--card))', border: '1px solid rgba(20,20,23,0.1)', borderRadius: 16, padding: 24, width: 380, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#141417' }}>{t('admin.users.modal.adjust_title')}</h3>
-              <button onClick={() => setCreditModal(null)} style={{ background: 'none', border: 'none', color: '#8e8e96', cursor: 'pointer' }}><X size={18} /></button>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))' }}>{t('admin.users.modal.adjust_title')}</h3>
+              <button onClick={() => setCreditModal(null)} style={{ background: 'none', border: 'none', color: 'hsl(var(--muted-foreground))', cursor: 'pointer' }}><X size={18} /></button>
             </div>
-            <p style={{ fontSize: 13, color: '#8e8e96', marginBottom: 16 }}>{creditModal.name || creditModal.email} — Saldo: {creditModal.credits}</p>
+            <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 16 }}>{creditModal.name || creditModal.email} — Saldo: {creditModal.credits}</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <button onClick={() => setCreditMode('add')} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: creditMode === 'add' ? '1px solid #10b981' : '1px solid rgba(20,20,23,0.08)', background: creditMode === 'add' ? 'rgba(16,185,129,0.06)' : 'transparent', color: creditMode === 'add' ? '#10b981' : '#8e8e96', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}><Plus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('admin.users.modal.add')}</button>
-              <button onClick={() => setCreditMode('remove')} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: creditMode === 'remove' ? '1px solid #ef4444' : '1px solid rgba(20,20,23,0.08)', background: creditMode === 'remove' ? 'rgba(239,68,68,0.06)' : 'transparent', color: creditMode === 'remove' ? '#ef4444' : '#8e8e96', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}><Minus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('admin.users.modal.remove')}</button>
+              <button onClick={() => setCreditMode('add')} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: creditMode === 'add' ? '1px solid #10b981' : '1px solid hsl(var(--border))', background: creditMode === 'add' ? 'rgba(16,185,129,0.06)' : 'transparent', color: creditMode === 'add' ? '#10b981' : '#8e8e96', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}><Plus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('admin.users.modal.add')}</button>
+              <button onClick={() => setCreditMode('remove')} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: creditMode === 'remove' ? '1px solid #ef4444' : '1px solid hsl(var(--border))', background: creditMode === 'remove' ? 'rgba(239,68,68,0.06)' : 'transparent', color: creditMode === 'remove' ? '#ef4444' : '#8e8e96', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}><Minus size={14} style={{ display: 'inline', verticalAlign: 'middle' }} /> {t('admin.users.modal.remove')}</button>
             </div>
             <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
               {[10, 50, 100, 500].map(n => (
-                <button key={n} onClick={() => setCreditAmount(n)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: creditAmount === n ? '1px solid hsl(var(--brand))' : '1px solid rgba(20,20,23,0.08)', background: creditAmount === n ? '#FFF0EA' : 'transparent', color: creditAmount === n ? 'hsl(var(--brand))' : '#8e8e96', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{n}</button>
+                <button key={n} onClick={() => setCreditAmount(n)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, border: creditAmount === n ? '1px solid hsl(var(--brand))' : '1px solid hsl(var(--border))', background: creditAmount === n ? '#FFF0EA' : 'transparent', color: creditAmount === n ? 'hsl(var(--brand))' : '#8e8e96', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>{n}</button>
               ))}
             </div>
-            <input type="number" value={creditAmount} onChange={e => setCreditAmount(Number(e.target.value))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#141417', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }} />
-            <input value={creditReason} onChange={e => setCreditReason(e.target.value)} placeholder={t('admin.users.modal.reason_ph')} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', background: '#ffffff', color: '#141417', fontSize: 13, marginBottom: 16, boxSizing: 'border-box' }} />
+            <input type="number" value={creditAmount} onChange={e => setCreditAmount(Number(e.target.value))} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: 13, marginBottom: 10, boxSizing: 'border-box' }} />
+            <input value={creditReason} onChange={e => setCreditReason(e.target.value)} placeholder={t('admin.users.modal.reason_ph')} style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: 13, marginBottom: 16, boxSizing: 'border-box' }} />
             <button onClick={handleSaveCredits} style={{ width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', background: creditMode === 'add' ? '#10b981' : '#ef4444', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
               {creditMode === 'add' ? t('admin.users.modal.add_credits', { n: creditAmount }) : t('admin.users.modal.remove_credits', { n: creditAmount })}
             </button>
@@ -216,35 +216,35 @@ export default function AdminUsers() {
       {/* Detail Modal */}
       {detailModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)' }} onClick={() => setDetailModal(null)}>
-          <div onClick={e => e.stopPropagation()} style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.1)', borderRadius: 16, padding: 24, width: 480, maxWidth: '90vw', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'hsl(var(--card))', border: '1px solid rgba(20,20,23,0.1)', borderRadius: 16, padding: 24, width: 480, maxWidth: '90vw', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: '#141417' }}>{t('admin.users.modal.detail_title')}</h3>
-              <button onClick={() => setDetailModal(null)} style={{ background: 'none', border: 'none', color: '#8e8e96', cursor: 'pointer' }}><X size={18} /></button>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'hsl(var(--foreground))' }}>{t('admin.users.modal.detail_title')}</h3>
+              <button onClick={() => setDetailModal(null)} style={{ background: 'none', border: 'none', color: 'hsl(var(--muted-foreground))', cursor: 'pointer' }}><X size={18} /></button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16, fontSize: 12 }}>
-              <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.email')}</span> <span style={{ color: '#141417' }}>{detailModal.email}</span></div>
-              <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.name')}</span> <span style={{ color: '#141417' }}>{detailModal.name || '—'}</span></div>
-              <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.plan')}</span> <span style={{ color: 'hsl(var(--brand))', fontWeight: 600 }}>{(detailModal.plan || 'free').toUpperCase()}</span></div>
-              <div><span style={{ color: '#8e8e96' }}>{t('admin.users.modal.credits')}</span> <span style={{ color: '#141417' }}>{detailModal.credits} (plan: {detailModal.plan_credits}, bonus: {detailModal.bonus_credits})</span></div>
+              <div><span style={{ color: 'hsl(var(--muted-foreground))' }}>{t('admin.users.modal.email')}</span> <span style={{ color: 'hsl(var(--foreground))' }}>{detailModal.email}</span></div>
+              <div><span style={{ color: 'hsl(var(--muted-foreground))' }}>{t('admin.users.modal.name')}</span> <span style={{ color: 'hsl(var(--foreground))' }}>{detailModal.name || '—'}</span></div>
+              <div><span style={{ color: 'hsl(var(--muted-foreground))' }}>{t('admin.users.modal.plan')}</span> <span style={{ color: 'hsl(var(--brand))', fontWeight: 600 }}>{(detailModal.plan || 'free').toUpperCase()}</span></div>
+              <div><span style={{ color: 'hsl(var(--muted-foreground))' }}>{t('admin.users.modal.credits')}</span> <span style={{ color: 'hsl(var(--foreground))' }}>{detailModal.credits} (plan: {detailModal.plan_credits}, bonus: {detailModal.bonus_credits})</span></div>
             </div>
             <div style={{ marginBottom: 16 }}>
-              <p style={{ fontSize: 12, color: '#8e8e96', marginBottom: 6 }}>{t('admin.users.modal.change_plan')}</p>
+              <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 6 }}>{t('admin.users.modal.change_plan')}</p>
               <div style={{ display: 'flex', gap: 6 }}>
                 {['free', 'pro', 'team'].map(p => (
-                  <button key={p} onClick={() => handleChangePlan(detailModal.id, p)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: detailModal.plan === p ? '1px solid hsl(var(--brand))' : '1px solid rgba(20,20,23,0.08)', background: detailModal.plan === p ? '#FFF0EA' : 'transparent', color: detailModal.plan === p ? 'hsl(var(--brand))' : '#8e8e96' }}>{p.toUpperCase()}</button>
+                  <button key={p} onClick={() => handleChangePlan(detailModal.id, p)} style={{ flex: 1, padding: '6px 0', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: detailModal.plan === p ? '1px solid hsl(var(--brand))' : '1px solid hsl(var(--border))', background: detailModal.plan === p ? '#FFF0EA' : 'transparent', color: detailModal.plan === p ? 'hsl(var(--brand))' : '#8e8e96' }}>{p.toUpperCase()}</button>
                 ))}
               </div>
             </div>
-            <button onClick={() => handleToggleRole(detailModal.id, detailModal.role)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, marginBottom: 16, border: '1px solid rgba(20,20,23,0.08)', background: detailModal.role === 'superadmin' ? 'rgba(239,68,68,0.06)' : 'transparent', color: detailModal.role === 'superadmin' ? '#ef4444' : '#8e8e96', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button onClick={() => handleToggleRole(detailModal.id, detailModal.role)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, marginBottom: 16, border: '1px solid hsl(var(--border))', background: detailModal.role === 'superadmin' ? 'rgba(239,68,68,0.06)' : 'transparent', color: detailModal.role === 'superadmin' ? '#ef4444' : '#8e8e96', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit' }}>
               <Shield size={14} /> {detailModal.role === 'superadmin' ? t('admin.users.modal.remove_superadmin') : t('admin.users.modal.make_superadmin')}
             </button>
-            <p style={{ fontSize: 12, color: '#8e8e96', marginBottom: 6 }}>{t('admin.users.modal.credit_history')}</p>
+            <p style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))', marginBottom: 6 }}>{t('admin.users.modal.credit_history')}</p>
             {userHistory.length === 0 ? (
               <p style={{ fontSize: 12, color: '#b5b5bb', padding: 12 }}>{t('admin.users.modal.no_history')}</p>
             ) : (
-              <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 8 }}>
+              <div style={{ maxHeight: 200, overflowY: 'auto', border: '1px solid hsl(var(--border))', borderRadius: 8 }}>
                 {userHistory.map((h, i) => (
-                  <div key={i} style={{ padding: '8px 12px', borderBottom: '1px solid rgba(20,20,23,0.04)', display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                  <div key={i} style={{ padding: '8px 12px', borderBottom: '1px solid hsl(var(--muted))', display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
                     <span style={{ color: '#5a5a60' }}>{(h.description as string) || (h.type as string)}</span>
                     <span style={{ color: (h.amount as number) >= 0 ? '#10b981' : '#ef4444', fontFamily: 'monospace' }}>{(h.amount as number) >= 0 ? '+' : ''}{h.amount as number}</span>
                   </div>

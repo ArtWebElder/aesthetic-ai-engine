@@ -307,7 +307,7 @@ export function RefinementChat({
     <div style={{
       display: "flex", flexDirection: "column", width: "100%", height: "100%",
       background: "#f5f5f3", borderRadius: 10, overflow: "hidden",
-      border: "1px solid rgba(20,20,23,0.08)",
+      border: "1px solid hsl(var(--border))",
     }}>
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "12px", display: "flex", flexDirection: "column", gap: 8 }}>
@@ -331,7 +331,7 @@ export function RefinementChat({
               <div style={{
                 maxWidth: "85%", padding: "8px 12px", borderRadius: "12px 12px 12px 2px",
                 background: "#ffffff", color: "#141417", fontSize: 13, lineHeight: 1.45,
-                border: "1px solid rgba(20,20,23,0.06)", whiteSpace: "pre-line", fontFamily: "inherit",
+                border: "1px solid hsl(var(--border))", whiteSpace: "pre-line", fontFamily: "inherit",
                 display: "flex", alignItems: "flex-start", gap: parsed.icon ? 6 : 0,
               }}>
                 {parsed.icon && (
@@ -370,12 +370,12 @@ export function RefinementChat({
       </div>
 
       {/* Counter + Input */}
-      <div style={{ flexShrink: 0, fontSize: 10, color: chatCount >= MAX_CHATS ? '#EF4444' : '#8e8e96', textAlign: 'center', padding: '4px 0 0', background: '#f5f5f3' }}>
+      <div style={{ flexShrink: 0, fontSize: 10, color: chatCount >= MAX_CHATS ? '#EF4444' : 'hsl(var(--muted-foreground))', textAlign: 'center', padding: '4px 0 0', background: 'hsl(var(--background))' }}>
         {t('wizard.chat.refinements', { n: chatCount, max: MAX_CHATS })}
       </div>
       <div style={{
         flexShrink: 0, display: "flex", gap: 8, padding: "6px 12px 10px",
-        borderTop: "1px solid rgba(20,20,23,0.08)",
+        borderTop: "1px solid hsl(var(--border))",
         background: "#f5f5f3",
       }}>
         <input
@@ -385,20 +385,20 @@ export function RefinementChat({
           disabled={aiLoading}
           placeholder={t('wizard.chat.placeholder')}
           style={{
-            flex: 1, background: "#ffffff", border: "1px solid rgba(20,20,23,0.1)",
+            flex: 1, background: "#ffffff", border: "1px solid hsl(var(--border))",
             borderRadius: 8, padding: "8px 12px", color: "#141417",
             fontSize: 13, outline: "none", fontFamily: "inherit",
             opacity: aiLoading ? 0.5 : 1,
           }}
           onFocus={(e) => { e.currentTarget.style.borderColor = "hsl(var(--brand))"; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = "rgba(20,20,23,0.1)"; }}
+          onBlur={(e) => { e.currentTarget.style.borderColor = "hsl(var(--border))"; }}
         />
         <button
           onClick={handleSend}
           disabled={aiLoading}
           style={{
             padding: "8px 14px", borderRadius: 8, border: "none",
-            background: aiLoading ? "rgba(20,20,23,0.08)" : "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))",
+            background: aiLoading ? "hsl(var(--border))" : "linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))",
             color: aiLoading ? "#8e8e96" : "#ffffff", fontSize: 13, fontWeight: 600,
             cursor: aiLoading ? "default" : "pointer", fontFamily: "inherit",
             transition: "all 150ms",

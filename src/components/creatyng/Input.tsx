@@ -31,8 +31,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              "w-full h-9 rounded-lg border bg-white text-sm text-[#141417] placeholder:text-[#b5b5bb]",
-              "border-[rgba(20,20,23,0.10)] focus:border-creatyng-accent focus:outline-none focus:ring-2 focus:ring-creatyng-accent/15",
+              "w-full h-9 rounded-lg border bg-card text-sm text-foreground placeholder:text-muted-foreground",
+              "border-border focus:border-creatyng-accent focus:outline-none focus:ring-2 focus:ring-creatyng-accent/15",
               "transition-all duration-150",
               icon ? "pl-9 pr-3" : "px-3",
               error && "border-creatyng-error focus:border-creatyng-error focus:ring-creatyng-error/15",

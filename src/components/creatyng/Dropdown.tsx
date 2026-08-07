@@ -37,14 +37,14 @@ const Dropdown = ({ trigger, items, align = "left", className }: DropdownProps) 
       {open && (
         <div
           className={cn(
-            "absolute top-full mt-1.5 z-50 min-w-[160px] bg-white rounded-xl border border-[rgba(20,20,23,0.06)]",
+            "absolute top-full mt-1.5 z-50 min-w-[160px] bg-card rounded-xl border border-[hsl(var(--border))]",
             "shadow-[0_8px_30px_rgba(0,0,0,0.10)] animate-dropdown-in py-1",
             align === "right" ? "right-0" : "left-0"
           )}
         >
           {items.map((item, i) => {
             if (item.divider) {
-              return <div key={i} className="my-1 h-px bg-[rgba(20,20,23,0.06)]" />;
+              return <div key={i} className="my-1 h-px bg-[hsl(var(--border))]" />;
             }
             return (
               <button
@@ -58,7 +58,7 @@ const Dropdown = ({ trigger, items, align = "left", className }: DropdownProps) 
                   "w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors duration-100",
                   item.danger
                     ? "text-creatyng-error hover:bg-[#FFF1F1]"
-                    : "text-[#141417] hover:bg-[rgba(20,20,23,0.04)]",
+                    : "text-foreground hover:bg-muted",
                   item.disabled && "opacity-40 cursor-not-allowed"
                 )}
               >

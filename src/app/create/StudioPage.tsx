@@ -865,7 +865,7 @@ export function StudioPage() {
             gap: 6,
             padding: '7px 18px',
             background: flowRunning ? 'hsl(var(--muted))' : 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-            color: flowRunning ? 'hsl(var(--muted-foreground))' : '#fff',
+            color: flowRunning ? 'hsl(var(--muted-foreground))' : 'hsl(var(--brand-foreground))',
             border: 'none',
             borderRadius: 10,
             fontSize: 12,
@@ -999,7 +999,7 @@ export function StudioPage() {
             style={{
               flex: 1, minWidth: 0, height: 46, borderRadius: 12, border: 'none',
               background: flowRunning ? 'hsl(var(--muted))' : 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
-              color: flowRunning ? 'hsl(var(--muted-foreground))' : '#fff',
+              color: flowRunning ? 'hsl(var(--muted-foreground))' : 'hsl(var(--brand-foreground))',
               fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               cursor: flowRunning || nodes.length === 0 ? 'not-allowed' : 'pointer',

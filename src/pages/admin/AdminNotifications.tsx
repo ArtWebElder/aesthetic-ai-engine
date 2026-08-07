@@ -27,8 +27,8 @@ const RECIPIENT_CONFIG: Record<Recipients, { icon: React.ElementType; label: str
 
 type HistoryItem = { id: string; type: string; recipients: string; title: string; message: string; send_email: boolean; pinned: boolean; sent_by: string | null; created_at: string };
 
-const cardStyle: React.CSSProperties = { background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' };
-const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid rgba(0,0,0,0.06)' };
+const cardStyle: React.CSSProperties = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' };
+const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid hsl(var(--border))' };
 const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#1A1A1A', borderBottom: '1px solid rgba(0,0,0,0.04)' };
 
 export default function AdminNotifications() {
@@ -93,7 +93,7 @@ export default function AdminNotifications() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 13,
-    border: '1px solid rgba(0,0,0,0.1)', background: '#ffffff',
+    border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))',
     color: '#1A1A1A', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
   };
 
@@ -215,13 +215,13 @@ export default function AdminNotifications() {
         <div style={cardStyle}>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#1A1A1A', marginBottom: 16 }}>{t('admin.notif.preview_title')}</div>
           <div style={{
-            background: '#FAFAF8', borderRadius: 12, padding: 16, minHeight: 180,
+            background: 'hsl(var(--muted))', borderRadius: 12, padding: 16, minHeight: 180,
             display: 'flex', flexDirection: 'column', gap: 12,
           }}>
             {/* Simulated notification card */}
             <div style={{
-              background: '#ffffff', borderRadius: 10, padding: '12px 14px',
-              border: '1px solid rgba(0,0,0,0.06)',
+              background: 'hsl(var(--card))', borderRadius: 10, padding: '12px 14px',
+              border: '1px solid hsl(var(--border))',
               display: 'flex', gap: 10,
               boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
             }}>
@@ -265,8 +265,8 @@ export default function AdminNotifications() {
       </div>
 
       {/* History table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(0,0,0,0.06)', fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>{t('admin.notif.history_title')}</div>
+      <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid hsl(var(--border))', fontSize: 13, fontWeight: 600, color: '#1A1A1A' }}>{t('admin.notif.history_title')}</div>
         <table style={{ width: '100%', minWidth: 560, borderCollapse: 'collapse' }}>
           <thead><tr>
             {[t('admin.notif.field_type'), t('admin.notif.field_title'), t('admin.notif.col.recipients'), t('admin.users.columns.email'), t('admin.notif.pinned'), t('admin.col.date')].map((h) => (

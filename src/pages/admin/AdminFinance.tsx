@@ -16,7 +16,7 @@ interface FinanceStats {
   totalUsers: number;
 }
 
-const CHART_STYLE = { fontSize: 11, fill: '#8e8e96' };
+const CHART_STYLE = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' };
 
 const TX_TYPE_STYLES: Record<string, React.CSSProperties> = {
   purchase: { background: 'rgba(99,102,241,0.08)', color: '#6366f1' },
@@ -25,7 +25,7 @@ const TX_TYPE_STYLES: Record<string, React.CSSProperties> = {
   admin_bonus: { background: 'rgba(245,158,11,0.10)', color: '#d97706' },
   bonus: { background: 'rgba(245,158,11,0.10)', color: '#d97706' },
   admin_debit: { background: 'rgba(239,68,68,0.08)', color: '#EF4444' },
-  debit: { background: 'rgba(20,20,23,0.05)', color: '#8e8e96' },
+  debit: { background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))' },
   refund: { background: 'rgba(239,68,68,0.08)', color: '#EF4444' },
 };
 const TX_LABEL_KEYS: Record<string, string> = {
@@ -39,10 +39,10 @@ const TX_LABEL_KEYS: Record<string, string> = {
   refund: 'admin.finance.tx.refund',
 };
 
-const cardStyle: React.CSSProperties = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 1px 3px rgba(20,20,23,0.04)' };
-const tooltipStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', borderRadius: 8, color: '#141417', fontSize: 12, boxShadow: '0 4px 16px rgba(20,20,23,0.08)' };
-const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
-const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+const cardStyle: React.CSSProperties = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: 'var(--shadow-sm)' };
+const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))', fontSize: 12, boxShadow: '0 4px 16px hsl(var(--border))' };
+const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid hsl(var(--border))' };
+const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: 'hsl(var(--foreground))', borderBottom: '1px solid hsl(var(--muted))' };
 
 export default function AdminFinance() {
   const { t } = useI18n();
@@ -95,33 +95,33 @@ export default function AdminFinance() {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 14 }}>
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('admin.fin.mrr_label')}</span>
+            <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('admin.fin.mrr_label')}</span>
             <TrendingUp style={{ width: 16, height: 16, color: '#10B981' }} />
           </div>
-          <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>R$ {mrrCount.toLocaleString('pt-BR')}</span>
-          <span style={{ fontSize: 11.5, color: '#8e8e96', fontWeight: 500 }}>{t('admin.fin.mrr_sub')}</span>
+          <span style={{ fontSize: 26, fontWeight: 700, color: 'hsl(var(--foreground))', lineHeight: 1 }}>R$ {mrrCount.toLocaleString('pt-BR')}</span>
+          <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))', fontWeight: 500 }}>{t('admin.fin.mrr_sub')}</span>
         </div>
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('admin.fin.revenue_total')}</span>
+            <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('admin.fin.revenue_total')}</span>
             <Wallet style={{ width: 16, height: 16, color: '#6366f1' }} />
           </div>
-          <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>R$ {revenueCount.toLocaleString('pt-BR')}</span>
-          <span style={{ fontSize: 11.5, color: '#8e8e96', fontWeight: 500 }}>{t('admin.fin.revenue_sub')}</span>
+          <span style={{ fontSize: 26, fontWeight: 700, color: 'hsl(var(--foreground))', lineHeight: 1 }}>R$ {revenueCount.toLocaleString('pt-BR')}</span>
+          <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))', fontWeight: 500 }}>{t('admin.fin.revenue_sub')}</span>
         </div>
         <div style={cardStyle}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('admin.fin.conversion_label')}</span>
+            <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('admin.fin.conversion_label')}</span>
             <Users style={{ width: 16, height: 16, color: 'hsl(var(--brand))' }} />
           </div>
-          <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>{(convCount / 10).toFixed(1)}%</span>
-          <span style={{ fontSize: 11.5, color: '#8e8e96', fontWeight: 500 }}>{t('admin.fin.conversion_sub', { payers: stats.payers, total: stats.totalUsers })}</span>
+          <span style={{ fontSize: 26, fontWeight: 700, color: 'hsl(var(--foreground))', lineHeight: 1 }}>{(convCount / 10).toFixed(1)}%</span>
+          <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))', fontWeight: 500 }}>{t('admin.fin.conversion_sub', { payers: stats.payers, total: stats.totalUsers })}</span>
         </div>
       </div>
 
       {/* Revenue Chart */}
       <div style={cardStyle}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 8 }}>{t('admin.finance.revenue_history')}</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 8 }}>{t('admin.finance.revenue_history')}</div>
         <ResponsiveContainer width="100%" height={200}>
           <AreaChart data={revenue}>
             <defs>
@@ -139,8 +139,8 @@ export default function AdminFinance() {
       </div>
 
       {/* Transactions Table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>{t('admin.fin.ledger_title')}</div>
+      <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid hsl(var(--border))', fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{t('admin.fin.ledger_title')}</div>
         <table style={{ width: '100%', minWidth: 480, borderCollapse: 'collapse' }}>
           <thead><tr>
             {[t('admin.generations.col.user'), t('admin.fin.col.type'), t('admin.users.columns.credits'), t('admin.col.date')].map((h) => (
@@ -150,7 +150,7 @@ export default function AdminFinance() {
           <tbody>
             {transactions.map((tx, i) => (
               <tr key={i} style={{ transition: 'background 100ms' }}
-                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'hsl(var(--muted))'}
                 onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
               >
                 <td style={{ ...tdStyle, color: '#5a5a60' }}>{tx.user}</td>

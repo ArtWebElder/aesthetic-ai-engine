@@ -25,11 +25,11 @@ const PLACEHOLDER_DAILY: { day: string; geminiPro: number; geminiFlash: number; 
   { day: 'Dom', geminiPro: 0, geminiFlash: 0, replicate: 0 },
 ];
 
-const CHART_STYLE = { fontSize: 11, fill: '#8e8e96' };
-const tooltipStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', borderRadius: 8, color: '#141417', fontSize: 12, boxShadow: '0 4px 16px rgba(20,20,23,0.08)' };
+const CHART_STYLE = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' };
+const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))', fontSize: 12, boxShadow: '0 4px 16px hsl(var(--border))' };
 
-const thStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 16px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
-const tdStyle: React.CSSProperties = { padding: '9px 16px', fontSize: 12, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+const thStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 16px', textAlign: 'left', borderBottom: '1px solid hsl(var(--border))' };
+const tdStyle: React.CSSProperties = { padding: '9px 16px', fontSize: 12, color: 'hsl(var(--foreground))', borderBottom: '1px solid hsl(var(--muted))' };
 
 export default function AdminTokens() {
   const { t } = useI18n();
@@ -74,20 +74,20 @@ export default function AdminTokens() {
         {providers.map((p) => {
           const usePct = Math.round((p.tokensToday / p.totalCapacity) * 100);
           return (
-            <div key={p.name} style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+            <div key={p.name} style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 16, boxShadow: 'var(--shadow-sm)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(20,20,23,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{p.icon}</div>
+                <div style={{ width: 36, height: 36, borderRadius: 9, background: 'hsl(var(--muted))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{p.icon}</div>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#141417' }}>{p.name}</p>
-                  <p style={{ fontSize: 10.5, color: '#8e8e96' }}>{t('admin.tok.ai_provider')}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{p.name}</p>
+                  <p style={{ fontSize: 10.5, color: 'hsl(var(--muted-foreground))' }}>{t('admin.tok.ai_provider')}</p>
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 10.5, color: '#8e8e96' }}>{t('admin.tokens.tokens_today')}</span>
-                  <span style={{ fontSize: 12, fontWeight: 500, color: '#141417' }}>{p.tokensToday.toLocaleString()}</span>
+                  <span style={{ fontSize: 10.5, color: 'hsl(var(--muted-foreground))' }}>{t('admin.tokens.tokens_today')}</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--foreground))' }}>{p.tokensToday.toLocaleString()}</span>
                 </div>
-                <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(20,20,23,0.06)', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'hsl(var(--border))', overflow: 'hidden' }}>
                   <div style={{ width: `${usePct}%`, height: '100%', borderRadius: 3, background: 'hsl(var(--brand))', transition: 'width 600ms ease' }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -95,8 +95,8 @@ export default function AdminTokens() {
                   <span style={{ fontSize: 10, color: '#b5b5bb' }}>{t('admin.tok.max', { n: p.totalCapacity.toLocaleString() })}</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid rgba(20,20,23,0.06)', paddingTop: 12 }}>
-                <span style={{ fontSize: 10.5, color: '#8e8e96' }}>{t('admin.tok.est_cost')}</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid hsl(var(--border))', paddingTop: 12 }}>
+                <span style={{ fontSize: 10.5, color: 'hsl(var(--muted-foreground))' }}>{t('admin.tok.est_cost')}</span>
                 <span style={{ fontSize: 12, fontWeight: 600, color: '#10B981' }}>${p.costEstimate.toFixed(2)}</span>
               </div>
             </div>
@@ -107,14 +107,14 @@ export default function AdminTokens() {
       {/* Bottom row */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
         {/* Stacked Bar Chart */}
-        <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>{t('admin.tokens.daily_by_provider')}</div>
+        <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, padding: '18px 20px', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 14 }}>{t('admin.tokens.daily_by_provider')}</div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={dailyData}>
               <XAxis dataKey="day" tick={CHART_STYLE} axisLine={false} tickLine={false} />
               <YAxis tick={CHART_STYLE} axisLine={false} tickLine={false} width={40} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 10, color: '#8e8e96' }} />
+              <Legend wrapperStyle={{ fontSize: 10, color: 'hsl(var(--muted-foreground))' }} />
               <Bar dataKey="geminiPro" name="Gemini Pro" stackId="a" fill="#60a5fa" />
               <Bar dataKey="geminiFlash" name="Gemini Flash" stackId="a" fill="#818cf8" />
               <Bar dataKey="replicate" name="Replicate" stackId="a" fill="#c084fc" radius={[3, 3, 0, 0]} />
@@ -123,8 +123,8 @@ export default function AdminTokens() {
         </div>
 
         {/* Top Users Ranking */}
-        <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-          <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>{t('admin.tokens.top_users')}</div>
+        <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ padding: '14px 16px', borderBottom: '1px solid hsl(var(--border))', fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{t('admin.tokens.top_users')}</div>
           <table style={{ width: '100%', minWidth: 420, borderCollapse: 'collapse' }}>
             <thead><tr>
               {[t('admin.tokens.col.rank'), t('admin.tokens.col.user'), t('admin.tokens.col.tokens'), t('admin.tokens.col.generations'), t('admin.tokens.col.cost')].map((h) => (
@@ -134,18 +134,18 @@ export default function AdminTokens() {
             <tbody>
               {topUsers.map((u, i) => (
                 <tr key={u.name} style={{ transition: 'background 100ms' }}
-                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                  onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'hsl(var(--muted))'}
                   onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
                 >
                   <td style={{ ...tdStyle, fontWeight: 700, color: i === 0 ? 'hsl(var(--brand))' : '#b5b5bb' }}>{i + 1}</td>
                   <td style={tdStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                      <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(20,20,23,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: '#5a5a60', flexShrink: 0 }}>{u.name.charAt(0)}</div>
+                      <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 600, color: '#5a5a60', flexShrink: 0 }}>{u.name.charAt(0)}</div>
                       <span style={{ color: '#5a5a60', fontSize: 11 }}>{u.name}</span>
                     </div>
                   </td>
-                  <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 11 }}>{u.tokens.toLocaleString()}</td>
-                  <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 11 }}>{u.generations}</td>
+                  <td style={{ ...tdStyle, color: 'hsl(var(--muted-foreground))', fontSize: 11 }}>{u.tokens.toLocaleString()}</td>
+                  <td style={{ ...tdStyle, color: 'hsl(var(--muted-foreground))', fontSize: 11 }}>{u.generations}</td>
                   <td style={{ ...tdStyle, color: '#10B981', fontSize: 11, fontWeight: 500 }}>${u.cost.toFixed(2)}</td>
                 </tr>
               ))}

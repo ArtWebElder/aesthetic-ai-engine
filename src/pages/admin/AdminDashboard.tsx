@@ -27,22 +27,22 @@ function KPICard({ icon: Icon, label, numericValue, prefix = '', suffix = '', de
     : animated.toLocaleString('pt-BR');
 
   return (
-    <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+    <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12, boxShadow: 'var(--shadow-sm)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ color: '#8e8e96', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
-        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(20,20,23,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon style={{ width: 15, height: 15, color: '#8e8e96' }} />
+        <span style={{ color: 'hsl(var(--muted-foreground))', fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: 'hsl(var(--muted))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon style={{ width: 15, height: 15, color: 'hsl(var(--muted-foreground))' }} />
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: 26, fontWeight: 700, color: '#141417', lineHeight: 1 }}>{prefix}{display}{suffix}</span>
+        <span style={{ fontSize: 26, fontWeight: 700, color: 'hsl(var(--foreground))', lineHeight: 1 }}>{prefix}{display}{suffix}</span>
         <span style={{ fontSize: 11.5, fontWeight: 600, color: positive ? '#10B981' : '#EF4444' }}>{change}</span>
       </div>
     </div>
   );
 }
 
-const CHART_STYLE = { fontSize: 11, fill: '#8e8e96' };
+const CHART_STYLE = { fontSize: 11, fill: 'hsl(var(--muted-foreground))' };
 
 export default function AdminDashboard() {
   const { t } = useI18n();
@@ -93,16 +93,16 @@ export default function AdminDashboard() {
     );
   }
 
-  const tooltipStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.08)', borderRadius: 8, color: '#141417', fontSize: 12, boxShadow: '0 4px 16px rgba(20,20,23,0.08)' };
-  const cardStyle = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '18px 20px', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' };
-  const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
-  const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+  const tooltipStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8, color: 'hsl(var(--foreground))', fontSize: 12, boxShadow: '0 4px 16px hsl(var(--border))' };
+  const cardStyle = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, padding: '18px 20px', boxShadow: 'var(--shadow-sm)' };
+  const thStyle: React.CSSProperties = { fontSize: 11, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 20px', textAlign: 'left', borderBottom: '1px solid hsl(var(--border))' };
+  const tdStyle: React.CSSProperties = { padding: '11px 20px', fontSize: 13, color: 'hsl(var(--foreground))', borderBottom: '1px solid hsl(var(--muted))' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#8e8e96', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
+        <button onClick={loadData} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>
           <RefreshCw size={12} /> {t('admin.refresh')}
         </button>
       </div>
@@ -119,7 +119,7 @@ export default function AdminDashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr', gap: 14 }}>
         {/* MRR Area Chart */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>{t('admin.dash.mrr_chart')}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 14 }}>{t('admin.dash.mrr_chart')}</div>
           <ResponsiveContainer width="100%" height={160}>
             <AreaChart data={revenueData.length > 0 ? revenueData : [{ month: '—', mrr: 0 }]}>
               <defs>
@@ -138,15 +138,15 @@ export default function AdminDashboard() {
 
         {/* Pie Chart */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 10 }}>{t('admin.dash.plan_distribution')}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 10 }}>{t('admin.dash.plan_distribution')}</div>
           <ResponsiveContainer width="100%" height={120}>
             <PieChart>
               <Pie data={[
-                { name: 'Free', value: kpis.totalFree || 1, color: '#8e8e96' },
+                { name: 'Free', value: kpis.totalFree || 1, color: 'hsl(var(--muted-foreground))' },
                 { name: 'Pro', value: kpis.totalPro || 0, color: 'hsl(var(--brand))' },
                 { name: 'Team', value: kpis.totalTeam || 0, color: '#7c3aed' },
               ]} cx="50%" cy="50%" innerRadius={30} outerRadius={50} dataKey="value" paddingAngle={3} strokeWidth={0}>
-                <Cell fill="#8e8e96" />
+                <Cell fill="hsl(var(--muted-foreground))" />
                 <Cell fill="hsl(var(--brand))" />
                 <Cell fill="#7c3aed" />
               </Pie>
@@ -155,7 +155,7 @@ export default function AdminDashboard() {
           </ResponsiveContainer>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 6 }}>
             {[
-              { name: 'Free', value: kpis.totalFree, color: '#8e8e96' },
+              { name: 'Free', value: kpis.totalFree, color: 'hsl(var(--muted-foreground))' },
               { name: 'Pro', value: kpis.totalPro, color: 'hsl(var(--brand))' },
               { name: 'Team', value: kpis.totalTeam, color: '#7c3aed' },
             ].map((f) => (
@@ -164,7 +164,7 @@ export default function AdminDashboard() {
                   <span style={{ width: 8, height: 8, borderRadius: '50%', background: f.color, display: 'inline-block', flexShrink: 0 }} />
                   <span style={{ fontSize: 10.5, color: '#5a5a60' }}>{f.name}</span>
                 </div>
-                <span style={{ fontSize: 10.5, fontWeight: 500, color: '#141417' }}>{f.value}</span>
+                <span style={{ fontSize: 10.5, fontWeight: 500, color: 'hsl(var(--foreground))' }}>{f.value}</span>
               </div>
             ))}
           </div>
@@ -172,18 +172,18 @@ export default function AdminDashboard() {
 
         {/* Bar Chart */}
         <div style={cardStyle}>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#141417', marginBottom: 14 }}>{t('admin.dash.credits_consumed')}</div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 14 }}>{t('admin.dash.credits_consumed')}</div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 160 }}>
             <span style={{ fontSize: 32, fontWeight: 700, color: 'hsl(var(--brand))' }}>{kpis.totalCreditsConsumed.toLocaleString('pt-BR')}</span>
-            <span style={{ fontSize: 11, color: '#8e8e96', marginTop: 4 }}>{t('admin.dash.credits_used')}</span>
+            <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', marginTop: 4 }}>{t('admin.dash.credits_used')}</span>
             <span style={{ fontSize: 11, color: '#10B981', marginTop: 8 }}>{t('admin.dash.total_revenue', { v: kpis.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) })}</span>
           </div>
         </div>
       </div>
 
       {/* Latest generations table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
-        <div style={{ padding: '14px 20px', borderBottom: '1px solid rgba(20,20,23,0.06)', fontSize: 13, fontWeight: 600, color: '#141417' }}>{t('admin.dash.latest_gens')}</div>
+      <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ padding: '14px 20px', borderBottom: '1px solid hsl(var(--border))', fontSize: 13, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{t('admin.dash.latest_gens')}</div>
         <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse' }}>
           <thead><tr>
             {[t('admin.generations.col.user'), t('admin.generations.col.provider'), t('admin.generations.col.status'), t('admin.generations.col.credits'), t('admin.generations.col.duration'), t('admin.col.date')].map((h) => (
@@ -192,10 +192,10 @@ export default function AdminDashboard() {
           </tr></thead>
           <tbody>
             {recentGens.length === 0 ? (
-              <tr><td colSpan={6} style={{ ...tdStyle, textAlign: 'center', color: '#8e8e96' }}>{t('admin.dash.no_gens')}</td></tr>
+              <tr><td colSpan={6} style={{ ...tdStyle, textAlign: 'center', color: 'hsl(var(--muted-foreground))' }}>{t('admin.dash.no_gens')}</td></tr>
             ) : recentGens.map((g, i) => (
               <tr key={i} style={{ transition: 'background 100ms' }}
-                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'hsl(var(--muted))'}
                 onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
               >
                 <td style={tdStyle}>
@@ -203,8 +203,8 @@ export default function AdminDashboard() {
                 </td>
                 <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, background: 'rgba(14,165,233,0.08)', color: '#0EA5E9', fontSize: 10.5, fontWeight: 600 }}>{(g.provider as string) || '—'}</span></td>
                 <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10.5, fontWeight: 600, background: g.status === 'success' || g.status === 'completed' ? 'rgba(16,185,129,0.08)' : g.status === 'error' ? 'rgba(239,68,68,0.08)' : 'rgba(245,158,11,0.08)', color: g.status === 'success' || g.status === 'completed' ? '#10B981' : g.status === 'error' ? '#EF4444' : '#F59E0B' }}>{g.status === 'success' || g.status === 'completed' ? t('admin.status.success') : g.status === 'error' ? t('admin.status.error') : (g.status as string)}</span></td>
-                <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 12 }}>{(g.credits_used as number) || '—'}</td>
-                <td style={{ ...tdStyle, color: '#8e8e96', fontSize: 12 }}>{(g.duration_ms as number) ? `${((g.duration_ms as number) / 1000).toFixed(1)}s` : '—'}</td>
+                <td style={{ ...tdStyle, color: 'hsl(var(--muted-foreground))', fontSize: 12 }}>{(g.credits_used as number) || '—'}</td>
+                <td style={{ ...tdStyle, color: 'hsl(var(--muted-foreground))', fontSize: 12 }}>{(g.duration_ms as number) ? `${((g.duration_ms as number) / 1000).toFixed(1)}s` : '—'}</td>
                 <td style={{ ...tdStyle, color: '#b5b5bb', fontSize: 12 }}>{g.created_at ? new Date(g.created_at as string).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
               </tr>
             ))}

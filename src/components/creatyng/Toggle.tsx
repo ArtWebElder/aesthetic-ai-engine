@@ -23,12 +23,12 @@ const Toggle = ({ checked, onChange, label, disabled, className }: ToggleProps) 
       onClick={() => !disabled && onChange(!checked)}
       className={cn(
         "relative w-9 h-5 rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-creatyng-accent/20",
-        checked ? "bg-creatyng-accent" : "bg-[rgba(20,20,23,0.12)]"
+        checked ? "bg-creatyng-accent" : "bg-[hsl(var(--border))]"
       )}
     >
       <span
         className={cn(
-          "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200",
+          "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-card shadow-sm transition-transform duration-200",
           checked ? "translate-x-4" : "translate-x-0"
         )}
       />

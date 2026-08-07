@@ -703,7 +703,7 @@ function NodeContent({
             )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <label style={{ fontSize: 11, color: '#8e8e96' }}>Template</label>
+            <label style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>Template</label>
             <StudioSelect
               defaultValue={(node.data.templateId as string) || 'auto'}
               options={[

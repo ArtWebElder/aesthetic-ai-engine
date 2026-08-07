@@ -179,7 +179,7 @@ export default function RefinementPage() {
   const checkerBg = 'repeating-conic-gradient(hsl(var(--muted)) 0% 25%, hsl(var(--background)) 0% 50%) 0 0 / 16px 16px';
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f5f5f3', color: '#141417', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'hsl(var(--background))', color: 'hsl(var(--foreground))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", overflow: 'hidden' }}>
       <style>{`
         @keyframes rfPulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
         @keyframes rfDot1 { 0%,100% { transform:translateY(0); } 40% { transform:translateY(-5px); } }
@@ -198,10 +198,10 @@ export default function RefinementPage() {
           style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 13, cursor: 'pointer', fontFamily: 'inherit' }}
         >←</button>
 
-        <div style={{ width: 1, height: 20, background: 'rgba(20,20,23,0.08)' }} />
+        <div style={{ width: 1, height: 20, background: 'hsl(var(--border))' }} />
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 14, fontWeight: 600, color: '#141417', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headline || t('refine.untitled')}</p>
+          <p style={{ fontSize: 14, fontWeight: 600, color: 'hsl(var(--foreground))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{headline || t('refine.untitled')}</p>
         </div>
 
         <span style={{ padding: '3px 9px', borderRadius: 6, background: '#FFF0EA', color: 'hsl(var(--brand))', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>{t('dashboard.feature.clone_criativo')}</span>
@@ -266,15 +266,15 @@ export default function RefinementPage() {
 
           {/* Version timeline */}
           {versions.length > 1 && (
-            <div style={{ flexShrink: 0, borderTop: '1px solid rgba(20,20,23,0.06)', padding: '10px 14px', background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(4px)' }}>
-              <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontWeight: 600 }}>{t('refine.version_history')}</p>
+            <div style={{ flexShrink: 0, borderTop: '1px solid hsl(var(--border))', padding: '10px 14px', background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(4px)' }}>
+              <p style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8, fontWeight: 600 }}>{t('refine.version_history')}</p>
               <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
                 {versions.map((v, idx) => (
                   <button key={idx} onClick={() => selectVersion(idx)} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer' }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${selectedVersionIdx === idx ? 'hsl(var(--brand))' : 'rgba(20,20,23,0.1)'}`, background: selectedVersionIdx === idx ? '#FFF0EA' : '#ffffff' }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 8, overflow: 'hidden', border: `1.5px solid ${selectedVersionIdx === idx ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`, background: selectedVersionIdx === idx ? '#FFF0EA' : '#ffffff' }}>
                       <img src={v.imageBase64} alt={v.label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
-                    <span style={{ fontSize: 9.5, fontWeight: 500, maxWidth: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selectedVersionIdx === idx ? 'hsl(var(--brand))' : '#8e8e96' }}>{v.label}</span>
+                    <span style={{ fontSize: 9.5, fontWeight: 500, maxWidth: 36, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selectedVersionIdx === idx ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))' }}>{v.label}</span>
                   </button>
                 ))}
               </div>
@@ -283,24 +283,24 @@ export default function RefinementPage() {
         </div>
 
         {/* ── RIGHT: Chat 45% ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', width: 380, flexShrink: 0, background: '#ffffff' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', width: 380, flexShrink: 0, background: 'hsl(var(--card))' }}>
           {/* Chat header */}
-          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
             <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg,hsl(var(--brand)),hsl(var(--brand-2)))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: 'hsl(var(--brand-foreground))', flexShrink: 0, position: 'relative' }}>
               ✦
               <div style={{ position: 'absolute', bottom: 0, right: 0, width: 8, height: 8, borderRadius: '50%', background: '#10B981', border: '1.5px solid #ffffff' }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 13.5, fontWeight: 600, color: '#141417' }}>{t('refine.assistant')}</p>
+              <p style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))' }}>{t('refine.assistant')}</p>
               <p style={{ fontSize: 11, color: '#10B981' }}>● {t('wizard.online')}</p>
             </div>
-            <button onClick={() => navigate("/app/create")} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid rgba(20,20,23,0.08)', background: '#ffffff', color: '#5a5a60', fontSize: 11.5, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>{t('refine.regen_all')}</button>
+            <button onClick={() => navigate("/app/create")} style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', color: 'hsl(var(--muted-foreground))', fontSize: 11.5, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>{t('refine.regen_all')}</button>
           </div>
 
           {/* Quick actions */}
-          <div style={{ flexShrink: 0, display: 'flex', gap: 6, overflowX: 'auto', padding: '10px 14px', borderBottom: '1px solid rgba(20,20,23,0.06)' }}>
+          <div style={{ flexShrink: 0, display: 'flex', gap: 6, overflowX: 'auto', padding: '10px 14px', borderBottom: '1px solid hsl(var(--border))' }}>
             {QUICK_ACTIONS.map((action) => {
-              const color = QUICK_ACTION_COLORS[action] || '#8e8e96';
+              const color = QUICK_ACTION_COLORS[action] || 'hsl(var(--muted-foreground))';
               return (
                 <button key={action} onClick={() => setPillMessage(action)} style={{
                   flexShrink: 0, padding: '5px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 500,

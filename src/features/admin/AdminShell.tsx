@@ -40,7 +40,7 @@ export function AdminShell() {
   const gridSvg = `url("data:image/svg+xml,%3Csvg width='48' height='48' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M48 0H0v48' fill='none' stroke='hsl(var(--brand) / 0.08)' stroke-width='0.5'/%3E%3C/svg%3E")`;
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', width: '100%', background: '#f5f5f3', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
+    <div style={{ minHeight: '100vh', display: 'flex', width: '100%', background: 'hsl(var(--background))', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif" }}>
       {/* Sidebar — fixed on desktop, slide-in drawer on mobile */}
       {!isMobile && (
         <aside style={{ flexShrink: 0, height: '100vh', position: 'sticky', top: 0, zIndex: 20 }}>
@@ -64,7 +64,7 @@ export function AdminShell() {
         {/* Header */}
         <header style={{
           height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: isMobile ? '0 14px' : '0 28px', borderBottom: '1px solid rgba(20,20,23,0.06)',
+          padding: isMobile ? '0 14px' : '0 28px', borderBottom: '1px solid hsl(var(--border))',
           position: 'sticky', top: 0, zIndex: 10,
           background: 'rgba(245,245,243,0.85)', backdropFilter: 'blur(16px)',
         }}>
@@ -73,17 +73,17 @@ export function AdminShell() {
               <button
                 onClick={() => setDrawerOpen(true)}
                 aria-label={t('admin.menu')}
-                style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid rgba(20,20,23,0.1)', background: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#141417', flexShrink: 0 }}
+                style={{ width: 34, height: 34, borderRadius: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--card))', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--foreground))', flexShrink: 0 }}
               >
                 <Menu size={18} />
               </button>
             )}
-            <h1 style={{ fontSize: 15, fontWeight: 700, color: '#141417' }}>{title}</h1>
+            <h1 style={{ fontSize: 15, fontWeight: 700, color: 'hsl(var(--foreground))' }}>{title}</h1>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
-              <span style={{ fontSize: 11.5, color: '#8e8e96' }}>{t('admin.online')}</span>
+              <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>{t('admin.online')}</span>
             </div>
             <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'linear-gradient(135deg,#EF4444,#141417)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 11.5 }}>
               {initials}

@@ -14,7 +14,7 @@ interface RechargeCreditsModalProps {
 }
 
 const PACKAGES = [
-  { id: '100', credits: 100, price: 'R$ 9,90', per: 'R$ 0,099', save: null, color: '#141417', accent: false, purple: false },
+  { id: '100', credits: 100, price: 'R$ 9,90', per: 'R$ 0,099', save: null, color: 'hsl(var(--foreground))', accent: false, purple: false },
   { id: '300', credits: 300, price: 'R$ 24,90', per: 'R$ 0,083', save: '17%', color: 'hsl(var(--brand))', accent: true, purple: false },
   { id: '500', credits: 500, price: 'R$ 39,90', per: 'R$ 0,079', save: '20%', color: '#7C3AED', accent: false, purple: true },
 ];
@@ -243,21 +243,21 @@ const RechargeCreditsModal = ({
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-          background: 'rgba(20,20,23,0.4)', backdropFilter: 'blur(4px)',
+          background: 'rgba(0,0,0,0.66)', backdropFilter: 'blur(4px)',
         }}
         onClick={onClose}
       >
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
-            background: '#ffffff', borderRadius: 20, width: 380, maxWidth: '100%',
+            background: 'hsl(var(--card))', borderRadius: 20, width: 380, maxWidth: '100%',
             boxShadow: '0 24px 80px rgba(0,0,0,0.18)', textAlign: 'center',
             padding: '36px 28px', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
           }}
         >
           <div style={{ fontSize: 40, marginBottom: 12 }}>⭐</div>
           <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 8px' }}>{t('recharge.plan_required_title')}</h3>
-          <p style={{ fontSize: 13, color: '#5a5a60', margin: '0 0 20px', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', margin: '0 0 20px', lineHeight: 1.5 }}>
             {t('recharge.plan_required_desc')}
           </p>
           <Button
@@ -283,14 +283,14 @@ const RechargeCreditsModal = ({
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-          background: 'rgba(20,20,23,0.4)', backdropFilter: 'blur(4px)',
+          background: 'rgba(0,0,0,0.66)', backdropFilter: 'blur(4px)',
         }}
         onClick={onClose}
       >
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
-            background: '#ffffff', borderRadius: 20, width: 400, maxWidth: '100%',
+            background: 'hsl(var(--card))', borderRadius: 20, width: 400, maxWidth: '100%',
             boxShadow: '0 24px 80px rgba(0,0,0,0.18)', overflow: 'hidden',
             fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
             padding: '28px',
@@ -298,14 +298,14 @@ const RechargeCreditsModal = ({
         >
           <div style={{ textAlign: 'center', marginBottom: 20 }}>
             <h3 style={{ fontSize: 18, fontWeight: 700, margin: '0 0 4px' }}>{t('recharge.scan_pix')}</h3>
-            <p style={{ fontSize: 13, color: '#8e8e96', margin: 0 }}>{pkg.credits} {t('recharge.credits_for')} {pkg.price}</p>
+            <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', margin: 0 }}>{pkg.credits} {t('recharge.credits_for')} {pkg.price}</p>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
             <img
               src={`data:image/png;base64,${pixQrImage}`}
               alt="Pix QR Code"
-              style={{ width: 200, height: 200, borderRadius: 12, border: '1px solid #e5e7eb' }}
+              style={{ width: 200, height: 200, borderRadius: 12, border: '1px solid hsl(var(--border))' }}
             />
           </div>
 
@@ -314,9 +314,9 @@ const RechargeCreditsModal = ({
               onClick={handleCopyPayload}
               style={{
                 width: '100%', padding: '10px 0', borderRadius: 8,
-                border: '1px solid #e5e7eb', background: copied ? '#f0fdf4' : '#f5f5f3',
+                border: '1px solid hsl(var(--border))', background: copied ? 'hsl(var(--brand) / 0.14)' : 'hsl(var(--muted))',
                 cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
-                color: copied ? '#16a34a' : '#141417',
+                color: copied ? '#16a34a' : 'hsl(var(--foreground))',
               }}
             >
               {copied ? '✓ Copiado!' : t('recharge.copy_pix_code')}
@@ -326,7 +326,7 @@ const RechargeCreditsModal = ({
           <div style={{ textAlign: 'center', marginTop: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', animation: 'pulse 1.5s infinite' }} />
-              <span style={{ fontSize: 12, color: '#8e8e96' }}>{t('recharge.waiting_payment')}</span>
+              <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{t('recharge.waiting_payment')}</span>
             </div>
           </div>
 
@@ -344,21 +344,21 @@ const RechargeCreditsModal = ({
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-          background: 'rgba(20,20,23,0.4)', backdropFilter: 'blur(4px)',
+          background: 'rgba(0,0,0,0.66)', backdropFilter: 'blur(4px)',
         }}
         onClick={onClose}
       >
         <div
           onClick={(e) => e.stopPropagation()}
           style={{
-            background: '#ffffff', borderRadius: 20, width: 380, maxWidth: '100%',
+            background: 'hsl(var(--card))', borderRadius: 20, width: 380, maxWidth: '100%',
             boxShadow: '0 24px 80px rgba(0,0,0,0.18)', textAlign: 'center',
             padding: '36px 28px', fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif",
           }}
         >
           <div style={{ fontSize: 48, marginBottom: 12 }}>✅</div>
           <h3 style={{ fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>{t('recharge.payment_confirmed')}</h3>
-          <p style={{ fontSize: 14, color: '#5a5a60', margin: '0 0 20px' }}>
+          <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))', margin: '0 0 20px' }}>
             {pkg.credits} {t('recharge.credits_added')}
           </p>
           <Button
@@ -380,7 +380,7 @@ const RechargeCreditsModal = ({
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
-        background: 'rgba(20,20,23,0.4)', backdropFilter: 'blur(4px)',
+        background: 'rgba(0,0,0,0.66)', backdropFilter: 'blur(4px)',
         animation: 'rcmFdIn 150ms ease both',
       }}
       onClick={onClose}
@@ -392,7 +392,7 @@ const RechargeCreditsModal = ({
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: '#ffffff', borderRadius: 20, width: 460, maxWidth: '100%',
+          background: 'hsl(var(--card))', borderRadius: 20, width: 460, maxWidth: '100%',
           boxShadow: '0 24px 80px rgba(0,0,0,0.18)', overflowX: 'hidden', overflowY: 'auto',
           maxHeight: 'calc(100dvh - 32px)',
           animation: 'rcmMdIn 250ms cubic-bezier(.4,0,.2,1) both',
@@ -401,31 +401,32 @@ const RechargeCreditsModal = ({
       >
         {/* ── Header gradient ── */}
         <div style={{
-          background: 'linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)))',
+          background: 'linear-gradient(160deg, hsl(var(--brand) / 0.14), hsl(var(--card)) 70%)',
+          borderBottom: '1px solid hsl(var(--border))',
           padding: '24px 28px 20px', position: 'relative', overflow: 'hidden',
         }}>
-          <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'rgba(255,255,255,0.1)' }} />
-          <div style={{ position: 'absolute', bottom: -10, left: 40, width: 50, height: 50, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+          <div style={{ position: 'absolute', top: -20, right: -20, width: 80, height: 80, borderRadius: '50%', background: 'hsl(var(--brand) / 0.10)' }} />
+          <div style={{ position: 'absolute', bottom: -10, left: 40, width: 50, height: 50, borderRadius: '50%', background: 'hsl(var(--brand) / 0.06)' }} />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 2 }}>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#fff' }}>
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" style={{ color: 'hsl(var(--brand))' }}>
                   <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
                 </svg>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: 0 }}>{t('recharge.title')}</h3>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: 'hsl(var(--foreground))', margin: 0 }}>{t('recharge.title')}</h3>
               </div>
-              <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.8)', margin: 0 }}>
-                {t('recharge.balance')}: <strong style={{ color: '#fff' }}>{currentCredits} {t('recharge.credits')}</strong>
+              <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', margin: 0 }}>
+                {t('recharge.balance')}: <strong style={{ color: 'hsl(var(--brand))' }}>{currentCredits} {t('recharge.credits')}</strong>
               </p>
             </div>
             <button
               onClick={onClose}
               style={{
-                background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 8,
+                background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border))', borderRadius: 8,
                 width: 30, height: 30, cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', backdropFilter: 'blur(4px)', flexShrink: 0,
+                color: 'hsl(var(--muted-foreground))', flexShrink: 0,
               }}
             >
               <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -436,12 +437,12 @@ const RechargeCreditsModal = ({
 
           {/* Progress bar */}
           <div style={{ marginTop: 14, position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10.5, color: 'hsl(var(--muted-foreground))', marginBottom: 4 }}>
               <span>{currentCredits} {t('recharge.used')}</span>
               <span>{totalCredits} total</span>
             </div>
-            <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.2)' }}>
-              <div style={{ width: `${usedPct}%`, height: '100%', borderRadius: 3, background: '#fff', transition: 'width 600ms ease' }} />
+            <div style={{ width: '100%', height: 6, borderRadius: 3, background: 'hsl(var(--muted))' }}>
+              <div style={{ width: `${usedPct}%`, height: '100%', borderRadius: 3, background: 'hsl(var(--brand))', transition: 'width 600ms ease' }} />
             </div>
           </div>
         </div>
@@ -458,9 +459,9 @@ const RechargeCreditsModal = ({
                   style={{
                     flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer',
                     fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                    border: method === m ? '2px solid hsl(var(--brand))' : '1px solid rgba(20,20,23,0.1)',
-                    background: method === m ? '#FFF0EA' : '#fff',
-                    color: method === m ? 'hsl(var(--brand))' : '#8e8e96',
+                    border: method === m ? '2px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
+                    background: method === m ? 'hsl(var(--brand) / 0.12)' : 'hsl(var(--muted))',
+                    color: method === m ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))',
                     transition: 'all 150ms',
                   }}
                 >
@@ -473,7 +474,7 @@ const RechargeCreditsModal = ({
           {/* CPF/CNPJ field — only when Pix is selected */}
           {method === 'pix' && (
             <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: '#8e8e96', marginBottom: 5 }}>
+              <label style={{ display: 'block', fontSize: 11.5, fontWeight: 600, color: 'hsl(var(--muted-foreground))', marginBottom: 5 }}>
                 {t('recharge.cpf_label')}
               </label>
               <input
@@ -485,12 +486,12 @@ const RechargeCreditsModal = ({
                 style={{
                   width: '100%', padding: '9px 12px', borderRadius: 8, fontSize: 14,
                   fontFamily: 'inherit', boxSizing: 'border-box',
-                  border: cpfError ? '1.5px solid #ef4444' : '1px solid rgba(20,20,23,0.12)',
-                  background: '#fff', color: '#141417', outline: 'none',
+                  border: cpfError ? '1.5px solid #ef4444' : '1px solid hsl(var(--border))',
+                  background: 'hsl(var(--card))', color: 'hsl(var(--foreground))', outline: 'none',
                   transition: 'border-color 150ms',
                 }}
                 onFocus={(e) => { e.target.style.borderColor = cpfError ? '#ef4444' : 'hsl(var(--brand))'; }}
-                onBlur={(e) => { e.target.style.borderColor = cpfError ? '#ef4444' : 'rgba(20,20,23,0.12)'; }}
+                onBlur={(e) => { e.target.style.borderColor = cpfError ? '#ef4444' : 'hsl(var(--border))'; }}
               />
               <p style={{ fontSize: 10.5, color: cpfError ? '#ef4444' : '#b5b5bb', margin: '4px 0 0' }}>
                 {cpfError ? t('recharge.cpf_required') : t('recharge.cpf_helper')}
@@ -498,7 +499,7 @@ const RechargeCreditsModal = ({
             </div>
           )}
 
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>
             {t('recharge.choose_package')}
           </div>
 
@@ -514,10 +515,10 @@ const RechargeCreditsModal = ({
                   position: 'relative', transition: 'all 150ms',
                   border: selected === i
                     ? `2px solid ${o.color}`
-                    : '1px solid rgba(20,20,23,0.06)',
+                    : '1px solid hsl(var(--border))',
                   background: selected === i
-                    ? (o.accent ? '#FFF0EA' : o.purple ? 'rgba(124,58,237,0.06)' : '#f5f5f3')
-                    : '#ffffff',
+                    ? (o.accent ? 'hsl(var(--brand) / 0.12)' : o.purple ? 'rgba(124,58,237,0.06)' : 'hsl(var(--muted))')
+                    : 'hsl(var(--card))',
                 }}
               >
                 {o.save && (
@@ -530,10 +531,10 @@ const RechargeCreditsModal = ({
                     {t('recharge.save')} {o.save}
                   </div>
                 )}
-                <div style={{ fontSize: 26, fontWeight: 700, color: selected === i ? o.color : '#141417', lineHeight: 1 }}>{o.credits}</div>
-                <div style={{ fontSize: 11, color: '#8e8e96', fontWeight: 500 }}>{t('recharge.credits')}</div>
-                <div style={{ width: '100%', height: 1, background: 'rgba(20,20,23,0.06)', margin: '6px 0' }} />
-                <div style={{ fontSize: 16, fontWeight: 700, color: selected === i ? o.color : '#141417' }}>{o.price}</div>
+                <div style={{ fontSize: 26, fontWeight: 700, color: selected === i ? o.color : 'hsl(var(--foreground))', lineHeight: 1 }}>{o.credits}</div>
+                <div style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', fontWeight: 500 }}>{t('recharge.credits')}</div>
+                <div style={{ width: '100%', height: 1, background: 'hsl(var(--border))', margin: '6px 0' }} />
+                <div style={{ fontSize: 16, fontWeight: 700, color: selected === i ? o.color : 'hsl(var(--foreground))' }}>{o.price}</div>
                 <div style={{ fontSize: 10, color: '#b5b5bb' }}>{o.per} / {t('recharge.credit_unit')}</div>
               </button>
             ))}
@@ -553,12 +554,12 @@ const RechargeCreditsModal = ({
           {/* Info row */}
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8, marginTop: 14,
-            padding: '10px 14px', background: '#f5f5f3', borderRadius: 10,
+            padding: '10px 14px', background: 'hsl(var(--muted))', borderRadius: 10,
           }}>
             <svg width={15} height={15} viewBox="0 0 24 24" fill="none" stroke="#b5b5bb" strokeWidth="1.5" strokeLinecap="round">
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
             </svg>
-            <span style={{ fontSize: 11.5, color: '#5a5a60' }}>
+            <span style={{ fontSize: 11.5, color: 'hsl(var(--muted-foreground))' }}>
               {t('recharge.need_more')}{' '}
               <span style={{ color: 'hsl(var(--brand))', fontWeight: 600, cursor: 'pointer' }}>{t('recharge.contact_us')}</span>
               {' '}{t('recharge.corporate_packages')}
@@ -583,7 +584,7 @@ const RechargeCreditsModal = ({
               <span>{t('recharge.processing')}</span>
             ) : (
               <>
-                <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#fff' }}>
+                <svg width={16} height={16} viewBox="0 0 24 24" fill="currentColor" style={{ color: 'hsl(var(--brand))' }}>
                   <path d="M12 2l2 6.5L20.5 10l-6.5 2L12 18.5 10 12l-6.5-2L10 8.5z" />
                 </svg>
                 {method === 'card'

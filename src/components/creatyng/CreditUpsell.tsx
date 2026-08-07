@@ -37,8 +37,8 @@ function FirstGenToast({ onClose }: { onClose: () => void }) {
   return (
     <div style={{
       position: 'fixed', bottom: 24, right: 24, zIndex: 9990,
-      background: '#ffffff', borderRadius: 14, padding: '16px 20px',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid rgba(20,20,23,0.06)',
+      background: 'hsl(var(--card))', borderRadius: 14, padding: '16px 20px',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid hsl(var(--border))',
       maxWidth: 340, display: 'flex', alignItems: 'flex-start', gap: 12,
       animation: 'fdUp 300ms ease both',
     }}>
@@ -50,10 +50,10 @@ function FirstGenToast({ onClose }: { onClose: () => void }) {
         <Sparkles size={18} style={{ color: 'hsl(var(--brand))' }} />
       </div>
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 600, color: '#141417', marginBottom: 3 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 3 }}>
           {t('upsell.first_gen.title')}
         </div>
-        <div style={{ fontSize: 12.5, color: '#8e8e96', lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5 }}>
           {t('upsell.first_gen.desc')}
         </div>
       </div>
@@ -85,7 +85,7 @@ function LowCreditsBanner({ credits, onDismiss, onUpgrade }: { credits: number; 
         onClick={onUpgrade}
         style={{
           padding: '4px 14px', borderRadius: 6, border: 'none',
-          background: '#EA580C', color: '#fff', fontSize: 12, fontWeight: 600,
+          background: 'hsl(var(--brand))', color: 'hsl(var(--brand-foreground))', fontSize: 12, fontWeight: 600,
           cursor: 'pointer', fontFamily: 'inherit',
           display: 'flex', alignItems: 'center', gap: 5,
         }}
@@ -114,7 +114,7 @@ function CriticalCreditsModal({ credits, onClose, onUpgrade }: { credits: number
       background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: '#fff', borderRadius: 16, padding: '32px 28px', width: 380, maxWidth: '90vw',
+        background: 'hsl(var(--card))', borderRadius: 16, padding: '32px 28px', width: 380, maxWidth: '90vw',
         boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
         animation: 'scIn 200ms ease both',
       }}>
@@ -128,7 +128,7 @@ function CriticalCreditsModal({ credits, onClose, onUpgrade }: { credits: number
         <h3 style={{ fontSize: 18, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>
           {t('upsell.credits_critical.title')}
         </h3>
-        <p style={{ fontSize: 13.5, color: '#5a5a60', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 13.5, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginBottom: 20, lineHeight: 1.5 }}>
           {t('upsell.credits_critical.desc').replace('{credits}', String(credits))}
         </p>
         <Button
@@ -143,7 +143,7 @@ function CriticalCreditsModal({ credits, onClose, onUpgrade }: { credits: number
           onClick={onClose}
           style={{
             width: '100%', padding: '9px 0', borderRadius: 10, border: 'none',
-            background: 'transparent', color: '#8e8e96',
+            background: 'transparent', color: 'hsl(var(--muted-foreground))',
             fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
@@ -167,7 +167,7 @@ export function PaywallModal({ onClose, plan }: { onClose: () => void; plan: str
       background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
     }}>
       <div onClick={e => e.stopPropagation()} style={{
-        background: '#fff', borderRadius: 16, padding: '36px 28px', width: 400, maxWidth: '90vw',
+        background: 'hsl(var(--card))', borderRadius: 16, padding: '36px 28px', width: 400, maxWidth: '90vw',
         boxShadow: '0 20px 60px rgba(0,0,0,0.18)',
         animation: 'scIn 200ms ease both',
       }}>
@@ -181,7 +181,7 @@ export function PaywallModal({ onClose, plan }: { onClose: () => void; plan: str
         <h3 style={{ fontSize: 20, fontWeight: 700, textAlign: 'center', marginBottom: 6 }}>
           {t('upsell.credits_zero.title')}
         </h3>
-        <p style={{ fontSize: 14, color: '#5a5a60', textAlign: 'center', marginBottom: 24, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))', textAlign: 'center', marginBottom: 24, lineHeight: 1.5 }}>
           {isFree ? t('upsell.credits_zero.desc_free') : t('upsell.credits_zero.desc_paid')}
         </p>
 
@@ -223,7 +223,7 @@ export function PaywallModal({ onClose, plan }: { onClose: () => void; plan: str
           onClick={onClose}
           style={{
             width: '100%', padding: '9px 0', borderRadius: 10, border: 'none',
-            background: 'transparent', color: '#8e8e96', marginTop: 8,
+            background: 'transparent', color: 'hsl(var(--muted-foreground))', marginTop: 8,
             fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'inherit',
           }}
         >
@@ -242,8 +242,8 @@ function SatisfactionPopup({ onClose }: { onClose: () => void }) {
   return (
     <div style={{
       position: 'fixed', bottom: 24, right: 24, zIndex: 9990,
-      background: '#ffffff', borderRadius: 14, padding: '20px',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid rgba(20,20,23,0.06)',
+      background: 'hsl(var(--card))', borderRadius: 14, padding: '20px',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid hsl(var(--border))',
       maxWidth: 320, animation: 'fdUp 300ms ease both',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 14 }}>
@@ -255,10 +255,10 @@ function SatisfactionPopup({ onClose }: { onClose: () => void }) {
           <Heart size={18} style={{ color: '#EC4899' }} />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: '#141417', marginBottom: 3 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 3 }}>
             {t('upsell.satisfaction.title')}
           </div>
-          <div style={{ fontSize: 12.5, color: '#8e8e96', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5 }}>
             {t('upsell.satisfaction.desc')}
           </div>
         </div>

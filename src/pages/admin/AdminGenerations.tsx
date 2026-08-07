@@ -19,8 +19,8 @@ const PROVIDER_STYLES: Record<string, React.CSSProperties> = {
   'Replicate': { background: 'rgba(192,132,252,0.08)', color: '#c084fc' },
 };
 
-const thStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 16px', textAlign: 'left', borderBottom: '1px solid rgba(20,20,23,0.06)' };
-const tdStyle: React.CSSProperties = { padding: '10px 16px', fontSize: 12, color: '#141417', borderBottom: '1px solid rgba(20,20,23,0.04)' };
+const thStyle: React.CSSProperties = { fontSize: 10, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '10px 16px', textAlign: 'left', borderBottom: '1px solid hsl(var(--border))' };
+const tdStyle: React.CSSProperties = { padding: '10px 16px', fontSize: 12, color: 'hsl(var(--foreground))', borderBottom: '1px solid hsl(var(--muted))' };
 
 export default function AdminGenerations() {
   const { t } = useI18n();
@@ -75,19 +75,19 @@ export default function AdminGenerations() {
     );
   }
 
-  const kpiCard: React.CSSProperties = { background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 1px 3px rgba(20,20,23,0.04)' };
+  const kpiCard: React.CSSProperties = { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: 'var(--shadow-sm)' };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* KPI Row */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 14 }}>
         <div style={kpiCard}>
-          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(20,20,23,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Clock style={{ width: 16, height: 16, color: '#8e8e96' }} />
+          <div style={{ width: 36, height: 36, borderRadius: 9, background: 'hsl(var(--muted))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Clock style={{ width: 16, height: 16, color: 'hsl(var(--muted-foreground))' }} />
           </div>
           <div>
-            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.total_today')}</p>
-            <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{totalCount.toLocaleString('pt-BR')}</p>
+            <p style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.total_today')}</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', lineHeight: 1.2 }}>{totalCount.toLocaleString('pt-BR')}</p>
           </div>
         </div>
         <div style={kpiCard}>
@@ -95,8 +95,8 @@ export default function AdminGenerations() {
             <CheckCircle2 style={{ width: 16, height: 16, color: '#10B981' }} />
           </div>
           <div>
-            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.success_pct')}</p>
-            <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{successPct}%</p>
+            <p style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.success_pct')}</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', lineHeight: 1.2 }}>{successPct}%</p>
           </div>
         </div>
         <div style={kpiCard}>
@@ -104,8 +104,8 @@ export default function AdminGenerations() {
             <AlertCircle style={{ width: 16, height: 16, color: '#6366f1' }} />
           </div>
           <div>
-            <p style={{ fontSize: 10, color: '#8e8e96', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.avg_duration')}</p>
-            <p style={{ fontSize: 22, fontWeight: 700, color: '#141417', lineHeight: 1.2 }}>{avgDurationRaw.toFixed(1)}s</p>
+            <p style={{ fontSize: 10, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.generations.avg_duration')}</p>
+            <p style={{ fontSize: 22, fontWeight: 700, color: 'hsl(var(--foreground))', lineHeight: 1.2 }}>{avgDurationRaw.toFixed(1)}s</p>
           </div>
         </div>
       </div>
@@ -125,7 +125,7 @@ export default function AdminGenerations() {
       </div>
 
       {/* Logs Table */}
-      <div style={{ background: '#ffffff', border: '1px solid rgba(20,20,23,0.06)', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: '0 1px 3px rgba(20,20,23,0.04)' }}>
+      <div style={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 14, overflow: 'hidden', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' }}>
         <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse' }}>
           <thead><tr>
             {[t('admin.generations.col.id'), t('admin.generations.col.user'), t('admin.generations.col.feature'), t('admin.generations.col.status'), t('admin.generations.col.credits'), t('admin.generations.col.tokens'), t('admin.generations.col.provider'), t('admin.generations.col.duration'), t('admin.generations.col.time')].map((h) => (
@@ -135,22 +135,22 @@ export default function AdminGenerations() {
           <tbody>
             {filtered.map((log) => (
               <tr key={log.id} style={{ transition: 'background 100ms' }}
-                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'rgba(20,20,23,0.015)'}
+                onMouseEnter={e => (e.currentTarget as HTMLTableRowElement).style.background = 'hsl(var(--muted))'}
                 onMouseLeave={e => (e.currentTarget as HTMLTableRowElement).style.background = 'transparent'}
               >
                 <td style={{ ...tdStyle, color: '#b5b5bb', fontFamily: 'monospace', fontSize: 10 }}>{log.id}</td>
                 <td style={tdStyle}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(20,20,23,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#5a5a60' }}>{log.userName.charAt(0)}</div>
+                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, color: '#5a5a60' }}>{log.userName.charAt(0)}</div>
                     <span style={{ color: '#5a5a60', fontSize: 12 }}>{log.userName}</span>
                   </div>
                 </td>
-                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, ...(FEATURE_STYLES[log.feature] ?? { background: 'rgba(20,20,23,0.06)', color: '#8e8e96' }) }}>{log.feature}</span></td>
+                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, ...(FEATURE_STYLES[log.feature] ?? { background: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }) }}>{log.feature}</span></td>
                 <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, background: log.status === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', color: log.status === 'success' ? '#10B981' : '#EF4444' }}>{log.status === 'success' ? t('admin.status.success') : t('admin.status.error')}</span></td>
-                <td style={{ ...tdStyle, color: '#8e8e96' }}>{log.credits > 0 ? log.credits : '—'}</td>
-                <td style={{ ...tdStyle, color: '#8e8e96' }}>{log.tokens > 0 ? log.tokens.toLocaleString() : '—'}</td>
-                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, ...(PROVIDER_STYLES[log.provider] ?? { background: 'rgba(20,20,23,0.06)', color: '#8e8e96' }) }}>{log.provider}</span></td>
-                <td style={{ ...tdStyle, color: '#8e8e96' }}>{log.duration}</td>
+                <td style={{ ...tdStyle, color: 'hsl(var(--muted-foreground))' }}>{log.credits > 0 ? log.credits : '—'}</td>
+                <td style={{ ...tdStyle, color: 'hsl(var(--muted-foreground))' }}>{log.tokens > 0 ? log.tokens.toLocaleString() : '—'}</td>
+                <td style={tdStyle}><span style={{ padding: '2px 8px', borderRadius: 5, fontSize: 10, fontWeight: 600, ...(PROVIDER_STYLES[log.provider] ?? { background: 'hsl(var(--border))', color: 'hsl(var(--muted-foreground))' }) }}>{log.provider}</span></td>
+                <td style={{ ...tdStyle, color: 'hsl(var(--muted-foreground))' }}>{log.duration}</td>
                 <td style={{ ...tdStyle, color: '#b5b5bb', fontSize: 11 }}>{log.time}</td>
               </tr>
             ))}

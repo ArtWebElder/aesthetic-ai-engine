@@ -125,14 +125,14 @@ const AppShell = () => {
         {/* Email verification banner — only for email/password users */}
         {!emailVerified && !bannerDismissed && (
           <div style={{
-            background: 'linear-gradient(90deg, #FFF7ED, #FFEDD5)',
-            borderBottom: '1px solid #FDBA74',
+            background: 'hsl(var(--brand) / 0.08)',
+            borderBottom: '1px solid hsl(var(--brand) / 0.25)',
             padding: '10px 20px',
             display: 'flex', alignItems: 'center', gap: 10,
-            fontSize: 13, color: '#9A3412',
+            fontSize: 13, color: 'hsl(var(--foreground))',
             flexWrap: 'wrap',
           }}>
-            <Mail style={{ width: 16, height: 16, flexShrink: 0, color: '#EA580C' }} />
+            <Mail style={{ width: 16, height: 16, flexShrink: 0, color: 'hsl(var(--brand))' }} />
             <span style={{ flex: 1 }}>
               {resent ? t('verify_email.resent') : t('verify_email.banner')}
             </span>
@@ -142,7 +142,7 @@ const AppShell = () => {
                   onClick={() => setShowOtpModal(true)}
                   style={{
                     padding: '4px 14px', borderRadius: 6, border: 'none',
-                    background: '#EA580C', color: '#fff', fontSize: 12, fontWeight: 600,
+                    background: 'hsl(var(--brand))', color: 'hsl(var(--brand-foreground))', fontSize: 12, fontWeight: 600,
                     cursor: 'pointer', fontFamily: 'inherit',
                     display: 'flex', alignItems: 'center', gap: 5,
                   }}
@@ -154,8 +154,8 @@ const AppShell = () => {
                   onClick={handleResendEmail}
                   disabled={resending}
                   style={{
-                    padding: '4px 12px', borderRadius: 6, border: '1px solid #FDBA74',
-                    background: '#fff', color: '#EA580C', fontSize: 12, fontWeight: 600,
+                    padding: '4px 12px', borderRadius: 6, border: '1px solid hsl(var(--brand) / 0.35)',
+                    background: 'transparent', color: 'hsl(var(--brand))', fontSize: 12, fontWeight: 600,
                     cursor: resending ? 'default' : 'pointer', fontFamily: 'inherit',
                     display: 'flex', alignItems: 'center', gap: 5, opacity: resending ? 0.6 : 1,
                   }}
@@ -167,7 +167,7 @@ const AppShell = () => {
             )}
             <button
               onClick={() => setBannerDismissed(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: '#9A3412' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'hsl(var(--muted-foreground))' }}
             >
               <X style={{ width: 15, height: 15 }} />
             </button>
@@ -187,8 +187,8 @@ const AppShell = () => {
             <div
               onClick={e => e.stopPropagation()}
               style={{
-                background: '#fff', borderRadius: 16, padding: '32px 28px', width: 380, maxWidth: '90vw',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                background: 'hsl(var(--card))', borderRadius: 16, padding: '32px 28px', width: 380, maxWidth: '90vw',
+                boxShadow: '0 24px 70px rgba(0,0,0,0.55)', border: '1px solid hsl(var(--border))',
                 animation: 'scIn 200ms ease both',
               }}
             >
@@ -198,7 +198,7 @@ const AppShell = () => {
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
                   <CheckCircle style={{ width: 48, height: 48, color: '#10B981', margin: '0 auto 16px' }} />
                   <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>{t('verify_email.success_title')}</h3>
-                  <p style={{ fontSize: 13, color: '#8e8e96' }}>{t('verify_email.success_desc')}</p>
+                  <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>{t('verify_email.success_desc')}</p>
                 </div>
               ) : (
                 <>
@@ -206,17 +206,17 @@ const AppShell = () => {
                     <div style={{
                       width: 40, height: 40, borderRadius: 10,
                       background: 'linear-gradient(135deg, hsl(var(--brand) / 0.12), rgba(255,155,112,0.08))',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EA580C',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--brand))',
                     }}>
                       <Mail style={{ width: 20, height: 20 }} />
                     </div>
                     <div>
                       <h3 style={{ fontSize: 16, fontWeight: 700 }}>{t('verify_email.modal_title')}</h3>
-                      <p style={{ fontSize: 12.5, color: '#8e8e96' }}>{t('verify_email.modal_desc')}</p>
+                      <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))' }}>{t('verify_email.modal_desc')}</p>
                     </div>
                   </div>
 
-                  <p style={{ fontSize: 13, color: '#5a5a60', marginBottom: 14 }}>
+                  <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))', marginBottom: 14 }}>
                     {t('verify_email.modal_sent_to')} <strong>{user?.email}</strong>
                   </p>
 
@@ -230,7 +230,8 @@ const AppShell = () => {
                     onKeyDown={e => { if (e.key === 'Enter') handleVerifyOtp(); }}
                     style={{
                       width: '100%', padding: '11px 14px', borderRadius: 10, fontSize: 16,
-                      border: otpError ? '2px solid #EF4444' : '1px solid rgba(20,20,23,0.12)',
+                      border: otpError ? '2px solid #EF4444' : '1px solid hsl(var(--border))',
+                      background: 'hsl(var(--input))', color: 'hsl(var(--foreground))',
                       outline: 'none', fontFamily: 'monospace', letterSpacing: 4, textAlign: 'center',
                       marginBottom: 8,
                     }}
@@ -255,7 +256,7 @@ const AppShell = () => {
                       onClick={handleResendEmail}
                       disabled={resending}
                       style={{
-                        background: 'none', border: 'none', color: '#EA580C', fontSize: 12.5,
+                        background: 'none', border: 'none', color: 'hsl(var(--brand))', fontSize: 12.5,
                         cursor: resending ? 'default' : 'pointer', fontFamily: 'inherit',
                         opacity: resending ? 0.5 : 1, display: 'flex', alignItems: 'center', gap: 4,
                       }}
@@ -266,7 +267,7 @@ const AppShell = () => {
                     <button
                       onClick={() => { setShowOtpModal(false); setOtpError(null); setOtpCode(''); }}
                       style={{
-                        background: 'none', border: 'none', color: '#8e8e96', fontSize: 12.5,
+                        background: 'none', border: 'none', color: 'hsl(var(--muted-foreground))', fontSize: 12.5,
                         cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >
@@ -281,11 +282,11 @@ const AppShell = () => {
 
         <main className="flex-1 overflow-auto bg-background" style={
           (pathname.startsWith('/app/create') || pathname.startsWith('/app/refine')) ? { overflow: 'hidden', background: 'none', position: 'relative' } : {
-            backgroundColor: '#FAFAFA',
+            backgroundColor: 'hsl(var(--background))',
             backgroundImage: [
-              'linear-gradient(180deg, hsl(var(--brand) / 0.04) 0%, transparent 30%)',
-              'linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px)',
-              'linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px)',
+              'linear-gradient(180deg, hsl(var(--brand) / 0.05) 0%, transparent 30%)',
+              'linear-gradient(hsl(var(--foreground) / 0.045) 1px, transparent 1px)',
+              'linear-gradient(90deg, hsl(var(--foreground) / 0.045) 1px, transparent 1px)',
             ].join(','),
             backgroundSize: '100% 100%, 48px 48px, 48px 48px',
           }
