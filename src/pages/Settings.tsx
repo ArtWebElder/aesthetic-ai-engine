@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   User, Settings2, Palette, Key,
   Camera, Upload, Plus, X, Copy, Trash2, Check, ChevronDown,
-  Languages, Sun, Moon, Monitor, AlertTriangle,
+  Languages, AlertTriangle,
 } from 'lucide-react';
 import { HexColorPicker } from 'react-colorful';
 import { ConfirmModal } from '@/components/creatyng/ConfirmModal';
@@ -12,7 +12,6 @@ import { useI18n } from '@/i18n';
 import type { Lang } from '@/i18n';
 import { useToast } from '@/features/toast/useToast';
 import { FONT_OPTIONS } from '@/features/editor/font-presets';
-import { useTheme } from 'next-themes';
 
 type SettingsTab = 'profile' | 'preferences' | 'brandkit' | 'apikeys';
 
@@ -74,7 +73,6 @@ const Settings = () => {
   const { user } = useAuth();
   const { t, lang, setLang } = useI18n();
   const toast = useToast();
-  const { theme: appTheme, setTheme: setAppTheme } = useTheme();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [ready, setReady] = useState(false);
@@ -219,31 +217,8 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* Theme — wired to next-themes useTheme() */}
-        <div style={{ marginBottom: 24 }}>
-          <label style={{ fontSize: 12.5, fontWeight: 500, color: 'hsl(var(--muted-foreground))', marginBottom: 8, display: 'block' }}>{t('settings.theme')}</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {[
-              { id: 'light', label: t('settings.theme_light'), Icon: Sun },
-              { id: 'dark', label: t('settings.theme_dark'), Icon: Moon },
-              { id: 'system', label: t('settings.theme_auto'), Icon: Monitor },
-            ].map(th => {
-              const active = appTheme === th.id;
-              return (
-                <button key={th.id} onClick={() => setAppTheme(th.id)} style={{
-                  padding: '8px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'inherit',
-                  border: active ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
-                  background: active ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))',
-                  color: active ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontWeight: active ? 600 : 400,
-                  fontSize: 13, transition: 'all 150ms',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                }}>
-                  <th.Icon size={14} />{th.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* Theme picker removed — the app is dark-only (App.tsx forces the `dark` class).
+            The i18n keys settings.theme* stay in the locale files for when/if it returns. */}
 
         {/* Default format */}
         <div style={{ marginBottom: 24 }}>
