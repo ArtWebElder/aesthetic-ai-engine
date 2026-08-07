@@ -17,7 +17,6 @@ type SortMode = 'recent' | 'name' | 'credits';
 type FilterType = 'all' | 'Food/Pop' | 'Pop Design';
 
 /* ─── Project hue/color map (deterministic by index) ─── */
-const PROJECT_HUES = [270, 15, 330, 160, 190, 38, 340, 210, 165];
 const PROJECT_COLORS = ['#7C3AED', '#ff713d', '#EC4899', '#10B981', '#06B6D4', '#F59E0B', '#EC4899', '#1E293B', '#10B981'];
 
 /* ─── Action Dropdown ─────────────────────────────────── */
@@ -34,18 +33,18 @@ function ActionMenu({ open, onClose, onAction }: { open: boolean; onClose: () =>
   ];
   return (
     <div style={{
-      position: 'absolute', top: '100%', right: 0, marginTop: 4, width: 160,
+      position: 'absolute', top: '100%', right: 0, marginTop: 6, width: 168,
       background: 'hsl(var(--card))',
-      borderRadius: 10, border: '1px solid hsl(var(--border))',
-      boxShadow: '0 8px 24px rgba(0,0,0,0.10)',
-      padding: 4, zIndex: 20, animation: 'fdUp 120ms ease both',
+      borderRadius: 14, border: '1px solid hsl(var(--border))',
+      boxShadow: '0 18px 40px -18px rgba(20,16,12,.35)',
+      padding: 5, zIndex: 20, animation: 'fdUp 120ms ease both',
     }}>
       {items.map((item, i) => item === null ? (
-        <div key={i} style={{ height: 1, background: 'hsl(var(--border))', margin: '3px 0' }} />
+        <div key={i} style={{ height: 1, background: 'hsl(var(--border))', margin: '4px 0' }} />
       ) : (
         <button key={i} onClick={() => { onAction(item.id); onClose(); }} style={{
-          width: '100%', padding: '7px 10px', borderRadius: 6, border: 'none', background: 'transparent',
-          cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, textAlign: 'left',
+          width: '100%', padding: '8px 10px', borderRadius: 9, border: 'none', background: 'transparent',
+          cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, textAlign: 'left',
           color: item.danger ? '#EF4444' : 'hsl(var(--foreground))',
           display: 'flex', alignItems: 'center', gap: 8,
           transition: 'background 80ms',
@@ -133,86 +132,124 @@ const Projects = () => {
       fontFamily: "'Instrument Sans','Inter',system-ui,sans-serif", minHeight: '100%', color: 'hsl(var(--foreground))',
       padding: isMobile ? '18px 16px 40px' : '24px 32px 48px',
     }}>
+      {/* Scoped Spotlight styles — cover-card + toolbar (no global tokens touched) */}
       <style>{`
         @keyframes fdUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         @keyframes scIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
         select:focus{outline:none}input:focus{outline:none}
+
+        .cypj {
+          position: relative; display: flex; flex-direction: column; overflow: hidden; cursor: pointer;
+          border-radius: 16px; background: hsl(var(--card)); border: 1px solid hsl(var(--border));
+          box-shadow: 0 1px 2px rgba(20,16,12,.05);
+          transition: transform .18s ease, box-shadow .2s ease, border-color .2s ease;
+        }
+        .cypj:hover { transform: translateY(-4px); border-color: hsl(var(--brand) / .5); box-shadow: 0 24px 50px -24px rgba(20,16,12,.30); }
+        .cypj-cap { position: relative; height: 132px; display: flex; align-items: flex-start; justify-content: space-between; padding: 12px; }
+        .cypj-overlay { position: absolute; inset: 0; z-index: 1; background: linear-gradient(180deg, rgba(0,0,0,.30), rgba(0,0,0,.10) 42%, rgba(0,0,0,.48)); }
+        .cypj-tile {
+          position: relative; z-index: 2; display: grid; place-items: center; width: 40px; height: 40px;
+          border-radius: 11px; background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.28); backdrop-filter: blur(4px);
+        }
+        .cypj-glass { position: relative; z-index: 2; display: flex; align-items: center; gap: 6px; }
+        .cypj-pill { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: rgba(0,0,0,.34); color: #fff; backdrop-filter: blur(4px); }
+        .cypj-menu {
+          display: grid; place-items: center; width: 26px; height: 26px; border-radius: 999px; border: none; cursor: pointer;
+          background: rgba(0,0,0,.34); color: #fff; backdrop-filter: blur(4px); transition: opacity .15s ease;
+        }
+        .cypj-body { padding: 13px 14px; }
+
+        .cypj-chip {
+          height: 36px; padding: 0 16px; border-radius: 999px; cursor: pointer; font-family: inherit;
+          font-size: 13px; font-weight: 600; border: 1px solid hsl(var(--border));
+          background: hsl(var(--card)); color: hsl(var(--muted-foreground)); transition: all .15s ease;
+        }
+        .cypj-chip:hover { background: hsl(var(--muted)); color: hsl(var(--foreground)); }
+        .cypj-chip[data-on="true"] { background: hsl(var(--brand) / .10); color: hsl(var(--brand)); border-color: hsl(var(--brand) / .35); }
+
+        .cypj-seg { display: flex; gap: 2px; padding: 4px; border-radius: 14px; border: 1px solid hsl(var(--border)); background: hsl(var(--card)); }
+        .cypj-seg button {
+          width: 34px; height: 32px; border: none; background: transparent; color: hsl(var(--muted-foreground));
+          border-radius: 9px; cursor: pointer; display: grid; place-items: center; transition: all .15s ease;
+        }
+        .cypj-seg button:hover { color: hsl(var(--foreground)); }
+        .cypj-seg button[data-on="true"] { background: hsl(var(--brand) / .10); color: hsl(var(--brand)); }
+
+        .cypj-empty {
+          width: 100%; max-width: 420px; text-align: center; padding: 44px 32px;
+          border: 1px dashed hsl(var(--border)); border-radius: 26px; background: hsl(var(--card));
+        }
+        .cypj-empty-ic {
+          width: 72px; height: 72px; border-radius: 20px; margin: 0 auto 20px; display: grid; place-items: center;
+          background: hsl(var(--brand) / .10); color: hsl(var(--brand)); border: 1px solid hsl(var(--brand) / .24);
+        }
       `}</style>
 
       {/* Title + Actions */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20,
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 24,
         animation: ready ? 'fdUp 450ms ease both' : 'none',
       }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 2 }}>{t('projects.my_title')}</h1>
-          <p style={{ fontSize: 13, color: 'hsl(var(--muted-foreground))' }}>{t('projects.count', { count: projects.length })} · {t('projects.versions_count', { count: totalVersions })}</p>
+          <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 600, letterSpacing: '-0.025em', marginBottom: 4 }}>{t('projects.my_title')}</h1>
+          <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))' }}>{t('projects.count', { count: projects.length })} · {t('projects.versions_count', { count: totalVersions })}</p>
         </div>
         <Button
           variant="gradient"
           onClick={() => navigate('/app/create')}
-          style={{ padding: '9px 20px', fontSize: 13 }}
+          style={{ height: 42, padding: '0 20px', fontSize: 13.5, flexShrink: 0 }}
         >
-          <Plus size={15} />{t('projects.new_project')}
+          <Plus size={16} />{t('projects.new_project')}
         </Button>
       </div>
 
       {/* Filters bar */}
       <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, gap: 10,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 26, gap: 12,
         animation: ready ? 'fdUp 450ms 40ms ease both' : 'none', flexWrap: 'wrap',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           {/* Search */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 7, padding: '7px 13px',
-            background: 'hsl(var(--card))', borderRadius: 8, border: '1px solid hsl(var(--border))',
-            width: isMobile ? '100%' : 220,
+            display: 'flex', alignItems: 'center', gap: 8, height: 40, padding: '0 13px',
+            background: 'hsl(var(--card))', borderRadius: 14, border: '1px solid hsl(var(--border))',
+            width: isMobile ? '100%' : 240,
           }}>
-            <Search size={14} color="hsl(var(--muted-foreground))" />
+            <Search size={16} color="hsl(var(--muted-foreground))" />
             <input
               value={search} onChange={e => setSearch(e.target.value)}
               placeholder={t('projects.search_placeholder')}
-              style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 12.5, fontFamily: 'inherit', color: 'hsl(var(--foreground))' }}
+              style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', fontSize: 13.5, fontFamily: 'inherit', color: 'hsl(var(--foreground))' }}
             />
           </div>
-          {/* Filter pills */}
+          {/* Filter chips */}
           {(['all', 'Food/Pop', 'Pop Design'] as FilterType[]).map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{
-              padding: '6px 13px', borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12,
-              border: filter === f ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
-              background: filter === f ? 'hsl(var(--primary) / 0.1)' : 'hsl(var(--card))',
-              color: filter === f ? 'hsl(var(--brand))' : 'hsl(var(--muted-foreground))', fontWeight: filter === f ? 600 : 400,
-              transition: 'all 150ms',
-            }}>{f === 'all' ? t('projects.all') : f}</button>
+            <button key={f} className="cypj-chip" data-on={filter === f} onClick={() => setFilter(f)}>
+              {f === 'all' ? t('projects.all') : f}
+            </button>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {/* Sort */}
           <select
             value={sort}
             onChange={e => setSort(e.target.value as SortMode)}
             style={{
-              padding: '6px 10px', borderRadius: 7, border: '1px solid hsl(var(--border))',
-              background: 'hsl(var(--card))', fontSize: 12, fontFamily: 'inherit', color: 'hsl(var(--muted-foreground))', cursor: 'pointer',
+              height: 36, padding: '0 12px', borderRadius: 12, border: '1px solid hsl(var(--border))',
+              background: 'hsl(var(--card))', fontSize: 13, fontFamily: 'inherit', fontWeight: 500,
+              color: 'hsl(var(--muted-foreground))', cursor: 'pointer',
             }}
           >
             <option value="recent">{t('projects.sort.recent')}</option>
             <option value="name">{t('projects.sort.name_az')}</option>
           </select>
           {/* View toggle */}
-          <div style={{ display: 'flex', background: 'hsl(var(--muted))', borderRadius: 7, padding: 2 }}>
+          <div className="cypj-seg">
             {([
               { m: 'grid' as ViewMode, Icon: LayoutGrid },
               { m: 'list' as ViewMode, Icon: List },
             ] as const).map(({ m, Icon }) => (
-              <button key={m} onClick={() => setView(m)} style={{
-                width: 30, height: 28, borderRadius: 5, border: 'none', cursor: 'pointer',
-                background: view === m ? 'hsl(var(--card))' : 'transparent',
-                color: view === m ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: view === m ? '0 1px 2px rgba(0,0,0,0.06)' : 'none',
-              }}>
+              <button key={m} data-on={view === m} onClick={() => setView(m)}>
                 <Icon size={16} />
               </button>
             ))}
@@ -224,75 +261,54 @@ const Projects = () => {
       {view === 'grid' && filtered.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: isMobile ? 10 : 14 }}>
           {filtered.map((p, i) => {
-            const hue = PROJECT_HUES[i % PROJECT_HUES.length];
             const color = PROJECT_COLORS[i % PROJECT_COLORS.length];
             const isHov = hovId === p.id;
             return (
-              <div key={p.id} style={{
-                background: isHov ? `linear-gradient(180deg, hsl(var(--primary) / 0.06) 0%, hsl(var(--card)) 40%)` : 'hsl(var(--card))',
-                borderRadius: 12, overflow: 'hidden',
-                border: isHov ? '1.5px solid hsl(var(--brand))' : '1px solid hsl(var(--border))',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.04)', cursor: 'pointer', transition: 'all 180ms', position: 'relative',
+              <div key={p.id} className="cypj" style={{
                 animation: ready ? `scIn 320ms ${40 + i * 35}ms ease both` : 'none',
               }}
                 onMouseEnter={() => setHovId(p.id)}
                 onMouseLeave={() => setHovId(null)}
                 onClick={() => navigate(`/app/projects/${p.id}`)}
               >
-                {/* Thumbnail */}
-                <div style={{
-                  height: 130,
-                  background: `linear-gradient(145deg, hsl(${hue} 55% 94%), hsl(${hue} 45% 87%))`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
-                }}>
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 12,
-                    background: `linear-gradient(135deg, ${color}, ${color}99)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: `0 4px 12px ${color}30`,
-                  }}>
-                    <Image size={20} color="#fff" />
+                {/* Capa (hue gradient) + glass tile + version pill */}
+                <div className="cypj-cap" style={{ background: `linear-gradient(140deg, ${color}, rgba(20,20,23,0.55))` }}>
+                  <div className="cypj-overlay" />
+                  <div className="cypj-tile">
+                    <Image size={18} color="#ffffff" />
                   </div>
-                  {/* Version badge */}
-                  <div style={{
-                    position: 'absolute', top: 8, left: 8, padding: '2px 7px', borderRadius: 5,
-                    background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)',
-                    fontSize: 10, fontWeight: 600, color: '#5a5a60',
-                  }}>{t('projects.one_version')}</div>
-                  {/* More menu */}
-                  <div style={{ position: 'absolute', top: 8, right: 8 }} onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === p.id ? null : p.id); }}
-                      style={{
-                        width: 26, height: 26, borderRadius: 6, background: 'rgba(255,255,255,0.85)',
-                        backdropFilter: 'blur(4px)', border: 'none', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5a5a60',
-                        opacity: isHov ? 1 : 0, transition: 'opacity 150ms',
-                      }}
-                    >
-                      <MoreHorizontal size={16} />
-                    </button>
-                    <ActionMenu
-                      open={menuOpen === p.id}
-                      onClose={() => setMenuOpen(null)}
-                      onAction={a => {
-                        if (a === 'open') navigate(`/app/projects/${p.id}`);
-                        if (a === 'duplicate') handleDuplicate(p);
-                        if (a === 'delete') setConfirmDelete(p.id);
-                      }}
-                    />
+                  <div className="cypj-glass" onClick={e => e.stopPropagation()}>
+                    <span className="cypj-pill">{t('projects.one_version')}</span>
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        className="cypj-menu"
+                        onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === p.id ? null : p.id); }}
+                        style={{ opacity: isMobile || isHov || menuOpen === p.id ? 1 : 0 }}
+                      >
+                        <MoreHorizontal size={15} />
+                      </button>
+                      <ActionMenu
+                        open={menuOpen === p.id}
+                        onClose={() => setMenuOpen(null)}
+                        onAction={a => {
+                          if (a === 'open') navigate(`/app/projects/${p.id}`);
+                          if (a === 'duplicate') handleDuplicate(p);
+                          if (a === 'delete') setConfirmDelete(p.id);
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
                 {/* Info */}
-                <div style={{ padding: '12px 14px' }}>
-                  <div style={{ fontWeight: 600, fontSize: 13.5, marginBottom: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div className="cypj-body">
+                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 7, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {p.name}
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--muted))', padding: '2px 8px', borderRadius: 4, fontWeight: 500 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', background: 'hsl(var(--muted))', padding: '3px 9px', borderRadius: 999, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {(p.spec as any)?.module?.replace('_', ' ') || 'project'}
                     </span>
-                    <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))' }}>
+                    <span style={{ fontSize: 11, color: 'hsl(var(--muted-foreground))', flexShrink: 0 }}>
                       {new Date(p.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                     </span>
                   </div>
@@ -305,9 +321,9 @@ const Projects = () => {
 
       {/* LIST VIEW */}
       {view === 'list' && filtered.length > 0 && (
-        <div style={{ background: 'hsl(var(--card))', borderRadius: 14, border: '1px solid hsl(var(--border))', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+        <div style={{ background: 'hsl(var(--card))', borderRadius: 20, border: '1px solid hsl(var(--border))', overflow: 'hidden', boxShadow: '0 1px 2px rgba(20,16,12,.05)' }}>
           {/* Header */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 80px' : '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '10px 16px', borderBottom: '1px solid hsl(var(--border))' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 80px' : '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '12px 18px', borderBottom: '1px solid hsl(var(--border))' }}>
             {(isMobile ? [t('projects.col.project'), ''] : [t('projects.col.project'), t('projects.col.template'), t('projects.col.versions'), t('projects.col.date'), '']).map((h, i) => (
               <span key={i} style={{ fontSize: 10.5, fontWeight: 600, color: 'hsl(var(--muted-foreground))', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
             ))}
@@ -316,7 +332,7 @@ const Projects = () => {
             const color = PROJECT_COLORS[i % PROJECT_COLORS.length];
             return (
               <div key={p.id} style={{
-                display: 'grid', gridTemplateColumns: isMobile ? '1fr 80px' : '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '11px 16px',
+                display: 'grid', gridTemplateColumns: isMobile ? '1fr 80px' : '2fr 1fr 1fr 1fr 80px', gap: 8, padding: '12px 18px',
                 borderBottom: i < filtered.length - 1 ? '1px solid hsl(var(--border))' : 'none',
                 cursor: 'pointer', transition: 'background 100ms', alignItems: 'center',
                 animation: ready ? `fdUp 300ms ${i * 30}ms ease both` : 'none',
@@ -325,15 +341,15 @@ const Projects = () => {
                 onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                 onClick={() => navigate(`/app/projects/${p.id}`)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 11, minWidth: 0 }}>
                   <div style={{
-                    width: 36, height: 36, borderRadius: 8, flexShrink: 0,
+                    width: 36, height: 36, borderRadius: 10, flexShrink: 0,
                     background: `linear-gradient(135deg, ${color}20, ${color}40)`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <Image size={14} color={color} />
+                    <Image size={15} color={color} />
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</span>
+                  <span style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</span>
                 </div>
                 {!isMobile && (
                   <>
@@ -349,7 +365,7 @@ const Projects = () => {
                     { Icon: Trash2, danger: true },
                   ].map(({ Icon, danger }, j) => (
                     <button key={j} style={{
-                      width: 26, height: 26, borderRadius: 5, border: '1px solid hsl(var(--border))',
+                      width: 28, height: 28, borderRadius: 9, border: '1px solid hsl(var(--border))',
                       background: 'hsl(var(--card))', cursor: 'pointer', display: 'flex', alignItems: 'center',
                       justifyContent: 'center', color: danger ? '#EF4444' : 'hsl(var(--muted-foreground))', transition: 'all 100ms',
                     }}
@@ -369,32 +385,24 @@ const Projects = () => {
 
       {/* EMPTY STATE */}
       {filtered.length === 0 && (
-        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 60 }}>
-          <div style={{
-            background: 'hsl(var(--card))', borderRadius: 18, border: '1px solid hsl(var(--border))',
-            padding: '44px 32px', textAlign: 'center', width: 340, position: 'relative', overflow: 'hidden',
-          }}>
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 80, background: 'linear-gradient(180deg, hsl(var(--brand) / 0.06), transparent)' }} />
-            <div style={{
-              width: 60, height: 60, borderRadius: 16, background: 'hsl(var(--brand) / 0.08)',
-              border: '1px solid hsl(var(--brand) / 0.12)', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', margin: '0 auto 16px', color: 'hsl(var(--brand))', position: 'relative',
-            }}>
-              <FolderOpen size={28} />
+        <div style={{ display: 'grid', placeItems: 'center', padding: '50px 0' }}>
+          <div className="cypj-empty" style={{ animation: ready ? 'fdUp 450ms 80ms ease both' : 'none' }}>
+            <div className="cypj-empty-ic">
+              <FolderOpen size={30} />
             </div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, position: 'relative' }}>
+            <h3 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-0.02em' }}>
               {search ? t('projects.empty') : t('projects.empty_title')}
             </h3>
-            <p style={{ fontSize: 12.5, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, marginBottom: 20, position: 'relative' }}>
+            <p style={{ fontSize: 14, color: 'hsl(var(--muted-foreground))', lineHeight: 1.5, margin: '9px 0 22px' }}>
               {search ? t('projects.empty_search_hint') : t('projects.empty_create_hint')}
             </p>
             {!search && (
               <Button
                 variant="gradient"
                 onClick={() => navigate('/app/create')}
-                style={{ padding: '9px 22px', fontSize: 12.5 }}
+                style={{ height: 44, padding: '0 20px', fontSize: 14 }}
               >
-                <Plus size={14} />{t('projects.create_first')}
+                <Plus size={17} />{t('projects.create_first')}
               </Button>
             )}
           </div>
@@ -406,8 +414,11 @@ const Projects = () => {
         <div style={{ marginTop: 36, animation: ready ? 'fdUp 450ms 120ms ease both' : 'none' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <Workflow size={16} color="hsl(var(--brand))" />
-            <h2 style={{ fontSize: 16, fontWeight: 700 }}>{t('projects.studio_flows_title')}</h2>
-            <span style={{ fontSize: 12, color: 'hsl(var(--muted-foreground))' }}>{studioFlows.length}</span>
+            <h2 style={{ fontSize: 17, fontWeight: 600, letterSpacing: '-0.02em' }}>{t('projects.studio_flows_title')}</h2>
+            <span style={{
+              fontSize: 11.5, fontWeight: 600, color: 'hsl(var(--brand))',
+              background: 'hsl(var(--brand) / .10)', padding: '2px 9px', borderRadius: 999,
+            }}>{studioFlows.length}</span>
           </div>
           <div style={{
             display: 'grid',
@@ -417,11 +428,8 @@ const Projects = () => {
             {studioFlows.map(f => (
               <div
                 key={f.id}
+                className="cypj"
                 onClick={() => navigate(`/app/create/studio?project=${f.id}`)}
-                style={{
-                  cursor: 'pointer', background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))',
-                  borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column',
-                }}
               >
                 <div style={{
                   aspectRatio: '16 / 10',
@@ -430,8 +438,8 @@ const Projects = () => {
                 }}>
                   {!f.thumbnail && <Workflow size={26} color="hsl(var(--muted-foreground))" />}
                 </div>
-                <div style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                <div style={{ padding: '11px 13px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <span style={{ fontSize: 13.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setConfirmDeleteFlow(f.id); }}
                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--muted-foreground))', display: 'flex', padding: 2, flexShrink: 0 }}
