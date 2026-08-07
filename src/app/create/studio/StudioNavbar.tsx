@@ -81,20 +81,18 @@ export function StudioNavbar({ openPanel, chatOpen, onPanelChange, onChatToggle 
                   : item.accent
                   ? 'hsl(var(--brand))'
                   : 'hsl(var(--card))',
-                color: active && !item.accent
-                  ? 'hsl(var(--brand))'
-                  : item.accent
-                  ? '#fff'
+                color: item.accent
+                  ? 'hsl(var(--brand-foreground))'
                   : active
                   ? 'hsl(var(--brand))'
-                  : 'hsl(var(--muted-foreground))',
+                  : 'hsl(var(--foreground) / 0.62)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 boxShadow: active
                   ? '0 4px 12px hsl(var(--brand) / 0.3)'
-                  : '0 2px 6px rgba(0,0,0,0.08)',
+                  : '0 2px 6px rgba(0,0,0,0.35)',
                 transition: 'all 0.15s',
                 flexShrink: 0,
               }}
