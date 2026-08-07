@@ -80,7 +80,9 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <AppErrorBoundary>
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    {/* Dark-only: the neon palette only works on a dark surface. forcedTheme pins the
+        `dark` class regardless of stored preference or OS setting. */}
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} forcedTheme="dark">
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ToastProvider>

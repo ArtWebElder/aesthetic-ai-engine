@@ -12,8 +12,8 @@
     --card-foreground: 0 0% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
-    --primary: 24 95% 53%;             /* #F97316 orange accent */
-    --primary-foreground: 0 0% 100%;
+    --primary: 79 100% 62%;            /* #C0FF3E acid lime accent */
+    --primary-foreground: 100 27% 6%;  /* near-black — neon needs dark text on it */
     --secondary: 220 100% 59%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 14% 96%;             /* #F3F4F6 */
@@ -24,65 +24,69 @@
     --destructive-foreground: 0 0% 100%;
     --border: 220 13% 91%;            /* rgba(0,0,0,0.06) equiv */
     --input: 210 20% 98%;             /* #F9FAFB */
-    --ring: 24 95% 53%;
+    --ring: 79 100% 62%;
     --radius: 0.625rem;
     --sidebar-background: 0 0% 100%; /* #FFFFFF */
     --sidebar-foreground: 220 9% 46%;
-    --sidebar-primary: 24 95% 53%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 79 100% 62%;
+    --sidebar-primary-foreground: 100 27% 6%;
     --sidebar-accent: 220 14% 96%;
     --sidebar-accent-foreground: 0 0% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 24 95% 53%;
+    --sidebar-ring: 79 100% 62%;
 
-    /* ── Brand tokens (single source of truth for the orange identity) ──
+    /* ── Brand tokens (single source of truth for the neon identity) ──
        Edit these to re-skin the brand across the whole app at once.
-       --brand = #ff713d, --brand-2 = #FF9B70 (HSL triplets so `hsl(var(--brand) / a)` works). */
-    --brand: 16 100% 62%;
-    --brand-2: 18 100% 72%;
-    --brand-foreground: 0 0% 100%;
+       --brand = #C0FF3E, --brand-2 = #DBFF8A (HSL triplets so `hsl(var(--brand) / a)` works).
+       The app is dark-only (App.tsx forces the `dark` class), so `.dark` below is what ships;
+       these :root values exist only so nothing flashes orange before hydration. */
+    --brand: 79 100% 62%;
+    --brand-2: 78 100% 77%;
+    --brand-foreground: 100 27% 6%;
     --brand-gradient: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)));
-    --shadow-brand: 0 4px 16px hsl(var(--brand) / 0.3);
+    --shadow-brand: 0 4px 18px hsl(var(--brand) / 0.28);
     --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.06);
     --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.08);
     --shadow-lg: 0 12px 40px hsl(0 0% 0% / 0.12);
   }
 
+  /* Dark is the only shipped theme. Charcoal is green-tinted so the neon reads as
+     part of the surface, not pasted on top of a blue-grey. */
   .dark {
-    --background: 228 8% 8%;
-    --foreground: 40 4% 95%;
-    --card: 225 7% 12%;
-    --card-foreground: 40 4% 95%;
-    --popover: 224 8% 16%;
-    --popover-foreground: 40 4% 95%;
-    --primary: 16 100% 62%;
-    --primary-foreground: 0 0% 100%;
+    --background: 150 6% 6%;
+    --foreground: 150 4% 96%;
+    --card: 150 6% 10%;
+    --card-foreground: 150 4% 96%;
+    --popover: 150 6% 13%;
+    --popover-foreground: 150 4% 96%;
+    --primary: 79 100% 62%;
+    --primary-foreground: 100 27% 6%;
     --secondary: 220 100% 61%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 224 6% 16%;
-    --muted-foreground: 216 4% 68%;
-    --accent: 224 6% 16%;
-    --accent-foreground: 40 4% 95%;
-    --destructive: 0 62% 40%;
+    --muted: 150 5% 15%;
+    --muted-foreground: 150 4% 66%;
+    --accent: 150 5% 15%;
+    --accent-foreground: 150 4% 96%;
+    --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 95%;
-    --border: 220 6% 20%;
-    --input: 224 6% 16%;
-    --ring: 16 100% 62%;
-    --sidebar-background: 228 8% 8%;
-    --sidebar-foreground: 216 4% 68%;
-    --sidebar-primary: 16 100% 62%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 224 6% 14%;
-    --sidebar-accent-foreground: 40 4% 90%;
-    --sidebar-border: 220 6% 18%;
-    --sidebar-ring: 16 100% 62%;
+    --border: 150 5% 18%;
+    --input: 150 5% 15%;
+    --ring: 79 100% 62%;
+    --sidebar-background: 150 6% 6%;
+    --sidebar-foreground: 150 4% 66%;
+    --sidebar-primary: 79 100% 62%;
+    --sidebar-primary-foreground: 100 27% 6%;
+    --sidebar-accent: 150 5% 13%;
+    --sidebar-accent-foreground: 150 4% 92%;
+    --sidebar-border: 150 5% 16%;
+    --sidebar-ring: 79 100% 62%;
 
-    /* Brand stays the same vivid orange in dark mode (it was theme-agnostic inline). */
-    --brand: 16 100% 62%;
-    --brand-2: 18 100% 72%;
-    --brand-foreground: 0 0% 100%;
+    /* Neon brand — glow is stronger here because there is a dark surface to bloom on. */
+    --brand: 79 100% 62%;
+    --brand-2: 78 100% 77%;
+    --brand-foreground: 100 27% 6%;
     --brand-gradient: linear-gradient(135deg, hsl(var(--brand)), hsl(var(--brand-2)));
-    --shadow-brand: 0 4px 16px hsl(var(--brand) / 0.35);
+    --shadow-brand: 0 0 0 1px hsl(var(--brand) / 0.18), 0 6px 26px hsl(var(--brand) / 0.32);
     --shadow-sm: 0 1px 3px hsl(0 0% 0% / 0.3);
     --shadow-md: 0 4px 16px hsl(0 0% 0% / 0.4);
     --shadow-lg: 0 12px 40px hsl(0 0% 0% / 0.5);
