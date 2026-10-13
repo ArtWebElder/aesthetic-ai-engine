@@ -744,6 +744,57 @@ ${ctaStyle === 'outlined' ? '- Outlined border only (glow, neon) without solid f
 - Size proportional to ~${ctaLen} characters + padding
 - The shape is a VISUAL ELEMENT of the composition, not a UI button`;
 
+// === IMAGEN 4 EARLY RETURN ===
+console.log(`[Imagen4] gate check — compositionMode: ${compositionMode} | headline: "${copyDataInput?.headline}" | headlineTruthy: ${!!copyDataInput?.headline}`);
+
+if (compositionMode && copyDataInput?.headline) {
+  try {
+    console.log(`[Imagen4] attempting generation... | model: imagen-4.0-generate-001 | prompt length: ${input.prompt?.length}`);
+    
+    const imagen4Resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": Deno.env.get("GEMINI_API_KEY")!,
+        },
+        body: JSON.stringify({
+          instances: [{ prompt: input.prompt }],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: "1:1",
+            safetyFilterLevel: "block_only_high",
+            personGeneration: "allow_adult",
+          },
+        }),
+      }
+    );
+
+    if (!imagen4Resp.ok) {
+      const errText = await imagen4Resp.text();
+      throw new Error(`Imagen 4 error (${imagen4Resp.status}): ${errText}`);
+    }
+
+    const imagen4Data = await imagen4Resp.json();
+    const b64 = imagen4Data?.predictions?.[0]?.bytesBase64Encoded;
+
+    if (!b64) {
+      throw new Error("Imagen 4 returned no image data");
+    }
+
+    console.log(`[Imagen4] success — image size: ${b64.length} chars`);
+
+    return new Response(
+  JSON.stringify({ imageBase64: b64, provider: "imagen-4", generationId: "imagen4-direct" }),
+  { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+);
+  } catch (e) {
+    console.log(`[Imagen4] failed: ${e.message} — falling back to Nano Banana Pro`);
+  }
+}
+// === END IMAGEN 4 ===
+
       (input as { prompt: string }).prompt = input.prompt + compositionSuffix;
       console.log("[DEBUG] compositionMode=true — prompt augmented with composition suffix");
     }
